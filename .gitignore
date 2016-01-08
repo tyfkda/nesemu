@@ -1,0 +1,16 @@
+# Node
+/node_modules
+/npm-debug.log
+
+# Generated files
+/public
+/release
+
+# Xcode Workspace
+*.xcworkspace/*
+!*.xcworkspace/contents.xcworkspacedata
+#--------
+# Xcode Project
+**/*.xcodeproj/*
+!**/*.xcodeproj/project.pbxproj
+!**/*.xcodeproj/default.*
