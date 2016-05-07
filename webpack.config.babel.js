@@ -1,6 +1,6 @@
 module.exports = {
   context: __dirname + '/src',
-  entry: './main.js',
+  entry: './main.ts',
   output: {
     path: __dirname + '/public/assets',
     filename: '[name].js',
@@ -8,6 +8,7 @@ module.exports = {
   module: {
     loaders: [
       { test: /\.js$/, loaders: ['babel-loader'] },
+      { test: /\.ts$/, loaders: ['awesome-typescript-loader'] },
     ],
   }
 }

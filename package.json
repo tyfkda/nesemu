@@ -21,6 +21,7 @@
   },
   "license": "Unlicense",
   "devDependencies": {
+    "awesome-typescript-loader": "0.17.0",
     "babel-eslint": "^6.0.4",
     "babel-loader": "6.2.4",
     "babel-plugin-transform-es2015-modules-amd": "^6.8.0",
@@ -44,6 +45,7 @@
     "karma-webpack": "1.7.0",
     "phantomjs-prebuilt": "2.1.7",
     "through2": "^2.0.0",
+    "typescript": "1.8.10",
     "watchify": "3.7.0",
     "webpack": "1.13.0",
     "webpack-stream": "3.2.0"
