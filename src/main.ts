@@ -1,3 +1,5 @@
-import {Util} from './util/util.ts'
+import {NesEmu} from './nesemu.ts'
 
-Util.log('Hello, TypeScript')
+window.addEventListener('load', () => {
+  NesEmu.main('nesroot')
+})

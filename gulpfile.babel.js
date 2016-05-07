@@ -85,6 +85,7 @@ gulp.task('es6', () => {
   const config = clone(webpackConfig)
   config.devtool = '#cheap-module-source-map'
   return gulp.src(`${srcEs6Dir}/main.js`)
+    .pipe(plumber())
     .pipe(webpack(config))
     .pipe(gulp.dest(assetsDir))
 })
@@ -94,6 +95,7 @@ gulp.task('watch-es6', [], () => {
   config.watch = true
   config.devtool = '#cheap-module-source-map'
   gulp.src(srcEs6Files, {base: srcEs6Dir})
+    .pipe(plumber())
     .pipe(webpack(config))
     .pipe(gulp.dest(assetsDir))
     .pipe(browserSync.reload({stream: true}))
@@ -181,6 +183,7 @@ gulp.task('release', ['build'], () => {
   config.plugins = config.plugin || []
   config.plugins.push(new webpackRaw.optimize.UglifyJsPlugin())
   gulp.src(`${srcEs6Dir}/main.js`)
+    .pipe(plumber())
     .pipe(webpack(config))
     .pipe(gulp.dest(releaseAssetsDir))
 })
