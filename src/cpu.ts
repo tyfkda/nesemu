@@ -134,10 +134,20 @@ export class Cpu6502 {
 
   push16(value: number) {
     let s = this.s
-    this.write8(0x0100 + s, value & 0xff)
-    s = dec8(s)
     this.write8(0x0100 + s, value >> 8)
+    s = dec8(s)
+    this.write8(0x0100 + s, value & 0xff)
     this.s = dec8(s)
+  }
+
+  pop16(value: number) {
+    let s = this.s
+    s = inc8(s)
+    const l = this.read8(0x0100 + s)
+    s = inc8(s)
+    const h = this.read8(0x0100 + s)
+    this.s = s
+    return (h << 8) | l
   }
 }
 
@@ -158,6 +168,19 @@ const kInstTable = (() => {
     if ((cpu.p & NEGATIVE_FLAG) == 0)
       cpu.pc += offset
   })
+  setOp('JSR', 0x20, 3, 6, (cpu) => {
+    const adr = cpu.readAdr()
+    cpu.push16(cpu.pc - 1)
+    cpu.pc = adr
+  })
+  setOp('RTS', 0x60, 1, 6, (cpu) => {
+    cpu.pc = cpu.pop16() + 1
+  })
+  setOp('AND', 0x29, 2, 2, (cpu) => {  // AND: Immediate
+    const value = cpu.read8(cpu.pc++)
+    cpu.a &= value
+    cpu.setFlag(cpu.a)
+  })
   setOp('BIT', 0x2c, 3, 4, (cpu) => {  // BIT: Check A bit, Absolute
     const adr = cpu.readAdr()
     const value = cpu.read8(adr)
@@ -171,7 +194,11 @@ const kInstTable = (() => {
     const adr = cpu.read8(cpu.pc++)
     cpu.write8(adr, cpu.a)
   })
-  setOp('TXA', 0x8a, 1, 2, (cpu) => {  // TXS: Transfer from X to A
+  setOp('STX', 0x86, 2, 3, (cpu) => {  // STX: StoreX, Zeropage
+    const adr = cpu.read8(cpu.pc++)
+    cpu.write8(adr, cpu.x)
+  })
+  setOp('TXA', 0x8a, 1, 2, (cpu) => {  // TXA: Transfer from X to A
     cpu.a = cpu.x
   })
   setOp('STY', 0x8c, 3, 4, (cpu) => {  // STY: StoreY, Absolute
@@ -203,16 +230,33 @@ const kInstTable = (() => {
   setOp('LDX', 0xa2, 2, 2, (cpu) => {  // LDX: LoadX, immediate
     cpu.x = cpu.read8(cpu.pc++)
   })
+  setOp('LDA', 0xa5, 2, 3, (cpu) => {  // LDA: LoadA, Zeropage
+    const adr = cpu.read8(cpu.pc++)
+    cpu.a = cpu.read8(adr)
+  })
   setOp('LDA', 0xa9, 2, 2, (cpu) => {  // LDA: LoadA, Immediate
     cpu.a = cpu.read8(cpu.pc++)
+  })
+  setOp('TAX', 0xaa, 1, 2, (cpu) => {  // TAX: Transfer from A to X
+    cpu.x = cpu.a
   })
   setOp('LDA', 0xad, 3, 4, (cpu) => {  // LDA: LoadA, Absolute
     const adr = cpu.readAdr()
     cpu.a = cpu.read8(adr)
   })
+  setOp('LDA', 0xbd, 3, 4, (cpu) => {  // LDA: Absolute, X
+    const adr = (cpu.readAdr() + cpu.x) & 0xffff
+    cpu.a = cpu.read8(adr)
+  })
+  setOp('CPY', 0xcc, 3, 4, (cpu) => {  // CPY: Compoare Y, Absolute
+    const adr = cpu.readAdr()
+    const value = cpu.read8(adr)
+    cpu.setFlag(cpu.y - value)
+  })
   setOp('CMP', 0xcd, 3, 4, (cpu) => {  // CMP: Compoare A, Absolute
     const adr = cpu.readAdr()
-    cpu.setFlag(cpu.a - cpu.read8(adr))
+    const value = cpu.read8(adr)
+    cpu.setFlag(cpu.a - value)
   })
   setOp('BNE', 0xd0, 2, 2, (cpu) => {  // BNE: Branch not equal
     const offset = cpu.readOffset()
@@ -222,9 +266,18 @@ const kInstTable = (() => {
   setOp('CLD', 0xd8, 1, 2, (cpu) => {  // CLD: BCD to normal mode
     // not implemented on NES
   })
+  setOp('CPX', 0xe0, 2, 2, (cpu) => {  // CPX: Compoare X, Immediate
+    const value = cpu.read8(cpu.pc++)
+    cpu.setFlag(cpu.x - value)
+  })
   setOp('INX', 0xe8, 1, 2, (cpu) => {  // INX: Increment X
     cpu.x = inc8(cpu.x)
     cpu.setFlag(cpu.x)
+  })
+  setOp('BEQ', 0xf0, 2, 2, (cpu) => {  // BEQ: Branch equal
+    const offset = cpu.readOffset()
+    if ((cpu.p & ZERO_FLAG) != 0)
+      cpu.pc += offset
   })
 
   return tbl
