@@ -1,7 +1,7 @@
 {
-  "name": "FrontendTemplate",
+  "name": "nesemu",
   "version": "0.0.1",
-  "description": "FrontendTemplate",
+  "description": "NES Emulator",
   "main": "index.js",
   "scripts": {
     "start": "npm run default",
