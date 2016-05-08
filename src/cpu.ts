@@ -36,6 +36,57 @@ const RESERVED_FLAG = 1 << RESERVED_BIT
 const OVERFLOW_FLAG = 1 << OVERFLOW_BIT
 const NEGATIVE_FLAG = 1 << NEGATIVE_BIT
 
+enum Addressing {
+  IMPLIED,
+  IMMEDIATE,
+  IMMEDIATE16,
+  ZEROPAGE,
+  ZEROPAGE_X,
+  ZEROPAGE_Y,
+  ABSOLUTE,
+  ABSOLUTE_X,
+  ABSOLUTE_Y,
+  RELATIVE,
+}
+
+enum OpType {
+  LDA,
+  STA,
+  LDX,
+  STX,
+  LDY,
+  STY,
+
+  TAX,
+  TXA,
+  TXS,
+
+  INX,
+
+  AND,
+  BIT,
+  CMP,
+  CPX,
+
+  JSR,
+  RTS,
+  BPL,
+  BNE,
+  BEQ,
+
+
+  SEI,
+  CLD,
+}
+
+interface Instruction {
+  mnemonic: string
+  opType: OpType
+  addressing: Addressing
+  bytes: number
+  cycle: number
+}
+
 export class Cpu6502 {
   a: number  // A register
   x: number  // X register
@@ -95,7 +146,8 @@ export class Cpu6502 {
       process.exit(1)
       return
     }
-    inst.func(this)
+
+    kOpTypeTable[inst.opType](this, inst.addressing)
   }
 
   setFlag(value) {
@@ -151,133 +203,212 @@ export class Cpu6502 {
   }
 }
 
-const kInstTable = (() => {
-  function setOp(mnemonic, opcode, bytes, cycle, func) {
+const kInstTable: Instruction[] = (() => {
+  const tbl = []
+
+  function setOp(mnemonic: string, opcode: number, opType: OpType, addressing: Addressing, bytes: number, cycle: number) {
     tbl[opcode] = {
-      func,
       mnemonic,
+      opType,
+      addressing,
       bytes,
       cycle,
     }
   }
 
+  // LDA
+  setOp('LDA', 0xa5, OpType.LDA, Addressing.ZEROPAGE, 2, 3)
+  setOp('LDA', 0xa9, OpType.LDA, Addressing.IMMEDIATE, 2, 2)
+  setOp('LDA', 0xad, OpType.LDA, Addressing.ABSOLUTE, 3, 4)
+  setOp('LDA', 0xbd, OpType.LDA, Addressing.ABSOLUTE_X, 3, 4)
+
+  // STA
+  setOp('STA', 0x85, OpType.STA, Addressing.ZEROPAGE, 2, 3)
+  setOp('STA', 0x8d, OpType.STA, Addressing.ABSOLUTE, 3, 4)
+  setOp('STA', 0x95, OpType.STA, Addressing.ZEROPAGE_X, 2, 4)
+  setOp('STA', 0x9d, OpType.STA, Addressing.ABSOLUTE_X, 3, 5)
+  // LDX
+  setOp('LDX', 0xa2, OpType. LDX, Addressing.IMMEDIATE, 2, 2)
+  // STX
+  setOp('STX', 0x86, OpType.STX, Addressing.ZEROPAGE, 2, 3)
+  setOp('STX', 0x8e, OpType.STX, Addressing.ABSOLUTE, 3, 4)
+  // LDY
+  setOp('LDY', 0xa0, OpType.LDY, Addressing.IMMEDIATE, 2, 2)
+  // STY
+  setOp('STY', 0x8c, OpType.STY, Addressing.ABSOLUTE, 3, 4)
+  //// T??
+  setOp('TAX', 0xaa, OpType.TAX, Addressing.IMPLIED, 1, 2)
+  setOp('TXA', 0x8a, OpType.TXA, Addressing.IMPLIED, 1, 2)
+  setOp('TXS', 0x9a, OpType.TXS, Addressing.IMPLIED, 1, 2)
+
+  // AND
+  setOp('AND', 0x29, OpType.AND, Addressing.IMMEDIATE, 2, 2)
+  // BIT
+  setOp('BIT', 0x2c, OpType.BIT, Addressing.ABSOLUTE, 3, 4)
+  // CMP
+  setOp('CMP', 0xcd, OpType.CMP, Addressing.ABSOLUTE, 3, 4)
+  // CPX
+  setOp('CPX', 0xe0, OpType.CPX, Addressing.IMMEDIATE, 2, 2)
+//  // CPY
+//  setOp('CPY', 0xcc, Addressing.ABSOLUTE, 3, 4, (cpu) => {  // CPY: Compoare Y, Absolute
+//    const adr = cpu.readAdr()
+//    const value = cpu.read8(adr)
+//    cpu.setFlag(cpu.y - value)
+//  })
+  // INX
+  setOp('INX', 0xe8, OpType.INX, Addressing.IMPLIED, 1, 2)
+
+  // JSR
+  setOp('JSR', 0x20, OpType.JSR, Addressing.ABSOLUTE, 3, 6)
+  // RTS
+  setOp('RTS', 0x60, OpType.RTS, Addressing.IMPLIED, 1, 6)
+  // Branch
+  setOp('BPL', 0x10, OpType.BPL, Addressing.RELATIVE, 2, 2)
+  setOp('BNE', 0xd0, OpType.BNE, Addressing.RELATIVE, 2, 2)
+  setOp('BEQ', 0xf0, OpType.BEQ, Addressing.RELATIVE, 2, 2)
+
+  setOp('SEI', 0x78, OpType.SEI, Addressing.IMPLIED, 1, 2)
+  setOp('CLD', 0xd8, OpType.CLD, Addressing.IMPLIED, 1, 2)
+
+  return tbl
+})()
+
+const kOpTypeTable = (() => {
   const tbl = []
 
-  setOp('BPL', 0x10, 2, 2, (cpu) => {
-    const offset = cpu.readOffset()
-    if ((cpu.p & NEGATIVE_FLAG) == 0)
-      cpu.pc += offset
+  function set(opType: OpType, func: Function) {
+    tbl[opType] = func
+  }
+
+  function load(cpu: Cpu6502, addressing: Addressing) {
+    let adr
+    switch (addressing) {
+    case Addressing.IMMEDIATE:
+      adr = cpu.pc++
+      break
+    case Addressing.ZEROPAGE:
+      adr = cpu.read8(cpu.pc++)
+      break
+    case Addressing.ABSOLUTE:
+      adr = cpu.readAdr()
+      break
+    case Addressing.ABSOLUTE_X:
+      adr = (cpu.readAdr() + cpu.x) & 0xffff
+      break
+    default:
+      console.error(`Illegal load: ${addressing}`)
+      return process.exit(1)
+    }
+    return cpu.read8(adr)
+  }
+
+  function store(cpu: Cpu6502, addressing: Addressing, value: number) {
+    let adr
+    switch (addressing) {
+    case Addressing.ZEROPAGE:
+      adr = cpu.read8(cpu.pc++)
+      break
+    case Addressing.ZEROPAGE_X:
+      adr = (cpu.read8(cpu.pc++) + cpu.x) & 0x00ff
+      break
+    case Addressing.ABSOLUTE:
+      adr = cpu.readAdr()
+      break
+    case Addressing.ABSOLUTE_X:
+      adr = (cpu.readAdr() + cpu.x) & 0xffff
+      break
+    default:
+      console.error(`Illegal store: ${addressing}`)
+      return process.exit(1)
+    }
+    cpu.write8(adr, value)
+  }
+
+  set(OpType.LDA, (cpu, addressing) => {
+    cpu.a = load(cpu, addressing)
   })
-  setOp('JSR', 0x20, 3, 6, (cpu) => {
+  set(OpType.STA, (cpu, addressing) => {
+    store(cpu, addressing, cpu.a)
+  })
+
+  set(OpType.LDX, (cpu, addressing) => {
+    cpu.x = load(cpu, addressing)
+  })
+  set(OpType.STX, (cpu, addressing) => {
+    store(cpu, addressing, cpu.x)
+  })
+
+  set(OpType.LDY, (cpu, addressing) => {
+    cpu.y = load(cpu, addressing)
+  })
+  set(OpType.STY, (cpu, addressing) => {
+    store(cpu, addressing, cpu.y)
+  })
+
+  set(OpType.TAX, (cpu, _) => {
+    cpu.x = cpu.a
+  })
+  set(OpType.TXA, (cpu, _) => {
+    cpu.a = cpu.x
+  })
+  set(OpType.TXS, (cpu, _) => {
+    cpu.s = cpu.x
+  })
+
+  set(OpType.INX, (cpu, _) => {
+    cpu.x = inc8(cpu.x)
+    cpu.setFlag(cpu.x)
+  })
+
+  set(OpType.AND, (cpu, addressing) => {  // AND: Immediate
+    const value = load(cpu, addressing)
+    cpu.a &= value
+    cpu.setFlag(cpu.a)
+  })
+  set(OpType.BIT, (cpu, addressing) => {
+    const value = load(cpu, addressing)
+    const result = cpu.a & value
+    cpu.setFlag(result)
+  })
+  set(OpType.CMP, (cpu, addressing) => {
+    const value = load(cpu, addressing)
+    cpu.setFlag(cpu.a - value)
+  })
+  set(OpType.CPX, (cpu, addressing) => {
+    const value = load(cpu, addressing)
+    cpu.setFlag(cpu.x - value)
+  })
+
+  set(OpType.JSR, (cpu, _) => {
     const adr = cpu.readAdr()
     cpu.push16(cpu.pc - 1)
     cpu.pc = adr
   })
-  setOp('RTS', 0x60, 1, 6, (cpu) => {
+  set(OpType.RTS, (cpu, _) => {
     cpu.pc = cpu.pop16() + 1
   })
-  setOp('AND', 0x29, 2, 2, (cpu) => {  // AND: Immediate
-    const value = cpu.read8(cpu.pc++)
-    cpu.a &= value
-    cpu.setFlag(cpu.a)
+
+  set(OpType.BPL, (cpu, _) => {
+    const offset = cpu.readOffset()
+    if ((cpu.p & NEGATIVE_FLAG) == 0)
+      cpu.pc += offset
   })
-  setOp('BIT', 0x2c, 3, 4, (cpu) => {  // BIT: Check A bit, Absolute
-    const adr = cpu.readAdr()
-    const value = cpu.read8(adr)
-    const result = cpu.a & value
-    cpu.setFlag(result)
-  })
-  setOp('SEI', 0x78, 1, 2, (cpu) => {  // SEI: Disable IRQ
-    // TODO: implement
-  })
-  setOp('STA', 0x85, 2, 3, (cpu) => {  // STA: Zeropage
-    const adr = cpu.read8(cpu.pc++)
-    cpu.write8(adr, cpu.a)
-  })
-  setOp('STX', 0x86, 2, 3, (cpu) => {  // STX: StoreX, Zeropage
-    const adr = cpu.read8(cpu.pc++)
-    cpu.write8(adr, cpu.x)
-  })
-  setOp('TXA', 0x8a, 1, 2, (cpu) => {  // TXA: Transfer from X to A
-    cpu.a = cpu.x
-  })
-  setOp('STY', 0x8c, 3, 4, (cpu) => {  // STY: StoreY, Absolute
-    const adr = cpu.readAdr()
-    cpu.write8(adr, cpu.y)
-  })
-  setOp('STA', 0x8d, 3, 4, (cpu) => {  // STA: StoreA, Absolute
-    const adr = cpu.readAdr()
-    cpu.write8(adr, cpu.a)
-  })
-  setOp('STX', 0x8e, 3, 4, (cpu) => {  // STX: StoreX, Absolute
-    const adr = cpu.readAdr()
-    cpu.write8(adr, cpu.x)
-  })
-  setOp('STA', 0x95, 2, 4, (cpu) => {  // STA: Zeropage, X
-    const adr = (cpu.read8(cpu.pc++) + cpu.x) & 0xff
-    cpu.write8(adr, cpu.a)
-  })
-  setOp('TXS', 0x9a, 1, 2, (cpu) => {  // TXS: Transfer from X to S
-    cpu.s = cpu.x
-  })
-  setOp('STA', 0x9d, 3, 5, (cpu) => {  // STA: StoreA, Absolute, X
-    const adr = (cpu.readAdr() + cpu.x) & 0xffff
-    cpu.write8(adr, cpu.a)
-  })
-  setOp('LDY', 0xa0, 2, 2, (cpu) => {  // LDY: LoadY, immediate
-    cpu.y = cpu.read8(cpu.pc++)
-  })
-  setOp('LDX', 0xa2, 2, 2, (cpu) => {  // LDX: LoadX, immediate
-    cpu.x = cpu.read8(cpu.pc++)
-  })
-  setOp('LDA', 0xa5, 2, 3, (cpu) => {  // LDA: LoadA, Zeropage
-    const adr = cpu.read8(cpu.pc++)
-    cpu.a = cpu.read8(adr)
-  })
-  setOp('LDA', 0xa9, 2, 2, (cpu) => {  // LDA: LoadA, Immediate
-    cpu.a = cpu.read8(cpu.pc++)
-  })
-  setOp('TAX', 0xaa, 1, 2, (cpu) => {  // TAX: Transfer from A to X
-    cpu.x = cpu.a
-  })
-  setOp('LDA', 0xad, 3, 4, (cpu) => {  // LDA: LoadA, Absolute
-    const adr = cpu.readAdr()
-    cpu.a = cpu.read8(adr)
-  })
-  setOp('LDA', 0xbd, 3, 4, (cpu) => {  // LDA: Absolute, X
-    const adr = (cpu.readAdr() + cpu.x) & 0xffff
-    cpu.a = cpu.read8(adr)
-  })
-  setOp('CPY', 0xcc, 3, 4, (cpu) => {  // CPY: Compoare Y, Absolute
-    const adr = cpu.readAdr()
-    const value = cpu.read8(adr)
-    cpu.setFlag(cpu.y - value)
-  })
-  setOp('CMP', 0xcd, 3, 4, (cpu) => {  // CMP: Compoare A, Absolute
-    const adr = cpu.readAdr()
-    const value = cpu.read8(adr)
-    cpu.setFlag(cpu.a - value)
-  })
-  setOp('BNE', 0xd0, 2, 2, (cpu) => {  // BNE: Branch not equal
+  set(OpType.BNE, (cpu, _) => {
     const offset = cpu.readOffset()
     if ((cpu.p & ZERO_FLAG) == 0)
       cpu.pc += offset
   })
-  setOp('CLD', 0xd8, 1, 2, (cpu) => {  // CLD: BCD to normal mode
-    // not implemented on NES
-  })
-  setOp('CPX', 0xe0, 2, 2, (cpu) => {  // CPX: Compoare X, Immediate
-    const value = cpu.read8(cpu.pc++)
-    cpu.setFlag(cpu.x - value)
-  })
-  setOp('INX', 0xe8, 1, 2, (cpu) => {  // INX: Increment X
-    cpu.x = inc8(cpu.x)
-    cpu.setFlag(cpu.x)
-  })
-  setOp('BEQ', 0xf0, 2, 2, (cpu) => {  // BEQ: Branch equal
+  set(OpType.BEQ, (cpu, _) => {
     const offset = cpu.readOffset()
     if ((cpu.p & ZERO_FLAG) != 0)
       cpu.pc += offset
+  })
+
+  set(OpType.SEI, (cpu, addressing) => {  // SEI: Disable IRQ
+    // TODO: implement
+  })
+  set(OpType.CLD, (cpu, addressing) => {  // CLD: BCD to normal mode
+    // not implemented on NES
   })
 
   return tbl
