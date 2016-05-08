@@ -142,86 +142,87 @@ export class Cpu6502 {
 }
 
 const kInstTable = (() => {
-  function setOp(mnemonic, opcode, bytes, func) {
+  function setOp(mnemonic, opcode, bytes, cycle, func) {
     tbl[opcode] = {
       func,
       mnemonic,
       bytes,
+      cycle,
     }
   }
 
   const tbl = []
 
-  setOp('BPL', 0x10, 2, (cpu) => {
+  setOp('BPL', 0x10, 2, 2, (cpu) => {
     const offset = cpu.readOffset()
     if ((cpu.p & NEGATIVE_FLAG) == 0)
       cpu.pc += offset
   })
-  setOp('BIT', 0x2c, 3, (cpu) => {  // BIT: Check A bit, Absolute
+  setOp('BIT', 0x2c, 3, 4, (cpu) => {  // BIT: Check A bit, Absolute
     const adr = cpu.readAdr()
     const value = cpu.read8(adr)
     const result = cpu.a & value
     cpu.setFlag(result)
   })
-  setOp('SEI', 0x78, 1, (cpu) => {  // SEI: Disable IRQ
+  setOp('SEI', 0x78, 1, 2, (cpu) => {  // SEI: Disable IRQ
     // TODO: implement
   })
-  setOp('STA', 0x85, 2, (cpu) => {  // STA: Zeropage
+  setOp('STA', 0x85, 2, 3, (cpu) => {  // STA: Zeropage
     const adr = cpu.read8(cpu.pc++)
     cpu.write8(adr, cpu.a)
   })
-  setOp('TXA', 0x8a, 1, (cpu) => {  // TXS: Transfer from X to A
+  setOp('TXA', 0x8a, 1, 2, (cpu) => {  // TXS: Transfer from X to A
     cpu.a = cpu.x
   })
-  setOp('STY', 0x8c, 3, (cpu) => {  // STY: StoreY, Absolute
+  setOp('STY', 0x8c, 3, 4, (cpu) => {  // STY: StoreY, Absolute
     const adr = cpu.readAdr()
     cpu.write8(adr, cpu.y)
   })
-  setOp('STA', 0x8d, 3, (cpu) => {  // STA: StoreA, Absolute
+  setOp('STA', 0x8d, 3, 4, (cpu) => {  // STA: StoreA, Absolute
     const adr = cpu.readAdr()
     cpu.write8(adr, cpu.a)
   })
-  setOp('STX', 0x8e, 3, (cpu) => {  // STX: StoreX, Absolute
+  setOp('STX', 0x8e, 3, 4, (cpu) => {  // STX: StoreX, Absolute
     const adr = cpu.readAdr()
     cpu.write8(adr, cpu.x)
   })
-  setOp('STA', 0x95, 2, (cpu) => {  // STA: Zeropage, X
+  setOp('STA', 0x95, 2, 4, (cpu) => {  // STA: Zeropage, X
     const adr = (cpu.read8(cpu.pc++) + cpu.x) & 0xff
     cpu.write8(adr, cpu.a)
   })
-  setOp('TXS', 0x9a, 1, (cpu) => {  // TXS: Transfer from X to S
+  setOp('TXS', 0x9a, 1, 2, (cpu) => {  // TXS: Transfer from X to S
     cpu.s = cpu.x
   })
-  setOp('STA', 0x9d, 3, (cpu) => {  // STA: StoreA, Absolute, X
+  setOp('STA', 0x9d, 3, 5, (cpu) => {  // STA: StoreA, Absolute, X
     const adr = (cpu.readAdr() + cpu.x) & 0xffff
     cpu.write8(adr, cpu.a)
   })
-  setOp('LDY', 0xa0, 2, (cpu) => {  // LDY: LoadY, immediate
+  setOp('LDY', 0xa0, 2, 2, (cpu) => {  // LDY: LoadY, immediate
     cpu.y = cpu.read8(cpu.pc++)
   })
-  setOp('LDX', 0xa2, 2, (cpu) => {  // LDX: LoadX, immediate
+  setOp('LDX', 0xa2, 2, 2, (cpu) => {  // LDX: LoadX, immediate
     cpu.x = cpu.read8(cpu.pc++)
   })
-  setOp('LDA', 0xa9, 2, (cpu) => {  // LDA: LoadA, Immediate
+  setOp('LDA', 0xa9, 2, 2, (cpu) => {  // LDA: LoadA, Immediate
     cpu.a = cpu.read8(cpu.pc++)
   })
-  setOp('LDA', 0xad, 3, (cpu) => {  // LDA: LoadA, Absolute
+  setOp('LDA', 0xad, 3, 4, (cpu) => {  // LDA: LoadA, Absolute
     const adr = cpu.readAdr()
     cpu.a = cpu.read8(adr)
   })
-  setOp('CMP', 0xcd, 3, (cpu) => {  // CMP: Compoare A, Absolute
+  setOp('CMP', 0xcd, 3, 4, (cpu) => {  // CMP: Compoare A, Absolute
     const adr = cpu.readAdr()
     cpu.setFlag(cpu.a - cpu.read8(adr))
   })
-  setOp('BNE', 0xd0, 2, (cpu) => {  // BNE: Branch not equal
+  setOp('BNE', 0xd0, 2, 2, (cpu) => {  // BNE: Branch not equal
     const offset = cpu.readOffset()
     if ((cpu.p & ZERO_FLAG) == 0)
       cpu.pc += offset
   })
-  setOp('CLD', 0xd8, 1, (cpu) => {  // CLD: BCD to normal mode
+  setOp('CLD', 0xd8, 1, 2, (cpu) => {  // CLD: BCD to normal mode
     // not implemented on NES
   })
-  setOp('INX', 0xe8, 1, (cpu) => {  // INX: Increment X
+  setOp('INX', 0xe8, 1, 2, (cpu) => {  // INX: Increment X
     cpu.x = inc8(cpu.x)
     cpu.setFlag(cpu.x)
   })
