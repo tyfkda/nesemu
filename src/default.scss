@@ -3,3 +3,15 @@ $BG_COLOR: #ddd;
 body {
   background-color: $BG_COLOR;
 }
+
+.console {
+  width: 100%;
+  font-family: monospace;
+  font-size: 14px;
+}
+
+.reg {
+  text-align: right;
+  font-family:monospace;
+  font-size: 14px;
+}
