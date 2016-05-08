@@ -19,22 +19,42 @@ function showCpuStatus(cpu: Cpu6502): void {
   e('reg-p').value = Util.hex(cpu.p, 2)
 }
 
-function putConsole(line) {
-  const cons = <HTMLTextAreaElement>document.getElementById('console')
-  cons.value += `${line}\n`
-  cons.scrollTop = cons.scrollHeight
-}
+let putConsole, clearConsole
+!(function() {
+  const lines = []
+  const MAX_LINE = 100
+  putConsole = function(line) {
+    const cons = <HTMLTextAreaElement>document.getElementById('console')
+    lines.push(line)
+    if (lines.length > MAX_LINE)
+      lines.shift()
+    cons.value = lines.join('\n')
+    cons.scrollTop = cons.scrollHeight
+  }
 
-function clearConsole() {
-  const cons = <HTMLTextAreaElement>document.getElementById('console')
-  cons.value = ''
-}
+  clearConsole = function() {
+    const cons = <HTMLTextAreaElement>document.getElementById('console')
+    cons.value = ''
+    lines.length = 0
+  }
+})()
 
 function dumpCpu(cpu: Cpu6502) {
   const h2 = (x) => Util.hex(x, 2)
   const h4 = (x) => Util.hex(x, 4)
   const op = cpu.read8(cpu.pc)
-  const line = `${h4(cpu.pc)}: ${h2(op)}  a=${h2(cpu.a)} x=${h2(cpu.x)} y=${h2(cpu.y)}, s=${h2(cpu.s)}`
+  const inst = cpu.getInst(op) || {
+    mnemonic: '???',
+    bytes: 1,
+  }
+
+  const MAX_BYTES = 4
+  const bins = new Array(MAX_BYTES)
+  for (let i = 0; i < inst.bytes; ++i)
+    bins[i] = h2(cpu.read8(cpu.pc + i))
+  for (let i = inst.bytes; i < MAX_BYTES; ++i)
+    bins[i] = '  '
+  const line = `${h4(cpu.pc)}: ${bins.join(' ')} ${inst.mnemonic}`
   putConsole(line)
   showCpuStatus(cpu)
 }

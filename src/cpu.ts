@@ -81,106 +81,26 @@ export class Cpu6502 {
     this.p = setReset(this.p, value, NEGATIVE_FLAG)
   }
 
-  step() {
-    const op = this.read8(this.pc++)
-    switch (op) {
-    case 0x10:  // BPL: Branch plus
-      {
-        const offset = this.readOffset()
-        if ((this.p & NEGATIVE_FLAG) == 0)
-          this.pc += offset
-      }
-      break
-    case 0x2c:  // BIT: Check A bit
-      {
-        const adr = this.readAdr()
-        const value = this.read8(adr)
-        const result = this.a & value
-        this.setZero(result == 0)
-        this.p = (this.p & ~(OVERFLOW_FLAG | NEGATIVE_FLAG)) | result & (OVERFLOW_FLAG | NEGATIVE_FLAG)
-      }
-      break
-    case 0x78:  // SEI: Disable IRQ
-      // TODO: implement
-      break
-    case 0x85:  // STA: Zeropage
-      {
-        const adr = this.read8(this.pc++)
-        this.write8(adr, this.a)
-      }
-      break
-    case 0x8d:  // STA: StoreA, Absolute
-      {
-        const adr = this.readAdr()
-        this.push16(this.pc - 1)
-        this.pc = adr
-      }
-      break
-    case 0x8c:  // STY: StoreY, Absolute
-      {
-        const adr = this.readAdr()
-        this.write8(adr, this.y)
-      }
-      break
-    case 0x8e:  // STX: StoreX, Absolute
-      {
-        const adr = this.readAdr()
-        this.write8(adr, this.x)
-      }
-      break
-    case 0x9a:  // TXS: Transfer from X to S
-      this.s = this.x
-      break
-    case 0x9d:  // STA: StoreA, Absolute, X
-      {
-        const adr = (this.readAdr() + this.x) & 0xffff
-        this.write8(adr, this.a)
-      }
-      break
-    case 0xa0:  // LDY: LoadY, immediate
-      this.y = this.read8(this.pc++)
-      break
-    case 0xa2:  // LDX: LoadX, immediate
-      this.x = this.read8(this.pc++)
-      break
-    case 0xa9:  // LDA: LoadA, Immediate
-      this.a = this.read8(this.pc++)
-      break
-    case 0xad:  // LDA: LoadA, Absolute
-      {
-        const adr = this.readAdr()
-        this.a = this.read8(adr)
-      }
-      break
-    case 0xcd:  // CMP: Compoare A, Absolute
-      {
-        const adr = this.readAdr()
-        this.compoare(this.read8(adr))
-      }
-      break
-    case 0xd0:  // BNE: Branch not equal
-      {
-        const offset = this.readOffset()
-        if ((this.p & ZERO_FLAG) == 0)
-          this.pc += offset
-      }
-      break
-    case 0xd8:  // CLD: BCD to normal mode (not implemented on NES)
-      break
-    case 0xe8:  // INX: Increment X
-      this.x = inc8(this.x)
-      break
-    default:
-      console.error(`Unhandled OPCODE, ${hex(this.pc - 1, 4)}: ${hex(op, 2)}`)
-      process.exit(1)
-      break
-    }
+  getInst(opcode) {
+    return kInstTable[opcode]
   }
 
-  compoare(value) {
-    const dif = this.a - value
-    this.setZero(dif == 0)
-    this.setNegative((dif & 0x80) != 0)
+  step() {
+    this.write8(0x2002, 0x80)  // 0x2002=PPU status register, bit7=vblank
+
+    const op = this.read8(this.pc++)
+    const inst = this.getInst(op)
+    if (inst == null) {
+      console.error(`Unhandled OPCODE, ${hex(this.pc - 1, 4)}: ${hex(op, 2)}`)
+      process.exit(1)
+      return
+    }
+    inst.func(this)
+  }
+
+  setFlag(value) {
+    this.setZero(value == 0)
+    this.setNegative((value & 0x80) != 0)
   }
 
   read8(adr: number): number {
@@ -204,7 +124,7 @@ export class Cpu6502 {
   // Read offset(+/-) from pc.
   readOffset(): number {
     const value = this.read8(this.pc++)
-    return value < 0x80 ? value : 0x100 - value
+    return value < 0x80 ? value : value - 0x0100
   }
 
   write8(adr: number, value: number): void {
@@ -220,3 +140,91 @@ export class Cpu6502 {
     this.s = dec8(s)
   }
 }
+
+const kInstTable = (() => {
+  function setOp(mnemonic, opcode, bytes, func) {
+    tbl[opcode] = {
+      func,
+      mnemonic,
+      bytes,
+    }
+  }
+
+  const tbl = []
+
+  setOp('BPL', 0x10, 2, (cpu) => {
+    const offset = cpu.readOffset()
+    if ((cpu.p & NEGATIVE_FLAG) == 0)
+      cpu.pc += offset
+  })
+  setOp('BIT', 0x2c, 3, (cpu) => {  // BIT: Check A bit, Absolute
+    const adr = cpu.readAdr()
+    const value = cpu.read8(adr)
+    const result = cpu.a & value
+    cpu.setFlag(result)
+  })
+  setOp('SEI', 0x78, 1, (cpu) => {  // SEI: Disable IRQ
+    // TODO: implement
+  })
+  setOp('STA', 0x85, 2, (cpu) => {  // STA: Zeropage
+    const adr = cpu.read8(cpu.pc++)
+    cpu.write8(adr, cpu.a)
+  })
+  setOp('TXA', 0x8a, 1, (cpu) => {  // TXS: Transfer from X to A
+    cpu.a = cpu.x
+  })
+  setOp('STY', 0x8c, 3, (cpu) => {  // STY: StoreY, Absolute
+    const adr = cpu.readAdr()
+    cpu.write8(adr, cpu.y)
+  })
+  setOp('STA', 0x8d, 3, (cpu) => {  // STA: StoreA, Absolute
+    const adr = cpu.readAdr()
+    cpu.write8(adr, cpu.a)
+  })
+  setOp('STX', 0x8e, 3, (cpu) => {  // STX: StoreX, Absolute
+    const adr = cpu.readAdr()
+    cpu.write8(adr, cpu.x)
+  })
+  setOp('STA', 0x95, 2, (cpu) => {  // STA: Zeropage, X
+    const adr = (cpu.read8(cpu.pc++) + cpu.x) & 0xff
+    cpu.write8(adr, cpu.a)
+  })
+  setOp('TXS', 0x9a, 1, (cpu) => {  // TXS: Transfer from X to S
+    cpu.s = cpu.x
+  })
+  setOp('STA', 0x9d, 3, (cpu) => {  // STA: StoreA, Absolute, X
+    const adr = (cpu.readAdr() + cpu.x) & 0xffff
+    cpu.write8(adr, cpu.a)
+  })
+  setOp('LDY', 0xa0, 2, (cpu) => {  // LDY: LoadY, immediate
+    cpu.y = cpu.read8(cpu.pc++)
+  })
+  setOp('LDX', 0xa2, 2, (cpu) => {  // LDX: LoadX, immediate
+    cpu.x = cpu.read8(cpu.pc++)
+  })
+  setOp('LDA', 0xa9, 2, (cpu) => {  // LDA: LoadA, Immediate
+    cpu.a = cpu.read8(cpu.pc++)
+  })
+  setOp('LDA', 0xad, 3, (cpu) => {  // LDA: LoadA, Absolute
+    const adr = cpu.readAdr()
+    cpu.a = cpu.read8(adr)
+  })
+  setOp('CMP', 0xcd, 3, (cpu) => {  // CMP: Compoare A, Absolute
+    const adr = cpu.readAdr()
+    cpu.setFlag(cpu.a - cpu.read8(adr))
+  })
+  setOp('BNE', 0xd0, 2, (cpu) => {  // BNE: Branch not equal
+    const offset = cpu.readOffset()
+    if ((cpu.p & ZERO_FLAG) == 0)
+      cpu.pc += offset
+  })
+  setOp('CLD', 0xd8, 1, (cpu) => {  // CLD: BCD to normal mode
+    // not implemented on NES
+  })
+  setOp('INX', 0xe8, 1, (cpu) => {  // INX: Increment X
+    cpu.x = inc8(cpu.x)
+    cpu.setFlag(cpu.x)
+  })
+
+  return tbl
+})()
