@@ -126,6 +126,8 @@ export class Cpu6502 {
     this.readerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
     this.writerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
     this.cycleCount = 0
+
+    this.a = this.x = this.y = this.s = 0
   }
 
   setReadMemory(start, end, func: (adr: number) => number) {
@@ -143,11 +145,8 @@ export class Cpu6502 {
   }
 
   public reset() {
-    this.a = 0
-    this.x = 0
-    this.y = 0
-    this.p = RESERVED_FLAG | IRQBLK_FLAG
-    this.s = 0
+    this.p = IRQBLK_FLAG | BREAK_FLAG | RESERVED_FLAG
+    this.s = (this.s - 3) & 0xff
     this.pc = this.read16(0xfffc)
     this.cycleCount = 0
   }

@@ -1,4 +1,5 @@
 import {Cpu6502} from './cpu.ts'
+import {Ppu} from './ppu.ts'
 
 const WIDTH = 256
 const HEIGHT = 240
@@ -15,7 +16,7 @@ function triggerCycle(count, prev, curr) {
 export class NesEmu {
   public cpu: Cpu6502
   public ram: Uint8Array
-  public ppuRegs: Uint8Array
+  public ppu: Ppu
 
   private romData: Uint8Array
   private context: CanvasRenderingContext2D
@@ -30,7 +31,7 @@ export class NesEmu {
   constructor(private canvas: HTMLCanvasElement) {
     this.cpu = new Cpu6502()
     this.ram = new Uint8Array(RAM_SIZE)
-    this.ppuRegs = new Uint8Array(8)
+    this.ppu = new Ppu()
     this.setMemoryMap()
 
     this.canvas.width = WIDTH
@@ -46,7 +47,7 @@ export class NesEmu {
 
   public reset() {
     this.cpu.reset()
-    this.clearVBlank()
+    this.ppu.reset()
   }
 
   public step() {
@@ -55,11 +56,11 @@ export class NesEmu {
     const currCount = this.cpu.cycleCount
 
     if (triggerCycle(VBLANK_START, prevCount, currCount)) {
-      this.setVBlank()
+      this.ppu.setVBlank()
       this.interruptVBlank()
     }
     if (triggerCycle(VBLANK_END, prevCount, currCount)) {
-      this.clearVBlank()
+      this.ppu.clearVBlank()
     }
     if (triggerCycle(VRETURN, prevCount, currCount)) {
       this.cpu.cycleCount -= VRETURN
@@ -79,11 +80,11 @@ export class NesEmu {
 
     cpu.setReadMemory(0x2000, 0x3fff, (adr) => {  // PPU
       const reg = adr & 7
-      return this.ppuRegs[reg]
+      return this.ppu.read(reg)
     })
     cpu.setWriteMemory(0x2000, 0x3fff, (adr, value) => {  // PPU
       const reg = adr & 7
-      this.ppuRegs[reg] = value
+      this.ppu.write(reg, value)
     })
 
     cpu.setWriteMemory(0x4000, 0x5fff, (adr, value) => {  // APU
@@ -91,15 +92,8 @@ export class NesEmu {
     })
   }
 
-  private setVBlank() {
-    this.ppuRegs[2] |= 0x80
-  }
-  private clearVBlank() {
-    this.ppuRegs[2] &= ~0x80
-  }
-
   private interruptVBlank() {
-    if ((this.ppuRegs[0] & 0x80) == 0)
+    if (!this.ppu.interruptEnable)
       return
     this.interruptNmi()
   }
