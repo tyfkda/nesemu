@@ -1,3 +1,5 @@
+// PPU: Picutre Processing Unit
+
 const REGISTER_COUNT = 8
 
 export class Ppu {

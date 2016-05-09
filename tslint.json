@@ -58,7 +58,7 @@
       "trace"
     ],
     "no-construct": true,
-    "no-constructor-vars": true,
+    "no-constructor-vars": false,
     "no-debugger": true,
     "no-duplicate-key": true,
     "no-duplicate-variable": true,
@@ -70,8 +70,8 @@
       true,
       "check-function-in-method"
     ],
-    "no-null-keyword": true,
-    "no-reference": true,
+    "no-null-keyword": false,
+    "no-reference": false,
     "no-require-imports": true,
     "no-shadowed-variable": true,
     "no-string-literal": true,

@@ -1,8 +1,9 @@
-import {NesEmu} from './nesemu.ts'
+///<reference path="../decl/patch.d.ts" />
 
-import {Cpu6502} from './cpu.ts'
+import {Nes} from './nes/nes.ts'
+import {Cpu6502} from './nes/cpu.ts'
 import {kRomData} from './,romdata.ts'
-import {Util} from './util.ts'
+import {Util} from './nes/util.ts'
 
 function loadPrgRom(romData: number[]): Uint8Array {
   const prg = romData.slice(16, 16 + 16 * 1024)
@@ -63,10 +64,10 @@ function dumpCpu(cpu: Cpu6502) {
 function nesTest() {
   const root = document.getElementById('nesroot')
   const canvas = document.createElement('canvas')
-  canvas.style['imageRendering'] = 'pixelated'
+  canvas.style.imageRendering = 'pixelated'
   root.appendChild(canvas)
 
-  const nes = NesEmu.create(canvas)
+  const nes = Nes.create(canvas)
 
   const prgRom = loadPrgRom(kRomData)
   nes.setRomData(prgRom)

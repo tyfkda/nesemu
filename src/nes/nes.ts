@@ -1,3 +1,5 @@
+// NES: Nintendo Entertainment System
+
 import {Cpu6502} from './cpu.ts'
 import {Ppu} from './ppu.ts'
 
@@ -13,7 +15,7 @@ function triggerCycle(count, prev, curr) {
   return prev < count && curr >= count
 }
 
-export class NesEmu {
+export class Nes {
   public cpu: Cpu6502
   public ram: Uint8Array
   public ppu: Ppu
@@ -22,10 +24,10 @@ export class NesEmu {
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
-  public static create(canvas: HTMLCanvasElement): NesEmu {
-    const nesEmu = new NesEmu(canvas)
-    nesEmu.testCanvas()
-    return nesEmu
+  public static create(canvas: HTMLCanvasElement): Nes {
+    const nes = new Nes(canvas)
+    nes.testCanvas()
+    return nes
   }
 
   constructor(private canvas: HTMLCanvasElement) {

@@ -1,3 +1,5 @@
+// CPU: MOS 6502
+
 import {Util} from './util.ts'
 
 declare var process: any
@@ -79,6 +81,7 @@ enum OpType {
   BIT,
   CMP,
   CPX,
+  CPY,
 
   JSR,
   RTS,
@@ -130,44 +133,44 @@ export class Cpu6502 {
     this.a = this.x = this.y = this.s = 0
   }
 
-  setReadMemory(start, end, func: (adr: number) => number) {
+  public setReadMemory(start, end, func: (adr: number) => number): void {
     const startBlock = Math.floor(start / BLOCK_SIZE)
     const endBlock = Math.floor(end / BLOCK_SIZE)
     for (let i = startBlock; i <= endBlock; ++i)
       this.readerFuncTable[i] = func
   }
 
-  setWriteMemory(start, end, func: (adr: number, value: number) => void) {
+  public setWriteMemory(start, end, func: (adr: number, value: number) => void): void {
     const startBlock = Math.floor(start / BLOCK_SIZE)
     const endBlock = Math.floor(end / BLOCK_SIZE)
     for (let i = startBlock; i <= endBlock; ++i)
       this.writerFuncTable[i] = func
   }
 
-  public reset() {
+  public reset(): void {
     this.p = IRQBLK_FLAG | BREAK_FLAG | RESERVED_FLAG
     this.s = (this.s - 3) & 0xff
     this.pc = this.read16(0xfffc)
     this.cycleCount = 0
   }
 
-  public setZero(value) {
+  public setZero(value): void {
     this.p = setReset(this.p, value, ZERO_FLAG)
   }
 
-  public setOverFlow(value) {
+  public setOverFlow(value): void {
     this.p = setReset(this.p, value, OVERFLOW_FLAG)
   }
 
-  public setNegative(value) {
+  public setNegative(value): void {
     this.p = setReset(this.p, value, NEGATIVE_FLAG)
   }
 
-  public getInst(opcode) {
+  public getInst(opcode): Instruction {
     return kInstTable[opcode]
   }
 
-  public step() {
+  public step(): void {
     let pc = this.pc
     const op = this.read8(pc++)
     const inst = this.getInst(op)
@@ -203,12 +206,12 @@ export class Cpu6502 {
     return this.writerFuncTable[block](adr, value)
   }
 
-  public push(value: number) {
+  public push(value: number): void {
     this.write8(0x0100 + this.s, value)
     this.s = dec8(this.s)
   }
 
-  public push16(value: number) {
+  public push16(value: number): void {
     let s = this.s
     this.write8(0x0100 + s, value >> 8)
     s = dec8(s)
@@ -216,12 +219,12 @@ export class Cpu6502 {
     this.s = dec8(s)
   }
 
-  public pop(value: number) {
+  public pop(value: number): number {
     this.s = inc8(this.s)
     return this.read8(0x0100 + this.s)
   }
 
-  public pop16(value: number) {
+  public pop16(value: number): number {
     let s = this.s
     s = inc8(s)
     const l = this.read8(0x0100 + s)
@@ -232,7 +235,7 @@ export class Cpu6502 {
   }
 
   // Non-maskable interrupt
-  public nmi() {
+  public nmi(): void {
     this.push16(this.pc)
     this.push(this.p)
     this.pc = this.read16(0xfffa)
@@ -306,12 +309,8 @@ const kInstTable: Instruction[] = (() => {
   setOp('CMP', 0xcd, OpType.CMP, Addressing.ABSOLUTE, 3, 4)
   // CPX
   setOp('CPX', 0xe0, OpType.CPX, Addressing.IMMEDIATE, 2, 2)
-//  // CPY
-//  setOp('CPY', 0xcc, Addressing.ABSOLUTE, 3, 4, (cpu, pc, addressing) => {  // CPY: Compoare Y, Absolute
-//    const adr = cpu.read16(pc)
-//    const value = cpu.read8(adr)
-//    cpu.setFlag(cpu.y - value)
-//  })
+  // CPY
+  setOp('CPY', 0xcc, OpType.CPY, Addressing.ABSOLUTE, 3, 4)
   // INX
   setOp('INX', 0xe8, OpType.INX, Addressing.IMPLIED, 1, 2)
   // INY
@@ -489,6 +488,10 @@ const kOpTypeTable = (() => {
   set(OpType.CPX, (cpu, pc, addressing) => {
     const value = load(cpu, pc, addressing)
     cpu.setFlag(cpu.x - value)
+  })
+  set(OpType.CPY, (cpu, pc, addressing) => {
+    const value = load(cpu, pc, addressing)
+    cpu.setFlag(cpu.y - value)
   })
 
   set(OpType.JSR, (cpu, pc, _) => {
