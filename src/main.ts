@@ -63,7 +63,7 @@ function dumpCpu(cpu: Cpu6502) {
 function nesTest() {
   const root = document.getElementById('nesroot')
   const canvas = document.createElement('canvas')
-  canvas.style.imageRendering = 'pixelated'
+  canvas.style['imageRendering'] = 'pixelated'
   root.appendChild(canvas)
 
   const nes = NesEmu.create(canvas)
