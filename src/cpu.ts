@@ -18,6 +18,10 @@ function dec8(value) {
   return (value - 1) & 0xff
 }
 
+function toSigned(value: number): number {
+  return value < 0x80 ? value : value - 0x0100
+}
+
 // const CARRY_BIT = 0
 const ZERO_BIT = 1
 const IRQBLK_BIT = 2
@@ -46,6 +50,7 @@ enum Addressing {
   ABSOLUTE,
   ABSOLUTE_X,
   ABSOLUTE_Y,
+  INDIRECT_X,
   INDIRECT_Y,
   RELATIVE,
 }
@@ -63,7 +68,12 @@ enum OpType {
   TXS,
 
   INX,
+  INY,
   INC,
+
+  DEX,
+  DEY,
+  DEC,
 
   AND,
   BIT,
@@ -72,7 +82,9 @@ enum OpType {
 
   JSR,
   RTS,
+  RTI,
   BPL,
+  BMI,
   BNE,
   BEQ,
 
@@ -157,7 +169,8 @@ export class Cpu6502 {
   }
 
   public step() {
-    const op = this.read8(this.pc++)
+    let pc = this.pc
+    const op = this.read8(pc++)
     const inst = this.getInst(op)
     if (inst == null) {
       console.error(`Unhandled OPCODE, ${hex(this.pc - 1, 4)}: ${hex(op, 2)}`)
@@ -165,7 +178,8 @@ export class Cpu6502 {
       return
     }
 
-    kOpTypeTable[inst.opType](this, inst.addressing)
+    this.pc += inst.bytes
+    kOpTypeTable[inst.opType](this, pc, inst.addressing)
     this.cycleCount += inst.cycle
   }
 
@@ -185,19 +199,6 @@ export class Cpu6502 {
     return (hi << 8) | lo
   }
 
-  // Read 2byte from pc.
-  public readAdr(): number {
-    const adr = this.read16(this.pc)
-    this.pc += 2
-    return adr
-  }
-
-  // Read offset(+/-) from pc.
-  public readOffset(): number {
-    const value = this.read8(this.pc++)
-    return value < 0x80 ? value : value - 0x0100
-  }
-
   public write8(adr: number, value: number): void {
     const block = Math.floor(adr / BLOCK_SIZE)
     return this.writerFuncTable[block](adr, value)
@@ -214,6 +215,11 @@ export class Cpu6502 {
     s = dec8(s)
     this.write8(0x0100 + s, value & 0xff)
     this.s = dec8(s)
+  }
+
+  public pop(value: number) {
+    this.s = inc8(this.s)
+    return this.read8(0x0100 + this.s)
   }
 
   public pop16(value: number) {
@@ -250,26 +256,43 @@ const kInstTable: Instruction[] = (() => {
   }
 
   // LDA
-  setOp('LDA', 0xa5, OpType.LDA, Addressing.ZEROPAGE, 2, 3)
   setOp('LDA', 0xa9, OpType.LDA, Addressing.IMMEDIATE, 2, 2)
+  setOp('LDA', 0xa5, OpType.LDA, Addressing.ZEROPAGE, 2, 3)
+  setOp('LDA', 0xb5, OpType.LDA, Addressing.ZEROPAGE_X, 2, 4)
   setOp('LDA', 0xad, OpType.LDA, Addressing.ABSOLUTE, 3, 4)
   setOp('LDA', 0xbd, OpType.LDA, Addressing.ABSOLUTE_X, 3, 4)
+  setOp('LDA', 0xb9, OpType.LDA, Addressing.ABSOLUTE_Y, 3, 4)
+  setOp('LDA', 0xa1, OpType.LDA, Addressing.INDIRECT_X, 2, 6)
   setOp('LDA', 0xb1, OpType.LDA, Addressing.INDIRECT_Y, 2, 5)
 
   // STA
   setOp('STA', 0x85, OpType.STA, Addressing.ZEROPAGE, 2, 3)
-  setOp('STA', 0x8d, OpType.STA, Addressing.ABSOLUTE, 3, 4)
   setOp('STA', 0x95, OpType.STA, Addressing.ZEROPAGE_X, 2, 4)
+  setOp('STA', 0x8d, OpType.STA, Addressing.ABSOLUTE, 3, 4)
   setOp('STA', 0x9d, OpType.STA, Addressing.ABSOLUTE_X, 3, 5)
+  setOp('STA', 0x99, OpType.STA, Addressing.ABSOLUTE_Y, 3, 5)
+  setOp('STA', 0x95, OpType.STA, Addressing.ZEROPAGE_X, 2, 4)
+  setOp('STA', 0x81, OpType.STA, Addressing.INDIRECT_X, 2, 6)
+  setOp('STA', 0x91, OpType.STA, Addressing.INDIRECT_Y, 2, 6)
   // LDX
   setOp('LDX', 0xa2, OpType. LDX, Addressing.IMMEDIATE, 2, 2)
+  setOp('LDX', 0xa6, OpType. LDX, Addressing.ZEROPAGE, 2, 3)
+  setOp('LDX', 0xb6, OpType. LDX, Addressing.ZEROPAGE_Y, 2, 4)
+  setOp('LDX', 0xae, OpType. LDX, Addressing.ABSOLUTE, 3, 4)
+  setOp('LDX', 0xbe, OpType. LDX, Addressing.ABSOLUTE_Y, 3, 4)
   // STX
   setOp('STX', 0x86, OpType.STX, Addressing.ZEROPAGE, 2, 3)
+  setOp('STX', 0x96, OpType.STX, Addressing.ZEROPAGE_Y, 2, 4)
   setOp('STX', 0x8e, OpType.STX, Addressing.ABSOLUTE, 3, 4)
   // LDY
   setOp('LDY', 0xa0, OpType.LDY, Addressing.IMMEDIATE, 2, 2)
+  setOp('LDY', 0xa4, OpType.LDY, Addressing.ZEROPAGE, 2, 3)
+  setOp('LDY', 0xb4, OpType.LDY, Addressing.ZEROPAGE_X, 2, 4)
+  setOp('LDY', 0xac, OpType.LDY, Addressing.ABSOLUTE, 3, 4)
+  setOp('LDY', 0xbc, OpType.LDY, Addressing.ABSOLUTE_X, 3, 4)
   // STY
   setOp('STY', 0x84, OpType.STY, Addressing.ZEROPAGE, 2, 3)
+  setOp('STY', 0x94, OpType.STY, Addressing.ZEROPAGE_X, 2, 4)
   setOp('STY', 0x8c, OpType.STY, Addressing.ABSOLUTE, 3, 4)
   //// T??
   setOp('TAX', 0xaa, OpType.TAX, Addressing.IMPLIED, 1, 2)
@@ -285,22 +308,40 @@ const kInstTable: Instruction[] = (() => {
   // CPX
   setOp('CPX', 0xe0, OpType.CPX, Addressing.IMMEDIATE, 2, 2)
 //  // CPY
-//  setOp('CPY', 0xcc, Addressing.ABSOLUTE, 3, 4, (cpu) => {  // CPY: Compoare Y, Absolute
-//    const adr = cpu.readAdr()
+//  setOp('CPY', 0xcc, Addressing.ABSOLUTE, 3, 4, (cpu, pc, addressing) => {  // CPY: Compoare Y, Absolute
+//    const adr = cpu.read16(pc)
 //    const value = cpu.read8(adr)
 //    cpu.setFlag(cpu.y - value)
 //  })
   // INX
   setOp('INX', 0xe8, OpType.INX, Addressing.IMPLIED, 1, 2)
+  // INY
+  setOp('INY', 0xc8, OpType.INY, Addressing.IMPLIED, 1, 2)
   // INC
   setOp('INC', 0xe6, OpType.INC, Addressing.ZEROPAGE, 2, 5)
+  setOp('INC', 0xf6, OpType.INC, Addressing.ZEROPAGE_X, 2, 6)
+  setOp('INC', 0xee, OpType.INC, Addressing.ABSOLUTE, 3, 6)
+  setOp('INC', 0xfe, OpType.INC, Addressing.ABSOLUTE_X, 3, 7)
+
+  // DEX
+  setOp('DEX', 0xca, OpType.DEX, Addressing.IMPLIED, 1, 2)
+  // DEY
+  setOp('DEY', 0x88, OpType.DEY, Addressing.IMPLIED, 1, 2)
+  // DEC
+  setOp('DEC', 0xc6, OpType.DEC, Addressing.ZEROPAGE, 2, 5)
+  setOp('DEC', 0xd6, OpType.DEC, Addressing.ZEROPAGE_X, 2, 6)
+  setOp('DEC', 0xce, OpType.DEC, Addressing.ABSOLUTE, 3, 6)
+  setOp('DEC', 0xde, OpType.DEC, Addressing.ABSOLUTE_X, 3, 7)
 
   // JSR
   setOp('JSR', 0x20, OpType.JSR, Addressing.ABSOLUTE, 3, 6)
   // RTS
   setOp('RTS', 0x60, OpType.RTS, Addressing.IMPLIED, 1, 6)
+  // RTI
+  setOp('RTI', 0x40, OpType.RTI, Addressing.IMPLIED, 1, 6)
   // Branch
   setOp('BPL', 0x10, OpType.BPL, Addressing.RELATIVE, 2, 2)
+  setOp('BMI', 0x30, OpType.BMI, Addressing.RELATIVE, 2, 2)
   setOp('BNE', 0xd0, OpType.BNE, Addressing.RELATIVE, 2, 2)
   setOp('BEQ', 0xf0, OpType.BEQ, Addressing.RELATIVE, 2, 2)
 
@@ -317,24 +358,24 @@ const kOpTypeTable = (() => {
     tbl[opType] = func
   }
 
-  function load(cpu: Cpu6502, addressing: Addressing) {
+  function load(cpu: Cpu6502, pc: number, addressing: Addressing) {
     let adr
     switch (addressing) {
     case Addressing.IMMEDIATE:
-      adr = cpu.pc++
+      adr = pc
       break
     case Addressing.ZEROPAGE:
-      adr = cpu.read8(cpu.pc++)
+      adr = cpu.read8(pc)
       break
     case Addressing.ABSOLUTE:
-      adr = cpu.readAdr()
+      adr = cpu.read16(pc)
       break
     case Addressing.ABSOLUTE_X:
-      adr = (cpu.readAdr() + cpu.x) & 0xffff
+      adr = (cpu.read16(pc) + cpu.x) & 0xffff
       break
     case Addressing.INDIRECT_Y:
       {
-        const zeroPageAdr = cpu.read8(cpu.pc++)
+        const zeroPageAdr = cpu.read8(pc)
         adr = (cpu.read16(zeroPageAdr) + cpu.y) & 0xffff
       }
       break
@@ -345,20 +386,20 @@ const kOpTypeTable = (() => {
     return cpu.read8(adr)
   }
 
-  function store(cpu: Cpu6502, addressing: Addressing, value: number) {
+  function store(cpu: Cpu6502, pc: number, addressing: Addressing, value: number) {
     let adr
     switch (addressing) {
     case Addressing.ZEROPAGE:
-      adr = cpu.read8(cpu.pc++)
+      adr = cpu.read8(pc)
       break
     case Addressing.ZEROPAGE_X:
-      adr = (cpu.read8(cpu.pc++) + cpu.x) & 0x00ff
+      adr = (cpu.read8(pc) + cpu.x) & 0x00ff
       break
     case Addressing.ABSOLUTE:
-      adr = cpu.readAdr()
+      adr = cpu.read16(pc)
       break
     case Addressing.ABSOLUTE_X:
-      adr = (cpu.readAdr() + cpu.x) & 0xffff
+      adr = (cpu.read16(pc) + cpu.x) & 0xffff
       break
     default:
       console.error(`Illegal store: ${addressing}`)
@@ -367,103 +408,128 @@ const kOpTypeTable = (() => {
     cpu.write8(adr, value)
   }
 
-  set(OpType.LDA, (cpu, addressing) => {
-    cpu.a = load(cpu, addressing)
+  set(OpType.LDA, (cpu, pc, addressing) => {
+    cpu.a = load(cpu, pc, addressing)
     cpu.setFlag(cpu.a)
   })
-  set(OpType.STA, (cpu, addressing) => {
-    store(cpu, addressing, cpu.a)
+  set(OpType.STA, (cpu, pc, addressing) => {
+    store(cpu, pc, addressing, cpu.a)
   })
 
-  set(OpType.LDX, (cpu, addressing) => {
-    cpu.x = load(cpu, addressing)
+  set(OpType.LDX, (cpu, pc, addressing) => {
+    cpu.x = load(cpu, pc, addressing)
     cpu.setFlag(cpu.x)
   })
-  set(OpType.STX, (cpu, addressing) => {
-    store(cpu, addressing, cpu.x)
+  set(OpType.STX, (cpu, pc, addressing) => {
+    store(cpu, pc, addressing, cpu.x)
   })
 
-  set(OpType.LDY, (cpu, addressing) => {
-    cpu.y = load(cpu, addressing)
+  set(OpType.LDY, (cpu, pc, addressing) => {
+    cpu.y = load(cpu, pc, addressing)
     cpu.setFlag(cpu.y)
   })
-  set(OpType.STY, (cpu, addressing) => {
-    store(cpu, addressing, cpu.y)
+  set(OpType.STY, (cpu, pc, addressing) => {
+    store(cpu, pc, addressing, cpu.y)
   })
 
-  set(OpType.TAX, (cpu, _) => {
+  set(OpType.TAX, (cpu, _pc, _) => {
     cpu.x = cpu.a
   })
-  set(OpType.TXA, (cpu, _) => {
+  set(OpType.TXA, (cpu, _pc, _) => {
     cpu.a = cpu.x
   })
-  set(OpType.TXS, (cpu, _) => {
+  set(OpType.TXS, (cpu, _pc, _) => {
     cpu.s = cpu.x
   })
 
-  set(OpType.INX, (cpu, _) => {
+  set(OpType.INX, (cpu, _pc, _) => {
     cpu.x = inc8(cpu.x)
     cpu.setFlag(cpu.x)
   })
-  set(OpType.INC, (cpu, addressing) => {
-    // Calling `load` causes no side effect,
-    // because INC only takes ZEROPAGE or ABSOLUTE
-    const value = inc8(load(cpu, addressing))
-    store(cpu, addressing, value)
+  set(OpType.INY, (cpu, _pc, _) => {
+    cpu.x = inc8(cpu.y)
+    cpu.setFlag(cpu.y)
+  })
+  set(OpType.INC, (cpu, pc, addressing) => {
+    const value = inc8(load(cpu, pc, addressing))
+    store(cpu, pc, addressing, value)
     cpu.setFlag(value)
   })
 
-  set(OpType.AND, (cpu, addressing) => {  // AND: Immediate
-    const value = load(cpu, addressing)
+  set(OpType.DEX, (cpu, _pc, _) => {
+    cpu.x = dec8(cpu.x)
+    cpu.setFlag(cpu.x)
+  })
+  set(OpType.DEY, (cpu, _pc, _) => {
+    cpu.x = dec8(cpu.y)
+    cpu.setFlag(cpu.y)
+  })
+  set(OpType.DEC, (cpu, pc, addressing) => {
+    const value = dec8(load(cpu, pc, addressing))
+    store(cpu, pc, addressing, value)
+    cpu.setFlag(value)
+  })
+
+  set(OpType.AND, (cpu, pc, addressing) => {  // AND: Immediate
+    const value = load(cpu, pc, addressing)
     cpu.a &= value
     cpu.setFlag(cpu.a)
   })
-  set(OpType.BIT, (cpu, addressing) => {
-    const value = load(cpu, addressing)
+  set(OpType.BIT, (cpu, pc, addressing) => {
+    const value = load(cpu, pc, addressing)
     const result = cpu.a & value
     cpu.setZero(result)
 
     const mask = NEGATIVE_FLAG | OVERFLOW_FLAG
     cpu.p = (cpu.p & ~mask) | (value & mask)
   })
-  set(OpType.CMP, (cpu, addressing) => {
-    const value = load(cpu, addressing)
+  set(OpType.CMP, (cpu, pc, addressing) => {
+    const value = load(cpu, pc, addressing)
     cpu.setFlag(cpu.a - value)
   })
-  set(OpType.CPX, (cpu, addressing) => {
-    const value = load(cpu, addressing)
+  set(OpType.CPX, (cpu, pc, addressing) => {
+    const value = load(cpu, pc, addressing)
     cpu.setFlag(cpu.x - value)
   })
 
-  set(OpType.JSR, (cpu, _) => {
-    const adr = cpu.readAdr()
-    cpu.push16(cpu.pc - 1)
+  set(OpType.JSR, (cpu, pc, _) => {
+    const adr = cpu.read16(pc)
+    cpu.push16(pc + 1)
     cpu.pc = adr
   })
-  set(OpType.RTS, (cpu, _) => {
+  set(OpType.RTS, (cpu, _pc, _) => {
     cpu.pc = cpu.pop16() + 1
   })
+  set(OpType.RTI, (cpu, pc, _) => {
+    cpu.p = cpu.pop()
+    cpu.pc = cpu.pop16()
+  })
 
-  set(OpType.BPL, (cpu, _) => {
-    const offset = cpu.readOffset()
+  set(OpType.BPL, (cpu, pc, _) => {
+    const offset = toSigned(cpu.read8(pc))
     if ((cpu.p & NEGATIVE_FLAG) === 0)
       cpu.pc += offset
   })
-  set(OpType.BNE, (cpu, _) => {
-    const offset = cpu.readOffset()
+  set(OpType.BMI, (cpu, pc, _) => {
+    const offset = toSigned(cpu.read8(pc))
+    if ((cpu.p & NEGATIVE_FLAG) !== 0)
+      cpu.pc += offset
+  })
+  set(OpType.BNE, (cpu, pc, _) => {
+    const offset = toSigned(cpu.read8(pc))
     if ((cpu.p & ZERO_FLAG) === 0)
       cpu.pc += offset
   })
-  set(OpType.BEQ, (cpu, _) => {
-    const offset = cpu.readOffset()
+  set(OpType.BEQ, (cpu, pc, _) => {
+    const offset = toSigned(cpu.read8(pc))
     if ((cpu.p & ZERO_FLAG) !== 0)
       cpu.pc += offset
   })
 
-  set(OpType.SEI, (cpu, addressing) => {  // SEI: Disable IRQ
+  set(OpType.SEI, (cpu, pc, addressing) => {  // SEI: Disable IRQ
     // TODO: implement
   })
-  set(OpType.CLD, (cpu, addressing) => {  // CLD: BCD to normal mode
+  set(OpType.CLD, (cpu, pc, addressing) => {  // CLD: BCD to normal mode
     // not implemented on NES
   })
 
