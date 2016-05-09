@@ -61,7 +61,12 @@ function dumpCpu(cpu: Cpu6502) {
 }
 
 function nesTest() {
-  const nes = NesEmu.create('nesroot')
+  const root = document.getElementById('nesroot')
+  const canvas = document.createElement('canvas')
+  canvas.style.imageRendering = 'pixelated'
+  root.appendChild(canvas)
+
+  const nes = NesEmu.create(canvas)
 
   const prgRom = loadPrgRom(kRomData)
   nes.setRomData(prgRom)

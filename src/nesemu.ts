@@ -8,13 +8,6 @@ const VBLANK_START = Math.floor(241 * 341 / 3)
 const VBLANK_END = Math.floor(261 * 341 / 3)
 const VRETURN = Math.floor(262 * 341 / 3)
 
-function createCanvas(width: number, height: number): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  return canvas
-}
-
 function triggerCycle(count, prev, curr) {
   return prev < count && curr >= count
 }
@@ -25,30 +18,26 @@ export class NesEmu {
   public ppuRegs: Uint8Array
 
   private romData: Uint8Array
-  private root: HTMLElement
-  private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
-  public static create(rootId: string): NesEmu {
-    const nesEmu = new NesEmu(rootId)
+  public static create(canvas: HTMLCanvasElement): NesEmu {
+    const nesEmu = new NesEmu(canvas)
     nesEmu.testCanvas()
     return nesEmu
   }
 
-  constructor(rootId: string) {
+  constructor(private canvas: HTMLCanvasElement) {
     this.cpu = new Cpu6502()
     this.ram = new Uint8Array(RAM_SIZE)
     this.ppuRegs = new Uint8Array(8)
     this.setMemoryMap()
 
-    this.root = document.getElementById(rootId)
-    if (this.root) {
-      this.canvas = createCanvas(WIDTH, HEIGHT)
-      this.context = this.canvas.getContext('2d')
-      this.imageData = this.context.getImageData(0, 0, WIDTH, HEIGHT)
-      this.root.appendChild(this.canvas)
-    }
+    this.canvas.width = WIDTH
+    this.canvas.height = HEIGHT
+
+    this.context = this.canvas.getContext('2d')
+    this.imageData = this.context.getImageData(0, 0, WIDTH, HEIGHT)
   }
 
   public setRomData(romData: Uint8Array) {
