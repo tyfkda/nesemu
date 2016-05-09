@@ -17,6 +17,7 @@ function showCpuStatus(cpu: Cpu6502): void {
   e('reg-y').value = Util.hex(cpu.y, 2)
   e('reg-s').value = Util.hex(cpu.s, 2)
   e('reg-p').value = Util.hex(cpu.p, 2)
+  e('cycle-count').value = String(cpu.cycleCount)
 }
 
 let putConsole, clearConsole
@@ -59,35 +60,32 @@ function dumpCpu(cpu: Cpu6502) {
   showCpuStatus(cpu)
 }
 
-function cpuTest() {
+function nesTest() {
+  const nes = NesEmu.create('nesroot')
+
   const prgRom = loadPrgRom(kRomData)
-  const cpu = new Cpu6502()
-  cpu.setRam(0)
-  cpu.setRam(1)
-  cpu.setRom(2, prgRom)
-  cpu.setRom(3, prgRom)
-  cpu.reset()
-  dumpCpu(cpu)
+  nes.setRomData(prgRom)
+  nes.reset()
+
+  dumpCpu(nes.cpu)
 
   document.getElementById('step').addEventListener('click', () => {
-    cpu.step()
-    dumpCpu(cpu)
+    nes.step()
+    dumpCpu(nes.cpu)
   })
   document.getElementById('run').addEventListener('click', () => {
     for (let i = 0; i < 100; ++i) {
-      cpu.step()
-      dumpCpu(cpu)
+      nes.step()
+      dumpCpu(nes.cpu)
     }
   })
   document.getElementById('reset').addEventListener('click', () => {
-    cpu.reset()
+    nes.reset()
     clearConsole()
-    dumpCpu(cpu)
+    dumpCpu(nes.cpu)
   })
 }
 
 window.addEventListener('load', () => {
-  NesEmu.main('nesroot')
-
-  cpuTest()
+  nesTest()
 })

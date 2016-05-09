@@ -87,6 +87,8 @@ interface Instruction {
   cycle: number
 }
 
+const BLOCK_SIZE = 0x2000
+
 export class Cpu6502 {
   public a: number  // A register
   public x: number  // X register
@@ -102,21 +104,28 @@ export class Cpu6502 {
                     //   Z: zero
                     //   C: carry
   public pc: number  // Program counter
-  private bank: Uint8Array[]
+  public cycleCount: number
+  private readerFuncTable: Function[]
+  private writerFuncTable: Function[]
 
   constructor() {
-    this.bank = new Array(4) as Uint8Array[]
+    this.readerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
+    this.writerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
+    this.cycleCount = 0
   }
 
-  public setRam(index) {
-    const zero = new Array(16 * 1024)
-    for (let i = 0; i < 16 * 1024; ++i)
-      zero[i] = 0
-    this.bank[index] = new Uint8Array(zero)
+  setReadMemory(start, end, func: (adr: number) => number) {
+    const startBlock = Math.floor(start / BLOCK_SIZE)
+    const endBlock = Math.floor(end / BLOCK_SIZE)
+    for (let i = startBlock; i <= endBlock; ++i)
+      this.readerFuncTable[i] = func
   }
 
-  public setRom(index, rom) {
-    this.bank[index] = rom
+  setWriteMemory(start, end, func: (adr: number, value: number) => void) {
+    const startBlock = Math.floor(start / BLOCK_SIZE)
+    const endBlock = Math.floor(end / BLOCK_SIZE)
+    for (let i = startBlock; i <= endBlock; ++i)
+      this.writerFuncTable[i] = func
   }
 
   public reset() {
@@ -126,6 +135,7 @@ export class Cpu6502 {
     this.p = RESERVED_FLAG
     this.s = 0
     this.pc = this.read16(0xfffc)
+    this.cycleCount = 0
   }
 
   public setZero(value) {
@@ -145,8 +155,6 @@ export class Cpu6502 {
   }
 
   public step() {
-    this.write8(0x2002, 0x80)  // 0x2002=PPU status register, bit7=vblank
-
     const op = this.read8(this.pc++)
     const inst = this.getInst(op)
     if (inst == null) {
@@ -156,6 +164,7 @@ export class Cpu6502 {
     }
 
     kOpTypeTable[inst.opType](this, inst.addressing)
+    this.cycleCount += inst.cycle
   }
 
   public setFlag(value: number) {
@@ -164,8 +173,8 @@ export class Cpu6502 {
   }
 
   public read8(adr: number): number {
-    const bank = adr >> 14
-    return this.bank[bank][adr & 0x3fff]
+    const block = Math.floor(adr / BLOCK_SIZE)
+    return this.readerFuncTable[block](adr)
   }
 
   public read16(adr: number): number {
@@ -188,8 +197,8 @@ export class Cpu6502 {
   }
 
   public write8(adr: number, value: number): void {
-    const bank = adr >> 14
-    this.bank[bank][adr & 0x3fff] = value
+    const block = Math.floor(adr / BLOCK_SIZE)
+    return this.writerFuncTable[block](adr, value)
   }
 
   public push16(value: number) {
