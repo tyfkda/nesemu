@@ -18,20 +18,20 @@ function dec8(value) {
   return (value - 1) & 0xff
 }
 
-const CARRY_BIT = 0
+// const CARRY_BIT = 0
 const ZERO_BIT = 1
-const IRQBLK_BIT = 2
-const DECIMAL_BIT = 3
-const BREAK_BIT = 4
+// const IRQBLK_BIT = 2
+// const DECIMAL_BIT = 3
+// const BREAK_BIT = 4
 const RESERVED_BIT = 5
 const OVERFLOW_BIT = 6
 const NEGATIVE_BIT = 7
 
-const CARRY_FLAG = 1 << CARRY_BIT
+// const CARRY_FLAG = 1 << CARRY_BIT
 const ZERO_FLAG = 1 << ZERO_BIT
-const IRQBLK_FLAG = 1 << IRQBLK_BIT
-const DECIMAL_FLAG = 1 << DECIMAL_BIT
-const BREAK_FLAG = 1 << BREAK_BIT
+// const IRQBLK_FLAG = 1 << IRQBLK_BIT
+// const DECIMAL_FLAG = 1 << DECIMAL_BIT
+// const BREAK_FLAG = 1 << BREAK_BIT
 const RESERVED_FLAG = 1 << RESERVED_BIT
 const OVERFLOW_FLAG = 1 << OVERFLOW_BIT
 const NEGATIVE_FLAG = 1 << NEGATIVE_BIT
@@ -88,30 +88,38 @@ interface Instruction {
 }
 
 export class Cpu6502 {
-  a: number  // A register
-  x: number  // X register
-  y: number  // Y register
-  s: number  // Stack pointer
-  p: number  // Status register [NVRBDIZC], negative, overflow, reserved, breakmode, decimal mode, irq blocked, zero, carry
-  pc: number  // Program counter
-  bank: Uint8Array[]
+  public a: number  // A register
+  public x: number  // X register
+  public y: number  // Y register
+  public s: number  // Stack pointer
+  public p: number  // Status register [NVRBDIZC],
+                    //   N: negative
+                    //   V: overflow
+                    //   R: reserved
+                    //   B: breakmode
+                    //   D: decimal mode
+                    //   I: irq blocked
+                    //   Z: zero
+                    //   C: carry
+  public pc: number  // Program counter
+  private bank: Uint8Array[]
 
   constructor() {
-    this.bank = <Uint8Array[]>new Array(4)
+    this.bank = new Array(4) as Uint8Array[]
   }
 
-  setRam(index) {
+  public setRam(index) {
     const zero = new Array(16 * 1024)
     for (let i = 0; i < 16 * 1024; ++i)
       zero[i] = 0
     this.bank[index] = new Uint8Array(zero)
   }
 
-  setRom(index, rom) {
+  public setRom(index, rom) {
     this.bank[index] = rom
   }
 
-  reset() {
+  public reset() {
     this.a = 0
     this.x = 0
     this.y = 0
@@ -120,23 +128,23 @@ export class Cpu6502 {
     this.pc = this.read16(0xfffc)
   }
 
-  setZero(value) {
+  public setZero(value) {
     this.p = setReset(this.p, value, ZERO_FLAG)
   }
 
-  setOverFlow(value) {
+  public setOverFlow(value) {
     this.p = setReset(this.p, value, OVERFLOW_FLAG)
   }
 
-  setNegative(value) {
+  public setNegative(value) {
     this.p = setReset(this.p, value, NEGATIVE_FLAG)
   }
 
-  getInst(opcode) {
+  public getInst(opcode) {
     return kInstTable[opcode]
   }
 
-  step() {
+  public step() {
     this.write8(0x2002, 0x80)  // 0x2002=PPU status register, bit7=vblank
 
     const op = this.read8(this.pc++)
@@ -150,41 +158,41 @@ export class Cpu6502 {
     kOpTypeTable[inst.opType](this, inst.addressing)
   }
 
-  setFlag(value) {
-    this.setZero(value == 0)
-    this.setNegative((value & 0x80) != 0)
+  public setFlag(value: number) {
+    this.setZero(value === 0)
+    this.setNegative((value & 0x80) !== 0)
   }
 
-  read8(adr: number): number {
+  public read8(adr: number): number {
     const bank = adr >> 14
     return this.bank[bank][adr & 0x3fff]
   }
 
-  read16(adr: number): number {
+  public read16(adr: number): number {
     const lo = this.read8(adr)
     const hi = this.read8(adr + 1)
     return (hi << 8) | lo
   }
 
   // Read 2byte from pc.
-  readAdr(): number {
+  public readAdr(): number {
     const adr = this.read16(this.pc)
     this.pc += 2
     return adr
   }
 
   // Read offset(+/-) from pc.
-  readOffset(): number {
+  public readOffset(): number {
     const value = this.read8(this.pc++)
     return value < 0x80 ? value : value - 0x0100
   }
 
-  write8(adr: number, value: number): void {
+  public write8(adr: number, value: number): void {
     const bank = adr >> 14
     this.bank[bank][adr & 0x3fff] = value
   }
 
-  push16(value: number) {
+  public push16(value: number) {
     let s = this.s
     this.write8(0x0100 + s, value >> 8)
     s = dec8(s)
@@ -192,7 +200,7 @@ export class Cpu6502 {
     this.s = dec8(s)
   }
 
-  pop16(value: number) {
+  public pop16(value: number) {
     let s = this.s
     s = inc8(s)
     const l = this.read8(0x0100 + s)
@@ -206,7 +214,8 @@ export class Cpu6502 {
 const kInstTable: Instruction[] = (() => {
   const tbl = []
 
-  function setOp(mnemonic: string, opcode: number, opType: OpType, addressing: Addressing, bytes: number, cycle: number) {
+  function setOp(mnemonic: string, opcode: number, opType: OpType, addressing: Addressing,
+                 bytes: number, cycle: number) {
     tbl[opcode] = {
       mnemonic,
       opType,
@@ -390,17 +399,17 @@ const kOpTypeTable = (() => {
 
   set(OpType.BPL, (cpu, _) => {
     const offset = cpu.readOffset()
-    if ((cpu.p & NEGATIVE_FLAG) == 0)
+    if ((cpu.p & NEGATIVE_FLAG) === 0)
       cpu.pc += offset
   })
   set(OpType.BNE, (cpu, _) => {
     const offset = cpu.readOffset()
-    if ((cpu.p & ZERO_FLAG) == 0)
+    if ((cpu.p & ZERO_FLAG) === 0)
       cpu.pc += offset
   })
   set(OpType.BEQ, (cpu, _) => {
     const offset = cpu.readOffset()
-    if ((cpu.p & ZERO_FLAG) != 0)
+    if ((cpu.p & ZERO_FLAG) !== 0)
       cpu.pc += offset
   })
 

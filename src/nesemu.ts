@@ -9,12 +9,12 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
 }
 
 export class NesEmu {
-  root: HTMLElement
-  canvas: HTMLCanvasElement
-  context: CanvasRenderingContext2D
-  imageData: ImageData
+  private root: HTMLElement
+  private canvas: HTMLCanvasElement
+  private context: CanvasRenderingContext2D
+  private imageData: ImageData
 
-  static main(rootId: string) {
+  public static main(rootId: string) {
     const nesEmu = new NesEmu(rootId)
     nesEmu.run()
     return nesEmu
@@ -30,7 +30,7 @@ export class NesEmu {
     }
   }
 
-  run() {
+  public run() {
     const pixels = this.imageData.data
     for (let i = 0; i < HEIGHT; ++i) {
       for (let j = 0; j < WIDTH; ++j) {

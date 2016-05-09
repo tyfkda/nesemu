@@ -8,6 +8,7 @@ import clone from 'clone'
 import eslint from 'gulp-eslint'
 import webpack from 'webpack-stream'
 import webpackConfig from './webpack.config.babel'
+import tslint from 'gulp-tslint'
 
 // HTML
 import ejs from 'gulp-ejs'
@@ -127,6 +128,16 @@ gulp.task('watch-lint', [], () => {
                      srcTestFiles,
                      'gulpfile.babel.js'],
                     lint)
+})
+
+gulp.task('tslint', () => {
+  return gulp.src([`${srcEs6Dir}/**/*.ts`])
+    .pipe(tslint({
+      configuration: 'tslint.json',
+    }))
+    .pipe(tslint.report('prose', {
+      emitError: false,
+    }))
 })
 
 gulp.task('server', () => {
