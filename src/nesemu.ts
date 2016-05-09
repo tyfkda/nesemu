@@ -4,11 +4,19 @@ const WIDTH = 256
 const HEIGHT = 240
 const RAM_SIZE = 0x0800
 
+const VBLANK_START = Math.floor(241 * 341 / 3)
+const VBLANK_END = Math.floor(261 * 341 / 3)
+const VRETURN = Math.floor(262 * 341 / 3)
+
 function createCanvas(width: number, height: number): HTMLCanvasElement {
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
   return canvas
+}
+
+function triggerCycle(count, prev, curr) {
+  return prev < count && curr >= count
 }
 
 export class NesEmu {
@@ -49,12 +57,24 @@ export class NesEmu {
 
   public reset() {
     this.cpu.reset()
-
-    this.ppuRegs[2] = 0x80  // Set vertical blank to proceed, TODO: implement
+    this.clearVBlank()
   }
 
   public step() {
+    const prevCount = this.cpu.cycleCount
     this.cpu.step()
+    const currCount = this.cpu.cycleCount
+
+    if (triggerCycle(VBLANK_START, prevCount, currCount)) {
+      this.setVBlank()
+      this.interruptVBlank()
+    }
+    if (triggerCycle(VBLANK_END, prevCount, currCount)) {
+      this.clearVBlank()
+    }
+    if (triggerCycle(VRETURN, prevCount, currCount)) {
+      this.cpu.cycleCount -= VRETURN
+    }
   }
 
   private setMemoryMap() {
@@ -80,6 +100,23 @@ export class NesEmu {
     cpu.setWriteMemory(0x4000, 0x5fff, (adr, value) => {  // APU
       // TODO: Implement
     })
+  }
+
+  private setVBlank() {
+    this.ppuRegs[2] |= 0x80
+  }
+  private clearVBlank() {
+    this.ppuRegs[2] &= ~0x80
+  }
+
+  private interruptVBlank() {
+    if ((this.ppuRegs[0] & 0x80) == 0)
+      return
+    this.interruptNmi()
+  }
+
+  private interruptNmi() {
+    this.cpu.nmi()
   }
 
   private testCanvas() {

@@ -20,18 +20,18 @@ function dec8(value) {
 
 // const CARRY_BIT = 0
 const ZERO_BIT = 1
-// const IRQBLK_BIT = 2
+const IRQBLK_BIT = 2
 // const DECIMAL_BIT = 3
-// const BREAK_BIT = 4
+const BREAK_BIT = 4
 const RESERVED_BIT = 5
 const OVERFLOW_BIT = 6
 const NEGATIVE_BIT = 7
 
 // const CARRY_FLAG = 1 << CARRY_BIT
 const ZERO_FLAG = 1 << ZERO_BIT
-// const IRQBLK_FLAG = 1 << IRQBLK_BIT
+const IRQBLK_FLAG = 1 << IRQBLK_BIT
 // const DECIMAL_FLAG = 1 << DECIMAL_BIT
-// const BREAK_FLAG = 1 << BREAK_BIT
+const BREAK_FLAG = 1 << BREAK_BIT
 const RESERVED_FLAG = 1 << RESERVED_BIT
 const OVERFLOW_FLAG = 1 << OVERFLOW_BIT
 const NEGATIVE_FLAG = 1 << NEGATIVE_BIT
@@ -46,6 +46,7 @@ enum Addressing {
   ABSOLUTE,
   ABSOLUTE_X,
   ABSOLUTE_Y,
+  INDIRECT_Y,
   RELATIVE,
 }
 
@@ -62,6 +63,7 @@ enum OpType {
   TXS,
 
   INX,
+  INC,
 
   AND,
   BIT,
@@ -132,7 +134,7 @@ export class Cpu6502 {
     this.a = 0
     this.x = 0
     this.y = 0
-    this.p = RESERVED_FLAG
+    this.p = RESERVED_FLAG | IRQBLK_FLAG
     this.s = 0
     this.pc = this.read16(0xfffc)
     this.cycleCount = 0
@@ -201,6 +203,11 @@ export class Cpu6502 {
     return this.writerFuncTable[block](adr, value)
   }
 
+  public push(value: number) {
+    this.write8(0x0100 + this.s, value)
+    this.s = dec8(this.s)
+  }
+
   public push16(value: number) {
     let s = this.s
     this.write8(0x0100 + s, value >> 8)
@@ -217,6 +224,14 @@ export class Cpu6502 {
     const h = this.read8(0x0100 + s)
     this.s = s
     return (h << 8) | l
+  }
+
+  // Non-maskable interrupt
+  public nmi() {
+    this.push16(this.pc)
+    this.push(this.p)
+    this.pc = this.read16(0xfffa)
+    this.p = (this.p | IRQBLK_FLAG) & ~BREAK_FLAG
   }
 }
 
@@ -239,6 +254,7 @@ const kInstTable: Instruction[] = (() => {
   setOp('LDA', 0xa9, OpType.LDA, Addressing.IMMEDIATE, 2, 2)
   setOp('LDA', 0xad, OpType.LDA, Addressing.ABSOLUTE, 3, 4)
   setOp('LDA', 0xbd, OpType.LDA, Addressing.ABSOLUTE_X, 3, 4)
+  setOp('LDA', 0xb1, OpType.LDA, Addressing.INDIRECT_Y, 2, 5)
 
   // STA
   setOp('STA', 0x85, OpType.STA, Addressing.ZEROPAGE, 2, 3)
@@ -253,6 +269,7 @@ const kInstTable: Instruction[] = (() => {
   // LDY
   setOp('LDY', 0xa0, OpType.LDY, Addressing.IMMEDIATE, 2, 2)
   // STY
+  setOp('STY', 0x84, OpType.STY, Addressing.ZEROPAGE, 2, 3)
   setOp('STY', 0x8c, OpType.STY, Addressing.ABSOLUTE, 3, 4)
   //// T??
   setOp('TAX', 0xaa, OpType.TAX, Addressing.IMPLIED, 1, 2)
@@ -275,6 +292,8 @@ const kInstTable: Instruction[] = (() => {
 //  })
   // INX
   setOp('INX', 0xe8, OpType.INX, Addressing.IMPLIED, 1, 2)
+  // INC
+  setOp('INC', 0xe6, OpType.INC, Addressing.ZEROPAGE, 2, 5)
 
   // JSR
   setOp('JSR', 0x20, OpType.JSR, Addressing.ABSOLUTE, 3, 6)
@@ -313,6 +332,12 @@ const kOpTypeTable = (() => {
     case Addressing.ABSOLUTE_X:
       adr = (cpu.readAdr() + cpu.x) & 0xffff
       break
+    case Addressing.INDIRECT_Y:
+      {
+        const zeroPageAdr = cpu.read8(cpu.pc++)
+        adr = (cpu.read16(zeroPageAdr) + cpu.y) & 0xffff
+      }
+      break
     default:
       console.error(`Illegal load: ${addressing}`)
       return process.exit(1)
@@ -344,6 +369,7 @@ const kOpTypeTable = (() => {
 
   set(OpType.LDA, (cpu, addressing) => {
     cpu.a = load(cpu, addressing)
+    cpu.setFlag(cpu.a)
   })
   set(OpType.STA, (cpu, addressing) => {
     store(cpu, addressing, cpu.a)
@@ -351,6 +377,7 @@ const kOpTypeTable = (() => {
 
   set(OpType.LDX, (cpu, addressing) => {
     cpu.x = load(cpu, addressing)
+    cpu.setFlag(cpu.x)
   })
   set(OpType.STX, (cpu, addressing) => {
     store(cpu, addressing, cpu.x)
@@ -358,6 +385,7 @@ const kOpTypeTable = (() => {
 
   set(OpType.LDY, (cpu, addressing) => {
     cpu.y = load(cpu, addressing)
+    cpu.setFlag(cpu.y)
   })
   set(OpType.STY, (cpu, addressing) => {
     store(cpu, addressing, cpu.y)
@@ -377,6 +405,13 @@ const kOpTypeTable = (() => {
     cpu.x = inc8(cpu.x)
     cpu.setFlag(cpu.x)
   })
+  set(OpType.INC, (cpu, addressing) => {
+    // Calling `load` causes no side effect,
+    // because INC only takes ZEROPAGE or ABSOLUTE
+    const value = inc8(load(cpu, addressing))
+    store(cpu, addressing, value)
+    cpu.setFlag(value)
+  })
 
   set(OpType.AND, (cpu, addressing) => {  // AND: Immediate
     const value = load(cpu, addressing)
@@ -386,7 +421,10 @@ const kOpTypeTable = (() => {
   set(OpType.BIT, (cpu, addressing) => {
     const value = load(cpu, addressing)
     const result = cpu.a & value
-    cpu.setFlag(result)
+    cpu.setZero(result)
+
+    const mask = NEGATIVE_FLAG | OVERFLOW_FLAG
+    cpu.p = (cpu.p & ~mask) | (value & mask)
   })
   set(OpType.CMP, (cpu, addressing) => {
     const value = load(cpu, addressing)

@@ -1,0 +1,26 @@
+
+Screen resolution: 256 x 240
+
+System clock: 21.48MHz
+  PPU: 1/4  => 5.37MHz
+  CPU: 1/12 => 1.79MHz
+
+3 PPU cycle = 1 CPU cycle
+
+1 frame: 262 scanline
+
+1 scanline = 341 PPU cycle
+
+
+
+VBlank: 22 scaneline
+
+
+
+[PPU rendering - Nesdev wiki](http://wiki.nesdev.com/w/index.php/PPU_rendering)
+
+
+241 * 341 / 3 = 27393.67
+261 * 341 / 3 = 29667
+
+29833.33333334
