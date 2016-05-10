@@ -28,13 +28,15 @@ const destDir = './public'
 const assetsDir = `${destDir}/assets`
 const srcEs6Dir = './src'
 const srcEs6Files = `${srcEs6Dir}/**/*.js`
-const destJsDevDir = `${destDir}/jsdev`
 const srcHtmlDir = './src'
 const srcHtmlFiles = `${srcHtmlDir}/*.html`  // */
 const srcSassFiles = './src/**/*.scss'
 const srcTestFiles = './test/**/*.spec.js'
 const releaseDir = './release'
 const releaseAssetsDir = `${releaseDir}/assets`
+
+const ROOT_DIR = `${__dirname}/.`
+const RES_DIR = `${ROOT_DIR}/res`
 
 function convertHtml(buildTarget, dest) {
   return gulp.src([srcHtmlFiles,
@@ -72,7 +74,7 @@ gulp.task('default', ['build', 'server', 'watch'])
 gulp.task('watch', ['watch-html', 'watch-es6', 'watch-sass',
                     'watch-lint', 'watch-test'])
 
-gulp.task('build', ['html', 'es6', 'sass'])
+gulp.task('build', ['html', 'es6', 'sass', 'copy-res'])
 
 gulp.task('html', () => {
   return convertHtml('debug', destDir)
@@ -130,6 +132,12 @@ gulp.task('watch-lint', [], () => {
                     lint)
 })
 
+gulp.task('copy-res', () => {
+  return gulp.src([`${RES_DIR}/**/*`],
+                  {base: RES_DIR})
+    .pipe(gulp.dest(destDir))
+})
+
 gulp.task('tslint', () => {
   return gulp.src([`${srcEs6Dir}/**/*.ts`])
     .pipe(tslint({
@@ -168,18 +176,13 @@ gulp.task('watch-test', () => {
 })
 
 gulp.task('clean', del.bind(null, [
-  `${destDir}/index.html`,
-  `${assetsDir}/*.js`,  // */
-  `${assetsDir}/*.map`,  // */
-  `${assetsDir}/*.css`,  // */
-  `${destJsDevDir}`,  // */
+  destDir,
 ]))
 
 gulp.task('release', ['build'], () => {
   // Copy resources.
   gulp.src([`${destDir}/**/*.*`,
             `!${destDir}/index.html`,
-            `!${destJsDevDir}/**/*.*`,
             `!${destDir}/**/*.map`,
            ],
            {base: destDir})

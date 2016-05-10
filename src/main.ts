@@ -2,8 +2,9 @@
 
 import {Nes} from './nes/nes.ts'
 import {Cpu6502} from './nes/cpu.ts'
-import {kRomData} from './,romdata.ts'
 import {Util} from './nes/util.ts'
+
+declare var kRomData: number[]
 
 function loadPrgRom(romData: number[]): Uint8Array {
   const prg = romData.slice(16, 16 + 16 * 1024)
