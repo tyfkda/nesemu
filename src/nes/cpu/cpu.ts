@@ -68,9 +68,9 @@ export default class Cpu {
   private irqRequest = 0
 
   // For debug
-  private breakPoints: {nmi?: boolean, [key: number]: boolean} = {}
-  private watchRead: {[key: number]: boolean} = {}
-  private watchWrite: {[key: number]: boolean} = {}
+  private breakPoints = new Set<Address | string>()
+  private watchRead = new Set<Address>()
+  private watchWrite = new Set<Address>()
   private paused = false
 
   constructor(private bus: IBus) {
@@ -113,9 +113,9 @@ export default class Cpu {
   }
 
   public deleteAllBreakPoints(): void {
-    this.breakPoints = {}
-    this.watchRead = {}
-    this.watchWrite = {}
+    this.breakPoints.clear()
+    this.watchRead.clear()
+    this.watchWrite.clear()
   }
 
   public pause(value: boolean): void {
@@ -129,7 +129,7 @@ export default class Cpu {
   // Non-maskable interrupt
   public nmi(): void {
     const vector = this.read16(VEC_NMI)
-    if (this.breakPoints.nmi) {
+    if (this.breakPoints.has('nmi')) {
       this.paused = true
       console.warn(`paused because NMI: ${Util.hex(this.pc, 4)}, ${Util.hex(vector, 4)}`)
     }
@@ -477,7 +477,7 @@ export default class Cpu {
     }
     // ========================================================
 
-    if (this.breakPoints[this.pc]) {
+    if (this.breakPoints.has(this.pc)) {
       this.paused = true
       console.warn(`paused because PC matched break point: ${Util.hex(this.pc, 4)}`)
     }
@@ -509,7 +509,7 @@ export default class Cpu {
 
   private read8(adr: Address): Byte {
     const value = this.bus.read8(adr)
-    if (this.watchRead[adr]) {
+    if (this.watchRead.has(adr)) {
       this.paused = true
       console.warn(
         `Break because watched point read: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
@@ -531,7 +531,7 @@ export default class Cpu {
 
   private write8(adr: Address, value: Byte): void {
     this.bus.write8(adr, value)
-    if (this.watchWrite[adr]) {
+    if (this.watchWrite.has(adr)) {
       this.paused = true
       console.warn(
         `Break because watched point write: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
