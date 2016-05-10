@@ -7,9 +7,9 @@ const WIDTH = 256
 const HEIGHT = 240
 const RAM_SIZE = 0x0800
 
-const VBLANK_START = Math.floor(241 * 341 / 3)
-const VBLANK_END = Math.floor(261 * 341 / 3)
-const VRETURN = Math.floor(262 * 341 / 3)
+const VBLANK_START = (241 * 341 / 3)|0
+const VBLANK_END = (261 * 341 / 3)|0
+const VRETURN = (262 * 341 / 3)|0
 
 function triggerCycle(count, prev, curr) {
   return prev < count && curr >= count

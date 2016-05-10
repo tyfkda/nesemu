@@ -134,15 +134,15 @@ export class Cpu6502 {
   }
 
   public setReadMemory(start, end, func: (adr: number) => number): void {
-    const startBlock = Math.floor(start / BLOCK_SIZE)
-    const endBlock = Math.floor(end / BLOCK_SIZE)
+    const startBlock = (start / BLOCK_SIZE)|0
+    const endBlock = (end / BLOCK_SIZE)|0
     for (let i = startBlock; i <= endBlock; ++i)
       this.readerFuncTable[i] = func
   }
 
   public setWriteMemory(start, end, func: (adr: number, value: number) => void): void {
-    const startBlock = Math.floor(start / BLOCK_SIZE)
-    const endBlock = Math.floor(end / BLOCK_SIZE)
+    const startBlock = (start / BLOCK_SIZE)|0
+    const endBlock = (end / BLOCK_SIZE)|0
     for (let i = startBlock; i <= endBlock; ++i)
       this.writerFuncTable[i] = func
   }
@@ -191,7 +191,7 @@ export class Cpu6502 {
   }
 
   public read8(adr: number): number {
-    const block = Math.floor(adr / BLOCK_SIZE)
+    const block = (adr / BLOCK_SIZE)|0
     return this.readerFuncTable[block](adr)
   }
 
@@ -202,7 +202,7 @@ export class Cpu6502 {
   }
 
   public write8(adr: number, value: number): void {
-    const block = Math.floor(adr / BLOCK_SIZE)
+    const block = (adr / BLOCK_SIZE)|0
     return this.writerFuncTable[block](adr, value)
   }
 
