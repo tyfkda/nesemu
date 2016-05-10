@@ -24,7 +24,7 @@ function toSigned(value: number): number {
   return value < 0x80 ? value : value - 0x0100
 }
 
-// const CARRY_BIT = 0
+const CARRY_BIT = 0
 const ZERO_BIT = 1
 const IRQBLK_BIT = 2
 // const DECIMAL_BIT = 3
@@ -33,7 +33,7 @@ const RESERVED_BIT = 5
 const OVERFLOW_BIT = 6
 const NEGATIVE_BIT = 7
 
-// const CARRY_FLAG = 1 << CARRY_BIT
+const CARRY_FLAG = 1 << CARRY_BIT
 const ZERO_FLAG = 1 << ZERO_BIT
 const IRQBLK_FLAG = 1 << IRQBLK_BIT
 // const DECIMAL_FLAG = 1 << DECIMAL_BIT
@@ -44,6 +44,7 @@ const NEGATIVE_FLAG = 1 << NEGATIVE_BIT
 
 enum Addressing {
   IMPLIED,
+  ACCUMULATOR,
   IMMEDIATE,
   IMMEDIATE16,
   ZEROPAGE,
@@ -66,8 +67,14 @@ enum OpType {
   STY,
 
   TAX,
+  TAY,
   TXA,
+  TYA,
   TXS,
+  TSX,
+
+  ADC,
+  SBC,
 
   INX,
   INY,
@@ -78,6 +85,10 @@ enum OpType {
   DEC,
 
   AND,
+  ORA,
+  EOR,
+  ROL,
+  ROR,
   BIT,
   CMP,
   CPX,
@@ -86,10 +97,16 @@ enum OpType {
   JSR,
   RTS,
   RTI,
+  BCC,
+  BCS,
   BPL,
   BMI,
   BNE,
   BEQ,
+  BVC,
+  BVS,
+
+  CLC,
 
 
   SEI,
@@ -122,6 +139,8 @@ export class Cpu6502 {
                     //   C: carry
   public pc: number  // Program counter
   public cycleCount: number
+  public breakPoints: {}
+  public pausing: boolean
   private readerFuncTable: Function[]
   private writerFuncTable: Function[]
 
@@ -131,18 +150,20 @@ export class Cpu6502 {
     this.cycleCount = 0
 
     this.a = this.x = this.y = this.s = 0
+    this.breakPoints = {}
+    this.pausing = false
   }
 
   public setReadMemory(start, end, func: (adr: number) => number): void {
-    const startBlock = (start / BLOCK_SIZE)|0
-    const endBlock = (end / BLOCK_SIZE)|0
+    const startBlock = (start / BLOCK_SIZE) | 0
+    const endBlock = (end / BLOCK_SIZE) | 0
     for (let i = startBlock; i <= endBlock; ++i)
       this.readerFuncTable[i] = func
   }
 
   public setWriteMemory(start, end, func: (adr: number, value: number) => void): void {
-    const startBlock = (start / BLOCK_SIZE)|0
-    const endBlock = (end / BLOCK_SIZE)|0
+    const startBlock = (start / BLOCK_SIZE) | 0
+    const endBlock = (end / BLOCK_SIZE) | 0
     for (let i = startBlock; i <= endBlock; ++i)
       this.writerFuncTable[i] = func
   }
@@ -154,35 +175,56 @@ export class Cpu6502 {
     this.cycleCount = 0
   }
 
-  public setZero(value): void {
+  public pause(value: boolean): void {
+    this.pausing = value
+  }
+
+  public isPaused(): boolean {
+    return this.pausing
+  }
+
+  public setCarry(value: boolean): void {
+    this.p = setReset(this.p, value, CARRY_FLAG)
+  }
+
+  public setZero(value: boolean): void {
     this.p = setReset(this.p, value, ZERO_FLAG)
   }
 
-  public setOverFlow(value): void {
+  public setOverFlow(value: boolean): void {
     this.p = setReset(this.p, value, OVERFLOW_FLAG)
   }
 
-  public setNegative(value): void {
+  public setNegative(value: boolean): void {
     this.p = setReset(this.p, value, NEGATIVE_FLAG)
   }
 
-  public getInst(opcode): Instruction {
+  public getInst(opcode: number): Instruction {
     return kInstTable[opcode]
   }
 
-  public step(): void {
+  public step(): number {
+    if (this.pausing)
+      return
+
     let pc = this.pc
+    if (pc in this.breakPoints) {
+      this.pausing = true
+      return
+    }
+
     const op = this.read8(pc++)
     const inst = this.getInst(op)
     if (inst == null) {
       console.error(`Unhandled OPCODE, ${hex(this.pc - 1, 4)}: ${hex(op, 2)}`)
-      process.exit(1)
+      this.pausing = true
       return
     }
 
     this.pc += inst.bytes
     kOpTypeTable[inst.opType](this, pc, inst.addressing)
     this.cycleCount += inst.cycle
+    return inst.cycle
   }
 
   public setFlag(value: number) {
@@ -191,8 +233,14 @@ export class Cpu6502 {
   }
 
   public read8(adr: number): number {
-    const block = (adr / BLOCK_SIZE)|0
-    return this.readerFuncTable[block](adr)
+    const block = (adr / BLOCK_SIZE) | 0
+    const reader = this.readerFuncTable[block]
+    if (!reader) {
+      console.error(`Illegal read at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}`)
+      this.pausing = true
+      return 0
+    }
+    return reader(adr)
   }
 
   public read16(adr: number): number {
@@ -202,7 +250,13 @@ export class Cpu6502 {
   }
 
   public write8(adr: number, value: number): void {
-    const block = (adr / BLOCK_SIZE)|0
+    const block = (adr / BLOCK_SIZE) | 0
+    const writer = this.writerFuncTable[block]
+    if (!writer) {
+      console.error(`Illegal write at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}`)
+      this.pausing = true
+      return
+    }
     return this.writerFuncTable[block](adr, value)
   }
 
@@ -266,7 +320,6 @@ const kInstTable: Instruction[] = (() => {
   setOp('LDA', 0xb9, OpType.LDA, Addressing.ABSOLUTE_Y, 3, 4)
   setOp('LDA', 0xa1, OpType.LDA, Addressing.INDIRECT_X, 2, 6)
   setOp('LDA', 0xb1, OpType.LDA, Addressing.INDIRECT_Y, 2, 5)
-
   // STA
   setOp('STA', 0x85, OpType.STA, Addressing.ZEROPAGE, 2, 3)
   setOp('STA', 0x95, OpType.STA, Addressing.ZEROPAGE_X, 2, 4)
@@ -298,18 +351,47 @@ const kInstTable: Instruction[] = (() => {
   setOp('STY', 0x8c, OpType.STY, Addressing.ABSOLUTE, 3, 4)
   //// T??
   setOp('TAX', 0xaa, OpType.TAX, Addressing.IMPLIED, 1, 2)
+  setOp('TAY', 0xa8, OpType.TAY, Addressing.IMPLIED, 1, 2)
   setOp('TXA', 0x8a, OpType.TXA, Addressing.IMPLIED, 1, 2)
+  setOp('TYA', 0x98, OpType.TYA, Addressing.IMPLIED, 1, 2)
   setOp('TXS', 0x9a, OpType.TXS, Addressing.IMPLIED, 1, 2)
+  setOp('TSX', 0xba, OpType.TSX, Addressing.IMPLIED, 1, 2)
 
-  // AND
-  setOp('AND', 0x29, OpType.AND, Addressing.IMMEDIATE, 2, 2)
-  // BIT
-  setOp('BIT', 0x2c, OpType.BIT, Addressing.ABSOLUTE, 3, 4)
+  // ADC
+  setOp('ADC', 0x69, OpType.ADC, Addressing.IMMEDIATE, 2, 2)
+  setOp('ADC', 0x65, OpType.ADC, Addressing.ZEROPAGE, 2, 3)
+  setOp('ADC', 0x75, OpType.ADC, Addressing.ZEROPAGE_X, 2, 4)
+  setOp('ADC', 0x6d, OpType.ADC, Addressing.ABSOLUTE, 3, 4)
+  setOp('ADC', 0x7d, OpType.ADC, Addressing.ABSOLUTE_X, 3, 4)
+  setOp('ADC', 0x79, OpType.ADC, Addressing.ABSOLUTE_Y, 3, 4)
+  setOp('ADC', 0x61, OpType.ADC, Addressing.INDIRECT_X, 2, 6)
+  setOp('ADC', 0x71, OpType.ADC, Addressing.INDIRECT_Y, 2, 5)
+  // SBC
+  setOp('SBC', 0xe9, OpType.SBC, Addressing.IMMEDIATE, 2, 2)
+  setOp('SBC', 0xe5, OpType.SBC, Addressing.ZEROPAGE, 2, 3)
+  setOp('SBC', 0xf5, OpType.SBC, Addressing.ZEROPAGE_X, 2, 4)
+  setOp('SBC', 0xed, OpType.SBC, Addressing.ABSOLUTE, 3, 4)
+  setOp('SBC', 0xfd, OpType.SBC, Addressing.ABSOLUTE_X, 3, 4)
+  setOp('SBC', 0xf9, OpType.SBC, Addressing.ABSOLUTE_Y, 3, 4)
+  setOp('SBC', 0xe1, OpType.SBC, Addressing.INDIRECT_X, 2, 6)
+  setOp('SBC', 0xf1, OpType.SBC, Addressing.INDIRECT_Y, 2, 5)
+
   // CMP
+  setOp('CMP', 0xc9, OpType.CMP, Addressing.IMMEDIATE, 2, 2)
+  setOp('CMP', 0xc5, OpType.CMP, Addressing.ZEROPAGE, 2, 3)
+  setOp('CMP', 0xd5, OpType.CMP, Addressing.ZEROPAGE_X, 2, 4)
   setOp('CMP', 0xcd, OpType.CMP, Addressing.ABSOLUTE, 3, 4)
+  setOp('CMP', 0xdd, OpType.CMP, Addressing.ABSOLUTE_X, 3, 4)
+  setOp('CMP', 0xd9, OpType.CMP, Addressing.ABSOLUTE_Y, 3, 4)
+  setOp('CMP', 0xc1, OpType.CMP, Addressing.INDIRECT_X, 2, 6)
+  setOp('CMP', 0xd1, OpType.CMP, Addressing.INDIRECT_Y, 2, 5)
   // CPX
   setOp('CPX', 0xe0, OpType.CPX, Addressing.IMMEDIATE, 2, 2)
+  setOp('CPX', 0xe4, OpType.CPX, Addressing.ZEROPAGE, 2, 3)
+  setOp('CPX', 0xec, OpType.CPX, Addressing.ABSOLUTE, 3, 4)
   // CPY
+  setOp('CPY', 0xc0, OpType.CPY, Addressing.IMMEDIATE, 2, 2)
+  setOp('CPY', 0xc4, OpType.CPY, Addressing.ZEROPAGE, 2, 3)
   setOp('CPY', 0xcc, OpType.CPY, Addressing.ABSOLUTE, 3, 4)
   // INX
   setOp('INX', 0xe8, OpType.INX, Addressing.IMPLIED, 1, 2)
@@ -331,6 +413,49 @@ const kInstTable: Instruction[] = (() => {
   setOp('DEC', 0xce, OpType.DEC, Addressing.ABSOLUTE, 3, 6)
   setOp('DEC', 0xde, OpType.DEC, Addressing.ABSOLUTE_X, 3, 7)
 
+  // AND
+  setOp('AND', 0x29, OpType.AND, Addressing.IMMEDIATE, 2, 2)
+  setOp('AND', 0x25, OpType.AND, Addressing.ZEROPAGE, 2, 3)
+  setOp('AND', 0x35, OpType.AND, Addressing.ZEROPAGE_X, 2, 4)
+  setOp('AND', 0x2d, OpType.AND, Addressing.ABSOLUTE, 3, 4)
+  setOp('AND', 0x3d, OpType.AND, Addressing.ABSOLUTE_X, 3, 4)
+  setOp('AND', 0x39, OpType.AND, Addressing.ABSOLUTE_Y, 3, 4)
+  setOp('AND', 0x21, OpType.AND, Addressing.INDIRECT_X, 2, 6)
+  setOp('AND', 0x31, OpType.AND, Addressing.INDIRECT_Y, 2, 5)
+  // ORA
+  setOp('ORA', 0x09, OpType.ORA, Addressing.IMMEDIATE, 2, 2)
+  setOp('ORA', 0x05, OpType.ORA, Addressing.ZEROPAGE, 2, 3)
+  setOp('ORA', 0x15, OpType.ORA, Addressing.ZEROPAGE_X, 2, 4)
+  setOp('ORA', 0x0d, OpType.ORA, Addressing.ABSOLUTE, 3, 4)
+  setOp('ORA', 0x1d, OpType.ORA, Addressing.ABSOLUTE_X, 3, 4)
+  setOp('ORA', 0x19, OpType.ORA, Addressing.ABSOLUTE_Y, 3, 4)
+  setOp('ORA', 0x01, OpType.ORA, Addressing.INDIRECT_X, 2, 6)
+  setOp('ORA', 0x11, OpType.ORA, Addressing.INDIRECT_Y, 2, 5)
+  // EOR
+  setOp('EOR', 0x49, OpType.EOR, Addressing.IMMEDIATE, 2, 2)
+  setOp('EOR', 0x45, OpType.EOR, Addressing.ZEROPAGE, 2, 3)
+  setOp('EOR', 0x55, OpType.EOR, Addressing.ZEROPAGE_X, 2, 4)
+  setOp('EOR', 0x4d, OpType.EOR, Addressing.ABSOLUTE, 3, 4)
+  setOp('EOR', 0x5d, OpType.EOR, Addressing.ABSOLUTE_X, 3, 4)
+  setOp('EOR', 0x59, OpType.EOR, Addressing.ABSOLUTE_Y, 3, 4)
+  setOp('EOR', 0x41, OpType.EOR, Addressing.INDIRECT_X, 2, 6)
+  setOp('EOR', 0x51, OpType.EOR, Addressing.INDIRECT_Y, 2, 5)
+  // ROL
+  setOp('ROL', 0x2a, OpType.ROL, Addressing.ACCUMULATOR, 1, 2)
+  setOp('ROL', 0x26, OpType.ROL, Addressing.ZEROPAGE, 2, 5)
+  setOp('ROL', 0x36, OpType.ROL, Addressing.ZEROPAGE_X, 2, 6)
+  setOp('ROL', 0x2e, OpType.ROL, Addressing.ABSOLUTE, 3, 6)
+  setOp('ROL', 0x3e, OpType.ROL, Addressing.ABSOLUTE_X, 3, 7)
+  // ROR
+  setOp('ROR', 0x6a, OpType.ROR, Addressing.ACCUMULATOR, 1, 2)
+  setOp('ROR', 0x66, OpType.ROR, Addressing.ZEROPAGE, 2, 5)
+  setOp('ROR', 0x76, OpType.ROR, Addressing.ZEROPAGE_X, 2, 6)
+  setOp('ROR', 0x6e, OpType.ROR, Addressing.ABSOLUTE, 3, 6)
+  setOp('ROR', 0x7e, OpType.ROR, Addressing.ABSOLUTE_X, 3, 7)
+  // BIT
+  setOp('BIT', 0x24, OpType.BIT, Addressing.ZEROPAGE, 2, 3)
+  setOp('BIT', 0x2c, OpType.BIT, Addressing.ABSOLUTE, 3, 4)
+
   // JSR
   setOp('JSR', 0x20, OpType.JSR, Addressing.ABSOLUTE, 3, 6)
   // RTS
@@ -338,10 +463,16 @@ const kInstTable: Instruction[] = (() => {
   // RTI
   setOp('RTI', 0x40, OpType.RTI, Addressing.IMPLIED, 1, 6)
   // Branch
+  setOp('BCC', 0x90, OpType.BCC, Addressing.RELATIVE, 2, 2)
+  setOp('BCS', 0xb0, OpType.BCS, Addressing.RELATIVE, 2, 2)
   setOp('BPL', 0x10, OpType.BPL, Addressing.RELATIVE, 2, 2)
   setOp('BMI', 0x30, OpType.BMI, Addressing.RELATIVE, 2, 2)
   setOp('BNE', 0xd0, OpType.BNE, Addressing.RELATIVE, 2, 2)
   setOp('BEQ', 0xf0, OpType.BEQ, Addressing.RELATIVE, 2, 2)
+  setOp('BVC', 0x50, OpType.BVC, Addressing.RELATIVE, 2, 2)
+  setOp('BVS', 0x70, OpType.BVS, Addressing.RELATIVE, 2, 2)
+
+  setOp('CLC', 0x18, OpType.CLC, Addressing.IMPLIED, 1, 2)
 
   setOp('SEI', 0x78, OpType.SEI, Addressing.IMPLIED, 1, 2)
   setOp('CLD', 0xd8, OpType.CLD, Addressing.IMPLIED, 1, 2)
@@ -359,11 +490,19 @@ const kOpTypeTable = (() => {
   function load(cpu: Cpu6502, pc: number, addressing: Addressing) {
     let adr
     switch (addressing) {
+    case Addressing.ACCUMULATOR:
+      return cpu.a
     case Addressing.IMMEDIATE:
       adr = pc
       break
     case Addressing.ZEROPAGE:
       adr = cpu.read8(pc)
+      break
+    case Addressing.ZEROPAGE_X:
+      adr = (cpu.read8(pc) + cpu.x) & 0xff
+      break
+    case Addressing.ZEROPAGE_Y:
+      adr = (cpu.read8(pc) + cpu.x) & 0xff
       break
     case Addressing.ABSOLUTE:
       adr = cpu.read16(pc)
@@ -378,8 +517,9 @@ const kOpTypeTable = (() => {
       }
       break
     default:
-      console.error(`Illegal load: ${addressing}`)
-      return process.exit(1)
+      console.error(`Illegal addressing: ${addressing}`)
+      cpu.pausing = true
+      return
     }
     return cpu.read8(adr)
   }
@@ -387,6 +527,9 @@ const kOpTypeTable = (() => {
   function store(cpu: Cpu6502, pc: number, addressing: Addressing, value: number) {
     let adr
     switch (addressing) {
+    case Addressing.ACCUMULATOR:
+      cpu.a = value
+      return
     case Addressing.ZEROPAGE:
       adr = cpu.read8(pc)
       break
@@ -401,7 +544,8 @@ const kOpTypeTable = (() => {
       break
     default:
       console.error(`Illegal store: ${addressing}`)
-      return process.exit(1)
+      cpu.pausing = true
+      return
     }
     cpu.write8(adr, value)
   }
@@ -432,12 +576,44 @@ const kOpTypeTable = (() => {
 
   set(OpType.TAX, (cpu, _pc, _) => {
     cpu.x = cpu.a
+    cpu.setFlag(cpu.x)
+  })
+  set(OpType.TAY, (cpu, _pc, _) => {
+    cpu.y = cpu.a
+    cpu.setFlag(cpu.y)
   })
   set(OpType.TXA, (cpu, _pc, _) => {
     cpu.a = cpu.x
+    cpu.setFlag(cpu.x)
+  })
+  set(OpType.TYA, (cpu, _pc, _) => {
+    cpu.a = cpu.y
+    cpu.setFlag(cpu.a)
   })
   set(OpType.TXS, (cpu, _pc, _) => {
     cpu.s = cpu.x
+    cpu.setFlag(cpu.s)
+  })
+  set(OpType.TSX, (cpu, _pc, _) => {
+    cpu.x = cpu.s
+    cpu.setFlag(cpu.x)
+  })
+
+  set(OpType.ADC, (cpu, pc, addressing) => {
+    const operand = load(cpu, pc, addressing)
+    const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
+    const result = cpu.a + operand + carry
+    cpu.a = result & 0xff
+    cpu.setFlag(cpu.a)
+    cpu.setCarry(result >= 0x0100)
+  })
+  set(OpType.SBC, (cpu, pc, addressing) => {
+    const operand = load(cpu, pc, addressing)
+    const borrow = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
+    const result = cpu.a - operand - borrow
+    cpu.a = result & 0xff
+    cpu.setFlag(cpu.a)
+    cpu.setCarry(result < 0)
   })
 
   set(OpType.INX, (cpu, _pc, _) => {
@@ -468,10 +644,38 @@ const kOpTypeTable = (() => {
     cpu.setFlag(value)
   })
 
-  set(OpType.AND, (cpu, pc, addressing) => {  // AND: Immediate
+  set(OpType.AND, (cpu, pc, addressing) => {
     const value = load(cpu, pc, addressing)
     cpu.a &= value
     cpu.setFlag(cpu.a)
+  })
+  set(OpType.ORA, (cpu, pc, addressing) => {
+    const value = load(cpu, pc, addressing)
+    cpu.a |= value
+    cpu.setFlag(cpu.a)
+  })
+  set(OpType.EOR, (cpu, pc, addressing) => {
+    const value = load(cpu, pc, addressing)
+    cpu.a ^= value
+    cpu.setFlag(cpu.a)
+  })
+  set(OpType.ROL, (cpu, pc, addressing) => {
+    const value = load(cpu, pc, addressing)
+    const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
+    const newCarry = (value & 0x80) !== 0
+    const newValue = ((value << 1) | oldCarry) & 0xff
+    store(cpu, pc, addressing, newValue)
+    cpu.setFlag(newValue)
+    cpu.setCarry(newCarry)
+  })
+  set(OpType.ROR, (cpu, pc, addressing) => {
+    const value = load(cpu, pc, addressing)
+    const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 0x80 : 0
+    const newCarry = (value & 0x01) !== 0
+    const newValue = ((value >> 1) | oldCarry) & 0xff
+    store(cpu, pc, addressing, newValue)
+    cpu.setFlag(newValue)
+    cpu.setCarry(newCarry)
   })
   set(OpType.BIT, (cpu, pc, addressing) => {
     const value = load(cpu, pc, addressing)
@@ -507,6 +711,16 @@ const kOpTypeTable = (() => {
     cpu.pc = cpu.pop16()
   })
 
+  set(OpType.BCC, (cpu, pc, _) => {
+    const offset = toSigned(cpu.read8(pc))
+    if ((cpu.p & CARRY_FLAG) === 0)
+      cpu.pc += offset
+  })
+  set(OpType.BCS, (cpu, pc, _) => {
+    const offset = toSigned(cpu.read8(pc))
+    if ((cpu.p & CARRY_FLAG) !== 0)
+      cpu.pc += offset
+  })
   set(OpType.BPL, (cpu, pc, _) => {
     const offset = toSigned(cpu.read8(pc))
     if ((cpu.p & NEGATIVE_FLAG) === 0)
@@ -526,6 +740,20 @@ const kOpTypeTable = (() => {
     const offset = toSigned(cpu.read8(pc))
     if ((cpu.p & ZERO_FLAG) !== 0)
       cpu.pc += offset
+  })
+  set(OpType.BVC, (cpu, pc, _) => {
+    const offset = toSigned(cpu.read8(pc))
+    if ((cpu.p & OVERFLOW_FLAG) === 0)
+      cpu.pc += offset
+  })
+  set(OpType.BVS, (cpu, pc, _) => {
+    const offset = toSigned(cpu.read8(pc))
+    if ((cpu.p & OVERFLOW_FLAG) !== 0)
+      cpu.pc += offset
+  })
+
+  set(OpType.CLC, (cpu, _pc, _) => {  // Clear carry flag
+    cpu.p &= ~CARRY_FLAG
   })
 
   set(OpType.SEI, (cpu, pc, addressing) => {  // SEI: Disable IRQ

@@ -7,9 +7,9 @@ const WIDTH = 256
 const HEIGHT = 240
 const RAM_SIZE = 0x0800
 
-const VBLANK_START = (241 * 341 / 3)|0
-const VBLANK_END = (261 * 341 / 3)|0
-const VRETURN = (262 * 341 / 3)|0
+const VBLANK_START = (241 * 341 / 3) | 0
+const VBLANK_END = (261 * 341 / 3) | 0
+const VRETURN = (262 * 341 / 3) | 0
 
 function triggerCycle(count, prev, curr) {
   return prev < count && curr >= count
@@ -52,9 +52,17 @@ export class Nes {
     this.ppu.reset()
   }
 
+  public runCycles(cycles: number): number {
+    while (cycles > 0 && !this.cpu.isPaused()) {
+      const c = this.step()
+      cycles -= c
+    }
+    return -cycles
+  }
+
   public step() {
     const prevCount = this.cpu.cycleCount
-    this.cpu.step()
+    const cycle = this.cpu.step()
     const currCount = this.cpu.cycleCount
 
     if (triggerCycle(VBLANK_START, prevCount, currCount)) {
@@ -67,6 +75,7 @@ export class Nes {
     if (triggerCycle(VRETURN, prevCount, currCount)) {
       this.cpu.cycleCount -= VRETURN
     }
+    return cycle
   }
 
   private setMemoryMap() {
@@ -89,6 +98,10 @@ export class Nes {
       this.ppu.write(reg, value)
     })
 
+    cpu.setReadMemory(0x4000, 0x5fff, (adr) => {  // APU
+      // TODO: Implement
+      return 0
+    })
     cpu.setWriteMemory(0x4000, 0x5fff, (adr, value) => {  // APU
       // TODO: Implement
     })

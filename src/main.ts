@@ -6,6 +6,8 @@ import {Util} from './nes/util.ts'
 
 declare var kRomData: number[]
 
+const FPS = 60
+
 function loadPrgRom(romData: number[]): Uint8Array {
   const prg = romData.slice(16, 16 + 16 * 1024)
   return new Uint8Array(prg)
@@ -69,28 +71,57 @@ function nesTest() {
   root.appendChild(canvas)
 
   const nes = Nes.create(canvas)
+  ;(window as any).nes = nes  // Put nes into global.
 
   const prgRom = loadPrgRom(kRomData)
   nes.setRomData(prgRom)
   nes.reset()
+  nes.cpu.pause(true)
 
   dumpCpu(nes.cpu)
 
-  document.getElementById('step').addEventListener('click', () => {
+  const stepElem = document.getElementById('step')
+  const runElem = document.getElementById('run')
+  const pauseElem = document.getElementById('pause')
+  const resetElem = document.getElementById('reset')
+
+  const updateButtonState = () => {
+    const paused = nes.cpu.isPaused()
+    pauseElem.disabled = paused
+    runElem.disabled = stepElem.disabled = !paused
+  }
+
+  stepElem.addEventListener('click', () => {
+    const paused = nes.cpu.isPaused()
+    nes.cpu.pause(false)
     nes.step()
+    if (paused)
+      nes.cpu.pause(true)
     dumpCpu(nes.cpu)
   })
-  document.getElementById('run').addEventListener('click', () => {
-    for (let i = 0; i < 100; ++i) {
-      nes.step()
-      dumpCpu(nes.cpu)
-    }
+  runElem.addEventListener('click', () => {
+    nes.cpu.pause(false)
+    updateButtonState()
   })
-  document.getElementById('reset').addEventListener('click', () => {
+  pauseElem.addEventListener('click', () => {
+    nes.cpu.pause(true)
+    updateButtonState()
+  })
+  resetElem.addEventListener('click', () => {
     nes.reset()
     clearConsole()
     dumpCpu(nes.cpu)
   })
+
+  setInterval(() => {
+    if (!nes.cpu.isPaused()) {
+      // TODO: Calculate cpu cycles from elapsed time.
+      let cycles = (1.79 * 1000000 / FPS) | 0
+      nes.runCycles(cycles)
+      dumpCpu(nes.cpu)
+      updateButtonState()
+    }
+  }, 1000 / FPS)
 }
 
 window.addEventListener('load', () => {
