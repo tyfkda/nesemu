@@ -7,8 +7,8 @@ module.exports = {
   },
   module: {
     loaders: [
-      { test: /\.js$/, loaders: ['babel-loader'] },
-      { test: /\.ts$/, loaders: ['awesome-typescript-loader'] },
+      { test: /\.js$/, loader: 'babel-loader' },
+      { test: /\.ts$/, loader: 'babel-loader!awesome-typescript-loader' },
     ],
   }
 }
