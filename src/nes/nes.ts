@@ -20,13 +20,12 @@ export class Nes {
   public ram: Uint8Array
   public ppu: Ppu
 
-  private romData: Uint8Array
+  private romData: Uint8ClampedArray
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
   public static create(canvas: HTMLCanvasElement): Nes {
     const nes = new Nes(canvas)
-    nes.testCanvas()
     return nes
   }
 
@@ -43,8 +42,9 @@ export class Nes {
     this.imageData = this.context.getImageData(0, 0, WIDTH, HEIGHT)
   }
 
-  public setRomData(romData: Uint8Array) {
+  public setRomData(romData: Uint8ClampedArray, chrData: Uint8ClampedArray) {
     this.romData = romData
+    this.ppu.setChrData(chrData)
   }
 
   public reset() {
@@ -76,6 +76,10 @@ export class Nes {
       this.cpu.cycleCount -= VRETURN
     }
     return cycle
+  }
+
+  public render() {
+    this.testCanvas()
   }
 
   private setMemoryMap() {
@@ -117,15 +121,27 @@ export class Nes {
     this.cpu.nmi()
   }
 
-  private testCanvas() {
+  public testCanvas() {
+    const W = 8
+    const chrRom = this.ppu.chrData
     const pixels = this.imageData.data
-    for (let i = 0; i < HEIGHT; ++i) {
-      for (let j = 0; j < WIDTH; ++j) {
-        const index = (i * WIDTH + j) * 4
-        pixels[index + 0] = j
-        pixels[index + 1] = i
-        pixels[index + 2] = 255
-        pixels[index + 3] = 255
+    for (let by = 0; by < HEIGHT / W; ++by) {
+      for (let bx = 0; bx < WIDTH / W; ++bx) {
+        const chridx = ((bx + by * 32) & 511) * 16
+        for (let py = 0; py < W; ++py) {
+          for (let px = 0; px < W; ++px) {
+            const idx = chridx + py
+            const shift = (W - 1) - px
+            const pal = (((chrRom[idx + 8] >> shift) & 1) << 1) | ((chrRom[idx] >> shift) & 1)
+            const col = pal << 6
+
+            const index = ((by * W + py) * WIDTH + (bx * W + px)) * 4
+            pixels[index + 0] = col
+            pixels[index + 1] = col
+            pixels[index + 2] = col
+            pixels[index + 3] = 255
+          }
+        }
       }
     }
     this.context.putImageData(this.imageData, 0, 0)

@@ -4,9 +4,14 @@ const REGISTER_COUNT = 8
 
 export class Ppu {
   public regs: Uint8ClampedArray
+  public chrData: Uint8ClampedArray
 
   constructor() {
     this.regs = new Uint8ClampedArray(REGISTER_COUNT)
+  }
+
+  setChrData(chrData: Uint8ClampedArray) {
+    this.chrData = chrData
   }
 
   public reset(): void {

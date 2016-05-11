@@ -8,9 +8,16 @@ declare var kRomData: number[]
 
 const FPS = 60
 
-function loadPrgRom(romData: number[]): Uint8Array {
-  const prg = romData.slice(16, 16 + 16 * 1024)
-  return new Uint8Array(prg)
+function loadPrgRom(romData: number[]): Uint8ClampedArray {
+  const start = 16, size = 16 * 1024
+  const prg = romData.slice(start, start + size)
+  return new Uint8ClampedArray(prg)
+}
+
+function loadChrRom(romData: number[]): Uint8ClampedArray {
+  const start = 16 + 16 * 1024, size = 8 * 1024
+  const chr = romData.slice(start, start + size)
+  return new Uint8ClampedArray(chr)
 }
 
 function showCpuStatus(cpu: Cpu6502): void {
@@ -68,15 +75,20 @@ function nesTest() {
   const root = document.getElementById('nesroot')
   const canvas = document.createElement('canvas')
   canvas.style.imageRendering = 'pixelated'
+  const scale = 2
+  canvas.style.width = `${256 * scale}px`
+  canvas.style.height = `${240 * scale}px`
   root.appendChild(canvas)
 
   const nes = Nes.create(canvas)
   ;(window as any).nes = nes  // Put nes into global.
 
   const prgRom = loadPrgRom(kRomData)
-  nes.setRomData(prgRom)
+  const chrRom = loadChrRom(kRomData)
+  nes.setRomData(prgRom, chrRom)
   nes.reset()
   nes.cpu.pause(true)
+  nes.render()
 
   dumpCpu(nes.cpu)
 
