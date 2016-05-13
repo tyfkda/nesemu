@@ -56,6 +56,7 @@ enum Addressing {
   INDIRECT_X,
   INDIRECT_Y,
   RELATIVE,
+  INDIRECT,
 }
 
 enum OpType {
@@ -89,11 +90,14 @@ enum OpType {
   EOR,
   ROL,
   ROR,
+  ASL,
+  LSR,
   BIT,
   CMP,
   CPX,
   CPY,
 
+  JMP,
   JSR,
   RTS,
   RTI,
@@ -106,7 +110,13 @@ enum OpType {
   BVC,
   BVS,
 
+  PHA,
+  PHP,
+  PLA,
+  PLP,
+
   CLC,
+  SEC,
 
 
   SEI,
@@ -208,11 +218,6 @@ export class Cpu6502 {
       return
 
     let pc = this.pc
-    if (pc in this.breakPoints) {
-      this.pausing = true
-      return
-    }
-
     const op = this.read8(pc++)
     const inst = this.getInst(op)
     if (inst == null) {
@@ -224,6 +229,11 @@ export class Cpu6502 {
     this.pc += inst.bytes
     kOpTypeTable[inst.opType](this, pc, inst.addressing)
     this.cycleCount += inst.cycle
+
+    if (this.breakPoints[this.pc]) {
+      this.pausing = true
+    }
+
     return inst.cycle
   }
 
@@ -246,6 +256,12 @@ export class Cpu6502 {
   public read16(adr: number): number {
     const lo = this.read8(adr)
     const hi = this.read8(adr + 1)
+    return (hi << 8) | lo
+  }
+
+  public read16Indirect(adr: number): number {
+    const lo = this.read8(adr)
+    const hi = this.read8((adr & 0xff00) + ((adr + 1) & 0xff))
     return (hi << 8) | lo
   }
 
@@ -452,10 +468,25 @@ const kInstTable: Instruction[] = (() => {
   setOp('ROR', 0x76, OpType.ROR, Addressing.ZEROPAGE_X, 2, 6)
   setOp('ROR', 0x6e, OpType.ROR, Addressing.ABSOLUTE, 3, 6)
   setOp('ROR', 0x7e, OpType.ROR, Addressing.ABSOLUTE_X, 3, 7)
+  // ASL
+  setOp('ASL', 0x0a, OpType.ASL, Addressing.ACCUMULATOR, 1, 2)
+  setOp('ASL', 0x06, OpType.ASL, Addressing.ZEROPAGE, 2, 5)
+  setOp('ASL', 0x16, OpType.ASL, Addressing.ZEROPAGE_X, 2, 6)
+  setOp('ASL', 0x0e, OpType.ASL, Addressing.ABSOLUTE, 3, 6)
+  setOp('ASL', 0x1e, OpType.ASL, Addressing.ABSOLUTE_X, 3, 7)
+  // LSR
+  setOp('LSR', 0x4a, OpType.LSR, Addressing.ACCUMULATOR, 1, 2)
+  setOp('LSR', 0x46, OpType.LSR, Addressing.ZEROPAGE, 2, 5)
+  setOp('LSR', 0x56, OpType.LSR, Addressing.ZEROPAGE_X, 2, 6)
+  setOp('LSR', 0x4e, OpType.LSR, Addressing.ABSOLUTE, 3, 6)
+  setOp('LSR', 0x5e, OpType.LSR, Addressing.ABSOLUTE_X, 3, 7)
   // BIT
   setOp('BIT', 0x24, OpType.BIT, Addressing.ZEROPAGE, 2, 3)
   setOp('BIT', 0x2c, OpType.BIT, Addressing.ABSOLUTE, 3, 4)
 
+  // JMP
+  setOp('JMP', 0x4c, OpType.JMP, Addressing.ABSOLUTE, 3, 3)
+  setOp('JMP', 0x6c, OpType.JMP, Addressing.INDIRECT, 3, 5)
   // JSR
   setOp('JSR', 0x20, OpType.JSR, Addressing.ABSOLUTE, 3, 6)
   // RTS
@@ -472,7 +503,14 @@ const kInstTable: Instruction[] = (() => {
   setOp('BVC', 0x50, OpType.BVC, Addressing.RELATIVE, 2, 2)
   setOp('BVS', 0x70, OpType.BVS, Addressing.RELATIVE, 2, 2)
 
+  // Push, Pop
+  setOp('PHA', 0x48, OpType.PHA, Addressing.IMPLIED, 1, 3)
+  setOp('PHP', 0x08, OpType.PHP, Addressing.IMPLIED, 1, 3)
+  setOp('PLA', 0x68, OpType.PLA, Addressing.IMPLIED, 1, 4)
+  setOp('PLP', 0x28, OpType.PLP, Addressing.IMPLIED, 1, 4)
+
   setOp('CLC', 0x18, OpType.CLC, Addressing.IMPLIED, 1, 2)
+  setOp('SEC', 0x38, OpType.SEC, Addressing.IMPLIED, 1, 2)
 
   setOp('SEI', 0x78, OpType.SEI, Addressing.IMPLIED, 1, 2)
   setOp('CLD', 0xd8, OpType.CLD, Addressing.IMPLIED, 1, 2)
@@ -510,6 +548,9 @@ const kOpTypeTable = (() => {
     case Addressing.ABSOLUTE_X:
       adr = (cpu.read16(pc) + cpu.x) & 0xffff
       break
+    case Addressing.ABSOLUTE_Y:
+      adr = (cpu.read16(pc) + cpu.y) & 0xffff
+      break
     case Addressing.INDIRECT_Y:
       {
         const zeroPageAdr = cpu.read8(pc)
@@ -536,11 +577,23 @@ const kOpTypeTable = (() => {
     case Addressing.ZEROPAGE_X:
       adr = (cpu.read8(pc) + cpu.x) & 0x00ff
       break
+    case Addressing.ZEROPAGE_Y:
+      adr = (cpu.read8(pc) + cpu.x) & 0xff
+      break
     case Addressing.ABSOLUTE:
       adr = cpu.read16(pc)
       break
     case Addressing.ABSOLUTE_X:
       adr = (cpu.read16(pc) + cpu.x) & 0xffff
+      break
+    case Addressing.ABSOLUTE_Y:
+      adr = (cpu.read16(pc) + cpu.y) & 0xffff
+      break
+    case Addressing.INDIRECT_Y:
+      {
+        const zeroPageAdr = cpu.read8(pc)
+        adr = (cpu.read16(zeroPageAdr) + cpu.y) & 0xffff
+      }
       break
     default:
       console.error(`Illegal store: ${addressing}`)
@@ -621,7 +674,7 @@ const kOpTypeTable = (() => {
     cpu.setFlag(cpu.x)
   })
   set(OpType.INY, (cpu, _pc, _) => {
-    cpu.x = inc8(cpu.y)
+    cpu.y = inc8(cpu.y)
     cpu.setFlag(cpu.y)
   })
   set(OpType.INC, (cpu, pc, addressing) => {
@@ -635,7 +688,7 @@ const kOpTypeTable = (() => {
     cpu.setFlag(cpu.x)
   })
   set(OpType.DEY, (cpu, _pc, _) => {
-    cpu.x = dec8(cpu.y)
+    cpu.y = dec8(cpu.y)
     cpu.setFlag(cpu.y)
   })
   set(OpType.DEC, (cpu, pc, addressing) => {
@@ -677,6 +730,22 @@ const kOpTypeTable = (() => {
     cpu.setFlag(newValue)
     cpu.setCarry(newCarry)
   })
+  set(OpType.ASL, (cpu, pc, addressing) => {
+    const value = load(cpu, pc, addressing)
+    const newCarry = (value & 0x80) !== 0
+    const newValue = (value << 1) & 0xff
+    store(cpu, pc, addressing, newValue)
+    cpu.setFlag(newValue)
+    cpu.setCarry(newCarry)
+  })
+  set(OpType.LSR, (cpu, pc, addressing) => {
+    const value = load(cpu, pc, addressing)
+    const newCarry = (value & 0x01) !== 0
+    const newValue = (value >> 1) & 0xff
+    store(cpu, pc, addressing, newValue)
+    cpu.setFlag(newValue)
+    cpu.setCarry(newCarry)
+  })
   set(OpType.BIT, (cpu, pc, addressing) => {
     const value = load(cpu, pc, addressing)
     const result = cpu.a & value
@@ -698,6 +767,12 @@ const kOpTypeTable = (() => {
     cpu.setFlag(cpu.y - value)
   })
 
+  set(OpType.JMP, (cpu, pc, addressing) => {
+    let adr = cpu.read16(pc)
+    if (addressing !== Addressing.ABSOLUTE)  // Indirect address
+      adr = cpu.read16Indirect(adr)
+    cpu.pc = adr
+  })
   set(OpType.JSR, (cpu, pc, _) => {
     const adr = cpu.read16(pc)
     cpu.push16(pc + 1)
@@ -752,8 +827,24 @@ const kOpTypeTable = (() => {
       cpu.pc += offset
   })
 
-  set(OpType.CLC, (cpu, _pc, _) => {  // Clear carry flag
+  set(OpType.PHA, (cpu, pc, _) => {
+    cpu.push(cpu.a)
+  })
+  set(OpType.PHP, (cpu, pc, _) => {
+    cpu.push(cpu.p)
+  })
+  set(OpType.PLA, (cpu, pc, _) => {
+    cpu.a = cpu.pop()
+  })
+  set(OpType.PLP, (cpu, pc, _) => {
+    cpu.p = cpu.pop()
+  })
+
+  set(OpType.CLC, (cpu, _pc, _) => {
     cpu.p &= ~CARRY_FLAG
+  })
+  set(OpType.SEC, (cpu, _pc, _) => {
+    cpu.p |= CARRY_FLAG
   })
 
   set(OpType.SEI, (cpu, pc, addressing) => {  // SEI: Disable IRQ

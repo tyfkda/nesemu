@@ -88,7 +88,6 @@ function nesTest() {
   nes.setRomData(prgRom, chrRom)
   nes.reset()
   nes.cpu.pause(true)
-  nes.render()
 
   dumpCpu(nes.cpu)
 
@@ -110,6 +109,7 @@ function nesTest() {
     if (paused)
       nes.cpu.pause(true)
     dumpCpu(nes.cpu)
+    nes.render()
   })
   runElem.addEventListener('click', () => {
     nes.cpu.pause(false)
@@ -125,12 +125,20 @@ function nesTest() {
     dumpCpu(nes.cpu)
   })
 
+  document.getElementById('capture').addEventListener('click', () => {
+    const dataUrl = canvas.toDataURL()
+    const img = document.getElementById('captured-image') as HTMLImageElement
+    img.src = dataUrl
+    img.style.visibility = 'visible'
+  })
+
   setInterval(() => {
     if (!nes.cpu.isPaused()) {
       // TODO: Calculate cpu cycles from elapsed time.
       let cycles = (1.79 * 1000000 / FPS) | 0
       nes.runCycles(cycles)
       dumpCpu(nes.cpu)
+      nes.render()
       updateButtonState()
     }
   }, 1000 / FPS)
