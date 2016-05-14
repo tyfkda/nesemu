@@ -1,7 +1,9 @@
 // NES: Nintendo Entertainment System
 
 import {Cpu6502} from './cpu.ts'
+import {Pad} from './pad.ts'
 import {Ppu} from './ppu.ts'
+import {Util} from './util.ts'
 
 const WIDTH = 256
 const HEIGHT = 240
@@ -78,6 +80,37 @@ const kColors: number[] = [
   0, 0, 0,
 ]
 
+const kStaggered: Uint16Array = (() => {
+  const NBIT = 8
+  const N = 1 << NBIT
+  const array = new Uint16Array(N)
+  for (let i = 0; i < N; ++i) {
+    let d = 0
+    for (let j = 0; j < NBIT; ++j) {
+      d <<= 2
+      if ((i & (1 << (NBIT - 1 - j))) !== 0)
+        d |= 1
+    }
+    array[i] = d
+  }
+  return array
+})()
+
+const kFlipBits: Uint8Array = (() => {
+  const NBIT = 8
+  const N = 1 << NBIT
+  const array = new Uint8Array(N)
+  for (let i = 0; i < N; ++i) {
+    let d = 0
+    for (let j = 0; j < NBIT; ++j) {
+      d <<= 1
+      if ((i & (1 << j)) !== 0)
+        d |= 1
+    }
+    array[i] = d
+  }
+  return array
+})()
 
 function triggerCycle(count, prev, curr) {
   return prev < count && curr >= count
@@ -87,8 +120,9 @@ export class Nes {
   public cpu: Cpu6502
   public ram: Uint8Array
   public ppu: Ppu
+  public pad: Pad
 
-  private romData: Uint8ClampedArray
+  private romData: Uint8Array
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
@@ -101,6 +135,7 @@ export class Nes {
     this.cpu = new Cpu6502()
     this.ram = new Uint8Array(RAM_SIZE)
     this.ppu = new Ppu()
+    this.pad = new Pad()
     this.setMemoryMap()
 
     this.canvas.width = WIDTH
@@ -111,7 +146,7 @@ export class Nes {
     this.clearPixels()
   }
 
-  public setRomData(romData: Uint8ClampedArray, chrData: Uint8ClampedArray) {
+  public setRomData(romData: Uint8Array, chrData: Uint8Array) {
     this.romData = romData
     this.ppu.setChrData(chrData)
   }
@@ -119,6 +154,10 @@ export class Nes {
   public reset() {
     this.cpu.reset()
     this.ppu.reset()
+  }
+
+  public setPadStatus(no: number, status: number): void {
+    this.pad.setStatus(no, status)
   }
 
   public runCycles(cycles: number): number {
@@ -154,10 +193,13 @@ export class Nes {
 
   public render() {
     this.renderBg()
+    this.renderSprite()
     this.context.putImageData(this.imageData, 0, 0)
   }
 
   private setMemoryMap() {
+    const OAMDMA = 0x4014
+
     const cpu = this.cpu
 
     // ROM
@@ -178,11 +220,32 @@ export class Nes {
     })
 
     cpu.setReadMemory(0x4000, 0x5fff, (adr) => {  // APU
-      // TODO: Implement
-      return 0
+      switch (adr) {
+      case 0x4016:  // Pad 1
+        return this.pad.shift(0)
+      case 0x4017:  // Pad 2
+        return this.pad.shift(1)
+      default:
+        return 0
+      }
     })
     cpu.setWriteMemory(0x4000, 0x5fff, (adr, value) => {  // APU
-      // TODO: Implement
+      switch (adr) {
+      case 0x4016:  // Pad status. bit0 = Controller shift register strobe
+        if ((value & 1) === 0) {
+          this.pad.latch()
+        }
+        break
+      case OAMDMA:
+        if (0 <= value && value <= 0x1f) {  // RAM
+          this.ppu.copyWithDma(this.ram, value << 8)
+        } else {
+          console.error('OAMDMA not implemented except for RAM: ${Util.hex(value, 2)}')
+        }
+        break
+      default:
+        break
+      }
     })
   }
 
@@ -211,9 +274,9 @@ export class Nes {
   private renderBg() {
     const W = 8
     const chrRom = this.ppu.chrData
-    const chrStart = 0x1000
+    const chrStart = this.ppu.getPatternTableAddress()
     const vram = this.ppu.vram
-    const nameTable = 0x2800
+    const nameTable = this.ppu.getNameTable()
     const attributeTable = nameTable + 0x3c0
     const paletTable = 0x3f00
     const pixels = this.imageData.data
@@ -226,10 +289,10 @@ export class Nes {
         const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
 
         for (let py = 0; py < W; ++py) {
+          const idx = chridx + py
+          const pat = (kStaggered[chrRom[idx + 8]] << 1) | kStaggered[chrRom[idx]]
           for (let px = 0; px < W; ++px) {
-            const idx = chridx + py
-            const shift = (W - 1) - px
-            const pal = (((chrRom[idx + 8] >> shift) & 1) << 1) | ((chrRom[idx] >> shift) & 1)
+            const pal = (pat >> ((W - 1 - px) * 2)) & 3
             let r = 0, g = 0, b = 0
             if (pal !== 0) {
               const palet = paletHigh + pal
@@ -249,6 +312,64 @@ export class Nes {
       }
     }
     this.debugPalet()
+  }
+
+  private renderSprite() {
+    const W = 8
+    const PALET = 0x03
+    const FLIP_HORZ = 0x40
+    const FLIP_VERT = 0x80
+
+    const oam = this.ppu.oam
+    const vram = this.ppu.vram
+    const chrRom = this.ppu.chrData
+    const chrStart = this.ppu.getPatternTableAddress() ^ 0x1000
+    const paletTable = 0x3f10
+    const pixels = this.imageData.data
+
+    for (let i = 0; i < 64; ++i) {
+      const y = oam[i * 4]
+      const index = oam[i * 4 + 1]
+      const attr = oam[i * 4 + 2]
+      const x = oam[i * 4 + 3]
+
+      const chridx = index * 16 + chrStart
+      const paletHigh = (attr & PALET) << 2
+
+      for (let py = 0; py < W; ++py) {
+        if (y + py >= HEIGHT)
+          break
+
+        const idx = chridx + py
+        let patHi = chrRom[idx + 8]
+        let patLo = chrRom[idx]
+        if ((attr & FLIP_HORZ) !== 0) {
+          patHi = kFlipBits[patHi]
+          patLo = kFlipBits[patLo]
+        }
+        const pat = (kStaggered[patHi] << 1) | kStaggered[patLo]
+        for (let px = 0; px < W; ++px) {
+          if (x + px >= WIDTH)
+            break
+
+          const pal = (pat >> ((W - 1 - px) * 2)) & 3
+          let r = 0, g = 0, b = 0
+          if (pal === 0)
+            continue
+          const palet = paletHigh + pal
+          const col = vram[paletTable + palet] & 0x3f
+          const i = col * 3
+          r = kColors[i]
+          g = kColors[i + 1]
+          b = kColors[i + 2]
+
+          const index = ((y + py) * WIDTH + (x + px)) * 4
+          pixels[index + 0] = r
+          pixels[index + 1] = g
+          pixels[index + 2] = b
+        }
+      }
+    }
   }
 
   private debugPalet() {

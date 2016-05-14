@@ -118,9 +118,10 @@ enum OpType {
   CLC,
   SEC,
 
-
   SEI,
   CLD,
+
+  NOP,
 }
 
 interface Instruction {
@@ -515,6 +516,8 @@ const kInstTable: Instruction[] = (() => {
   setOp('SEI', 0x78, OpType.SEI, Addressing.IMPLIED, 1, 2)
   setOp('CLD', 0xd8, OpType.CLD, Addressing.IMPLIED, 1, 2)
 
+  setOp('NOP', 0xea, OpType.NOP, Addressing.IMPLIED, 1, 2)
+
   return tbl
 })()
 
@@ -853,6 +856,8 @@ const kOpTypeTable = (() => {
   set(OpType.CLD, (cpu, pc, addressing) => {  // CLD: BCD to normal mode
     // not implemented on NES
   })
+
+  set(OpType.NOP, (cpu, pc, addressing) => {})
 
   return tbl
 })()

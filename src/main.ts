@@ -4,20 +4,22 @@ import {Nes} from './nes/nes.ts'
 import {Cpu6502} from './nes/cpu.ts'
 import {Util} from './nes/util.ts'
 
+import {PadKeyHandler} from './pad_key_handler.ts'
+
 declare var kRomData: number[]
 
 const FPS = 60
 
-function loadPrgRom(romData: number[]): Uint8ClampedArray {
+function loadPrgRom(romData: number[]): Uint8Array {
   const start = 16, size = 16 * 1024
   const prg = romData.slice(start, start + size)
-  return new Uint8ClampedArray(prg)
+  return new Uint8Array(prg)
 }
 
-function loadChrRom(romData: number[]): Uint8ClampedArray {
+function loadChrRom(romData: number[]): Uint8Array {
   const start = 16 + 16 * 1024, size = 8 * 1024
   const chr = romData.slice(start, start + size)
-  return new Uint8ClampedArray(chr)
+  return new Uint8Array(chr)
 }
 
 function showCpuStatus(cpu: Cpu6502): void {
@@ -118,6 +120,7 @@ function nesTest() {
   pauseElem.addEventListener('click', () => {
     nes.cpu.pause(true)
     updateButtonState()
+    dumpCpu(nes.cpu)
   })
   resetElem.addEventListener('click', () => {
     nes.reset()
@@ -132,14 +135,25 @@ function nesTest() {
     img.style.visibility = 'visible'
   })
 
+  const padKeyHandler = new PadKeyHandler()
+  root.setAttribute('tabindex', '1')  // To accept key event.
+  root.addEventListener('keydown', (event) => {
+    event.preventDefault()
+    padKeyHandler.onKeyDown(event.keyCode)
+  })
+  root.addEventListener('keyup', (event) => {
+    event.preventDefault()
+    padKeyHandler.onKeyUp(event.keyCode)
+  })
+
   setInterval(() => {
+    nes.setPadStatus(0, padKeyHandler.getStatus())
     if (!nes.cpu.isPaused()) {
       // TODO: Calculate cpu cycles from elapsed time.
       let cycles = (1.79 * 1000000 / FPS) | 0
       nes.runCycles(cycles)
-      dumpCpu(nes.cpu)
       nes.render()
-      updateButtonState()
+      showCpuStatus(nes.cpu)
     }
   }, 1000 / FPS)
 }
