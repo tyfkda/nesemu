@@ -682,11 +682,11 @@ const kOpTypeTable = (() => {
   })
   set(OpType.SBC, (cpu, pc, addressing) => {
     const operand = load(cpu, pc, addressing)
-    const borrow = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
+    const borrow = (cpu.p & CARRY_FLAG) !== 0 ? 0 : 1
     const result = cpu.a - operand - borrow
     cpu.a = result & 0xff
     cpu.setFlag(cpu.a)
-    cpu.setCarry(result < 0)
+    cpu.setCarry(result >= 0)
   })
 
   set(OpType.INX, (cpu, _pc, _) => {
@@ -776,15 +776,21 @@ const kOpTypeTable = (() => {
   })
   set(OpType.CMP, (cpu, pc, addressing) => {
     const value = load(cpu, pc, addressing)
-    cpu.setFlag(cpu.a - value)
+    const result = cpu.a - value
+    cpu.setFlag(result)
+    cpu.setCarry(result >= 0)
   })
   set(OpType.CPX, (cpu, pc, addressing) => {
     const value = load(cpu, pc, addressing)
-    cpu.setFlag(cpu.x - value)
+    const result = cpu.x - value
+    cpu.setFlag(result)
+    cpu.setCarry(result >= 0)
   })
   set(OpType.CPY, (cpu, pc, addressing) => {
     const value = load(cpu, pc, addressing)
-    cpu.setFlag(cpu.y - value)
+    const result = cpu.y - value
+    cpu.setFlag(result)
+    cpu.setCarry(result >= 0)
   })
 
   set(OpType.JMP, (cpu, pc, addressing) => {
