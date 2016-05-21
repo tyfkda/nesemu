@@ -42,7 +42,7 @@ const RESERVED_FLAG = 1 << RESERVED_BIT
 const OVERFLOW_FLAG = 1 << OVERFLOW_BIT
 const NEGATIVE_FLAG = 1 << NEGATIVE_BIT
 
-enum Addressing {
+export enum Addressing {
   IMPLIED,
   ACCUMULATOR,
   IMMEDIATE,
@@ -53,10 +53,10 @@ enum Addressing {
   ABSOLUTE,
   ABSOLUTE_X,
   ABSOLUTE_Y,
+  INDIRECT,
   INDIRECT_X,
   INDIRECT_Y,
   RELATIVE,
-  INDIRECT,
 }
 
 enum OpType {
@@ -151,6 +151,8 @@ export class Cpu6502 {
   public pc: number  // Program counter
   public cycleCount: number
   public breakPoints: {}
+  public watchRead: {}
+  public watchWrite: {}
   public pausing: boolean
   private readerFuncTable: Function[]
   private writerFuncTable: Function[]
@@ -162,6 +164,8 @@ export class Cpu6502 {
 
     this.a = this.x = this.y = this.s = 0
     this.breakPoints = {}
+    this.watchRead = {}
+    this.watchWrite = {}
     this.pausing = false
   }
 
@@ -210,7 +214,7 @@ export class Cpu6502 {
     this.p = setReset(this.p, value, NEGATIVE_FLAG)
   }
 
-  public getInst(opcode: number): Instruction {
+  static public getInst(opcode: number): Instruction {
     return kInstTable[opcode]
   }
 
@@ -220,7 +224,7 @@ export class Cpu6502 {
 
     let pc = this.pc
     const op = this.read8(pc++)
-    const inst = this.getInst(op)
+    const inst = Cpu6502.getInst(op)
     if (inst == null) {
       console.error(`Unhandled OPCODE, ${hex(this.pc - 1, 4)}: ${hex(op, 2)}`)
       this.pausing = true
@@ -233,6 +237,7 @@ export class Cpu6502 {
 
     if (this.breakPoints[this.pc]) {
       this.pausing = true
+      console.warn(`paused because PC matched break point: ${Util.hex(this.pc, 4)}`)
     }
 
     return inst.cycle
@@ -244,6 +249,15 @@ export class Cpu6502 {
   }
 
   public read8(adr: number): number {
+    const value = this.read8Raw(adr)
+    if (this.watchRead[adr]) {
+      this.pausing = true
+      console.warn(`Break because watched point read: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
+    }
+    return value
+  }
+
+  public read8Raw(adr: number): number {
     const block = (adr / BLOCK_SIZE) | 0
     const reader = this.readerFuncTable[block]
     if (!reader) {
@@ -273,6 +287,10 @@ export class Cpu6502 {
       console.error(`Illegal write at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}`)
       this.pausing = true
       return
+    }
+    if (this.watchWrite[adr]) {
+      this.pausing = true
+      console.warn(`Break because watched point write: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
     }
     return this.writerFuncTable[block](adr, value)
   }
@@ -316,7 +334,6 @@ export class Cpu6502 {
 
 const kInstTable: Instruction[] = (() => {
   const tbl = []
-
   function setOp(mnemonic: string, opcode: number, opType: OpType, addressing: Addressing,
                  bytes: number, cycle: number) {
     tbl[opcode] = {
@@ -728,7 +745,7 @@ const kOpTypeTable = (() => {
     const value = load(cpu, pc, addressing)
     const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 0x80 : 0
     const newCarry = (value & 0x01) !== 0
-    const newValue = ((value >> 1) | oldCarry) & 0xff
+    const newValue = (value >> 1) | oldCarry
     store(cpu, pc, addressing, newValue)
     cpu.setFlag(newValue)
     cpu.setCarry(newCarry)

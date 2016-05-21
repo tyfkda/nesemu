@@ -138,11 +138,11 @@ export class Nes {
     this.pad = new Pad()
     this.setMemoryMap()
 
-    this.canvas.width = WIDTH
+    this.canvas.width = WIDTH * 2
     this.canvas.height = HEIGHT
 
     this.context = this.canvas.getContext('2d')
-    this.imageData = this.context.getImageData(0, 0, WIDTH, HEIGHT)
+    this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
     this.clearPixels()
   }
 
@@ -192,7 +192,8 @@ export class Nes {
   }
 
   public render() {
-    this.renderBg()
+    this.renderBg(0, 0, 0)
+    this.renderBg(WIDTH, 0, 0x0800)
     this.renderSprite()
     this.context.putImageData(this.imageData, 0, 0)
   }
@@ -271,12 +272,13 @@ export class Nes {
     }
   }
 
-  private renderBg() {
+  private renderBg(startX, startY, nameTableOffset) {
     const W = 8
+    const LINE_WIDTH = this.imageData.width
     const chrRom = this.ppu.chrData
     const chrStart = this.ppu.getPatternTableAddress()
     const vram = this.ppu.vram
-    const nameTable = this.ppu.getNameTable()
+    const nameTable = this.ppu.getNameTable() ^ nameTableOffset
     const attributeTable = nameTable + 0x3c0
     const paletTable = 0x3f00
     const pixels = this.imageData.data
@@ -303,7 +305,7 @@ export class Nes {
               b = kColors[i + 2]
             }
 
-            const index = ((by * W + py) * WIDTH + (bx * W + px)) * 4
+            const index = ((by * W + py + startY) * LINE_WIDTH + (bx * W + px + startX)) * 4
             pixels[index + 0] = r
             pixels[index + 1] = g
             pixels[index + 2] = b
@@ -316,6 +318,7 @@ export class Nes {
 
   private renderSprite() {
     const W = 8
+    const LINE_WIDTH = this.imageData.width
     const PALET = 0x03
     const FLIP_HORZ = 0x40
     const FLIP_VERT = 0x80
@@ -363,7 +366,7 @@ export class Nes {
           g = kColors[i + 1]
           b = kColors[i + 2]
 
-          const index = ((y + py) * WIDTH + (x + px)) * 4
+          const index = ((y + py) * LINE_WIDTH + (x + px)) * 4
           pixels[index + 0] = r
           pixels[index + 1] = g
           pixels[index + 2] = b
@@ -373,6 +376,7 @@ export class Nes {
   }
 
   private debugPalet() {
+    const LINE_WIDTH = this.imageData.width
     const vram = this.ppu.vram
     const paletTable = 0x3f00
     const pixels = this.imageData.data
@@ -387,7 +391,7 @@ export class Nes {
           const y = k + i * 4
           for (let l = 0; l < 3; ++l) {
             const x = l + j * 4
-            const index = (y * WIDTH + x) * 4
+            const index = (y * LINE_WIDTH + x) * 4
             pixels[index + 0] = r
             pixels[index + 1] = g
             pixels[index + 2] = b

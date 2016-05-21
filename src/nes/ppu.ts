@@ -32,6 +32,8 @@ export class Ppu {
   public chrData: Uint8Array
   public vram: Uint8Array
   public oam: Uint8Array  // Object Attribute Memory
+  public scrollX: number
+  public scrollY: number
   private latch: number
   private ppuAddr: number
 
@@ -71,6 +73,11 @@ export class Ppu {
 
     switch (reg) {
     case PPUSCROLL:
+      if (this.latch === 0)
+        this.scrollX = value
+      else
+        this.scrollY = value
+      this.latch = 1 - this.latch
       break
     case PPUADDR:
       if (this.latch === 0)

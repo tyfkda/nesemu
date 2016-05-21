@@ -2,6 +2,7 @@
 
 import {Nes} from './nes/nes.ts'
 import {Cpu6502} from './nes/cpu.ts'
+import {disassemble} from './nes/disasm.ts'
 import {Util} from './nes/util.ts'
 
 import {PadKeyHandler} from './pad_key_handler.ts'
@@ -53,32 +54,38 @@ let putConsole, clearConsole
   }
 })()
 
-function dumpCpu(cpu: Cpu6502) {
-  const h2 = (x) => Util.hex(x, 2)
-  const h4 = (x) => Util.hex(x, 4)
-  const op = cpu.read8(cpu.pc)
-  const inst = cpu.getInst(op) || {
-    bytes: 1,
-    mnemonic: '???',
-  }
-
-  const MAX_BYTES = 4
-  const bins = new Array(MAX_BYTES)
-  for (let i = 0; i < inst.bytes; ++i)
-    bins[i] = h2(cpu.read8(cpu.pc + i))
-  for (let i = inst.bytes; i < MAX_BYTES; ++i)
-    bins[i] = '  '
-  const line = `${h4(cpu.pc)}: ${bins.join(' ')} ${inst.mnemonic}`
-  putConsole(line)
-  showCpuStatus(cpu)
+const kIllegalInstruction = {
+  bytes: 1,
+  mnemonic: '???',
 }
+
+const dumpCpu = (() => {
+  const MAX_BYTES = 3
+  const mem = new Uint8Array(MAX_BYTES)
+  const bins = new Array(MAX_BYTES)
+  return function(cpu: Cpu6502) {
+    const op = cpu.read8Raw(cpu.pc)
+    const inst = Cpu6502.getInst(op) || kIllegalInstruction
+
+    for (let i = 0; i < inst.bytes; ++i) {
+      const m = cpu.read8Raw(cpu.pc + i)
+      mem[i] = m
+      bins[i] = Util.hex(m, 2)
+    }
+    for (let i = inst.bytes; i < MAX_BYTES; ++i)
+      bins[i] = '  '
+    const line = `${Util.hex(cpu.pc, 4)}: ${bins.join(' ')}   ${disassemble(inst, mem, 1, cpu.pc)}`
+    putConsole(line)
+    showCpuStatus(cpu)
+  }
+})()
 
 function nesTest() {
   const root = document.getElementById('nesroot')
   const canvas = document.createElement('canvas')
   canvas.style.imageRendering = 'pixelated'
   const scale = 2
-  canvas.style.width = `${256 * scale}px`
+  canvas.style.width = `${256 * 2 * scale}px`
   canvas.style.height = `${240 * scale}px`
   root.appendChild(canvas)
 
@@ -147,7 +154,8 @@ function nesTest() {
   })
 
   setInterval(() => {
-    nes.setPadStatus(0, padKeyHandler.getStatus())
+    nes.setPadStatus(0, padKeyHandler.getStatus(0))
+    nes.setPadStatus(1, padKeyHandler.getStatus(1))
     if (!nes.cpu.isPaused()) {
       // TODO: Calculate cpu cycles from elapsed time.
       let cycles = (1.79 * 1000000 / FPS) | 0
