@@ -7,8 +7,6 @@ import {Util} from './nes/util.ts'
 
 import {PadKeyHandler} from './pad_key_handler.ts'
 
-declare var kRomData: number[]
-
 const FPS = 60
 
 function loadPrgRom(romData: number[]): Uint8Array {
@@ -80,6 +78,33 @@ const dumpCpu = (() => {
   }
 })()
 
+function handleFileDrop(dropZone, onDropped) {
+  function onDrop(evt) {
+    evt.stopPropagation()
+    evt.preventDefault()
+    var files = evt.dataTransfer.files
+    if (files.length > 0) {
+      const reader = new FileReader()
+      reader.onload = function(e) {
+        const binary = new Uint8Array(e.target.result);
+        onDropped(binary)
+      }
+      reader.readAsArrayBuffer(files[0])
+    }
+    return false
+  }
+
+  function onDragOver(evt) {
+    evt.stopPropagation()
+    evt.preventDefault()
+    evt.dataTransfer.dropEffect = 'copy'
+    return false
+  }
+
+  dropZone.addEventListener('dragover', onDragOver, false);
+  dropZone.addEventListener('drop', onDrop, false);
+}
+
 function nesTest() {
   const root = document.getElementById('nesroot')
   const canvas = document.createElement('canvas')
@@ -92,11 +117,15 @@ function nesTest() {
   const nes = Nes.create(canvas)
   ;(window as any).nes = nes  // Put nes into global.
 
-  const prgRom = loadPrgRom(kRomData)
-  const chrRom = loadChrRom(kRomData)
-  nes.setRomData(prgRom, chrRom)
-  nes.reset()
+  const onRomLoaded = (rom) => {
+    const prgRom = loadPrgRom(rom)
+    const chrRom = loadChrRom(rom)
+    nes.setRomData(prgRom, chrRom)
+  }
+
+  onRomLoaded([0])
   nes.cpu.pause(true)
+  nes.reset()
 
   dumpCpu(nes.cpu)
 
@@ -164,6 +193,17 @@ function nesTest() {
       showCpuStatus(nes.cpu)
     }
   }, 1000 / FPS)
+
+  // Handle file drop.
+  if (window.File && window.FileReader && window.FileList && window.Blob) {
+    handleFileDrop(root, (binary) => {
+      nes.cpu.pause(true)
+      onRomLoaded(binary)
+      nes.reset()
+      nes.cpu.pause(false)
+      updateButtonState()
+    })
+  }
 }
 
 window.addEventListener('load', () => {
