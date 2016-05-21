@@ -9,7 +9,9 @@ const OAM_SIZE = 0x0100
 // PPUCTRL ($2000)
 const PPUCTRL = 0x00
 const VINT_ENABLE = 0x80  // V: 1=Trigger NMI when VBLANK start
+const SPRITE_SIZE = 0x20
 const BG_PATTERN_TABLE_ADDRESS = 0x10
+const SPRITE_PATTERN_TABLE_ADDRESS = 0x08
 const INCREMENT_MODE = 0x04  // I: 1=+32, 0=+1
 const BASE_NAMETABLE_ADDRESS = 0x03
 
@@ -119,8 +121,18 @@ export class Ppu {
     return 0x2000 + ((this.regs[PPUCTRL] & BASE_NAMETABLE_ADDRESS) << 10)
   }
 
-  public getPatternTableAddress(): number {
+  public getBgPatternTableAddress(): number {
     return ((this.regs[PPUCTRL] & BG_PATTERN_TABLE_ADDRESS) << 8)
+  }
+
+  public getSpritePatternTableAddress(): number {
+    if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
+      return ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
+    return 0
+  }
+
+  public isSprite8x16(): boolean {
+    return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
   }
 
   private incPpuAddr(): void {

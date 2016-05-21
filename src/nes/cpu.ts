@@ -325,9 +325,15 @@ export class Cpu6502 {
 
   // Non-maskable interrupt
   public nmi(): void {
+    const vector = this.read16(0xfffa)
+    if (this.breakPoints.nmi) {
+      this.pausing = true
+      console.warn(`paused because NMI: ${Util.hex(this.pc, 4)}, ${Util.hex(vector, 4)}`)
+    }
+
     this.push16(this.pc)
     this.push(this.p)
-    this.pc = this.read16(0xfffa)
+    this.pc = vector
     this.p = (this.p | IRQBLK_FLAG) & ~BREAK_FLAG
   }
 }
@@ -571,6 +577,12 @@ const kOpTypeTable = (() => {
     case Addressing.ABSOLUTE_Y:
       adr = (cpu.read16(pc) + cpu.y) & 0xffff
       break
+    case Addressing.INDIRECT_X:
+      {
+        const zeroPageAdr = cpu.read8(pc)
+        adr = cpu.read16((zeroPageAdr + cpu.x) & 0xff)
+      }
+      break
     case Addressing.INDIRECT_Y:
       {
         const zeroPageAdr = cpu.read8(pc)
@@ -608,6 +620,12 @@ const kOpTypeTable = (() => {
       break
     case Addressing.ABSOLUTE_Y:
       adr = (cpu.read16(pc) + cpu.y) & 0xffff
+      break
+    case Addressing.INDIRECT_X:
+      {
+        const zeroPageAdr = cpu.read8(pc)
+        adr = cpu.read16((zeroPageAdr + cpu.x) & 0xff)
+      }
       break
     case Addressing.INDIRECT_Y:
       {

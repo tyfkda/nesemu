@@ -10,13 +10,13 @@ import {PadKeyHandler} from './pad_key_handler.ts'
 const FPS = 60
 
 function loadPrgRom(romData: number[]): Uint8Array {
-  const start = 16, size = 16 * 1024
+  const start = 16, size = romData[4] * (16 * 1024)
   const prg = romData.slice(start, start + size)
   return new Uint8Array(prg)
 }
 
 function loadChrRom(romData: number[]): Uint8Array {
-  const start = 16 + 16 * 1024, size = 8 * 1024
+  const start = 16 + romData[4] * (16 * 1024), size = romData[5] * (8 * 1024)
   const chr = romData.slice(start, start + size)
   return new Uint8Array(chr)
 }
@@ -201,6 +201,8 @@ function nesTest() {
       onRomLoaded(binary)
       nes.reset()
       nes.cpu.pause(false)
+      clearConsole()
+      dumpCpu(nes.cpu)
       updateButtonState()
     })
   }

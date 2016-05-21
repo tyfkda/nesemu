@@ -276,7 +276,7 @@ export class Nes {
     const W = 8
     const LINE_WIDTH = this.imageData.width
     const chrRom = this.ppu.chrData
-    const chrStart = this.ppu.getPatternTableAddress()
+    const chrStart = this.ppu.getBgPatternTableAddress()
     const vram = this.ppu.vram
     const nameTable = this.ppu.getNameTable() ^ nameTableOffset
     const attributeTable = nameTable + 0x3c0
@@ -326,9 +326,11 @@ export class Nes {
     const oam = this.ppu.oam
     const vram = this.ppu.vram
     const chrRom = this.ppu.chrData
-    const chrStart = this.ppu.getPatternTableAddress() ^ 0x1000
+    const chrStart = this.ppu.getSpritePatternTableAddress()
     const paletTable = 0x3f10
     const pixels = this.imageData.data
+    const isSprite8x16 = this.ppu.isSprite8x16()
+    const h = isSprite8x16 ? 16 : 8
 
     for (let i = 0; i < 64; ++i) {
       const y = oam[i * 4]
@@ -336,15 +338,16 @@ export class Nes {
       const attr = oam[i * 4 + 2]
       const x = oam[i * 4 + 3]
 
-      const chridx = index * 16 + chrStart
+      const chridx = isSprite8x16 ? (index & 0xfe) * 16 + ((index & 1) << 12) : index * 16 + chrStart
       const paletHigh = (attr & PALET) << 2
 
-      for (let py = 0; py < W; ++py) {
+      for (let py = 0; py < h; ++py) {
         if (y + py >= HEIGHT)
           break
 
-        const idx = chridx + py
-        let patHi = chrRom[idx + 8]
+        const ppy = (attr & FLIP_VERT) !== 0 ? (h - 1) - py : py
+        const idx = chridx + (ppy & 7) + ((ppy & 8) * 2)
+        let patHi = chrRom[idx + W]
         let patLo = chrRom[idx]
         if ((attr & FLIP_HORZ) !== 0) {
           patHi = kFlipBits[patHi]
