@@ -223,7 +223,7 @@ export class Ppu {
     const isSprite8x16 = this.isSprite8x16()
     const h = isSprite8x16 ? 16 : 8
 
-    for (let i = 0; i < 64; ++i) {
+    for (let i = 64; --i >= 0; ) {
       const y = oam[i * 4]
       const index = oam[i * 4 + 1]
       const attr = oam[i * 4 + 2]
