@@ -95,9 +95,9 @@ function handleFileDrop(dropZone, onDropped) {
 
 function nesTest() {
   const root = document.getElementById('nesroot')
-  const canvas = document.getElementById('nes-canvas')
+  const canvas = document.getElementById('nes-canvas') as HTMLCanvasElement
   canvas.style.imageRendering = 'pixelated'
-  const paletCanvas = document.getElementById('nes-palet')
+  const paletCanvas = document.getElementById('nes-palet') as HTMLCanvasElement
   paletCanvas.style.imageRendering = 'pixelated'
 
   const nes = Nes.create(canvas, paletCanvas)

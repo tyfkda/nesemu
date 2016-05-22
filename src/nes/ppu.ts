@@ -61,7 +61,7 @@ export class Ppu {
     this.latch = 0
   }
 
-  public read(reg): number {
+  public read(reg: number): number {
     const result = this.regs[reg]
     switch (reg) {
     case PPUSTATUS:
@@ -77,7 +77,7 @@ export class Ppu {
     return result
   }
 
-  public write(reg, value): void {
+  public write(reg: number, value: number): void {
     this.regs[reg] = value
 
     switch (reg) {

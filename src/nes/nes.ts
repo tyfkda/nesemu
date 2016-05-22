@@ -1,8 +1,8 @@
 // NES: Nintendo Entertainment System
 
+import {Apu} from './apu.ts'
 import {Const, kColors} from './const.ts'
 import {Cpu6502} from './cpu.ts'
-import {Pad} from './pad.ts'
 import {Ppu} from './ppu.ts'
 import {Util} from './util.ts'
 
@@ -12,7 +12,7 @@ const VBLANK_START = (241 * 341 / 3) | 0
 const VBLANK_END = (261 * 341 / 3) | 0
 const VRETURN = (262 * 341 / 3) | 0
 
-function triggerCycle(count, prev, curr) {
+function triggerCycle(count: number, prev: number, curr: number): void {
   return prev < count && curr >= count
 }
 
@@ -29,10 +29,10 @@ function loadChrRom(romData: Uint8Array): Uint8Array {
 }
 
 export class Nes {
+  public apu: Apu
   public cpu: Cpu6502
   public ram: Uint8Array
   public ppu: Ppu
-  public pad: Pad
 
   private romData: Uint8Array
   private context: CanvasRenderingContext2D
@@ -47,7 +47,7 @@ export class Nes {
     this.cpu = new Cpu6502()
     this.ram = new Uint8Array(RAM_SIZE)
     this.ppu = new Ppu()
-    this.pad = new Pad()
+    this.apu = new Apu()
     this.setMemoryMap()
 
     this.canvas.width = Const.WIDTH
@@ -58,19 +58,19 @@ export class Nes {
     this.clearPixels()
   }
 
-  public setRomData(romData: Uint8Array) {
+  public setRomData(romData: Uint8Array): void {
     this.romData = loadPrgRom(romData)
     this.ppu.setChrData(loadChrRom(romData))
     this.ppu.setMirrorMode(romData[6] & 1)
   }
 
-  public reset() {
+  public reset(): void {
     this.cpu.reset()
     this.ppu.reset()
   }
 
   public setPadStatus(no: number, status: number): void {
-    this.pad.setStatus(no, status)
+    this.apu.setPadStatus(no, status)
   }
 
   public runCycles(cycles: number): number {
@@ -86,7 +86,7 @@ export class Nes {
     }
   }
 
-  public step() {
+  public step(): void {
     const prevCount = this.cpu.cycleCount
     const cycle = this.cpu.step()
     const currCount = this.cpu.cycleCount
@@ -104,14 +104,14 @@ export class Nes {
     return cycle
   }
 
-  public render() {
+  public render(): void {
     this.ppu.renderBg(this.imageData)
     this.ppu.renderSprite(this.imageData)
     this.debugPalet()
     this.context.putImageData(this.imageData, 0, 0)
   }
 
-  private setMemoryMap() {
+  private setMemoryMap(): void {
     const OAMDMA = 0x4014
 
     const cpu = this.cpu
@@ -134,22 +134,10 @@ export class Nes {
     })
 
     cpu.setReadMemory(0x4000, 0x5fff, (adr) => {  // APU
-      switch (adr) {
-      case 0x4016:  // Pad 1
-        return this.pad.shift(0)
-      case 0x4017:  // Pad 2
-        return this.pad.shift(1)
-      default:
-        return 0
-      }
+      return this.apu.read(adr)
     })
     cpu.setWriteMemory(0x4000, 0x5fff, (adr, value) => {  // APU
       switch (adr) {
-      case 0x4016:  // Pad status. bit0 = Controller shift register strobe
-        if ((value & 1) === 0) {
-          this.pad.latch()
-        }
-        break
       case OAMDMA:
         if (0 <= value && value <= 0x1f) {  // RAM
           this.ppu.copyWithDma(this.ram, value << 8)
@@ -158,22 +146,23 @@ export class Nes {
         }
         break
       default:
+        this.apu.write(adr, value)
         break
       }
     })
   }
 
-  private interruptVBlank() {
+  private interruptVBlank(): void {
     if (!this.ppu.interruptEnable)
       return
     this.interruptNmi()
   }
 
-  private interruptNmi() {
+  private interruptNmi(): void {
     this.cpu.nmi()
   }
 
-  private clearPixels() {
+  private clearPixels(): void {
     const pixels = this.imageData.data
     const n = this.imageData.width * this.imageData.height
     for (let i = 0; i < n; ++i) {
@@ -185,7 +174,7 @@ export class Nes {
     }
   }
 
-  private debugPalet() {
+  private debugPalet(): void {
     const context = this.paletCanvas.getContext('2d')
     context.strokeStyle = ''
     context.fillStyle = `rgb(0,0,0)`
