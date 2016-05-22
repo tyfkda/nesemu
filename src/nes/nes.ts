@@ -116,6 +116,18 @@ function triggerCycle(count, prev, curr) {
   return prev < count && curr >= count
 }
 
+function loadPrgRom(romData: Uint8Array): Uint8Array {
+  const start = 16, size = romData[4] * (16 * 1024)
+  const prg = romData.slice(start, start + size)
+  return new Uint8Array(prg)
+}
+
+function loadChrRom(romData: Uint8Array): Uint8Array {
+  const start = 16 + romData[4] * (16 * 1024), size = romData[5] * (8 * 1024)
+  const chr = romData.slice(start, start + size)
+  return new Uint8Array(chr)
+}
+
 export class Nes {
   public cpu: Cpu6502
   public ram: Uint8Array
@@ -138,7 +150,7 @@ export class Nes {
     this.pad = new Pad()
     this.setMemoryMap()
 
-    this.canvas.width = WIDTH * 2
+    this.canvas.width = WIDTH
     this.canvas.height = HEIGHT
 
     this.context = this.canvas.getContext('2d')
@@ -146,9 +158,10 @@ export class Nes {
     this.clearPixels()
   }
 
-  public setRomData(romData: Uint8Array, chrData: Uint8Array) {
-    this.romData = romData
-    this.ppu.setChrData(chrData)
+  public setRomData(romData: Uint8Array) {
+    this.romData = loadPrgRom(romData)
+    this.ppu.setChrData(loadChrRom(romData))
+    this.ppu.setMirrorMode(romData[6] & 1)
   }
 
   public reset() {
@@ -192,9 +205,9 @@ export class Nes {
   }
 
   public render() {
-    this.renderBg(0, 0, 0)
-    this.renderBg(WIDTH, 0, 0x0800)
+    this.renderBg()
     this.renderSprite()
+    this.debugPalet()
     this.context.putImageData(this.imageData, 0, 0)
   }
 
@@ -272,28 +285,41 @@ export class Nes {
     }
   }
 
-  private renderBg(startX, startY, nameTableOffset) {
+  private renderBg() {
     const W = 8
     const LINE_WIDTH = this.imageData.width
     const chrRom = this.ppu.chrData
     const chrStart = this.ppu.getBgPatternTableAddress()
     const vram = this.ppu.vram
-    const nameTable = this.ppu.getNameTable() ^ nameTableOffset
-    const attributeTable = nameTable + 0x3c0
     const paletTable = 0x3f00
     const pixels = this.imageData.data
-    for (let by = 0; by < HEIGHT / W; ++by) {
-      for (let bx = 0; bx < WIDTH / W; ++bx) {
-        const name = vram[nameTable + bx + by * 32]
+    const scrollX = this.ppu.scrollX, scrollY = this.ppu.scrollY
+
+    for (let bby = 0; bby < HEIGHT / W + 1; ++bby) {
+      const by = (bby + (scrollY >> 3)) & 63
+      const ay = by % 30
+      for (let bbx = 0; bbx < WIDTH / W + 1; ++bbx) {
+        const bx = (bbx + (scrollX >> 3)) & 63
+        const ax = bx & 31
+
+        const nameTable = this.ppu.getNameTable(bx, by)
+        const name = vram[nameTable + ax + (ay << 5)]
         const chridx = name * 16 + chrStart
-        const palShift = (bx & 2) + ((by & 2) << 1)
-        const atrBlk = ((bx >> 2) | 0) + ((by >> 2) | 0) * 8
+        const palShift = (ax & 2) + ((ay & 2) << 1)
+        const atrBlk = ((ax >> 2) | 0) + ((ay >> 2) | 0) * 8
+        const attributeTable = nameTable + 0x3c0
         const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
 
         for (let py = 0; py < W; ++py) {
+          const yy = bby * W + py - (scrollY & 7)
+          if (yy < 0)
+            continue
           const idx = chridx + py
           const pat = (kStaggered[chrRom[idx + 8]] << 1) | kStaggered[chrRom[idx]]
           for (let px = 0; px < W; ++px) {
+            const xx = bbx * W + px - (scrollX & 7)
+            if (xx < 0)
+              continue
             const pal = (pat >> ((W - 1 - px) * 2)) & 3
             let r = 0, g = 0, b = 0
             if (pal !== 0) {
@@ -305,7 +331,7 @@ export class Nes {
               b = kColors[i + 2]
             }
 
-            const index = ((by * W + py + startY) * LINE_WIDTH + (bx * W + px + startX)) * 4
+            const index = (yy * LINE_WIDTH + xx) * 4
             pixels[index + 0] = r
             pixels[index + 1] = g
             pixels[index + 2] = b
@@ -313,7 +339,6 @@ export class Nes {
         }
       }
     }
-    this.debugPalet()
   }
 
   private renderSprite() {

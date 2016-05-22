@@ -9,18 +9,6 @@ import {PadKeyHandler} from './pad_key_handler.ts'
 
 const FPS = 60
 
-function loadPrgRom(romData: number[]): Uint8Array {
-  const start = 16, size = romData[4] * (16 * 1024)
-  const prg = romData.slice(start, start + size)
-  return new Uint8Array(prg)
-}
-
-function loadChrRom(romData: number[]): Uint8Array {
-  const start = 16 + romData[4] * (16 * 1024), size = romData[5] * (8 * 1024)
-  const chr = romData.slice(start, start + size)
-  return new Uint8Array(chr)
-}
-
 function showCpuStatus(cpu: Cpu6502): void {
   const e = id => document.getElementById(id) as HTMLInputElement
   e('reg-pc').value = Util.hex(cpu.pc, 4)
@@ -110,7 +98,7 @@ function nesTest() {
   const canvas = document.createElement('canvas')
   canvas.style.imageRendering = 'pixelated'
   const scale = 2
-  canvas.style.width = `${256 * 2 * scale}px`
+  canvas.style.width = `${256 * scale}px`
   canvas.style.height = `${240 * scale}px`
   root.appendChild(canvas)
 
@@ -118,9 +106,7 @@ function nesTest() {
   ;(window as any).nes = nes  // Put nes into global.
 
   const onRomLoaded = (rom) => {
-    const prgRom = loadPrgRom(rom)
-    const chrRom = loadChrRom(rom)
-    nes.setRomData(prgRom, chrRom)
+    nes.setRomData(rom)
   }
 
   onRomLoaded([0])

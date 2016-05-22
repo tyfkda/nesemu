@@ -36,6 +36,7 @@ export class Ppu {
   public oam: Uint8Array  // Object Attribute Memory
   public scrollX: number
   public scrollY: number
+  public mirrorMode: number
   private latch: number
   private ppuAddr: number
 
@@ -43,10 +44,15 @@ export class Ppu {
     this.regs = new Uint8Array(REGISTER_COUNT)
     this.vram = new Uint8Array(VRAM_SIZE)
     this.oam = new Uint8Array(OAM_SIZE)
+    this.mirrorMode = 0
   }
 
-  public setChrData(chrData: Uint8Array) {
+  public setChrData(chrData: Uint8Array): void {
     this.chrData = chrData
+  }
+
+  public setMirrorMode(mode: number): void {
+    this.mirrorMode = mode
   }
 
   public reset(): void {
@@ -117,8 +123,13 @@ export class Ppu {
     return (this.regs[PPUCTRL] & VINT_ENABLE) !== 0
   }
 
-  public getNameTable(): number {
-    return 0x2000 + ((this.regs[PPUCTRL] & BASE_NAMETABLE_ADDRESS) << 10)
+  public getNameTable(bx: number, by: number): number {
+    const adr = 0x2000 + ((this.regs[PPUCTRL] & BASE_NAMETABLE_ADDRESS) << 10)
+    if (this.mirrorMode === 0) {
+      return adr ^ ((by / 30) & 1) << 11
+    } else {
+      return adr ^ (bx & 32) << 6
+    }
   }
 
   public getBgPatternTableAddress(): number {
