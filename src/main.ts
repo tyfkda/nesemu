@@ -20,23 +20,22 @@ function showCpuStatus(cpu: Cpu6502): void {
   e('cycle-count').value = String(cpu.cycleCount)
 }
 
-let putConsole, clearConsole
-(function() {
+const {putConsole, clearConsole} = (function() {
   const lines = []
   const MAX_LINE = 100
-  putConsole = function(line) {
-    const cons = document.getElementById('console') as HTMLTextAreaElement
-    lines.push(line)
-    if (lines.length > MAX_LINE)
-      lines.shift()
-    cons.value = lines.join('\n')
-    cons.scrollTop = cons.scrollHeight
-  }
-
-  clearConsole = function() {
-    const cons = document.getElementById('console') as HTMLTextAreaElement
-    cons.value = ''
-    lines.length = 0
+  const cons = document.getElementById('console') as HTMLTextAreaElement
+  return {
+    putConsole: function(line) {
+      lines.push(line)
+      if (lines.length > MAX_LINE)
+        lines.shift()
+      cons.value = lines.join('\n')
+      cons.scrollTop = cons.scrollHeight
+    },
+    clearConsole: function() {
+      cons.value = ''
+      lines.length = 0
+    }
   }
 })()
 
@@ -93,11 +92,19 @@ function handleFileDrop(dropZone, onDropped) {
   dropZone.addEventListener('drop', onDrop, false)
 }
 
+function clearCanvas(canvas: HTMLCanvasElement): void {
+  const context = canvas.getContext('2d')
+  context.strokeStyle = ''
+  context.fillStyle = `rgb(0,0,0)`
+  context.fillRect(0, 0, canvas.width, canvas.height)
+}
+
 function nesTest() {
   const root = document.getElementById('nesroot')
   const canvas = document.getElementById('nes-canvas') as HTMLCanvasElement
   const paletCanvas = document.getElementById('nes-palet') as HTMLCanvasElement
-  paletCanvas.style.imageRendering = 'pixelated'
+  clearCanvas(canvas)
+  clearCanvas(paletCanvas)
 
   const nes = Nes.create(canvas, paletCanvas)
   ;(window as any).nes = nes  // Put nes into global.
@@ -175,7 +182,6 @@ function nesTest() {
       let cycles = (1.79 * 1000000 / FPS) | 0
       nes.runCycles(cycles)
       nes.render()
-      showCpuStatus(nes.cpu)
     }
   }, 1000 / FPS)
 
@@ -189,6 +195,7 @@ function nesTest() {
       clearConsole()
       dumpCpu(nes.cpu)
       updateButtonState()
+      root.focus()
     })
   }
 }

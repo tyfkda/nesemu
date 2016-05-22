@@ -16,6 +16,11 @@ const SPRITE_PATTERN_TABLE_ADDRESS = 0x08
 const INCREMENT_MODE = 0x04  // I: 1=+32, 0=+1
 const BASE_NAMETABLE_ADDRESS = 0x03
 
+// PPUMASK ($2001)
+const PPUMASK = 0x01
+const SHOW_BG = 0x08
+const SHOW_SPRITE = 0x10
+
 // PPUSTATUS ($2002)
 const PPUSTATUS = 0x02
 const VBLANK = 0x80
@@ -152,6 +157,9 @@ export class Ppu {
   }
 
   public renderBg(imageData: ImageData): void {
+    if ((this.regs[PPUMASK] & SHOW_BG) === 0)
+      return this.clearBg(imageData)
+
     const W = 8
     const LINE_WIDTH = imageData.width
     const chrRom = this.chrData
@@ -160,6 +168,11 @@ export class Ppu {
     const paletTable = 0x3f00
     const pixels = imageData.data
     const scrollX = this.scrollX, scrollY = this.scrollY
+
+    const clearColor = vram[paletTable] & 0x3f  // Universal background color
+    const clearR = kColors[clearColor * 3 + 0]
+    const clearG = kColors[clearColor * 3 + 1]
+    const clearB = kColors[clearColor * 3 + 2]
 
     for (let bby = 0; bby < Const.HEIGHT / W + 1; ++bby) {
       const by = (bby + (scrollY >> 3)) & 63
@@ -187,7 +200,7 @@ export class Ppu {
             if (xx < 0)
               continue
             const pal = (pat >> ((W - 1 - px) * 2)) & 3
-            let r = 0, g = 0, b = 0
+            let r = clearR, g = clearG, b = clearB
             if (pal !== 0) {
               const palet = paletHigh + pal
               const col = vram[paletTable + palet] & 0x3f
@@ -207,7 +220,24 @@ export class Ppu {
     }
   }
 
+  public clearBg(imageData: ImageData): void {
+    const LINE_BYTES = imageData.width * 4
+    const pixels = imageData.data
+    for (let i = 0; i < imageData.height; ++i) {
+      let index = i * LINE_BYTES
+      for (let j = 0; j < imageData.width; ++j) {
+        pixels[index++] = 0
+        pixels[index++] = 0
+        pixels[index++] = 0
+        pixels[index++] = 255
+      }
+    }
+  }
+
   public renderSprite(imageData: ImageData): void {
+    if ((this.regs[PPUMASK] & SHOW_SPRITE) === 0)
+      return
+
     const W = 8
     const LINE_WIDTH = imageData.width
     const PALET = 0x03

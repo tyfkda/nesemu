@@ -4,6 +4,10 @@ body {
   background-color: $BG_COLOR;
 }
 
+#nesroot:focus {
+  outline: none;
+}
+
 .console {
   width: 100%;
   font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
