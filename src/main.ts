@@ -6,6 +6,7 @@ import {Addressing, Instruction, OpType} from './nes/inst.ts'
 import {disassemble} from './nes/disasm.ts'
 import {Util} from './nes/util.ts'
 
+import {AudioManager} from './audio_manager.ts'
 import {PadKeyHandler} from './pad_key_handler.ts'
 
 import WindowManager from './wnd/window_manager.ts'
@@ -179,6 +180,7 @@ class App {
   private wndMgr: WindowManager
   private nes: Nes
   private padKeyHandler: PadKeyHandler
+  private audioManager: AudioManager
   private registerWnd: RegisterWnd
   private traceWnd: TraceWnd
 
@@ -198,6 +200,8 @@ class App {
     window.nes = this.nes  // Put nes into global.
     this.nes.setVblankCallback((leftCycles) => { this.onVblank(leftCycles) })
     this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
+
+    this.audioManager = new AudioManager()
 
     const screenWnd = new ScreenWnd(this.wndMgr, this.nes)
     this.wndMgr.add(screenWnd)
@@ -278,6 +282,11 @@ class App {
   private onVblank(leftCycles: number): void {
     if (leftCycles < 1)
       this.render()
+
+    for (let i = 0; i < 3; ++i) {
+      this.audioManager.setChannelFrequency(i, nes.apu.getFrequency(i))
+      this.audioManager.setChannelVolume(i, nes.apu.getVolume(i))
+    }
   }
 
   private onBreakPoint(): void {

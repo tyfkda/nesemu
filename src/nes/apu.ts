@@ -16,8 +16,10 @@ export enum PadBit {
 export class Apu {
   private padStatus: number[] = new Array(2)
   private padTmp: number[] = new Array(2)
+  private regs: Uint8Array = new Uint8Array(0x20)
 
   public reset() {
+    this.regs.fill(0)
   }
 
   public read(adr: number): number {
@@ -31,6 +33,10 @@ export class Apu {
   }
 
   public write(adr: number, value: number): void {
+    if (adr < 0x4020) {
+      this.regs[adr - 0x4000] = value
+    }
+
     switch (adr) {
     case 0x4016:  // Pad status. bit0 = Controller shift register strobe
       if ((value & 1) === 0) {
@@ -39,6 +45,30 @@ export class Apu {
       break
     default:
       break
+    }
+  }
+
+  public getFrequency(channel: number): number {
+    switch (channel) {
+    case 0:
+    case 1:
+    case 2:
+      {
+        const value = this.regs[channel * 4 + 2] + ((this.regs[channel * 4 + 3] & 7) << 8)
+        return ((1790000 / 16) / (value + 1)) | 0
+      }
+    }
+  }
+
+  public getVolume(channel: number): number {
+    switch (channel) {
+    case 0:
+    case 1:
+      {
+        return this.regs[channel * 4] / 15.0
+      }
+    case 2:
+      return 0.5
     }
   }
 
