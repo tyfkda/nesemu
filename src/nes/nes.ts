@@ -1,116 +1,16 @@
 // NES: Nintendo Entertainment System
 
+import {Const, kColors} from './const.ts'
 import {Cpu6502} from './cpu.ts'
 import {Pad} from './pad.ts'
 import {Ppu} from './ppu.ts'
 import {Util} from './util.ts'
 
-const WIDTH = 256
-const HEIGHT = 240
 const RAM_SIZE = 0x0800
 
 const VBLANK_START = (241 * 341 / 3) | 0
 const VBLANK_END = (261 * 341 / 3) | 0
 const VRETURN = (262 * 341 / 3) | 0
-
-const kColors: number[] = [
-  124, 124, 124,
-  0, 0, 252,
-  0, 0, 188,
-  68, 40, 188,
-  148, 0, 132,
-  168, 0, 32,
-  168, 16, 0,
-  136, 20, 0,
-  80, 48, 0,
-  0, 120, 0,
-  0, 104, 0,
-  0, 88, 0,
-  0, 64, 88,
-  0, 0, 0,
-  0, 0, 0,
-  0, 0, 0,
-  188, 188, 188,
-  0, 120, 248,
-  0, 88, 248,
-  104, 68, 252,
-  216, 0, 204,
-  228, 0, 88,
-  248, 56, 0,
-  228, 92, 16,
-  172, 124, 0,
-  0, 184, 0,
-  0, 168, 0,
-  0, 168, 68,
-  0, 136, 136,
-  0, 0, 0,
-  0, 0, 0,
-  0, 0, 0,
-  248, 248, 248,
-  60, 188, 252,
-  104, 136, 252,
-  152, 120, 248,
-  248, 120, 248,
-  248, 88, 152,
-  248, 120, 88,
-  252, 160, 68,
-  248, 184, 0,
-  184, 248, 24,
-  88, 216, 84,
-  88, 248, 152,
-  0, 232, 216,
-  120, 120, 120,
-  0, 0, 0,
-  0, 0, 0,
-  252, 252, 252,
-  164, 228, 252,
-  184, 184, 248,
-  216, 184, 248,
-  248, 184, 248,
-  248, 164, 192,
-  240, 208, 176,
-  252, 224, 168,
-  248, 216, 120,
-  216, 248, 120,
-  184, 248, 184,
-  184, 248, 216,
-  0, 252, 252,
-  248, 216, 248,
-  0, 0, 0,
-  0, 0, 0,
-]
-
-const kStaggered: Uint16Array = (() => {
-  const NBIT = 8
-  const N = 1 << NBIT
-  const array = new Uint16Array(N)
-  for (let i = 0; i < N; ++i) {
-    let d = 0
-    for (let j = 0; j < NBIT; ++j) {
-      d <<= 2
-      if ((i & (1 << (NBIT - 1 - j))) !== 0)
-        d |= 1
-    }
-    array[i] = d
-  }
-  return array
-})()
-
-const kFlipBits: Uint8Array = (() => {
-  const NBIT = 8
-  const N = 1 << NBIT
-  const array = new Uint8Array(N)
-  for (let i = 0; i < N; ++i) {
-    let d = 0
-    for (let j = 0; j < NBIT; ++j) {
-      d <<= 1
-      if ((i & (1 << j)) !== 0)
-        d |= 1
-    }
-    array[i] = d
-  }
-  return array
-})()
 
 function triggerCycle(count, prev, curr) {
   return prev < count && curr >= count
@@ -138,20 +38,20 @@ export class Nes {
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
-  public static create(canvas: HTMLCanvasElement): Nes {
-    const nes = new Nes(canvas)
+  public static create(canvas: HTMLCanvasElement, paletCanvas: HTMLCanvasElement): Nes {
+    const nes = new Nes(canvas, paletCanvas)
     return nes
   }
 
-  constructor(private canvas: HTMLCanvasElement) {
+  constructor(private canvas: HTMLCanvasElement, private paletCanvas: HTMLCanvasElement) {
     this.cpu = new Cpu6502()
     this.ram = new Uint8Array(RAM_SIZE)
     this.ppu = new Ppu()
     this.pad = new Pad()
     this.setMemoryMap()
 
-    this.canvas.width = WIDTH
-    this.canvas.height = HEIGHT
+    this.canvas.width = Const.WIDTH
+    this.canvas.height = Const.HEIGHT
 
     this.context = this.canvas.getContext('2d')
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
@@ -205,8 +105,8 @@ export class Nes {
   }
 
   public render() {
-    this.renderBg()
-    this.renderSprite()
+    this.ppu.renderBg(this.imageData)
+    this.ppu.renderSprite(this.imageData)
     this.debugPalet()
     this.context.putImageData(this.imageData, 0, 0)
   }
@@ -254,7 +154,7 @@ export class Nes {
         if (0 <= value && value <= 0x1f) {  // RAM
           this.ppu.copyWithDma(this.ram, value << 8)
         } else {
-          console.error('OAMDMA not implemented except for RAM: ${Util.hex(value, 2)}')
+          console.error(`OAMDMA not implemented except for RAM: ${Util.hex(value, 2)}`)
         }
         break
       default:
@@ -285,129 +185,14 @@ export class Nes {
     }
   }
 
-  private renderBg() {
-    const W = 8
-    const LINE_WIDTH = this.imageData.width
-    const chrRom = this.ppu.chrData
-    const chrStart = this.ppu.getBgPatternTableAddress()
-    const vram = this.ppu.vram
-    const paletTable = 0x3f00
-    const pixels = this.imageData.data
-    const scrollX = this.ppu.scrollX, scrollY = this.ppu.scrollY
-
-    for (let bby = 0; bby < HEIGHT / W + 1; ++bby) {
-      const by = (bby + (scrollY >> 3)) & 63
-      const ay = by % 30
-      for (let bbx = 0; bbx < WIDTH / W + 1; ++bbx) {
-        const bx = (bbx + (scrollX >> 3)) & 63
-        const ax = bx & 31
-
-        const nameTable = this.ppu.getNameTable(bx, by)
-        const name = vram[nameTable + ax + (ay << 5)]
-        const chridx = name * 16 + chrStart
-        const palShift = (ax & 2) + ((ay & 2) << 1)
-        const atrBlk = ((ax >> 2) | 0) + ((ay >> 2) | 0) * 8
-        const attributeTable = nameTable + 0x3c0
-        const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
-
-        for (let py = 0; py < W; ++py) {
-          const yy = bby * W + py - (scrollY & 7)
-          if (yy < 0)
-            continue
-          const idx = chridx + py
-          const pat = (kStaggered[chrRom[idx + 8]] << 1) | kStaggered[chrRom[idx]]
-          for (let px = 0; px < W; ++px) {
-            const xx = bbx * W + px - (scrollX & 7)
-            if (xx < 0)
-              continue
-            const pal = (pat >> ((W - 1 - px) * 2)) & 3
-            let r = 0, g = 0, b = 0
-            if (pal !== 0) {
-              const palet = paletHigh + pal
-              const col = vram[paletTable + palet] & 0x3f
-              const i = col * 3
-              r = kColors[i]
-              g = kColors[i + 1]
-              b = kColors[i + 2]
-            }
-
-            const index = (yy * LINE_WIDTH + xx) * 4
-            pixels[index + 0] = r
-            pixels[index + 1] = g
-            pixels[index + 2] = b
-          }
-        }
-      }
-    }
-  }
-
-  private renderSprite() {
-    const W = 8
-    const LINE_WIDTH = this.imageData.width
-    const PALET = 0x03
-    const FLIP_HORZ = 0x40
-    const FLIP_VERT = 0x80
-
-    const oam = this.ppu.oam
-    const vram = this.ppu.vram
-    const chrRom = this.ppu.chrData
-    const chrStart = this.ppu.getSpritePatternTableAddress()
-    const paletTable = 0x3f10
-    const pixels = this.imageData.data
-    const isSprite8x16 = this.ppu.isSprite8x16()
-    const h = isSprite8x16 ? 16 : 8
-
-    for (let i = 0; i < 64; ++i) {
-      const y = oam[i * 4]
-      const index = oam[i * 4 + 1]
-      const attr = oam[i * 4 + 2]
-      const x = oam[i * 4 + 3]
-
-      const chridx = isSprite8x16 ? (index & 0xfe) * 16 + ((index & 1) << 12) : index * 16 + chrStart
-      const paletHigh = (attr & PALET) << 2
-
-      for (let py = 0; py < h; ++py) {
-        if (y + py >= HEIGHT)
-          break
-
-        const ppy = (attr & FLIP_VERT) !== 0 ? (h - 1) - py : py
-        const idx = chridx + (ppy & 7) + ((ppy & 8) * 2)
-        let patHi = chrRom[idx + W]
-        let patLo = chrRom[idx]
-        if ((attr & FLIP_HORZ) !== 0) {
-          patHi = kFlipBits[patHi]
-          patLo = kFlipBits[patLo]
-        }
-        const pat = (kStaggered[patHi] << 1) | kStaggered[patLo]
-        for (let px = 0; px < W; ++px) {
-          if (x + px >= WIDTH)
-            break
-
-          const pal = (pat >> ((W - 1 - px) * 2)) & 3
-          let r = 0, g = 0, b = 0
-          if (pal === 0)
-            continue
-          const palet = paletHigh + pal
-          const col = vram[paletTable + palet] & 0x3f
-          const i = col * 3
-          r = kColors[i]
-          g = kColors[i + 1]
-          b = kColors[i + 2]
-
-          const index = ((y + py) * LINE_WIDTH + (x + px)) * 4
-          pixels[index + 0] = r
-          pixels[index + 1] = g
-          pixels[index + 2] = b
-        }
-      }
-    }
-  }
-
   private debugPalet() {
-    const LINE_WIDTH = this.imageData.width
+    const context = this.paletCanvas.getContext('2d')
+    context.strokeStyle = ''
+    context.fillStyle = `rgb(0,0,0)`
+    context.fillRect(0, 0, this.paletCanvas.width, this.paletCanvas.height)
+
     const vram = this.ppu.vram
     const paletTable = 0x3f00
-    const pixels = this.imageData.data
     for (let i = 0; i < 2; ++i) {
       for (let j = 0; j < 16; ++j) {
         const pal = j + i * 16
@@ -415,16 +200,8 @@ export class Nes {
         const r = kColors[col * 3]
         const g = kColors[col * 3 + 1]
         const b = kColors[col * 3 + 2]
-        for (let k = 0; k < 3; ++k) {
-          const y = k + i * 4
-          for (let l = 0; l < 3; ++l) {
-            const x = l + j * 4
-            const index = (y * LINE_WIDTH + x) * 4
-            pixels[index + 0] = r
-            pixels[index + 1] = g
-            pixels[index + 2] = b
-          }
-        }
+        context.fillStyle = `rgb(${r},${g},${b})`
+        context.fillRect(j * 4, i * 4, 3, 3)
       }
     }
   }

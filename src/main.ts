@@ -95,14 +95,12 @@ function handleFileDrop(dropZone, onDropped) {
 
 function nesTest() {
   const root = document.getElementById('nesroot')
-  const canvas = document.createElement('canvas')
+  const canvas = document.getElementById('nes-canvas')
   canvas.style.imageRendering = 'pixelated'
-  const scale = 2
-  canvas.style.width = `${256 * scale}px`
-  canvas.style.height = `${240 * scale}px`
-  root.appendChild(canvas)
+  const paletCanvas = document.getElementById('nes-palet')
+  paletCanvas.style.imageRendering = 'pixelated'
 
-  const nes = Nes.create(canvas)
+  const nes = Nes.create(canvas, paletCanvas)
   ;(window as any).nes = nes  // Put nes into global.
 
   const onRomLoaded = (rom) => {
