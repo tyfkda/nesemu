@@ -157,6 +157,8 @@ function nesTest() {
   const padKeyHandler = new PadKeyHandler()
   root.setAttribute('tabindex', '1')  // To accept key event.
   root.addEventListener('keydown', (event) => {
+    if (event.ctrlKey || event.altKey || event.metaKey)
+      return
     event.preventDefault()
     padKeyHandler.onKeyDown(event.keyCode)
   })
