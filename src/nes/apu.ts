@@ -17,6 +17,9 @@ export class Apu {
   private padStatus: number[] = new Array(2)
   private padTmp: number[] = new Array(2)
 
+  public reset() {
+  }
+
   public read(adr: number): number {
     switch (adr) {
     case 0x4016:  // Pad 1

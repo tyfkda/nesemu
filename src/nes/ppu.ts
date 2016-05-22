@@ -48,17 +48,21 @@ export class Ppu {
     this.mirrorMode = 0
   }
 
+  public reset(): void {
+    this.regs.fill(0)
+    this.vram.fill(0)
+    this.oam.fill(0)
+    this.scrollX = this.scrollY = 0
+    this.ppuAddr = 0
+    this.latch = 0
+  }
+
   public setChrData(chrData: Uint8Array): void {
     this.chrData = chrData
   }
 
   public setMirrorMode(mode: number): void {
     this.mirrorMode = mode
-  }
-
-  public reset(): void {
-    this.regs.fill(0)
-    this.latch = 0
   }
 
   public read(reg: number): number {

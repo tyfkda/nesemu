@@ -67,6 +67,7 @@ export class Nes {
   public reset(): void {
     this.cpu.reset()
     this.ppu.reset()
+    this.apu.reset()
   }
 
   public setPadStatus(no: number, status: number): void {
