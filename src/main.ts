@@ -70,11 +70,11 @@ function handleFileDrop(dropZone, onDropped) {
   function onDrop(evt) {
     evt.stopPropagation()
     evt.preventDefault()
-    var files = evt.dataTransfer.files
+    const files = evt.dataTransfer.files
     if (files.length > 0) {
       const reader = new FileReader()
       reader.onload = function(e) {
-        const binary = new Uint8Array(e.target.result);
+        const binary = new Uint8Array((e.target as any).result)
         onDropped(binary)
       }
       reader.readAsArrayBuffer(files[0])
@@ -89,8 +89,8 @@ function handleFileDrop(dropZone, onDropped) {
     return false
   }
 
-  dropZone.addEventListener('dragover', onDragOver, false);
-  dropZone.addEventListener('drop', onDrop, false);
+  dropZone.addEventListener('dragover', onDragOver, false)
+  dropZone.addEventListener('drop', onDrop, false)
 }
 
 function nesTest() {

@@ -12,7 +12,7 @@ const VBLANK_START = (241 * 341 / 3) | 0
 const VBLANK_END = (261 * 341 / 3) | 0
 const VRETURN = (262 * 341 / 3) | 0
 
-function triggerCycle(count: number, prev: number, curr: number): void {
+function triggerCycle(count: number, prev: number, curr: number): boolean {
   return prev < count && curr >= count
 }
 
@@ -86,7 +86,7 @@ export class Nes {
     }
   }
 
-  public step(): void {
+  public step(): number {
     const prevCount = this.cpu.cycleCount
     const cycle = this.cpu.step()
     const currCount = this.cpu.cycleCount

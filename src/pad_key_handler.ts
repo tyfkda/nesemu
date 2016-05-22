@@ -1,4 +1,4 @@
-import {PadBit} from './nes/pad.ts'
+import {PadBit} from './nes/apu.ts'
 
 enum KeyCode {
   // Controller 1

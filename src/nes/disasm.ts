@@ -1,7 +1,7 @@
-import {Cpu6502, Addressing} from './cpu.ts'
+import {Addressing} from './cpu.ts'
 import {Util} from './util.ts'
 
-export function disassemble(opInst:any, mem: Uint8Array, start: number, pc: number): string {
+export function disassemble(opInst: any, mem: Uint8Array, start: number, pc: number): string {
   let operand = ''
   switch (opInst.addressing) {
   case Addressing.IMPLIED:
@@ -48,6 +48,9 @@ export function disassemble(opInst:any, mem: Uint8Array, start: number, pc: numb
       else
         operand = ` ${offset - 256}  ; $${Util.hex(pc + opInst.bytes + offset - 256, 4)}`
     }
+    break
+  default:
+    console.error(`Unhandled addressing: ${opInst.addressing}`)
     break
   }
   return `${opInst.mnemonic}${operand}`

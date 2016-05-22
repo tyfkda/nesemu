@@ -157,6 +157,10 @@ export class Cpu6502 {
   private readerFuncTable: Function[]
   private writerFuncTable: Function[]
 
+  static public getInst(opcode: number): Instruction {
+    return kInstTable[opcode]
+  }
+
   constructor() {
     this.readerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
     this.writerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
@@ -214,10 +218,6 @@ export class Cpu6502 {
     this.p = setReset(this.p, value, NEGATIVE_FLAG)
   }
 
-  static public getInst(opcode: number): Instruction {
-    return kInstTable[opcode]
-  }
-
   public step(): number {
     if (this.pausing)
       return
@@ -252,7 +252,8 @@ export class Cpu6502 {
     const value = this.read8Raw(adr)
     if (this.watchRead[adr]) {
       this.pausing = true
-      console.warn(`Break because watched point read: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
+      console.warn(
+        `Break because watched point read: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
     }
     return value
   }
@@ -290,7 +291,8 @@ export class Cpu6502 {
     }
     if (this.watchWrite[adr]) {
       this.pausing = true
-      console.warn(`Break because watched point write: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
+      console.warn(
+        `Break because watched point write: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
     }
     return this.writerFuncTable[block](adr, value)
   }

@@ -147,11 +147,6 @@ export class Ppu {
     return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
   }
 
-  private incPpuAddr(): void {
-    const add = ((this.regs[PPUCTRL] & INCREMENT_MODE) !== 0) ? 32 : 1
-    this.ppuAddr = (this.ppuAddr + add) & (VRAM_SIZE - 1)
-  }
-
   public renderBg(imageData: ImageData): void {
     const W = 8
     const LINE_WIDTH = imageData.width
@@ -230,7 +225,9 @@ export class Ppu {
       const attr = oam[i * 4 + 2]
       const x = oam[i * 4 + 3]
 
-      const chridx = isSprite8x16 ? (index & 0xfe) * 16 + ((index & 1) << 12) : index * 16 + chrStart
+      const chridx = (isSprite8x16
+                      ? (index & 0xfe) * 16 + ((index & 1) << 12)
+                      : index * 16 + chrStart)
       const paletHigh = (attr & PALET) << 2
 
       for (let py = 0; py < h; ++py) {
@@ -263,5 +260,10 @@ export class Ppu {
         }
       }
     }
+  }
+
+  private incPpuAddr(): void {
+    const add = ((this.regs[PPUCTRL] & INCREMENT_MODE) !== 0) ? 32 : 1
+    this.ppuAddr = (this.ppuAddr + add) & (VRAM_SIZE - 1)
   }
 }
