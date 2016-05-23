@@ -119,6 +119,7 @@ enum OpType {
   SEC,
 
   SEI,
+  CLI,
   CLD,
 
   NOP,
@@ -539,6 +540,7 @@ const kInstTable: Instruction[] = (() => {
   setOp('SEC', 0x38, OpType.SEC, Addressing.IMPLIED, 1, 2)
 
   setOp('SEI', 0x78, OpType.SEI, Addressing.IMPLIED, 1, 2)
+  setOp('CLI', 0x58, OpType.CLI, Addressing.IMPLIED, 1, 2)
   setOp('CLD', 0xd8, OpType.CLD, Addressing.IMPLIED, 1, 2)
 
   setOp('NOP', 0xea, OpType.NOP, Addressing.IMPLIED, 1, 2)
@@ -894,7 +896,10 @@ const kOpTypeTable = (() => {
   })
 
   set(OpType.SEI, (cpu, pc, addressing) => {  // SEI: Disable IRQ
-    // TODO: implement
+    cpu.p |= IRQBLK_BIT
+  })
+  set(OpType.CLI, (cpu, pc, addressing) => {  // CLI: Enable IRQ
+    cpu.p &= ~IRQBLK_BIT
   })
   set(OpType.CLD, (cpu, pc, addressing) => {  // CLD: BCD to normal mode
     // not implemented on NES

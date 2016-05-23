@@ -155,7 +155,7 @@ export class Nes {
   }
 
   private interruptVBlank(): void {
-    if (!this.ppu.interruptEnable)
+    if (!this.ppu.interruptEnable())
       return
     this.interruptNmi()
   }
