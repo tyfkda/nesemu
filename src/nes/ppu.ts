@@ -74,7 +74,7 @@ export class Ppu {
     const result = this.regs[reg]
     switch (reg) {
     case PPUSTATUS:
-      //this.regs[PPUSTATUS] &= ~VBLANK
+      this.regs[PPUSTATUS] &= ~VBLANK
       this.latch = 0
       break
     case PPUDATA:
@@ -193,12 +193,16 @@ export class Ppu {
           const yy = bby * W + py - (scrollY & 7)
           if (yy < 0)
             continue
+          if (yy >= Const.HEIGHT)
+            break
           const idx = chridx + py
           const pat = (kStaggered[chrRom[idx + 8]] << 1) | kStaggered[chrRom[idx]]
           for (let px = 0; px < W; ++px) {
             const xx = bbx * W + px - (scrollX & 7)
             if (xx < 0)
               continue
+            if (xx >= Const.WIDTH)
+              break
             const pal = (pat >> ((W - 1 - px) * 2)) & 3
             let r = clearR, g = clearG, b = clearB
             if (pal !== 0) {
