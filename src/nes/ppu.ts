@@ -106,7 +106,7 @@ export class Ppu {
       this.latch = 1 - this.latch
       break
     case PPUDATA:
-      this.vram[this.ppuAddr] = value
+      this.vram[this.getPpuAddr()] = value
       this.incPpuAddr()
       break
     default:
@@ -302,6 +302,15 @@ export class Ppu {
         }
       }
     }
+  }
+
+  private getPpuAddr(): number {
+    let addr = this.ppuAddr
+    // "Addresses $3F10/$3F14/$3F18/$3F1C are mirrors of $3F00/$3F04/$3F08/$3F0C."
+    // http://wiki.nesdev.com/w/index.php/PPU_palettes#Memory_Map
+    if ((addr & 0xfff3) === 0x3f10)
+      addr &= 0xffef
+    return addr
   }
 
   private incPpuAddr(): void {
