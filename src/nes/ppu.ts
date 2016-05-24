@@ -46,8 +46,10 @@ export class Ppu {
   public mirrorMode: number
   private latch: number
   private ppuAddr: number
-  private tmpScrollX: number
-  private tmpScrollY: number
+  private scrollXSave: number
+  private scrollYSave: number
+  private ppuCtrlSave: number
+  private ppuMaskSave: number
 
   constructor() {
     this.regs = new Uint8Array(REGISTER_COUNT)
@@ -60,7 +62,7 @@ export class Ppu {
     this.regs.fill(0)
     this.vram.fill(0)
     this.oam.fill(0)
-    this.scrollX = this.scrollY = this.tmpScrollX = this.tmpScrollY = 0
+    this.scrollX = this.scrollY = this.scrollXSave = this.scrollYSave = 0
     this.ppuAddr = 0
     this.latch = 0
   }
@@ -95,9 +97,9 @@ export class Ppu {
     switch (reg) {
     case PPUSCROLL:
       if (this.latch === 0)
-        this.tmpScrollX = value
+        this.scrollX = value
       else
-        this.tmpScrollY = value
+        this.scrollY = value
       this.latch = 1 - this.latch
       break
     case PPUADDR:
@@ -127,8 +129,10 @@ export class Ppu {
 
   public setVBlank(): void {
     this.regs[PPUSTATUS] = (this.regs[PPUSTATUS] | VBLANK) & ~SPRITE0HIT
-    this.scrollX = this.tmpScrollX
-    this.scrollY = this.tmpScrollY
+    this.scrollXSave = this.scrollX
+    this.scrollYSave = this.scrollY
+    this.ppuCtrlSave = this.regs[PPUCTRL]
+    this.ppuMaskSave = this.regs[PPUMASK]
   }
   public clearVBlank(): void {
     this.regs[PPUSTATUS] &= ~VBLANK
@@ -143,7 +147,7 @@ export class Ppu {
   }
 
   public getNameTable(bx: number, by: number): number {
-    const adr = 0x2000 + ((this.regs[PPUCTRL] & BASE_NAMETABLE_ADDRESS) << 10)
+    const adr = 0x2000 + ((this.ppuCtrlSave & BASE_NAMETABLE_ADDRESS) << 10)
     if (this.mirrorMode === 0) {
       return adr ^ (((by / 30) & 1) << 11)
     } else {
@@ -152,23 +156,23 @@ export class Ppu {
   }
 
   public getBgPatternTableAddress(): number {
-    return ((this.regs[PPUCTRL] & BG_PATTERN_TABLE_ADDRESS) << 8)
+    return ((this.ppuCtrlSave & BG_PATTERN_TABLE_ADDRESS) << 8)
   }
 
   public getSpritePatternTableAddress(): number {
-    if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
-      return ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
+    if ((this.ppuCtrlSave & SPRITE_SIZE) === 0)
+      return ((this.ppuCtrlSave & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
     return 0
   }
 
   public isSprite8x16(): boolean {
-    return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
+    return (this.ppuCtrlSave & SPRITE_SIZE) !== 0
   }
 
   public renderBg(imageData: ImageData): void {
-    if ((this.regs[PPUMASK] & SHOW_BG) === 0)
+    if ((this.ppuMaskSave & SHOW_BG) === 0)
       return this.clearBg(imageData)
-    this.doRenderBg(imageData, this.scrollX, this.scrollY, 0, 0, 0)
+    this.doRenderBg(imageData, this.scrollXSave, this.scrollYSave, 0, 0, 0)
   }
 
   public doRenderBg(imageData: ImageData, scrollX: number, scrollY: number,
@@ -251,7 +255,7 @@ export class Ppu {
   }
 
   public renderSprite(imageData: ImageData): void {
-    if ((this.regs[PPUMASK] & SHOW_SPRITE) === 0)
+    if ((this.ppuMaskSave & SHOW_SPRITE) === 0)
       return
 
     const W = 8
