@@ -120,6 +120,8 @@ enum OpType {
 
   SEI,
   CLI,
+  CLV,
+  SED,
   CLD,
 
   NOP,
@@ -541,6 +543,8 @@ const kInstTable: Instruction[] = (() => {
 
   setOp('SEI', 0x78, OpType.SEI, Addressing.IMPLIED, 1, 2)
   setOp('CLI', 0x58, OpType.CLI, Addressing.IMPLIED, 1, 2)
+  setOp('CLV', 0xb8, OpType.CLV, Addressing.IMPLIED, 1, 2)
+  setOp('SED', 0xf8, OpType.SED, Addressing.IMPLIED, 1, 2)
   setOp('CLD', 0xd8, OpType.CLD, Addressing.IMPLIED, 1, 2)
 
   setOp('NOP', 0xea, OpType.NOP, Addressing.IMPLIED, 1, 2)
@@ -570,7 +574,7 @@ const kOpTypeTable = (() => {
       adr = (cpu.read8(pc) + cpu.x) & 0xff
       break
     case Addressing.ZEROPAGE_Y:
-      adr = (cpu.read8(pc) + cpu.x) & 0xff
+      adr = (cpu.read8(pc) + cpu.y) & 0xff
       break
     case Addressing.ABSOLUTE:
       adr = cpu.read16(pc)
@@ -584,13 +588,13 @@ const kOpTypeTable = (() => {
     case Addressing.INDIRECT_X:
       {
         const zeroPageAdr = cpu.read8(pc)
-        adr = cpu.read16((zeroPageAdr + cpu.x) & 0xff)
+        adr = cpu.read16Indirect((zeroPageAdr + cpu.x) & 0xff)
       }
       break
     case Addressing.INDIRECT_Y:
       {
         const zeroPageAdr = cpu.read8(pc)
-        adr = (cpu.read16(zeroPageAdr) + cpu.y) & 0xffff
+        adr = (cpu.read16Indirect(zeroPageAdr) + cpu.y) & 0xffff
       }
       break
     default:
@@ -611,10 +615,10 @@ const kOpTypeTable = (() => {
       adr = cpu.read8(pc)
       break
     case Addressing.ZEROPAGE_X:
-      adr = (cpu.read8(pc) + cpu.x) & 0x00ff
+      adr = (cpu.read8(pc) + cpu.x) & 0xff
       break
     case Addressing.ZEROPAGE_Y:
-      adr = (cpu.read8(pc) + cpu.x) & 0xff
+      adr = (cpu.read8(pc) + cpu.y) & 0xff
       break
     case Addressing.ABSOLUTE:
       adr = cpu.read16(pc)
@@ -628,13 +632,13 @@ const kOpTypeTable = (() => {
     case Addressing.INDIRECT_X:
       {
         const zeroPageAdr = cpu.read8(pc)
-        adr = cpu.read16((zeroPageAdr + cpu.x) & 0xff)
+        adr = cpu.read16Indirect((zeroPageAdr + cpu.x) & 0xff)
       }
       break
     case Addressing.INDIRECT_Y:
       {
         const zeroPageAdr = cpu.read8(pc)
-        adr = (cpu.read16(zeroPageAdr) + cpu.y) & 0xffff
+        adr = (cpu.read16Indirect(zeroPageAdr) + cpu.y) & 0xffff
       }
       break
     default:
@@ -687,7 +691,6 @@ const kOpTypeTable = (() => {
   })
   set(OpType.TXS, (cpu, _pc, _) => {
     cpu.s = cpu.x
-    cpu.setFlag(cpu.s)
   })
   set(OpType.TSX, (cpu, _pc, _) => {
     cpu.x = cpu.s
@@ -695,20 +698,26 @@ const kOpTypeTable = (() => {
   })
 
   set(OpType.ADC, (cpu, pc, addressing) => {
-    const operand = load(cpu, pc, addressing)
     const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
+    const operand = load(cpu, pc, addressing)
     const result = cpu.a + operand + carry
+    const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
     cpu.a = result & 0xff
     cpu.setFlag(cpu.a)
     cpu.setCarry(result >= 0x0100)
+    cpu.setOverFlow(overflow)
   })
   set(OpType.SBC, (cpu, pc, addressing) => {
-    const operand = load(cpu, pc, addressing)
-    const borrow = (cpu.p & CARRY_FLAG) !== 0 ? 0 : 1
-    const result = cpu.a - operand - borrow
+    // The 6502 overflow flag explained mathematically
+    // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+    const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
+    const operand = 255 - load(cpu, pc, addressing)
+    const result = cpu.a + operand + carry
+    const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
     cpu.a = result & 0xff
     cpu.setFlag(cpu.a)
-    cpu.setCarry(result >= 0)
+    cpu.setCarry(result >= 0x0100)
+    cpu.setOverFlow(overflow)
   })
 
   set(OpType.INX, (cpu, _pc, _) => {
@@ -791,7 +800,7 @@ const kOpTypeTable = (() => {
   set(OpType.BIT, (cpu, pc, addressing) => {
     const value = load(cpu, pc, addressing)
     const result = cpu.a & value
-    cpu.setZero(result)
+    cpu.setZero(result === 0)
 
     const mask = NEGATIVE_FLAG | OVERFLOW_FLAG
     cpu.p = (cpu.p & ~mask) | (value & mask)
@@ -883,6 +892,7 @@ const kOpTypeTable = (() => {
   })
   set(OpType.PLA, (cpu, pc, _) => {
     cpu.a = cpu.pop()
+    cpu.setFlag(cpu.a)
   })
   set(OpType.PLP, (cpu, pc, _) => {
     cpu.p = cpu.pop()
@@ -900,6 +910,12 @@ const kOpTypeTable = (() => {
   })
   set(OpType.CLI, (cpu, pc, addressing) => {  // CLI: Enable IRQ
     cpu.p &= ~IRQBLK_BIT
+  })
+  set(OpType.CLV, (cpu, pc, _) => {
+    cpu.p &= ~OVERFLOW_FLAG
+  })
+  set(OpType.SED, (cpu, pc, addressing) => {  // SED: normal to BCD mode
+    // not implemented on NES
   })
   set(OpType.CLD, (cpu, pc, addressing) => {  // CLD: BCD to normal mode
     // not implemented on NES
