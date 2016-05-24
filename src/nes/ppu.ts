@@ -24,6 +24,7 @@ const SHOW_SPRITE = 0x10
 // PPUSTATUS ($2002)
 const PPUSTATUS = 0x02
 const VBLANK = 0x80
+const SPRITE0HIT = 0x40
 
 // OAMADDR ($2003)
 const OAMADDR = 0x03
@@ -123,10 +124,10 @@ export class Ppu {
   }
 
   public setVBlank(): void {
-    this.regs[PPUSTATUS] |= VBLANK
+    this.regs[PPUSTATUS] = (this.regs[PPUSTATUS] | VBLANK) & ~SPRITE0HIT
   }
   public clearVBlank(): void {
-    this.regs[PPUSTATUS] &= ~VBLANK
+    this.regs[PPUSTATUS] = (this.regs[PPUSTATUS] & ~VBLANK) | SPRITE0HIT
   }
 
   public interruptEnable(): boolean {

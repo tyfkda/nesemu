@@ -838,7 +838,7 @@ const kOpTypeTable = (() => {
   set(OpType.RTS, (cpu, _pc, _) => {
     cpu.pc = cpu.pop16() + 1
   })
-  set(OpType.RTI, (cpu, pc, _) => {
+  set(OpType.RTI, (cpu, _pc, _) => {
     cpu.p = cpu.pop()
     cpu.pc = cpu.pop16()
   })
@@ -905,23 +905,23 @@ const kOpTypeTable = (() => {
     cpu.p |= CARRY_FLAG
   })
 
-  set(OpType.SEI, (cpu, pc, addressing) => {  // SEI: Disable IRQ
+  set(OpType.SEI, (cpu, _pc, _) => {  // SEI: Disable IRQ
     cpu.p |= IRQBLK_BIT
   })
-  set(OpType.CLI, (cpu, pc, addressing) => {  // CLI: Enable IRQ
+  set(OpType.CLI, (cpu, _pc, _) => {  // CLI: Enable IRQ
     cpu.p &= ~IRQBLK_BIT
   })
-  set(OpType.CLV, (cpu, pc, _) => {
+  set(OpType.CLV, (cpu, _pc, _) => {
     cpu.p &= ~OVERFLOW_FLAG
   })
-  set(OpType.SED, (cpu, pc, addressing) => {  // SED: normal to BCD mode
+  set(OpType.SED, (_cpu, _pc, _) => {  // SED: normal to BCD mode
     // not implemented on NES
   })
-  set(OpType.CLD, (cpu, pc, addressing) => {  // CLD: BCD to normal mode
+  set(OpType.CLD, (_cpu, _pc, _) => {  // CLD: BCD to normal mode
     // not implemented on NES
   })
 
-  set(OpType.NOP, (cpu, pc, addressing) => {})
+  set(OpType.NOP, (_cpu, _pc, _addressing) => {})
 
   return tbl
 })()
