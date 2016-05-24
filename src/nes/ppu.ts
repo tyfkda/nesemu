@@ -36,6 +36,15 @@ const PPUSCROLL = 0x05  // $2005
 const PPUADDR = 0x06  // $2006
 const PPUDATA = 0x07  // $2007
 
+function getNameTable(baseNameTable: number, bx: number, by: number, mirrorMode: number): number {
+  const adr = 0x2000 + baseNameTable
+  if (mirrorMode === 0) {
+    return adr ^ (((by / 30) & 1) << 11)
+  } else {
+    return adr ^ ((bx & 32) << 5)
+  }
+}
+
 export class Ppu {
   public regs: Uint8Array
   public chrData: Uint8Array
@@ -146,15 +155,6 @@ export class Ppu {
     return (this.regs[PPUCTRL] & VINT_ENABLE) !== 0
   }
 
-  public getNameTable(bx: number, by: number): number {
-    const adr = 0x2000 + ((this.ppuCtrlSave & BASE_NAMETABLE_ADDRESS) << 10)
-    if (this.mirrorMode === 0) {
-      return adr ^ (((by / 30) & 1) << 11)
-    } else {
-      return adr ^ ((bx & 32) << 5)
-    }
-  }
-
   public getBgPatternTableAddress(): number {
     return ((this.ppuCtrlSave & BG_PATTERN_TABLE_ADDRESS) << 8)
   }
@@ -172,11 +172,13 @@ export class Ppu {
   public renderBg(imageData: ImageData): void {
     if ((this.ppuMaskSave & SHOW_BG) === 0)
       return this.clearBg(imageData)
-    this.doRenderBg(imageData, this.scrollXSave, this.scrollYSave, 0, 0, 0)
+    this.doRenderBg(imageData, this.scrollXSave, this.scrollYSave, 0, 0,
+                    (this.ppuCtrlSave & BASE_NAMETABLE_ADDRESS) << 10)
   }
 
   public doRenderBg(imageData: ImageData, scrollX: number, scrollY: number,
-                    startX: number, startY: number, nameTableOffset: number): void {
+                    startX: number, startY: number, baseNameTable: number): void
+  {
     const W = 8
     const LINE_WIDTH = imageData.width
     const chrRom = this.chrData
@@ -197,7 +199,7 @@ export class Ppu {
         const bx = (bbx + (scrollX >> 3)) & 63
         const ax = bx & 31
 
-        const nameTable = this.getNameTable(bx, by) ^ nameTableOffset
+        const nameTable = getNameTable(baseNameTable, bx, by, this.mirrorMode)
         const name = vram[nameTable + ax + (ay << 5)]
         const chridx = name * 16 + chrStart
         const palShift = (ax & 2) + ((ay & 2) << 1)

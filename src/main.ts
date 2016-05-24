@@ -111,8 +111,8 @@ function nesTest() {
   const nes = Nes.create(canvas, paletCanvas, bgCanvas)
   ;(window as any).nes = nes  // Put nes into global.
 
-  const onRomLoaded = (rom) => {
-    nes.setRomData(rom)
+  const onRomLoaded = (romData) => {
+    nes.setRomData(romData)
   }
 
   onRomLoaded([0])
@@ -181,7 +181,7 @@ function nesTest() {
     nes.setPadStatus(1, padKeyHandler.getStatus(1))
     if (!nes.cpu.isPaused()) {
       // TODO: Calculate cpu cycles from elapsed time.
-      let cycles = (1.79 * 1000000 / FPS) | 0
+      let cycles = (1789773 / FPS) | 0
       nes.runCycles(cycles)
       nes.render()
     }
@@ -189,9 +189,9 @@ function nesTest() {
 
   // Handle file drop.
   if (window.File && window.FileReader && window.FileList && window.Blob) {
-    handleFileDrop(root, (binary) => {
+    handleFileDrop(root, (romData) => {
       nes.cpu.pause(true)
-      onRomLoaded(binary)
+      onRomLoaded(romData)
       nes.reset()
       nes.cpu.pause(false)
       clearConsole()
