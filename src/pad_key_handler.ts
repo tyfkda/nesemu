@@ -28,8 +28,8 @@ const kKeyTable = (() => {
   t[KeyCode.RIGHT] = {no: 0, bit: PadBit.R}
   t[KeyCode.UP] = {no: 0, bit: PadBit.U}
   t[KeyCode.DOWN] = {no: 0, bit: PadBit.D}
-  t[KeyCode.Z] = {no: 0, bit: PadBit.A}
-  t[KeyCode.X] = {no: 0, bit: PadBit.B}
+  t[KeyCode.Z] = {no: 0, bit: PadBit.B}
+  t[KeyCode.X] = {no: 0, bit: PadBit.A}
   t[KeyCode.SPACE] = {no: 0, bit: PadBit.SELECT}
   t[KeyCode.RETURN] = {no: 0, bit: PadBit.START}
 
@@ -37,8 +37,8 @@ const kKeyTable = (() => {
   t[KeyCode.L] = {no: 1, bit: PadBit.R}
   t[KeyCode.I] = {no: 1, bit: PadBit.U}
   t[KeyCode.K] = {no: 1, bit: PadBit.D}
-  t[KeyCode.Q] = {no: 1, bit: PadBit.A}
-  t[KeyCode.W] = {no: 1, bit: PadBit.B}
+  t[KeyCode.Q] = {no: 1, bit: PadBit.B}
+  t[KeyCode.W] = {no: 1, bit: PadBit.A}
   t[KeyCode.O] = {no: 1, bit: PadBit.SELECT}
   t[KeyCode.P] = {no: 1, bit: PadBit.START}
   return t
