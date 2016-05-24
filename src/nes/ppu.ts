@@ -46,6 +46,8 @@ export class Ppu {
   public mirrorMode: number
   private latch: number
   private ppuAddr: number
+  private tmpScrollX: number
+  private tmpScrollY: number
 
   constructor() {
     this.regs = new Uint8Array(REGISTER_COUNT)
@@ -58,7 +60,7 @@ export class Ppu {
     this.regs.fill(0)
     this.vram.fill(0)
     this.oam.fill(0)
-    this.scrollX = this.scrollY = 0
+    this.scrollX = this.scrollY = this.tmpScrollX = this.tmpScrollY = 0
     this.ppuAddr = 0
     this.latch = 0
   }
@@ -93,13 +95,13 @@ export class Ppu {
     switch (reg) {
     case PPUSCROLL:
       if (this.latch === 0)
-        this.scrollX = value
+        this.tmpScrollX = value
       else
-        this.scrollY = value
+        this.tmpScrollY = value
       this.latch = 1 - this.latch
       break
     case PPUADDR:
-      if (this.latch === 0)
+      if (this.latch === 0) {
         this.ppuAddr = value
       else
         this.ppuAddr = ((this.ppuAddr << 8) | value) & (VRAM_SIZE - 1)
@@ -125,9 +127,15 @@ export class Ppu {
 
   public setVBlank(): void {
     this.regs[PPUSTATUS] = (this.regs[PPUSTATUS] | VBLANK) & ~SPRITE0HIT
+    this.scrollX = this.tmpScrollX
+    this.scrollY = this.tmpScrollY
   }
   public clearVBlank(): void {
-    this.regs[PPUSTATUS] = (this.regs[PPUSTATUS] & ~VBLANK) | SPRITE0HIT
+    this.regs[PPUSTATUS] &= ~VBLANK
+  }
+
+  public setSprite0Hit(): void {
+    this.regs[PPUSTATUS] |= SPRITE0HIT  // TODO: Implmenet correctly
   }
 
   public interruptEnable(): boolean {
@@ -262,7 +270,7 @@ export class Ppu {
     const h = isSprite8x16 ? 16 : 8
 
     for (let i = 64; --i >= 0; ) {
-      const y = oam[i * 4]
+      const y = oam[i * 4] + 1
       const index = oam[i * 4 + 1]
       const attr = oam[i * 4 + 2]
       const x = oam[i * 4 + 3]

@@ -8,6 +8,7 @@ import {Util} from './util.ts'
 
 const RAM_SIZE = 0x0800
 
+const DUMMY_SPRITE0HIT = (20 * 341 / 3) | 0
 const VBLANK_START = (241 * 341 / 3) | 0
 const VBLANK_END = (261 * 341 / 3) | 0
 const VRETURN = (262 * 341 / 3) | 0
@@ -97,6 +98,9 @@ export class Nes {
     const cycle = this.cpu.step()
     const currCount = this.cpu.cycleCount
 
+    if (triggerCycle(DUMMY_SPRITE0HIT, prevCount, currCount)) {
+      this.ppu.setSprite0Hit()
+    }
     if (triggerCycle(VBLANK_START, prevCount, currCount)) {
       this.ppu.setVBlank()
       this.interruptVBlank()
