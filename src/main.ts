@@ -95,7 +95,7 @@ function handleFileDrop(dropZone, onDropped) {
 function clearCanvas(canvas: HTMLCanvasElement): void {
   const context = canvas.getContext('2d')
   context.strokeStyle = ''
-  context.fillStyle = `rgb(0,0,0)`
+  context.fillStyle = `rgb(255,0,255)`
   context.fillRect(0, 0, canvas.width, canvas.height)
 }
 
@@ -103,10 +103,12 @@ function nesTest() {
   const root = document.getElementById('nesroot')
   const canvas = document.getElementById('nes-canvas') as HTMLCanvasElement
   const paletCanvas = document.getElementById('nes-palet') as HTMLCanvasElement
+  const bgCanvas = document.getElementById('nes-bg') as HTMLCanvasElement
   clearCanvas(canvas)
   clearCanvas(paletCanvas)
+  clearCanvas(bgCanvas)
 
-  const nes = Nes.create(canvas, paletCanvas)
+  const nes = Nes.create(canvas, paletCanvas, bgCanvas)
   ;(window as any).nes = nes  // Put nes into global.
 
   const onRomLoaded = (rom) => {

@@ -137,9 +137,9 @@ export class Ppu {
   public getNameTable(bx: number, by: number): number {
     const adr = 0x2000 + ((this.regs[PPUCTRL] & BASE_NAMETABLE_ADDRESS) << 10)
     if (this.mirrorMode === 0) {
-      return adr ^ ((by / 30) & 1) << 11
+      return adr ^ (((by / 30) & 1) << 11)
     } else {
-      return adr ^ (bx & 32) << 6
+      return adr ^ ((bx & 32) << 5)
     }
   }
 
@@ -160,7 +160,11 @@ export class Ppu {
   public renderBg(imageData: ImageData): void {
     if ((this.regs[PPUMASK] & SHOW_BG) === 0)
       return this.clearBg(imageData)
+    this.doRenderBg(imageData, this.scrollX, this.scrollY, 0, 0, 0)
+  }
 
+  public doRenderBg(imageData: ImageData, scrollX: number, scrollY: number,
+                    startX: number, startY: number, nameTableOffset: number): void {
     const W = 8
     const LINE_WIDTH = imageData.width
     const chrRom = this.chrData
@@ -168,7 +172,6 @@ export class Ppu {
     const vram = this.vram
     const paletTable = 0x3f00
     const pixels = imageData.data
-    const scrollX = this.scrollX, scrollY = this.scrollY
 
     const clearColor = vram[paletTable] & 0x3f  // Universal background color
     const clearR = kColors[clearColor * 3 + 0]
@@ -182,7 +185,7 @@ export class Ppu {
         const bx = (bbx + (scrollX >> 3)) & 63
         const ax = bx & 31
 
-        const nameTable = this.getNameTable(bx, by)
+        const nameTable = this.getNameTable(bx, by) ^ nameTableOffset
         const name = vram[nameTable + ax + (ay << 5)]
         const chridx = name * 16 + chrStart
         const palShift = (ax & 2) + ((ay & 2) << 1)
@@ -215,7 +218,7 @@ export class Ppu {
               b = kColors[c + 2]
             }
 
-            const index = (yy * LINE_WIDTH + xx) * 4
+            const index = ((yy + startY) * LINE_WIDTH + (xx + startX)) * 4
             pixels[index + 0] = r
             pixels[index + 1] = g
             pixels[index + 2] = b

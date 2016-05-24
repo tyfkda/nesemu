@@ -38,12 +38,16 @@ export class Nes {
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
-  public static create(canvas: HTMLCanvasElement, paletCanvas: HTMLCanvasElement): Nes {
-    const nes = new Nes(canvas, paletCanvas)
+  public static create(canvas: HTMLCanvasElement, paletCanvas: HTMLCanvasElement,
+                       bgCanvas: HTMLCanvasElement): Nes
+  {
+    const nes = new Nes(canvas, paletCanvas, bgCanvas)
     return nes
   }
 
-  constructor(private canvas: HTMLCanvasElement, private paletCanvas: HTMLCanvasElement) {
+  constructor(private canvas: HTMLCanvasElement, private paletCanvas: HTMLCanvasElement,
+              private bgCanvas: HTMLCanvasElement): Nes
+  {
     this.cpu = new Cpu6502()
     this.ram = new Uint8Array(RAM_SIZE)
     this.ppu = new Ppu()
@@ -111,6 +115,14 @@ export class Nes {
     this.ppu.renderSprite(this.imageData)
     this.debugPalet()
     this.context.putImageData(this.imageData, 0, 0)
+
+    if (this.bgCanvas != null) {
+      const context = this.bgCanvas.getContext('2d')
+      const imageData = context.getImageData(0, 0, this.bgCanvas.width, this.bgCanvas.height)
+      this.ppu.doRenderBg(imageData, 0, 0, 0, 0, 0)
+      this.ppu.doRenderBg(imageData, 0, 0, 256, 0, this.ppu.mirrorMode === 0 ? 0x0800 : 0x0400)
+      context.putImageData(imageData, 0, 0)
+    }
   }
 
   private setMemoryMap(): void {
