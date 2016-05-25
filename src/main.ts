@@ -7,8 +7,6 @@ import {Util} from './nes/util.ts'
 
 import {PadKeyHandler} from './pad_key_handler.ts'
 
-const FPS = 60
-
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
   return (window.requestAnimationFrame || window.mozRequestAnimationFrame ||

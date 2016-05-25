@@ -69,7 +69,8 @@ const kOpcode = {
   [OpType.NOP]: 'NOP',
 }
 
-export function disassemble(opInst: Instruction, mem: Uint8Array, start: number, pc: number): string {
+export function disassemble(opInst: Instruction, mem: Uint8Array, start: number, pc: number): string
+{
   let operand = ''
   switch (opInst.addressing) {
   case Addressing.IMPLIED:

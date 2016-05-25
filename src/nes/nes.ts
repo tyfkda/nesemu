@@ -136,7 +136,7 @@ export class Nes {
 
     // ROM
     cpu.setReadMemory(0x8000, 0xbfff, (adr) => this.romData[adr & (this.romData.length - 1)])
-    cpu.setReadMemory(0xc000, 0xffff, (adr) => this.romData[adr & (this.romData.length - 1)])  // Mirror
+    cpu.setReadMemory(0xc000, 0xffff, (adr) => this.romData[adr & (this.romData.length - 1)])
 
     // RAM
     cpu.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])

@@ -30,7 +30,7 @@ const SPRITE0HIT = 0x40
 const OAMADDR = 0x03
 
 // OAMDATA ($2004)
-const OAMDATA = 0x04
+//const OAMDATA = 0x04
 
 const PPUSCROLL = 0x05  // $2005
 const PPUADDR = 0x06  // $2006

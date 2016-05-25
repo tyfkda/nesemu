@@ -2,8 +2,6 @@
 
 import {Util} from './util.ts'
 
-declare var process: any
-
 const hex = Util.hex
 
 function setReset(p, flag, mask) {
@@ -155,14 +153,14 @@ export class Cpu6502 {
                     //   C: carry
   public pc: number  // Program counter
   public cycleCount: number
-  public breakPoints: {}
+  public breakPoints: any
   public watchRead: {}
   public watchWrite: {}
   public pausing: boolean
   private readerFuncTable: Function[]
   private writerFuncTable: Function[]
 
-  static public getInst(opcode: number): Instruction {
+  public static getInst(opcode: number): Instruction {
     return kInstTable[opcode]
   }
 
