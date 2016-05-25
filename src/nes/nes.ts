@@ -17,6 +17,14 @@ function triggerCycle(count: number, prev: number, curr: number): boolean {
   return prev < count && curr >= count
 }
 
+function isRomValid(romData: Uint8Array): boolean {
+  // Check header.
+  if (!(romData[0] === 0x4e && romData[1] === 0x45 && romData[2] === 0x53 &&
+        romData[3] === 0x1a))
+    return false
+  return true
+}
+
 function loadPrgRom(romData: Uint8Array): Uint8Array {
   const start = 16, size = romData[4] * (16 * 1024)
   const prg = romData.slice(start, start + size)
@@ -62,12 +70,17 @@ export class Nes {
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
     this.clearPixels()
     this.context.putImageData(this.imageData, 0, 0)
+
+    this.romData = new Uint8Array()
   }
 
-  public setRomData(romData: Uint8Array): void {
+  public setRomData(romData: Uint8Array): boolean {
+    if (!isRomValid(romData))
+      return false
     this.romData = loadPrgRom(romData)
     this.ppu.setChrData(loadChrRom(romData))
     this.ppu.setMirrorMode(romData[6] & 1)
+    return true
   }
 
   public reset(): void {

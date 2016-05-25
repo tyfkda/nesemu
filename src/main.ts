@@ -118,11 +118,10 @@ function nesTest() {
   const nes = Nes.create(canvas, paletCanvas, bgCanvas)
   ;(window as any).nes = nes  // Put nes into global.
 
-  const onRomLoaded = (romData) => {
-    nes.setRomData(romData)
+  const onRomLoaded = (romData): boolean => {
+    return nes.setRomData(romData)
   }
 
-  onRomLoaded([0])
   nes.cpu.pause(true)
   nes.reset()
 
@@ -204,10 +203,11 @@ function nesTest() {
   // Handle file drop.
   if (window.File && window.FileReader && window.FileList && window.Blob) {
     handleFileDrop(root, (romData) => {
-      nes.cpu.pause(true)
-      onRomLoaded(romData)
+      if (!onRomLoaded(romData)) {
+        alert(`Illegal ROM format`)
+        return
+      }
       nes.reset()
-      nes.cpu.pause(false)
       clearConsole()
       dumpCpu(nes.cpu)
       updateButtonState()
