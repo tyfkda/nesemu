@@ -93,14 +93,14 @@ export class Ppu {
   }
 
   public read(reg: number): number {
-    const result = this.regs[reg]
+    let result = this.regs[reg]
     switch (reg) {
     case PPUSTATUS:
       this.regs[PPUSTATUS] &= ~VBLANK
       this.latch = 0
       break
     case PPUDATA:
-      this.incPpuAddr()
+      result = this.vram[getPpuAddr(this.ppuAddr)]
       break
     default:
       break
@@ -211,7 +211,7 @@ export class Ppu {
         const name = vram[nameTable + ax + (ay << 5)]
         const chridx = name * 16 + chrStart
         const palShift = (ax & 2) + ((ay & 2) << 1)
-        const atrBlk = ((ax >> 2) | 0) + ((ay >> 2) | 0) * 8
+        const atrBlk = (ax >> 2) + ((ay << 1) & 0x0f8)
         const attributeTable = nameTable + 0x3c0
         const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
 
