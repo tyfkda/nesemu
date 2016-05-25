@@ -47,7 +47,7 @@ export class Nes {
   }
 
   constructor(private canvas: HTMLCanvasElement, private paletCanvas: HTMLCanvasElement,
-              private bgCanvas: HTMLCanvasElement): Nes
+              private bgCanvas: HTMLCanvasElement)
   {
     this.cpu = new Cpu6502()
     this.ram = new Uint8Array(RAM_SIZE)
