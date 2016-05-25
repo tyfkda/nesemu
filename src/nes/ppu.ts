@@ -53,6 +53,11 @@ function getPpuAddr(addr: number): number {
   return addr
 }
 
+function incPpuAddr(ppuAddr: number, ppuCtrl: number): number {
+  const add = ((ppuCtrl & INCREMENT_MODE) !== 0) ? 32 : 1
+  return (ppuAddr + add) & (VRAM_SIZE - 1)
+}
+
 export class Ppu {
   public regs: Uint8Array
   public chrData: Uint8Array
@@ -128,7 +133,7 @@ export class Ppu {
       break
     case PPUDATA:
       this.vram[getPpuAddr(this.ppuAddr)] = value
-      this.incPpuAddr()
+      this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
       break
     default:
       break
@@ -324,10 +329,5 @@ export class Ppu {
         }
       }
     }
-  }
-
-  private incPpuAddr(): void {
-    const add = ((this.regs[PPUCTRL] & INCREMENT_MODE) !== 0) ? 32 : 1
-    this.ppuAddr = (this.ppuAddr + add) & (VRAM_SIZE - 1)
   }
 }
