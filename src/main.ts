@@ -1,7 +1,8 @@
 ///<reference path="../decl/patch.d.ts" />
 
 import {Nes} from './nes/nes.ts'
-import {Cpu6502, Addressing, Instruction, OpType} from './nes/cpu.ts'
+import {Cpu6502} from './nes/cpu.ts'
+import {Addressing, Instruction, OpType} from './nes/inst.ts'
 import {disassemble} from './nes/disasm.ts'
 import {Util} from './nes/util.ts'
 

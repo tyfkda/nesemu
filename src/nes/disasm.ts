@@ -1,4 +1,4 @@
-import {Addressing, Instruction, OpType} from './cpu.ts'
+import {Addressing, Instruction, OpType} from './inst.ts'
 import {Util} from './util.ts'
 
 const kOpcode = {
