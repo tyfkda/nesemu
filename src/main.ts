@@ -1,7 +1,7 @@
 ///<reference path="../decl/patch.d.ts" />
 
 import {Nes} from './nes/nes.ts'
-import {Cpu6502} from './nes/cpu.ts'
+import {Cpu6502, Addressing, Instruction, OpType} from './nes/cpu.ts'
 import {disassemble} from './nes/disasm.ts'
 import {Util} from './nes/util.ts'
 
@@ -45,9 +45,11 @@ const {putConsole, clearConsole} = (function() {
   }
 })()
 
-const kIllegalInstruction = {
+const kIllegalInstruction: Instruction = {
+  opType: OpType.UNKNOWN,
+  addressing: Addressing.UNKNOWN,
   bytes: 1,
-  mnemonic: '???',
+  cycle: 0,
 }
 
 const dumpCpu = (() => {
