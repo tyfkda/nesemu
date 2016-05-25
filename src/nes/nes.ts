@@ -25,6 +25,10 @@ function isRomValid(romData: Uint8Array): boolean {
   return true
 }
 
+function getMapperNo(romData: Uint8Array): number {
+  return ((romData[6] >> 4) & 0x0f) | (romData[7] & 0xf0)
+}
+
 function loadPrgRom(romData: Uint8Array): Uint8Array {
   const start = 16, size = romData[4] * (16 * 1024)
   const prg = romData.slice(start, start + size)
@@ -44,6 +48,7 @@ export class Nes {
   public ppu: Ppu
 
   private romData: Uint8Array
+  private mapperNo: number
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
@@ -61,6 +66,7 @@ export class Nes {
     this.ram = new Uint8Array(RAM_SIZE)
     this.ppu = new Ppu()
     this.apu = new Apu()
+    this.mapperNo = 0
     this.setMemoryMap()
 
     this.canvas.width = Const.WIDTH
@@ -71,15 +77,19 @@ export class Nes {
     this.clearPixels()
     this.context.putImageData(this.imageData, 0, 0)
 
-    this.romData = new Uint8Array()
+    this.romData = new Uint8Array(0)
   }
 
   public setRomData(romData: Uint8Array): boolean {
     if (!isRomValid(romData))
       return false
+    this.mapperNo = getMapperNo(romData)
     this.romData = loadPrgRom(romData)
     this.ppu.setChrData(loadChrRom(romData))
     this.ppu.setMirrorMode(romData[6] & 1)
+
+    console.log(`Mapper: ${Util.hex(this.mapperNo, 2)}`)
+
     return true
   }
 
