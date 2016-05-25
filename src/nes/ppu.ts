@@ -120,7 +120,7 @@ export class Ppu {
       this.latch = 1 - this.latch
       break
     case PPUADDR:
-      if (this.latch === 0) {
+      if (this.latch === 0)
         this.ppuAddr = value
       else
         this.ppuAddr = ((this.ppuAddr << 8) | value) & (VRAM_SIZE - 1)

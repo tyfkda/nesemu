@@ -10,7 +10,7 @@ if (!('fill' in Uint8Array.prototype)) {
   }
 }
 
-if (!Uint8Array.prototype.slice)
+if (!Uint8Array.prototype.slice) {
   Uint8Array.prototype.slice = function(start, end) {
     if (end == undefined)
       end = this.length
