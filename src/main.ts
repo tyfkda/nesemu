@@ -9,6 +9,12 @@ import {PadKeyHandler} from './pad_key_handler.ts'
 
 const FPS = 60
 
+// Request Animation Frame
+window.requestAnimationFrame = (function() {
+  return (window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+          window.webkitRequestAnimationFrame || window.msRequestAnimationFrame)
+})()
+
 function showCpuStatus(cpu: Cpu6502): void {
   const e = id => document.getElementById(id) as HTMLInputElement
   e('reg-pc').value = Util.hex(cpu.pc, 4)
@@ -176,16 +182,23 @@ function nesTest() {
     padKeyHandler.onKeyUp(event.keyCode)
   })
 
-  setInterval(() => {
+  let lastTime = window.performance.now()
+  requestAnimationFrame(function loop() {
+    const MAX_ELAPSED_TIME = 1000 / 20
+    const curTime = window.performance.now()
+    const elapsedTime = curTime - lastTime
+    lastTime = curTime
+
     nes.setPadStatus(0, padKeyHandler.getStatus(0))
     nes.setPadStatus(1, padKeyHandler.getStatus(1))
     if (!nes.cpu.isPaused()) {
-      // TODO: Calculate cpu cycles from elapsed time.
-      let cycles = (1789773 / FPS) | 0
+      const et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
+      let cycles = (1789773 * et / 1000) | 0
       nes.runCycles(cycles)
       nes.render()
     }
-  }, 1000 / FPS)
+    requestAnimationFrame(loop)
+  })
 
   // Handle file drop.
   if (window.File && window.FileReader && window.FileList && window.Blob) {
