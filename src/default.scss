@@ -19,3 +19,10 @@ body {
   font-family:monospace;
   font-size: 14px;
 }
+
+.pixelated {
+  -ms-interpolation-mode: nearest-neighbor;   /* IE */
+  image-rendering: -webkit-crisp-edges;       /* Safari */
+  image-rendering: -moz-crisp-edges;          /* Firefox */
+  image-rendering: pixelated;
+}
