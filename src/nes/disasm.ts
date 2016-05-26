@@ -101,13 +101,13 @@ export function disassemble(opInst: Instruction, mem: Uint8Array, start: number,
     operand = ` $${Util.hex(mem[start] | (mem[start + 1] << 8), 4)}, Y`
     break
   case Addressing.INDIRECT:
-    operand = ` ($${Util.hex(mem[start] | (mem[start + 1] << 8), 4)})`
+    operand = ` (\$${Util.hex(mem[start] | (mem[start + 1] << 8), 4)})`
     break
   case Addressing.INDIRECT_X:
-    operand = ` ($${Util.hex(mem[start] | (mem[start + 1] << 8), 4)}, X)`
+    operand = ` (\$${Util.hex(mem[start], 2)}, X)`
     break
   case Addressing.INDIRECT_Y:
-    operand = ` ($${Util.hex(mem[start] | (mem[start + 1] << 8), 4)}), Y`
+    operand = ` (\$${Util.hex(mem[start], 2)}), Y`
     break
   case Addressing.RELATIVE:
     {
@@ -115,7 +115,7 @@ export function disassemble(opInst: Instruction, mem: Uint8Array, start: number,
       if (offset < 0x80)
         operand = ` +${offset}  ; $${Util.hex(pc + opInst.bytes + offset, 4)}`
       else
-        operand = ` ${offset - 256}  ; $${Util.hex(pc + opInst.bytes + offset - 256, 4)}`
+        operand = ` ${offset - 256}  ; \$${Util.hex(pc + opInst.bytes + offset - 256, 4)}`
     }
     break
   default:

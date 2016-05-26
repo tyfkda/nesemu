@@ -335,13 +335,13 @@ export class Ppu {
     }
   }
 
-  public dumpVram(start: number, end: number): void {
+  public dumpVram(start: number, count: number): void {
     const mem = []
-    for (let adr = start; adr < end; ++adr) {
-      mem.push(this.vram[getPpuAddr(adr)])
+    for (let i = 0; i < count; ++i) {
+      mem.push(this.vram[getPpuAddr(start + i)])
     }
 
-    for (let i = 0, n = end - start; i < n; i += 16) {
+    for (let i = 0; i < count; i += 16) {
       const line = mem.splice(0, 16).map(x => Util.hex(x, 2)).join(' ')
       console.log(`${Util.hex(start + i, 4)}: ${line}`)
     }

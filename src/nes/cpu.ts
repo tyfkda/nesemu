@@ -252,6 +252,18 @@ export class Cpu6502 {
     this.pc = vector
     this.p = (this.p | IRQBLK_FLAG) & ~BREAK_FLAG
   }
+
+  public dump(start: number, count: number): void {
+    const mem = []
+    for (let i = 0; i < count; ++i) {
+      mem.push(this.read8(i + start))
+    }
+
+    for (let i = 0; i < count; i += 16) {
+      const line = mem.splice(0, 16).map(x => Util.hex(x, 2)).join(' ')
+      console.log(`${Util.hex(start + i, 4)}: ${line}`)
+    }
+  }
 }
 
 const kOpTypeTable = (() => {
