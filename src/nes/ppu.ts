@@ -72,6 +72,7 @@ export class Ppu {
   private scrollYSave: number
   private ppuCtrlSave: number
   private ppuMaskSave: number
+  private bufferedValue: number
 
   constructor() {
     this.regs = new Uint8Array(REGISTER_COUNT)
@@ -87,6 +88,7 @@ export class Ppu {
     this.scrollX = this.scrollY = this.scrollXSave = this.scrollYSave = 0
     this.ppuAddr = 0
     this.latch = 0
+    this.bufferedValue = 0
   }
 
   public setChrData(chrData: Uint8Array): void {
@@ -105,7 +107,9 @@ export class Ppu {
       this.latch = 0
       break
     case PPUDATA:
-      result = this.vram[getPpuAddr(this.ppuAddr)]
+      result = this.bufferedValue
+      this.bufferedValue = this.vram[getPpuAddr(this.ppuAddr)]
+      this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
       break
     default:
       break
@@ -328,6 +332,18 @@ export class Ppu {
           pixels[index + 2] = kColors[c + 2]
         }
       }
+    }
+  }
+
+  public dumpVram(start: number, end: number): void {
+    const mem = []
+    for (let adr = start; adr < end; ++adr) {
+      mem.push(this.vram[getPpuAddr(adr)])
+    }
+
+    for (let i = 0, n = end - start; i < n; i += 16) {
+      const line = mem.splice(0, 16).map(x => Util.hex(x, 2)).join(' ')
+      console.log(`${Util.hex(start + i, 4)}: ${line}`)
     }
   }
 }
