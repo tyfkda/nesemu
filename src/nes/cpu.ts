@@ -65,6 +65,7 @@ export class Cpu6502 {
   public pausing: boolean
   private readerFuncTable: Function[]
   private writerFuncTable: Function[]
+  private readErrorReported: boolean
   private writeErrorReported: boolean
 
   public static getInst(opcode: number): Instruction {
@@ -102,7 +103,7 @@ export class Cpu6502 {
     this.s = (this.s - 3) & 0xff
     this.pc = this.read16(0xfffc)
     this.cycleCount = 0
-    this.writeErrorReported = false
+    this.readErrorReported = this.writeErrorReported = false
   }
 
   public pause(value: boolean): void {
@@ -173,8 +174,11 @@ export class Cpu6502 {
     const block = (adr / BLOCK_SIZE) | 0
     const reader = this.readerFuncTable[block]
     if (!reader) {
-      console.error(`Illegal read at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}`)
-      this.pausing = true
+      if (!this.readErrorReported) {
+        console.error(`Illegal read at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}`)
+        this.pausing = true
+        this.readErrorReported = true
+      }
       return 0
     }
     return reader(adr)
