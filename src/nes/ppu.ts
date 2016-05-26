@@ -209,8 +209,11 @@ export class Ppu {
     const clearG = kColors[clearColor * 3 + 1]
     const clearB = kColors[clearColor * 3 + 2]
 
+    if (scrollY >= 240)
+      scrollY = (scrollY - 256)
+
     for (let bby = 0; bby < Const.HEIGHT / W + 1; ++bby) {
-      const by = (bby + (scrollY >> 3)) & 63
+      const by = ((bby + (scrollY >> 3)) + 60) % 60
       const ay = by % 30
       for (let bbx = 0; bbx < Const.WIDTH / W + 1; ++bbx) {
         const bx = (bbx + (scrollX >> 3)) & 63
