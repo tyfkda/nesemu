@@ -88,6 +88,7 @@ export class Nes {
     this.romData = loadPrgRom(romData)
     this.ppu.setChrData(loadChrRom(romData))
     this.ppu.setMirrorMode(romData[6] & 1)
+    this.cpu.deleteAllBreakPoints()
 
     console.log(`Mapper: ${Util.hex(this.mapperNo, 2)}`)
 

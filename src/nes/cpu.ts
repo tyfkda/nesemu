@@ -106,6 +106,10 @@ export class Cpu6502 {
     this.readErrorReported = this.writeErrorReported = false
   }
 
+  public deleteAllBreakPoints(): void {
+    this.breakPoints = []
+  }
+
   public pause(value: boolean): void {
     this.pausing = value
   }
