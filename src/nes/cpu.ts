@@ -252,9 +252,8 @@ export class Cpu6502 {
     }
 
     this.push16(this.pc)
-    this.push(this.p)
+    this.push((this.p | IRQBLK_FLAG) & ~BREAK_FLAG)
     this.pc = vector
-    this.p = (this.p | IRQBLK_FLAG) & ~BREAK_FLAG
   }
 
   public dump(start: number, count: number): void {
@@ -602,18 +601,18 @@ const kOpTypeTable = (() => {
       cpu.pc += offset
   })
 
-  set(OpType.PHA, (cpu, pc, _) => {
+  set(OpType.PHA, (cpu, _pc, _) => {
     cpu.push(cpu.a)
   })
-  set(OpType.PHP, (cpu, pc, _) => {
-    cpu.push(cpu.p)
+  set(OpType.PHP, (cpu, _pc, _) => {
+    cpu.push(cpu.p | BREAK_FLAG)
   })
-  set(OpType.PLA, (cpu, pc, _) => {
+  set(OpType.PLA, (cpu, _pc, _) => {
     cpu.a = cpu.pop()
     cpu.setFlag(cpu.a)
   })
-  set(OpType.PLP, (cpu, pc, _) => {
-    cpu.p = cpu.pop()
+  set(OpType.PLP, (cpu, _pc, _) => {
+    cpu.p = cpu.pop() | RESERVED_FLAG
   })
 
   set(OpType.CLC, (cpu, _pc, _) => {

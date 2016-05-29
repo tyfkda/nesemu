@@ -10,6 +10,7 @@ const RAM_SIZE = 0x0800
 
 const DUMMY_SPRITE0HIT = (20 * 341 / 3) | 0
 const VBLANK_START = (241 * 341 / 3) | 0
+const VBLANK_NMI = (242 * 341 / 3) | 0
 const VBLANK_END = (261 * 341 / 3) | 0
 const VRETURN = (262 * 341 / 3) | 0
 
@@ -126,6 +127,8 @@ export class Nes {
     }
     if (triggerCycle(VBLANK_START, prevCount, currCount)) {
       this.ppu.setVBlank()
+    }
+    if (triggerCycle(VBLANK_NMI, prevCount, currCount)) {
       this.interruptVBlank()
     }
     if (triggerCycle(VBLANK_END, prevCount, currCount)) {
