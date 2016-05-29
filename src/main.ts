@@ -40,7 +40,7 @@ const {putConsole, clearConsole} = (function() {
     clearConsole: function() {
       cons.value = ''
       lines.length = 0
-    }
+    },
   }
 })()
 
@@ -208,6 +208,7 @@ function nesTest() {
         return
       }
       nes.reset()
+      nes.cpu.pause(false)
       clearConsole()
       dumpCpu(nes.cpu)
       updateButtonState()

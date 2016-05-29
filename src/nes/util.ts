@@ -2,6 +2,7 @@ const kHexTbl = '0123456789abcdef'
 
 if (!('fill' in Uint8Array.prototype)) {
   // Safari doesn't support fill method for typed array.
+  /* tslint:disable:no-invalid-this */
   Uint8Array.prototype.fill = function(value: number, start: number = 0,
                                        end: number = this.length): Uint8Array {
     for (let i = start; i < end; ++i)
