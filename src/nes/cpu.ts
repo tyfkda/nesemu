@@ -136,7 +136,7 @@ export class Cpu6502 {
 
   public step(): number {
     if (this.pausing)
-      return
+      return 0
 
     let pc = this.pc
     const op = this.read8(pc++)
@@ -144,7 +144,7 @@ export class Cpu6502 {
     if (inst == null) {
       console.error(`Unhandled OPCODE, ${hex(this.pc - 1, 4)}: ${hex(op, 2)}`)
       this.pausing = true
-      return
+      return 0
     }
 
     this.pc += inst.bytes
