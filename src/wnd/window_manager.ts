@@ -3,10 +3,17 @@ import Wnd from './wnd.ts'
 export default class WindowManager {
   private windows: Wnd[] = []
 
-  public create(width: number, height: number, title: string, content: HTMLElement, parent: HTMLElement): Wnd {
-    const wnd = new Wnd()
-    wnd.construct(parent, width, height, title, content)
+  public constructor(private root: HTMLElement) {
+  }
+
+  public add(wnd: Wnd) {
     this.windows.push(wnd)
-    return wnd
+    this.root.appendChild(wnd.getRootNode())
+  }
+
+  public update(): void {
+    this.windows.forEach(wnd => {
+      wnd.update()
+    })
   }
 }

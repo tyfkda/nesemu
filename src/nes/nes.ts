@@ -53,16 +53,12 @@ export class Nes {
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
-  public static create(canvas: HTMLCanvasElement, paletCanvas: HTMLCanvasElement,
-                       bgCanvas: HTMLCanvasElement): Nes
-  {
-    const nes = new Nes(canvas, paletCanvas, bgCanvas)
+  public static create(canvas: HTMLCanvasElement): Nes {
+    const nes = new Nes(canvas)
     return nes
   }
 
-  constructor(private canvas: HTMLCanvasElement, private paletCanvas: HTMLCanvasElement,
-              private bgCanvas: HTMLCanvasElement)
-  {
+  constructor(private canvas: HTMLCanvasElement) {
     this.cpu = new Cpu6502()
     this.ram = new Uint8Array(RAM_SIZE)
     this.ppu = new Ppu()
@@ -144,16 +140,15 @@ export class Nes {
   public render(): void {
     this.ppu.renderBg(this.imageData)
     this.ppu.renderSprite(this.imageData)
-    this.debugPalet()
     this.context.putImageData(this.imageData, 0, 0)
+  }
 
-    if (this.bgCanvas != null) {
-      const context = this.bgCanvas.getContext('2d')
-      const imageData = context.getImageData(0, 0, this.bgCanvas.width, this.bgCanvas.height)
-      this.ppu.doRenderBg(imageData, 0, 0, 0, 0, 0)
-      this.ppu.doRenderBg(imageData, 0, 0, 256, 0, this.ppu.mirrorMode === 0 ? 0x0800 : 0x0400)
-      context.putImageData(imageData, 0, 0)
-    }
+  public renderNameTable(bgCanvas: HTMLCanvasElement): void {
+    const context = bgCanvas.getContext('2d')
+    const imageData = context.getImageData(0, 0, bgCanvas.width, bgCanvas.height)
+    this.ppu.doRenderBg(imageData, 0, 0, 0, 0, 0)
+    this.ppu.doRenderBg(imageData, 0, 0, 256, 0, this.ppu.mirrorMode === 0 ? 0x0800 : 0x0400)
+    context.putImageData(imageData, 0, 0)
   }
 
   private setMemoryMap(): void {
@@ -219,11 +214,11 @@ export class Nes {
     }
   }
 
-  private debugPalet(): void {
-    const context = this.paletCanvas.getContext('2d')
+  public renderPalet(paletCanvas: HTMLCanvasElement): void {
+    const context = paletCanvas.getContext('2d')
     context.strokeStyle = ''
     context.fillStyle = `rgb(0,0,0)`
-    context.fillRect(0, 0, this.paletCanvas.width, this.paletCanvas.height)
+    context.fillRect(0, 0, paletCanvas.width, paletCanvas.height)
 
     const vram = this.ppu.vram
     const paletTable = 0x3f00

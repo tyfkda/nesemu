@@ -3,16 +3,9 @@ export default class Wnd {
 
   private root: HTMLElement
 
-  public constructor() {
-  }
-
-  public setPos(x: number, y: number): void {
-    this.root.style.left = `${x}px`
-    this.root.style.top = `${y}px`
-  }
-
-  public construct(parent: HTMLElement, width: number, height: number, title: string, content: HTMLElement): void {
+  public constructor(width: number, height: number, title: string, content: HTMLElement) {
     const root = document.createElement('div')
+    this.root = root
     root.className = 'wnd'
     root.style.position = 'absolute'
     root.style.width = `${width}px`
@@ -31,9 +24,18 @@ export default class Wnd {
     contentHolder.className = 'content-holder'
     contentHolder.appendChild(content)
     root.appendChild(contentHolder)
+  }
 
-    this.root = root
-    parent.appendChild(this.root)
+  public setPos(x: number, y: number): void {
+    this.root.style.left = `${x}px`
+    this.root.style.top = `${y}px`
+  }
+
+  public getRootNode(): HTMLElement {
+    return this.root
+  }
+
+  public update(): void {
   }
 
   private onCloseButtonClicked() {

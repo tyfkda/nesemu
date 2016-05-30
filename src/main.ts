@@ -10,6 +10,7 @@ import {PadKeyHandler} from './pad_key_handler.ts'
 
 import WindowManager from './wnd/window_manager.ts'
 import Wnd from './wnd/wnd.ts'
+import {PaletWnd, NameTableWnd} from './ui/ui.ts'
 
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
@@ -110,40 +111,28 @@ function clearCanvas(canvas: HTMLCanvasElement): void {
 }
 
 function nesTest() {
-  const windowManager = new WindowManager()
-
   const root = document.getElementById('nesroot')
+  const windowManager = new WindowManager(root)
 
   const canvas = document.createElement('canvas') as HTMLCanvasElement
   canvas.style.width = '512px'
   canvas.style.height = '480px'
   canvas.className = 'pixelated'
   clearCanvas(canvas)
-  const tvWnd = windowManager.create(512, 480, 'NES', canvas, root)
+  const tvWnd = new Wnd(512, 480, 'NES', canvas)
+  windowManager.add(tvWnd)
   tvWnd.setPos(0, 0)
 
-  const paletCanvas = document.createElement('canvas') as HTMLCanvasElement
-  paletCanvas.width = 64
-  paletCanvas.height = 8
-  paletCanvas.style.width = '128px'
-  paletCanvas.style.height = '16px'
-  paletCanvas.className = 'pixelated'
-  clearCanvas(paletCanvas)
-  const paletWnd = windowManager.create(128, 16, 'Palette', paletCanvas, root)
+  const nes = Nes.create(canvas)
+  ;(window as any).nes = nes  // Put nes into global.
+
+  const paletWnd = new PaletWnd(nes)
+  windowManager.add(paletWnd)
   paletWnd.setPos(530, 0)
 
-  const bgCanvas = document.createElement('canvas') as HTMLCanvasElement
-  bgCanvas.width = 512
-  bgCanvas.height = 240
-  bgCanvas.style.width = '512px'
-  bgCanvas.style.height = '240px'
-  bgCanvas.className = 'pixelated'
-  clearCanvas(bgCanvas)
-  const bgWnd = windowManager.create(512, 240, 'NameTable', bgCanvas, root)
-  bgWnd.setPos(530, 50)
-
-  const nes = Nes.create(canvas, paletCanvas, bgCanvas)
-  ;(window as any).nes = nes  // Put nes into global.
+  const nameTableWnd = new NameTableWnd(nes)
+  windowManager.add(nameTableWnd)
+  nameTableWnd.setPos(530, 50)
 
   const onRomLoaded = (romData): boolean => {
     return nes.setRomData(romData)
@@ -165,6 +154,11 @@ function nesTest() {
     runElem.disabled = stepElem.disabled = !paused
   }
 
+  const render = () => {
+    nes.render()
+    windowManager.update()
+  }
+
   stepElem.addEventListener('click', () => {
     const paused = nes.cpu.isPaused()
     nes.cpu.pause(false)
@@ -172,7 +166,7 @@ function nesTest() {
     if (paused)
       nes.cpu.pause(true)
     dumpCpu(nes.cpu)
-    nes.render()
+    render()
   })
   runElem.addEventListener('click', () => {
     nes.cpu.pause(false)
@@ -222,7 +216,7 @@ function nesTest() {
       const et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
       let cycles = (1789773 * et / 1000) | 0
       nes.runCycles(cycles)
-      nes.render()
+      render()
     }
     requestAnimationFrame(loop)
   })
