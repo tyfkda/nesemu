@@ -8,6 +8,10 @@ import {Util} from './nes/util.ts'
 
 import {PadKeyHandler} from './pad_key_handler.ts'
 
+import WindowManager from './wnd/window_manager.ts'
+import Wnd from './wnd/wnd.ts'
+import {ScreenWnd, PaletWnd, NameTableWnd} from './ui/ui.ts'
+
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
   return (window.requestAnimationFrame || window.mozRequestAnimationFrame ||
@@ -108,15 +112,22 @@ function clearCanvas(canvas: HTMLCanvasElement): void {
 
 function nesTest() {
   const root = document.getElementById('nesroot')
-  const canvas = document.getElementById('nes-canvas') as HTMLCanvasElement
-  const paletCanvas = document.getElementById('nes-palet') as HTMLCanvasElement
-  const bgCanvas = document.getElementById('nes-bg') as HTMLCanvasElement
-  clearCanvas(canvas)
-  clearCanvas(paletCanvas)
-  clearCanvas(bgCanvas)
+  const wndMgr = new WindowManager(root)
 
-  const nes = Nes.create(canvas, paletCanvas, bgCanvas)
+  const nes = Nes.create()
   ;(window as any).nes = nes  // Put nes into global.
+
+  const screenWnd = new ScreenWnd(wndMgr, nes)
+  wndMgr.add(screenWnd)
+  screenWnd.setPos(0, 0)
+
+  const paletWnd = new PaletWnd(wndMgr, nes)
+  wndMgr.add(paletWnd)
+  paletWnd.setPos(530, 0)
+
+  const nameTableWnd = new NameTableWnd(wndMgr, nes)
+  wndMgr.add(nameTableWnd)
+  nameTableWnd.setPos(530, 50)
 
   const onRomLoaded = (romData): boolean => {
     return nes.setRomData(romData)
@@ -138,6 +149,10 @@ function nesTest() {
     runElem.disabled = stepElem.disabled = !paused
   }
 
+  const render = () => {
+    wndMgr.update()
+  }
+
   stepElem.addEventListener('click', () => {
     const paused = nes.cpu.isPaused()
     nes.cpu.pause(false)
@@ -145,7 +160,7 @@ function nesTest() {
     if (paused)
       nes.cpu.pause(true)
     dumpCpu(nes.cpu)
-    nes.render()
+    render()
   })
   runElem.addEventListener('click', () => {
     nes.cpu.pause(false)
@@ -163,9 +178,8 @@ function nesTest() {
   })
 
   document.getElementById('capture').addEventListener('click', () => {
-    const dataUrl = canvas.toDataURL()
     const img = document.getElementById('captured-image') as HTMLImageElement
-    img.src = dataUrl
+    img.src = screenWnd.capture()
     img.style.visibility = 'visible'
   })
 
@@ -195,7 +209,7 @@ function nesTest() {
       const et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
       let cycles = (1789773 * et / 1000) | 0
       nes.runCycles(cycles)
-      nes.render()
+      render()
     }
     requestAnimationFrame(loop)
   })

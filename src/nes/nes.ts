@@ -50,33 +50,18 @@ export class Nes {
 
   private romData: Uint8Array
   private mapperNo: number
-  private context: CanvasRenderingContext2D
-  private imageData: ImageData
 
-  public static create(canvas: HTMLCanvasElement, paletCanvas: HTMLCanvasElement,
-                       bgCanvas: HTMLCanvasElement): Nes
-  {
-    const nes = new Nes(canvas, paletCanvas, bgCanvas)
-    return nes
+  public static create(): Nes {
+    return new Nes()
   }
 
-  constructor(private canvas: HTMLCanvasElement, private paletCanvas: HTMLCanvasElement,
-              private bgCanvas: HTMLCanvasElement)
-  {
+  constructor() {
     this.cpu = new Cpu6502()
     this.ram = new Uint8Array(RAM_SIZE)
     this.ppu = new Ppu()
     this.apu = new Apu()
     this.mapperNo = 0
     this.setMemoryMap()
-
-    this.canvas.width = Const.WIDTH
-    this.canvas.height = Const.HEIGHT
-
-    this.context = this.canvas.getContext('2d')
-    this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
-    this.clearPixels()
-    this.context.putImageData(this.imageData, 0, 0)
 
     this.romData = new Uint8Array(0)
   }
@@ -141,19 +126,18 @@ export class Nes {
     return cycle
   }
 
-  public render(): void {
-    this.ppu.renderBg(this.imageData)
-    this.ppu.renderSprite(this.imageData)
-    this.debugPalet()
-    this.context.putImageData(this.imageData, 0, 0)
+  public render(context: CanvasRenderingContext2D, imageData: ImageData): void {
+    this.ppu.renderBg(imageData)
+    this.ppu.renderSprite(imageData)
+    context.putImageData(imageData, 0, 0)
+  }
 
-    if (this.bgCanvas != null) {
-      const context = this.bgCanvas.getContext('2d')
-      const imageData = context.getImageData(0, 0, this.bgCanvas.width, this.bgCanvas.height)
-      this.ppu.doRenderBg(imageData, 0, 0, 0, 0, 0)
-      this.ppu.doRenderBg(imageData, 0, 0, 256, 0, this.ppu.mirrorMode === 0 ? 0x0800 : 0x0400)
-      context.putImageData(imageData, 0, 0)
-    }
+  public renderNameTable(bgCanvas: HTMLCanvasElement): void {
+    const context = bgCanvas.getContext('2d')
+    const imageData = context.getImageData(0, 0, bgCanvas.width, bgCanvas.height)
+    this.ppu.doRenderBg(imageData, 0, 0, 0, 0, 0)
+    this.ppu.doRenderBg(imageData, 0, 0, 256, 0, this.ppu.mirrorMode === 0 ? 0x0800 : 0x0400)
+    context.putImageData(imageData, 0, 0)
   }
 
   private setMemoryMap(): void {
@@ -207,23 +191,11 @@ export class Nes {
     this.cpu.nmi()
   }
 
-  private clearPixels(): void {
-    const pixels = this.imageData.data
-    const n = this.imageData.width * this.imageData.height
-    for (let i = 0; i < n; ++i) {
-      const index = i * 4
-      pixels[index + 0] = 0
-      pixels[index + 1] = 0
-      pixels[index + 2] = 0
-      pixels[index + 3] = 255
-    }
-  }
-
-  private debugPalet(): void {
-    const context = this.paletCanvas.getContext('2d')
+  public renderPalet(paletCanvas: HTMLCanvasElement): void {
+    const context = paletCanvas.getContext('2d')
     context.strokeStyle = ''
     context.fillStyle = `rgb(0,0,0)`
-    context.fillRect(0, 0, this.paletCanvas.width, this.paletCanvas.height)
+    context.fillRect(0, 0, paletCanvas.width, paletCanvas.height)
 
     const vram = this.ppu.vram
     const paletTable = 0x3f00
