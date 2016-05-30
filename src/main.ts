@@ -10,7 +10,7 @@ import {PadKeyHandler} from './pad_key_handler.ts'
 
 import WindowManager from './wnd/window_manager.ts'
 import Wnd from './wnd/wnd.ts'
-import {ScreenWnd, PaletWnd, NameTableWnd} from './ui/ui.ts'
+import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd} from './ui/ui.ts'
 
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
@@ -123,11 +123,15 @@ function nesTest() {
 
   const paletWnd = new PaletWnd(wndMgr, nes)
   wndMgr.add(paletWnd)
-  paletWnd.setPos(530, 0)
+  paletWnd.setPos(520, 0)
 
   const nameTableWnd = new NameTableWnd(wndMgr, nes)
   wndMgr.add(nameTableWnd)
-  nameTableWnd.setPos(530, 50)
+  nameTableWnd.setPos(520, 40)
+
+  const patternTableWnd = new PatternTableWnd(wndMgr, nes)
+  wndMgr.add(patternTableWnd)
+  patternTableWnd.setPos(520, 300)
 
   const onRomLoaded = (romData): boolean => {
     return nes.setRomData(romData)

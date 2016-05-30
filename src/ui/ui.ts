@@ -125,3 +125,38 @@ export class NameTableWnd extends Wnd {
     this.nes.renderNameTable(this.canvas)
   }
 }
+
+const kPatternColors = [
+  0, 0, 0,
+  255, 0, 0,
+  0, 255, 0,
+  0, 0, 255,
+]
+
+export class PatternTableWnd extends Wnd {
+  private nes: Nes
+  private canvas: HTMLCanvasElement
+
+  public constructor(wndMgr: WindowManager, nes: Nes) {
+    const canvas = PatternTableWnd.createCanvas()
+
+    super(wndMgr, 256, 128, 'PatternTable', canvas)
+    this.nes = nes
+    this.canvas = canvas
+  }
+
+  public update(): void {
+    this.nes.renderPatternTable(this.canvas, kPatternColors)
+  }
+
+  private static createCanvas(): HTMLCanvasElement {
+    const canvas = document.createElement('canvas') as HTMLCanvasElement
+    canvas.width = 256
+    canvas.height = 128
+    canvas.style.width = '256px'
+    canvas.style.height = '128px'
+    canvas.className = 'pixelated'
+    clearCanvas(canvas)
+    return canvas
+  }
+}

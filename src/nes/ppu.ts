@@ -349,4 +349,35 @@ export class Ppu {
       console.log(`${Util.hex(start + i, 4)}: ${line}`)
     }
   }
+
+  public renderPattern(imageData: ImageData, colors: number[]): void {
+    const W = 8
+    const LINE_WIDTH = imageData.width
+    const chrRom = this.chrData
+    const vram = this.vram
+    const pixels = imageData.data
+
+    for (let i = 0; i < 2; ++i) {
+      for (let by = 0; by < 16; ++by) {
+        for (let bx = 0; bx < 16; ++bx) {
+          const chridx = (bx + by * 16 + i * 256) * 16
+          for (let py = 0; py < W; ++py) {
+            const yy = by * W + py
+            const idx = chridx + py
+            const pat = (kStaggered[chrRom[idx + 8]] << 1) | kStaggered[chrRom[idx]]
+            for (let px = 0; px < W; ++px) {
+              const xx = bx * W + px + i * (W * 16)
+              const col = (pat >> ((W - 1 - px) * 2)) & 3
+              const c = col * 3
+
+              const index = (yy * LINE_WIDTH + xx) * 4
+              pixels[index + 0] = colors[c + 0]
+              pixels[index + 1] = colors[c + 1]
+              pixels[index + 2] = colors[c + 2]
+            }
+          }
+        }
+      }
+    }
+  }
 }

@@ -140,6 +140,13 @@ export class Nes {
     context.putImageData(imageData, 0, 0)
   }
 
+  public renderPatternTable(bgCanvas: HTMLCanvasElement, colors: number[]): void {
+    const context = bgCanvas.getContext('2d')
+    const imageData = context.getImageData(0, 0, bgCanvas.width, bgCanvas.height)
+    this.ppu.renderPattern(imageData, colors)
+    context.putImageData(imageData, 0, 0)
+  }
+
   private setMemoryMap(): void {
     const OAMDMA = 0x4014
 
