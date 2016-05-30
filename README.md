@@ -1,13 +1,7 @@
-FrontendTemplate
-================
+NES Emulator
+============
 
-Project template for frontend development:
-
-* ES6 (JavaScript) + eslint
-* HTML
-* SASS (CSS)
-* JS test: Jasmine + Karma
-
+NES emulator written in TypeScript.
 
 ## Requirement
 
