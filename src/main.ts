@@ -10,7 +10,7 @@ import {PadKeyHandler} from './pad_key_handler.ts'
 
 import WindowManager from './wnd/window_manager.ts'
 import Wnd from './wnd/wnd.ts'
-import {PaletWnd, NameTableWnd} from './ui/ui.ts'
+import {ScreenWnd, PaletWnd, NameTableWnd} from './ui/ui.ts'
 
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
@@ -114,17 +114,12 @@ function nesTest() {
   const root = document.getElementById('nesroot')
   const windowManager = new WindowManager(root)
 
-  const canvas = document.createElement('canvas') as HTMLCanvasElement
-  canvas.style.width = '512px'
-  canvas.style.height = '480px'
-  canvas.className = 'pixelated'
-  clearCanvas(canvas)
-  const tvWnd = new Wnd(512, 480, 'NES', canvas)
-  windowManager.add(tvWnd)
-  tvWnd.setPos(0, 0)
-
-  const nes = Nes.create(canvas)
+  const nes = Nes.create()
   ;(window as any).nes = nes  // Put nes into global.
+
+  const screenWnd = new ScreenWnd(nes)
+  windowManager.add(screenWnd)
+  screenWnd.setPos(0, 0)
 
   const paletWnd = new PaletWnd(nes)
   windowManager.add(paletWnd)
@@ -155,7 +150,6 @@ function nesTest() {
   }
 
   const render = () => {
-    nes.render()
     windowManager.update()
   }
 
@@ -184,9 +178,8 @@ function nesTest() {
   })
 
   document.getElementById('capture').addEventListener('click', () => {
-    const dataUrl = canvas.toDataURL()
     const img = document.getElementById('captured-image') as HTMLImageElement
-    img.src = dataUrl
+    img.src = screenWnd.capture()
     img.style.visibility = 'visible'
   })
 
