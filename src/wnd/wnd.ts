@@ -8,7 +8,7 @@ export default class Wnd {
   public constructor(private wndMgr: WindowManager,
                      width: number, height: number, title: string, content: HTMLElement)
   {
-    const root = document.createElement('div')
+    const root = this.createRoot()
     this.root = root
     root.className = 'wnd'
     root.style.position = 'absolute'
@@ -36,7 +36,18 @@ export default class Wnd {
   public update(): void {
   }
 
-  private createTitleBar(title: string) {
+  private createRoot(): HTMLElement {
+    const root = document.createElement('div')
+    root.addEventListener('mousedown', (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      this.wndMgr.moveToTop(this)
+      return false
+    })
+    return root
+  }
+
+  private createTitleBar(title: string): HTMLElement {
     const titleBar = document.createElement('div')
     titleBar.className = 'title-bar clearfix'
 
@@ -68,7 +79,6 @@ export default class Wnd {
       dragOfsY = rect.top - y - scrollTop
       this.root.parentNode.addEventListener('mousemove', dragMove)
       this.root.parentNode.addEventListener('mouseup', dragFinish)
-      this.wndMgr.moveToTop(this)
       return true
     })
 
