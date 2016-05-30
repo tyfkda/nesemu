@@ -8,6 +8,9 @@ import {Util} from './nes/util.ts'
 
 import {PadKeyHandler} from './pad_key_handler.ts'
 
+import WindowManager from './wnd/window_manager.ts'
+import Wnd from './wnd/wnd.ts'
+
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
   return (window.requestAnimationFrame || window.mozRequestAnimationFrame ||
@@ -107,13 +110,37 @@ function clearCanvas(canvas: HTMLCanvasElement): void {
 }
 
 function nesTest() {
+  const windowManager = new WindowManager()
+
   const root = document.getElementById('nesroot')
-  const canvas = document.getElementById('nes-canvas') as HTMLCanvasElement
-  const paletCanvas = document.getElementById('nes-palet') as HTMLCanvasElement
-  const bgCanvas = document.getElementById('nes-bg') as HTMLCanvasElement
+
+  const canvas = document.createElement('canvas') as HTMLCanvasElement
+  canvas.style.width = '512px'
+  canvas.style.height = '480px'
+  canvas.className = 'pixelated'
   clearCanvas(canvas)
+  const tvWnd = windowManager.create(512, 480, 'NES', canvas, root)
+  tvWnd.setPos(0, 0)
+
+  const paletCanvas = document.createElement('canvas') as HTMLCanvasElement
+  paletCanvas.width = 64
+  paletCanvas.height = 8
+  paletCanvas.style.width = '128px'
+  paletCanvas.style.height = '16px'
+  paletCanvas.className = 'pixelated'
   clearCanvas(paletCanvas)
+  const paletWnd = windowManager.create(128, 16, 'Palette', paletCanvas, root)
+  paletWnd.setPos(530, 0)
+
+  const bgCanvas = document.createElement('canvas') as HTMLCanvasElement
+  bgCanvas.width = 512
+  bgCanvas.height = 240
+  bgCanvas.style.width = '512px'
+  bgCanvas.style.height = '240px'
+  bgCanvas.className = 'pixelated'
   clearCanvas(bgCanvas)
+  const bgWnd = windowManager.create(512, 240, 'NameTable', bgCanvas, root)
+  bgWnd.setPos(530, 50)
 
   const nes = Nes.create(canvas, paletCanvas, bgCanvas)
   ;(window as any).nes = nes  // Put nes into global.

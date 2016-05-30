@@ -1,4 +1,4 @@
-$BG_COLOR: #ddd;
+$BG_COLOR: #ccc;
 
 body {
   background-color: $BG_COLOR;
@@ -25,4 +25,68 @@ body {
   image-rendering: -webkit-crisp-edges;       /* Safari */
   image-rendering: -moz-crisp-edges;          /* Firefox */
   image-rendering: pixelated;
+}
+
+.clearfix:after {
+  content: " ";
+  display: table;
+  clear: both;
+}
+
+.pull-left {
+  float: left;
+}
+
+.wnd {
+  background-color: gray;
+  border-radius: 5px;
+  border: 1px solid #888;
+
+  .title-bar {
+    position: absolute;
+    background-color: #ccc;
+    width: 100%;
+    height: 12px;
+    border-bottom: 1px solid #888;
+    box-sizing: border-box;
+    border-radius:5px 5px 0 0;
+  }
+
+  .btn {
+    display: inline-block;
+    float: left;
+    margin-left: 5px;
+    width: 10px;
+    height: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+  }
+
+  .btn.close {
+    background-color: #f44;
+  }
+  .btn.close:hover {
+    background-color: #f88;
+  }
+
+  .title {
+    display: inline-block;
+    float: left;
+    margin-left: 5px;
+    margin-top: -2px;
+    height: 12px;
+    color: black;
+    font-size: 10px;
+    font-weight: bold;
+  }
+
+  .content-holder {
+    position: absolute;
+    left: 0;
+    top: 12px;
+    right: 0;
+    bottom: 0;
+    overflow: hidden;
+    border-radius:0 0 5px 5px;
+  }
 }
