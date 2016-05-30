@@ -1,9 +1,13 @@
+import WindowManager from './window_manager.ts'
+
 export default class Wnd {
   public static HEADER_HEIGHT = 12
 
   private root: HTMLElement
 
-  public constructor(width: number, height: number, title: string, content: HTMLElement) {
+  public constructor(windowManager: WindowManager,
+                     width: number, height: number, title: string, content: HTMLElement)
+  {
     const root = document.createElement('div')
     this.root = root
     root.className = 'wnd'
@@ -16,7 +20,7 @@ export default class Wnd {
     root.appendChild(titleBar)
 
     this.addTitleButton(titleBar, 'close', () => {
-      this.onCloseButtonClicked()
+      windowManager.remove(this)
     })
     this.addTitle(titleBar, title)
 
@@ -36,11 +40,6 @@ export default class Wnd {
   }
 
   public update(): void {
-  }
-
-  private onCloseButtonClicked() {
-    this.root.parentNode.removeChild(this.root)
-    this.root = null
   }
 
   private addTitleButton(element: HTMLElement, className: string, clickCallback: EventListener): HTMLElement {

@@ -11,6 +11,15 @@ export default class WindowManager {
     this.root.appendChild(wnd.getRootNode())
   }
 
+  public remove(wnd: Wnd) {
+    const i = this.windows.indexOf(wnd)
+    if (i >= 0)
+      this.windows.splice(i, 1)
+
+    const elem = wnd.getRootNode()
+    elem.parentNode.removeChild(elem)
+  }
+
   public update(): void {
     this.windows.forEach(wnd => {
       wnd.update()

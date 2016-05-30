@@ -112,21 +112,21 @@ function clearCanvas(canvas: HTMLCanvasElement): void {
 
 function nesTest() {
   const root = document.getElementById('nesroot')
-  const windowManager = new WindowManager(root)
+  const wndMgr = new WindowManager(root)
 
   const nes = Nes.create()
   ;(window as any).nes = nes  // Put nes into global.
 
-  const screenWnd = new ScreenWnd(nes)
-  windowManager.add(screenWnd)
+  const screenWnd = new ScreenWnd(wndMgr, nes)
+  wndMgr.add(screenWnd)
   screenWnd.setPos(0, 0)
 
-  const paletWnd = new PaletWnd(nes)
-  windowManager.add(paletWnd)
+  const paletWnd = new PaletWnd(wndMgr, nes)
+  wndMgr.add(paletWnd)
   paletWnd.setPos(530, 0)
 
-  const nameTableWnd = new NameTableWnd(nes)
-  windowManager.add(nameTableWnd)
+  const nameTableWnd = new NameTableWnd(wndMgr, nes)
+  wndMgr.add(nameTableWnd)
   nameTableWnd.setPos(530, 50)
 
   const onRomLoaded = (romData): boolean => {
@@ -150,7 +150,7 @@ function nesTest() {
   }
 
   const render = () => {
-    windowManager.update()
+    wndMgr.update()
   }
 
   stepElem.addEventListener('click', () => {

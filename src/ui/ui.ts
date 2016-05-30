@@ -1,3 +1,4 @@
+import WindowManager from '../wnd/window_manager.ts'
 import Wnd from '../wnd/wnd.ts'
 import {Nes} from '../nes/nes.ts'
 
@@ -14,7 +15,7 @@ export class ScreenWnd extends Wnd {
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
-  public constructor(nes: Nes) {
+  public constructor(wndMgr: WindowManager, nes: Nes) {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = 256
     canvas.height = 240
@@ -23,7 +24,7 @@ export class ScreenWnd extends Wnd {
     canvas.className = 'pixelated'
     clearCanvas(canvas)
 
-    super(512, 480, 'NES', canvas)
+    super(wndMgr, 512, 480, 'NES', canvas)
     this.nes = nes
     this.canvas = canvas
     this.context = this.canvas.getContext('2d')
@@ -43,7 +44,7 @@ export class PaletWnd extends Wnd {
   private nes: Nes
   private canvas: HTMLCanvasElement
 
-  public constructor(nes: Nes) {
+  public constructor(wndMgr: WindowManager, nes: Nes) {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = 64
     canvas.height = 8
@@ -52,7 +53,7 @@ export class PaletWnd extends Wnd {
     canvas.className = 'pixelated'
     clearCanvas(canvas)
 
-    super(128, 16, 'Palette', canvas)
+    super(wndMgr, 128, 16, 'Palette', canvas)
     this.nes = nes
     this.canvas = canvas
   }
@@ -66,7 +67,7 @@ export class NameTableWnd extends Wnd {
   private nes: Nes
   private canvas: HTMLCanvasElement
 
-  public constructor(nes: Nes) {
+  public constructor(wndMgr: WindowManager, nes: Nes) {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = 512
     canvas.height = 240
@@ -75,7 +76,7 @@ export class NameTableWnd extends Wnd {
     canvas.className = 'pixelated'
     clearCanvas(canvas)
 
-    super(512, 240, 'NameTable', canvas)
+    super(wndMgr, 512, 240, 'NameTable', canvas)
     this.nes = nes
     this.canvas = canvas
   }
