@@ -41,25 +41,65 @@ export class ScreenWnd extends Wnd {
 }
 
 export class PaletWnd extends Wnd {
+  private static UNIT = 8
+  private static W = 16
+  private static H = 2
+
   private nes: Nes
-  private canvas: HTMLCanvasElement
+  private boxes: HTMLCanvasElement[]
+  private palet: Uint8Array
+  private tmp: Uint8Array
 
   public constructor(wndMgr: WindowManager, nes: Nes) {
-    const canvas = document.createElement('canvas') as HTMLCanvasElement
-    canvas.width = 64
-    canvas.height = 8
-    canvas.style.width = '128px'
-    canvas.style.height = '16px'
-    canvas.className = 'pixelated'
-    clearCanvas(canvas)
+    const [content, boxes] = PaletWnd.createDom()
 
-    super(wndMgr, 128, 16, 'Palette', canvas)
+    super(wndMgr, 128, 16, 'Palette', content)
     this.nes = nes
-    this.canvas = canvas
+    this.boxes = boxes
+    this.palet = new Uint8Array(PaletWnd.W * PaletWnd.H)
+    this.tmp = new Uint8Array(PaletWnd.W * PaletWnd.H)
   }
 
   public update(): void {
-    this.nes.renderPalet(this.canvas)
+    const tmp = this.tmp
+    PaletWnd.getPalet(this.nes, tmp)
+
+    const n = PaletWnd.W * PaletWnd.H
+    for (let i = 0; i < n; ++i) {
+      const c = tmp[i]
+      if (c === this.palet[i])
+        continue
+      this.palet[i] = c
+      this.boxes[i].style.backgroundColor = Nes.getPaletColorString(c)
+    }
+  }
+
+  private static createDom(): any {
+    const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
+    const root = document.createElement('div')
+    root.className = 'clearfix'
+    root.style.width = `${UNIT * W}px`
+    root.style.height = `${UNIT * H}px`
+
+    const boxes = new Array(W * H) as HTMLElement[]
+    for (let i = 0; i < H; ++i) {
+      for (let j = 0; j < W; ++j) {
+        const box = document.createElement('div')
+        box.className = 'pull-left'
+        box.style.width = `${UNIT - 1}px`
+        box.style.height = `${UNIT - 1}px`
+        box.style.borderRight = box.style.borderBottom = '1px solid black'
+        boxes[j + i * W] = box
+        root.appendChild(box)
+      }
+    }
+    return [root, boxes]
+  }
+
+  private static getPalet(nes: Nes, buf: Uint8Array): void {
+    const n = PaletWnd.W * PaletWnd.H
+    for (let i = 0; i < n; ++i)
+      buf[i] = nes.getPalet(i)
   }
 }
 

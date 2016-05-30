@@ -191,24 +191,16 @@ export class Nes {
     this.cpu.nmi()
   }
 
-  public renderPalet(paletCanvas: HTMLCanvasElement): void {
-    const context = paletCanvas.getContext('2d')
-    context.strokeStyle = ''
-    context.fillStyle = `rgb(0,0,0)`
-    context.fillRect(0, 0, paletCanvas.width, paletCanvas.height)
-
+  public getPalet(pal: number): number {
     const vram = this.ppu.vram
     const paletTable = 0x3f00
-    for (let i = 0; i < 2; ++i) {
-      for (let j = 0; j < 16; ++j) {
-        const pal = j + i * 16
-        const col = vram[paletTable + pal] & 0x3f
-        const r = kColors[col * 3]
-        const g = kColors[col * 3 + 1]
-        const b = kColors[col * 3 + 2]
-        context.fillStyle = `rgb(${r},${g},${b})`
-        context.fillRect(j * 4, i * 4, 3, 3)
-      }
-    }
+    return vram[paletTable + (pal & 31)] & 0x3f
+  }
+
+  public static getPaletColorString(col: number): string {
+    const r = kColors[col * 3]
+    const g = kColors[col * 3 + 1]
+    const b = kColors[col * 3 + 2]
+    return `rgb(${r},${g},${b})`
   }
 }
