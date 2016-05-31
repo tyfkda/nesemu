@@ -107,7 +107,7 @@ export class Cpu6502 {
   }
 
   public deleteAllBreakPoints(): void {
-    this.breakPoints = []
+    this.breakPoints = {}
   }
 
   public pause(value: boolean): void {
