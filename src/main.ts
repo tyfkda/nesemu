@@ -73,24 +73,70 @@ export class RegisterWnd extends Wnd {
   }
 }
 
-const {putConsole, clearConsole} = (function() {
-  const lines = []
-  const MAX_LINE = 100
-  const cons = document.getElementById('console') as HTMLTextAreaElement
-  return {
-    putConsole: function(line) {
-      lines.push(line)
-      if (lines.length > MAX_LINE)
-        lines.shift()
-      cons.value = lines.join('\n')
-      cons.scrollTop = cons.scrollHeight
-    },
-    clearConsole: function() {
-      cons.value = ''
-      lines.length = 0
-    },
+const MAX_BYTES = 3
+const MAX_LINE = 100
+
+export class TraceWnd extends Wnd {
+  private nes: Nes
+  private textarea: HTMLTextAreaElement
+
+  private mem: Uint8Array
+  private bins: string[]
+  private lines: string[]
+
+  public constructor(wndMgr: WindowManager, nes: Nes) {
+    const root = document.createElement('div')
+    super(wndMgr, 400, 160, 'Trace', root)
+    this.nes = nes
+    this.createContent(root)
+    this.mem = new Uint8Array(MAX_BYTES)
+    this.bins = new Array(MAX_BYTES)
+    this.reset()
   }
-})()
+
+  public reset(): void {
+    this.lines = []
+  }
+
+  public updateStatus(): void {
+    const cpu = this.nes.cpu
+    const op = cpu.read8Raw(cpu.pc)
+    const inst = Cpu6502.getInst(op) || kIllegalInstruction
+
+    for (let i = 0; i < inst.bytes; ++i) {
+      const m = cpu.read8Raw(cpu.pc + i)
+      this.mem[i] = m
+      this.bins[i] = Util.hex(m, 2)
+    }
+    for (let i = inst.bytes; i < MAX_BYTES; ++i)
+      this.bins[i] = '  '
+    const line = `${Util.hex(cpu.pc, 4)}: ${this.bins.join(' ')}   ${disassemble(inst, this.mem, 1, cpu.pc)}`
+    this.putConsole(line)
+  }
+
+  private createContent(root: HTMLElement): void {
+    const textarea = document.createElement('textarea')
+    textarea.className = 'fixed-font'
+    textarea.style.fontSize = '14px'
+    textarea.style.width = '100%'
+    textarea.style.height = '160px'
+    textarea.style['resize'] = 'none'
+    textarea.style.margin = '0'
+    textarea.style.padding = '2px'
+    textarea.style.border = 'none'
+    textarea.style.boxSizing = 'border-box'
+    root.appendChild(textarea)
+    this.textarea = textarea
+  }
+
+  putConsole(line: string): void {
+    this.lines.push(line)
+    if (this.lines.length > MAX_LINE)
+      this.lines.shift()
+    this.textarea.value = this.lines.join('\n')
+    this.textarea.scrollTop = this.textarea.scrollHeight
+  }
+}
 
 const kIllegalInstruction: Instruction = {
   opType: OpType.UNKNOWN,
@@ -98,27 +144,6 @@ const kIllegalInstruction: Instruction = {
   bytes: 1,
   cycle: 0,
 }
-
-const dumpCpu = (() => {
-  const MAX_BYTES = 3
-  const mem = new Uint8Array(MAX_BYTES)
-  const bins = new Array(MAX_BYTES)
-  return function(regWnd: RegisterWnd, cpu: Cpu6502) {
-    const op = cpu.read8Raw(cpu.pc)
-    const inst = Cpu6502.getInst(op) || kIllegalInstruction
-
-    for (let i = 0; i < inst.bytes; ++i) {
-      const m = cpu.read8Raw(cpu.pc + i)
-      mem[i] = m
-      bins[i] = Util.hex(m, 2)
-    }
-    for (let i = inst.bytes; i < MAX_BYTES; ++i)
-      bins[i] = '  '
-    const line = `${Util.hex(cpu.pc, 4)}: ${bins.join(' ')}   ${disassemble(inst, mem, 1, cpu.pc)}`
-    putConsole(line)
-    regWnd.updateStatus()
-  }
-})()
 
 function handleFileDrop(dropZone, onDropped) {
   function onDrop(evt) {
@@ -152,6 +177,7 @@ class App {
   private nes: Nes
   private padKeyHandler: PadKeyHandler
   private registerWnd: RegisterWnd
+  private traceWnd: TraceWnd
 
   private stepElem: HTMLElement
   private runElem: HTMLElement
@@ -184,14 +210,18 @@ class App {
     this.wndMgr.add(patternTableWnd)
     patternTableWnd.setPos(520, 300)
 
+    this.traceWnd = new TraceWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.traceWnd)
+    this.traceWnd.setPos(0, 500)
+
     this.registerWnd = new RegisterWnd(this.wndMgr, this.nes)
     this.wndMgr.add(this.registerWnd)
-    this.registerWnd.setPos(1040, 0)
+    this.registerWnd.setPos(410, 500)
 
     this.nes.cpu.pause(true)
     this.nes.reset()
 
-    dumpCpu(this.registerWnd, this.nes.cpu)
+    this.dumpCpu()
 
     this.stepElem = document.getElementById('step')
     this.runElem = document.getElementById('run')
@@ -204,7 +234,7 @@ class App {
       this.nes.step()
       if (paused)
         this.nes.cpu.pause(true)
-      dumpCpu(this.registerWnd, this.nes.cpu)
+      this.dumpCpu()
       this.render()
     })
     this.runElem.addEventListener('click', () => {
@@ -214,12 +244,12 @@ class App {
     this.pauseElem.addEventListener('click', () => {
       this.nes.cpu.pause(true)
       this.updateButtonState()
-      dumpCpu(this.registerWnd, this.nes.cpu)
+      this.dumpCpu()
     })
     this.resetElem.addEventListener('click', () => {
       this.nes.reset()
-      clearConsole()
-      dumpCpu(this.registerWnd, this.nes.cpu)
+      this.traceWnd.reset()
+      this.dumpCpu()
     })
 
     const captureElem = document.getElementById('capture')
@@ -277,8 +307,8 @@ class App {
     }
     this.nes.reset()
     this.nes.cpu.pause(false)
-    clearConsole()
-    dumpCpu(this.registerWnd, this.nes.cpu)
+    this.traceWnd.reset()
+    this.dumpCpu()
     this.updateButtonState()
     this.root.focus()
     return true
@@ -288,6 +318,11 @@ class App {
     const paused = this.nes.cpu.isPaused()
     this.pauseElem.disabled = paused
     this.runElem.disabled = this.stepElem.disabled = !paused
+  }
+
+  private dumpCpu(): void {
+    this.registerWnd.updateStatus()
+    this.traceWnd.updateStatus()
   }
 
   private setUpKeyEvent(root: HTMLElement, padKeyHandler: PadKeyHandler): void {
