@@ -9,7 +9,6 @@ import {Util} from './nes/util.ts'
 import {PadKeyHandler} from './pad_key_handler.ts'
 
 import WindowManager from './wnd/window_manager.ts'
-import Wnd from './wnd/wnd.ts'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd} from './ui/ui.ts'
 
 // Request Animation Frame
@@ -103,138 +102,160 @@ function handleFileDrop(dropZone, onDropped) {
   dropZone.addEventListener('drop', onDrop, false)
 }
 
-function clearCanvas(canvas: HTMLCanvasElement): void {
-  const context = canvas.getContext('2d')
-  context.strokeStyle = ''
-  context.fillStyle = `rgb(255,0,255)`
-  context.fillRect(0, 0, canvas.width, canvas.height)
-}
+class App {
+  private wndMgr: WindowManager
+  private nes: Nes
+  private padKeyHandler: PadKeyHandler
 
-function nesTest() {
-  const root = document.getElementById('nesroot')
-  const wndMgr = new WindowManager(root)
+  private stepElem: HTMLElement
+  private runElem: HTMLElement
+  private pauseElem: HTMLElement
+  private resetElem: HTMLElement
 
-  const nes = Nes.create()
-  ;(window as any).nes = nes  // Put nes into global.
-
-  const screenWnd = new ScreenWnd(wndMgr, nes)
-  wndMgr.add(screenWnd)
-  screenWnd.setPos(0, 0)
-
-  const paletWnd = new PaletWnd(wndMgr, nes)
-  wndMgr.add(paletWnd)
-  paletWnd.setPos(520, 0)
-
-  const nameTableWnd = new NameTableWnd(wndMgr, nes)
-  wndMgr.add(nameTableWnd)
-  nameTableWnd.setPos(520, 40)
-
-  const patternTableWnd = new PatternTableWnd(wndMgr, nes)
-  wndMgr.add(patternTableWnd)
-  patternTableWnd.setPos(520, 300)
-
-  const onRomLoaded = (romData): boolean => {
-    return nes.setRomData(romData)
+  public static create(root: HTMLElement): App {
+    return new App(root)
   }
 
-  nes.cpu.pause(true)
-  nes.reset()
+  constructor(private root: HTMLElement) {
+    this.wndMgr = new WindowManager(root)
 
-  dumpCpu(nes.cpu)
+    this.nes = Nes.create()
+    window['nes'] = this.nes  // Put nes into global.
 
-  const stepElem = document.getElementById('step')
-  const runElem = document.getElementById('run')
-  const pauseElem = document.getElementById('pause')
-  const resetElem = document.getElementById('reset')
+    const screenWnd = new ScreenWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(screenWnd)
+    screenWnd.setPos(0, 0)
 
-  const updateButtonState = () => {
-    const paused = nes.cpu.isPaused()
-    pauseElem.disabled = paused
-    runElem.disabled = stepElem.disabled = !paused
+    const paletWnd = new PaletWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(paletWnd)
+    paletWnd.setPos(520, 0)
+
+    const nameTableWnd = new NameTableWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(nameTableWnd)
+    nameTableWnd.setPos(520, 40)
+
+    const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(patternTableWnd)
+    patternTableWnd.setPos(520, 300)
+
+    this.nes.cpu.pause(true)
+    this.nes.reset()
+
+    dumpCpu(this.nes.cpu)
+
+    this.stepElem = document.getElementById('step')
+    this.runElem = document.getElementById('run')
+    this.pauseElem = document.getElementById('pause')
+    this.resetElem = document.getElementById('reset')
+
+    this.stepElem.addEventListener('click', () => {
+      const paused = this.nes.cpu.isPaused()
+      this.nes.cpu.pause(false)
+      this.nes.step()
+      if (paused)
+        this.nes.cpu.pause(true)
+      dumpCpu(this.nes.cpu)
+      this.render()
+    })
+    this.runElem.addEventListener('click', () => {
+      this.nes.cpu.pause(false)
+      this.updateButtonState()
+    })
+    this.pauseElem.addEventListener('click', () => {
+      this.nes.cpu.pause(true)
+      this.updateButtonState()
+      dumpCpu(this.nes.cpu)
+    })
+    this.resetElem.addEventListener('click', () => {
+      this.nes.reset()
+      clearConsole()
+      dumpCpu(this.nes.cpu)
+    })
+
+    const captureElem = document.getElementById('capture')
+    captureElem.addEventListener('click', () => {
+      const img = document.getElementById('captured-image') as HTMLImageElement
+      img.src = screenWnd.capture()
+      img.style.visibility = 'visible'
+    })
+
+    this.padKeyHandler = new PadKeyHandler()
+    this.setUpKeyEvent(root, this.padKeyHandler)
+
+    // Handle file drop.
+    if (window.File && window.FileReader && window.FileList && window.Blob) {
+      handleFileDrop(root, (romData) => { this.loadRom(romData) })
+    }
+
+    this.startLoopAnimation()
   }
 
-  const render = () => {
-    wndMgr.update()
+  private startLoopAnimation(): void {
+    let lastTime = window.performance.now()
+    const loopFn = () => {
+      const curTime = window.performance.now()
+      const elapsedTime = curTime - lastTime
+      lastTime = curTime
+
+      this.loop(elapsedTime)
+      requestAnimationFrame(loopFn)
+    }
+    requestAnimationFrame(loopFn)
   }
 
-  stepElem.addEventListener('click', () => {
-    const paused = nes.cpu.isPaused()
-    nes.cpu.pause(false)
-    nes.step()
-    if (paused)
-      nes.cpu.pause(true)
-    dumpCpu(nes.cpu)
-    render()
-  })
-  runElem.addEventListener('click', () => {
-    nes.cpu.pause(false)
-    updateButtonState()
-  })
-  pauseElem.addEventListener('click', () => {
-    nes.cpu.pause(true)
-    updateButtonState()
-    dumpCpu(nes.cpu)
-  })
-  resetElem.addEventListener('click', () => {
-    nes.reset()
-    clearConsole()
-    dumpCpu(nes.cpu)
-  })
-
-  document.getElementById('capture').addEventListener('click', () => {
-    const img = document.getElementById('captured-image') as HTMLImageElement
-    img.src = screenWnd.capture()
-    img.style.visibility = 'visible'
-  })
-
-  const padKeyHandler = new PadKeyHandler()
-  root.setAttribute('tabindex', '1')  // To accept key event.
-  root.addEventListener('keydown', (event) => {
-    if (event.ctrlKey || event.altKey || event.metaKey)
-      return
-    event.preventDefault()
-    padKeyHandler.onKeyDown(event.keyCode)
-  })
-  root.addEventListener('keyup', (event) => {
-    event.preventDefault()
-    padKeyHandler.onKeyUp(event.keyCode)
-  })
-
-  let lastTime = window.performance.now()
-  requestAnimationFrame(function loop() {
+  private loop(elapsedTime: number): void {
     const MAX_ELAPSED_TIME = 1000 / 20
-    const curTime = window.performance.now()
-    const elapsedTime = curTime - lastTime
-    lastTime = curTime
+    if (!this.nes.cpu.isPaused()) {
+      this.nes.setPadStatus(0, this.padKeyHandler.getStatus(0))
+      this.nes.setPadStatus(1, this.padKeyHandler.getStatus(1))
 
-    nes.setPadStatus(0, padKeyHandler.getStatus(0))
-    nes.setPadStatus(1, padKeyHandler.getStatus(1))
-    if (!nes.cpu.isPaused()) {
       const et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
       let cycles = (1789773 * et / 1000) | 0
-      nes.runCycles(cycles)
-      render()
+      this.nes.runCycles(cycles)
+      this.render()
     }
-    requestAnimationFrame(loop)
-  })
+  }
 
-  // Handle file drop.
-  if (window.File && window.FileReader && window.FileList && window.Blob) {
-    handleFileDrop(root, (romData) => {
-      if (!onRomLoaded(romData)) {
-        alert(`Illegal ROM format`)
+  private render(): void {
+    this.wndMgr.update()
+  }
+
+  private loadRom(romData: Uint8Array): boolean {
+    if (!this.nes.setRomData(romData)) {
+      alert(`Illegal ROM format`)
+      return false
+    }
+    this.nes.reset()
+    this.nes.cpu.pause(false)
+    clearConsole()
+    dumpCpu(this.nes.cpu)
+    this.updateButtonState()
+    this.root.focus()
+    return true
+  }
+
+  private updateButtonState(): void {
+    const paused = this.nes.cpu.isPaused()
+    this.pauseElem.disabled = paused
+    this.runElem.disabled = this.stepElem.disabled = !paused
+  }
+
+  private setUpKeyEvent(root: HTMLElement, padKeyHandler: PadKeyHandler): void {
+    root.setAttribute('tabindex', '1')  // To accept key event.
+    root.addEventListener('keydown', (event) => {
+      if (event.ctrlKey || event.altKey || event.metaKey)
         return
-      }
-      nes.reset()
-      nes.cpu.pause(false)
-      clearConsole()
-      dumpCpu(nes.cpu)
-      updateButtonState()
-      root.focus()
+      event.preventDefault()
+      padKeyHandler.onKeyDown(event.keyCode)
+    })
+    root.addEventListener('keyup', (event) => {
+      event.preventDefault()
+      padKeyHandler.onKeyUp(event.keyCode)
     })
   }
 }
 
 window.addEventListener('load', () => {
-  nesTest()
+  const root = document.getElementById('nesroot')
+  App.create(root)
 })
