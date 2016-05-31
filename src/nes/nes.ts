@@ -303,7 +303,7 @@ export class Nes {
           }
         })
 
-        setPrgBank(maxPrg - 1, 1, 0, maxPrg)
+        setPrgBank(regs, bankSelect)
       }
       break
     }

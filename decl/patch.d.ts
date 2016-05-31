@@ -8,6 +8,8 @@ interface Window {
 
   mozRequestAnimationFrame: any
   webkitRequestAnimationFrame: any
+
+  nes: any
 }
 
 interface HTMLElement {
@@ -16,4 +18,5 @@ interface HTMLElement {
 
 interface CSSStyleDeclaration {
   imageRendering: string
+  resize: string
 }

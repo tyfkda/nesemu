@@ -75,6 +75,7 @@ export class Ppu {
   private ppuMaskSave: number
   private chrBankSave: number
   private bufferedValue: number
+  private chrBankOffset: number[]
 
   constructor() {
     this.regs = new Uint8Array(REGISTER_COUNT)
