@@ -66,12 +66,14 @@ export class Ppu {
   public scrollX: number
   public scrollY: number
   public mirrorMode: number
+  private chrBank: number
   private latch: number
   private ppuAddr: number
   private scrollXSave: number
   private scrollYSave: number
   private ppuCtrlSave: number
   private ppuMaskSave: number
+  private chrBankSave: number
   private bufferedValue: number
 
   constructor() {
@@ -79,16 +81,23 @@ export class Ppu {
     this.vram = new Uint8Array(VRAM_SIZE)
     this.oam = new Uint8Array(OAM_SIZE)
     this.mirrorMode = 0
+    this.chrBank = 0
   }
 
   public reset(): void {
     this.regs.fill(0)
     this.vram.fill(0)
     this.oam.fill(0)
-    this.scrollX = this.scrollY = this.scrollXSave = this.scrollYSave = 0
+    this.scrollX = this.scrollY = this.scrollXSave = this.scrollYSave = this.chrBankSave = 0
     this.ppuAddr = 0
+    this.chrBank = 0
     this.latch = 0
     this.bufferedValue = 0
+  }
+
+  public setChrBank(value): void {
+    const max = this.chrData.length >> 13  // 0x2000
+    this.chrBank = (value & (max - 1)) << 13
   }
 
   public setChrData(chrData: Uint8Array): void {
@@ -151,6 +160,7 @@ export class Ppu {
       dst[j] = array[start + i]
       j = (j + 1) & 255
     }
+    // TODO: Block CPU.
   }
 
   public setVBlank(): void {
@@ -159,6 +169,7 @@ export class Ppu {
     this.scrollYSave = this.scrollY
     this.ppuCtrlSave = this.regs[PPUCTRL]
     this.ppuMaskSave = this.regs[PPUMASK]
+    this.chrBankSave = this.chrBank
   }
   public clearVBlank(): void {
     this.regs[PPUSTATUS] &= ~VBLANK
@@ -199,6 +210,7 @@ export class Ppu {
     const W = 8
     const LINE_WIDTH = imageData.width
     const chrRom = this.chrData
+    const chrBank = this.chrBankSave
     const chrStart = this.getBgPatternTableAddress()
     const vram = this.vram
     const paletTable = 0x3f00
@@ -233,7 +245,7 @@ export class Ppu {
             continue
           if (yy >= Const.HEIGHT)
             break
-          const idx = chridx + py
+          const idx = chrBank + chridx + py
           const pat = (kStaggered[chrRom[idx + 8]] << 1) | kStaggered[chrRom[idx]]
           for (let px = 0; px < W; ++px) {
             const xx = bbx * W + px - (scrollX & 7)

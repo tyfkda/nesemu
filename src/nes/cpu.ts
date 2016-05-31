@@ -84,6 +84,11 @@ export class Cpu6502 {
     this.pausing = false
   }
 
+  public resetMemoryMap() {
+    this.readerFuncTable.fill(null)
+    this.writerFuncTable.fill(null)
+  }
+
   public setReadMemory(start, end, func: (adr: number) => number): void {
     const startBlock = (start / BLOCK_SIZE) | 0
     const endBlock = (end / BLOCK_SIZE) | 0
@@ -204,8 +209,8 @@ export class Cpu6502 {
     const block = (adr / BLOCK_SIZE) | 0
     const writer = this.writerFuncTable[block]
     if (!writer) {
+      console.error(`Illegal write at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}, ${hex(value, 2)}`)
       if (!this.writeErrorReported) {
-        console.error(`Illegal write at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}`)
         this.pausing = true
         this.writeErrorReported = true
       }

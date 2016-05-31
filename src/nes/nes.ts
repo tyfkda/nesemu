@@ -61,7 +61,7 @@ export class Nes {
     this.ppu = new Ppu()
     this.apu = new Apu()
     this.mapperNo = 0
-    this.setMemoryMap()
+    this.setMemoryMap(0)
 
     this.romData = new Uint8Array(0)
   }
@@ -75,7 +75,7 @@ export class Nes {
     this.ppu.setMirrorMode(romData[6] & 1)
     this.cpu.deleteAllBreakPoints()
 
-    console.log(`Mapper: ${Util.hex(this.mapperNo, 2)}`)
+    this.setMemoryMap(this.mapperNo)
 
     return true
   }
@@ -147,18 +147,11 @@ export class Nes {
     context.putImageData(imageData, 0, 0)
   }
 
-  private setMemoryMap(): void {
+  private setMemoryMap(mapperNo: number): void {
     const OAMDMA = 0x4014
 
     const cpu = this.cpu
-
-    // ROM
-    cpu.setReadMemory(0x8000, 0xbfff, (adr) => this.romData[adr & (this.romData.length - 1)])
-    cpu.setReadMemory(0xc000, 0xffff, (adr) => this.romData[adr & (this.romData.length - 1)])
-
-    // RAM
-    cpu.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])
-    cpu.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
+    cpu.resetMemoryMap()
 
     cpu.setReadMemory(0x2000, 0x3fff, (adr) => {  // PPU
       const reg = adr & 7
@@ -186,6 +179,39 @@ export class Nes {
         break
       }
     })
+
+    // RAM
+    cpu.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])
+    cpu.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
+
+    this.setMemoryMapForMapper(mapperNo)
+  }
+
+  private setMemoryMapForMapper(mapperNo: number): void {
+    const cpu = this.cpu
+    console.log(`Mapper ${Util.hex(mapperNo, 2)}`)
+
+    switch (mapperNo) {
+    default:
+      console.error(`  not implemented`)
+      // Fall
+    case 0:
+      // ROM
+      cpu.setReadMemory(0x8000, 0xbfff, (adr) => this.romData[adr & (this.romData.length - 1)])
+      cpu.setReadMemory(0xc000, 0xffff, (adr) => this.romData[adr & (this.romData.length - 1)])
+      break
+
+    case 0x03:
+      // ROM
+      cpu.setReadMemory(0x8000, 0xbfff, (adr) => this.romData[adr & (this.romData.length - 1)])
+      cpu.setReadMemory(0xc000, 0xffff, (adr) => this.romData[adr & (this.romData.length - 1)])
+
+      // Chr ROM bank
+      cpu.setWriteMemory(0x8000, 0xffff, (adr, value) => {
+        this.ppu.setChrBank(value)
+      })
+      break
+    }
   }
 
   private interruptVBlank(): void {
