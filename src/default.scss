@@ -8,9 +8,12 @@ body {
   outline: none;
 }
 
+.fixed-font {
+  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
+}
+
 .console {
   width: 100%;
-  font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
   font-size: 14px;
 }
 

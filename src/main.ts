@@ -9,6 +9,7 @@ import {Util} from './nes/util.ts'
 import {PadKeyHandler} from './pad_key_handler.ts'
 
 import WindowManager from './wnd/window_manager.ts'
+import Wnd from './wnd/wnd.ts'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd} from './ui/ui.ts'
 
 // Request Animation Frame
@@ -17,15 +18,59 @@ window.requestAnimationFrame = (function() {
           window.webkitRequestAnimationFrame || window.msRequestAnimationFrame)
 })()
 
-function showCpuStatus(cpu: Cpu6502): void {
-  const e = id => document.getElementById(id) as HTMLInputElement
-  e('reg-pc').value = Util.hex(cpu.pc, 4)
-  e('reg-a').value = Util.hex(cpu.a, 2)
-  e('reg-x').value = Util.hex(cpu.x, 2)
-  e('reg-y').value = Util.hex(cpu.y, 2)
-  e('reg-s').value = Util.hex(cpu.s, 2)
-  e('reg-p').value = Util.hex(cpu.p, 2)
-  e('cycle-count').value = String(cpu.cycleCount)
+export class RegisterWnd extends Wnd {
+  private nes: Nes
+  private valueElems: HTMLInputElement[]
+
+  public constructor(wndMgr: WindowManager, nes: Nes) {
+    const root = document.createElement('div')
+    root.className = 'fixed-font'
+    super(wndMgr, 100, 160, 'Regs', root)
+    this.nes = nes
+    this.createContent(root)
+  }
+
+  public updateStatus(): void {
+    const cpu = this.nes.cpu
+    this.valueElems[0].value = Util.hex(cpu.pc, 4)
+    this.valueElems[1].value = Util.hex(cpu.a, 2)
+    this.valueElems[2].value = Util.hex(cpu.x, 2)
+    this.valueElems[3].value = Util.hex(cpu.y, 2)
+    this.valueElems[4].value = Util.hex(cpu.s, 2)
+    this.valueElems[5].value = Util.hex(cpu.p, 2)
+    this.valueElems[6].value = String(cpu.cycleCount)
+  }
+
+  private createContent(root: HTMLElement): void {
+    const kElems = [
+      { name: 'PC' },
+      { name: 'A' },
+      { name: 'X' },
+      { name: 'Y' },
+      { name: 'S' },
+      { name: 'P' },
+      { name: 'cycle' },
+    ]
+    const table = document.createElement('table')
+    table.style.fontSize = '10px'
+    table.style.width = '100%'
+    this.valueElems = [] as HTMLInputElement[]
+    for (let i = 0; i < kElems.length; ++i) {
+      const tr = document.createElement('tr')
+      table.appendChild(tr)
+      const name = document.createElement('td')
+      name.innerText = kElems[i].name
+      tr.appendChild(name)
+      const value = document.createElement('td')
+      tr.appendChild(value)
+      const valueInput = document.createElement('input')
+      valueInput.type = 'text'
+      valueInput.style.width = '100%'
+      value.appendChild(valueInput)
+      this.valueElems.push(valueInput)
+    }
+    root.appendChild(table)
+  }
 }
 
 const {putConsole, clearConsole} = (function() {
@@ -58,7 +103,7 @@ const dumpCpu = (() => {
   const MAX_BYTES = 3
   const mem = new Uint8Array(MAX_BYTES)
   const bins = new Array(MAX_BYTES)
-  return function(cpu: Cpu6502) {
+  return function(regWnd: RegisterWnd, cpu: Cpu6502) {
     const op = cpu.read8Raw(cpu.pc)
     const inst = Cpu6502.getInst(op) || kIllegalInstruction
 
@@ -71,7 +116,7 @@ const dumpCpu = (() => {
       bins[i] = '  '
     const line = `${Util.hex(cpu.pc, 4)}: ${bins.join(' ')}   ${disassemble(inst, mem, 1, cpu.pc)}`
     putConsole(line)
-    showCpuStatus(cpu)
+    regWnd.updateStatus()
   }
 })()
 
@@ -106,6 +151,7 @@ class App {
   private wndMgr: WindowManager
   private nes: Nes
   private padKeyHandler: PadKeyHandler
+  private registerWnd: RegisterWnd
 
   private stepElem: HTMLElement
   private runElem: HTMLElement
@@ -138,10 +184,14 @@ class App {
     this.wndMgr.add(patternTableWnd)
     patternTableWnd.setPos(520, 300)
 
+    this.registerWnd = new RegisterWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.registerWnd)
+    this.registerWnd.setPos(1040, 0)
+
     this.nes.cpu.pause(true)
     this.nes.reset()
 
-    dumpCpu(this.nes.cpu)
+    dumpCpu(this.registerWnd, this.nes.cpu)
 
     this.stepElem = document.getElementById('step')
     this.runElem = document.getElementById('run')
@@ -154,7 +204,7 @@ class App {
       this.nes.step()
       if (paused)
         this.nes.cpu.pause(true)
-      dumpCpu(this.nes.cpu)
+      dumpCpu(this.registerWnd, this.nes.cpu)
       this.render()
     })
     this.runElem.addEventListener('click', () => {
@@ -164,12 +214,12 @@ class App {
     this.pauseElem.addEventListener('click', () => {
       this.nes.cpu.pause(true)
       this.updateButtonState()
-      dumpCpu(this.nes.cpu)
+      dumpCpu(this.registerWnd, this.nes.cpu)
     })
     this.resetElem.addEventListener('click', () => {
       this.nes.reset()
       clearConsole()
-      dumpCpu(this.nes.cpu)
+      dumpCpu(this.registerWnd, this.nes.cpu)
     })
 
     const captureElem = document.getElementById('capture')
@@ -228,7 +278,7 @@ class App {
     this.nes.reset()
     this.nes.cpu.pause(false)
     clearConsole()
-    dumpCpu(this.nes.cpu)
+    dumpCpu(this.registerWnd, this.nes.cpu)
     this.updateButtonState()
     this.root.focus()
     return true
