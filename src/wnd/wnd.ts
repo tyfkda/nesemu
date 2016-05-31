@@ -84,7 +84,9 @@ export default class Wnd {
     return titleBar
   }
 
-  private addTitleButton(element: HTMLElement, className: string, clickCallback: EventListener): HTMLElement {
+  private addTitleButton(element: HTMLElement, className: string,
+                         clickCallback: EventListener): HTMLElement
+  {
     const button = document.createElement('div')
     button.className = `${className} btn`
     button.addEventListener('click', clickCallback)
@@ -100,7 +102,7 @@ export default class Wnd {
     return text
   }
 
-  getMousePos(event) {
+  private getMousePos(event) {
     const rect = (this.root.parentNode as HTMLElement).getBoundingClientRect()
     const scrollLeft = document.body.scrollLeft
     const scrollTop = document.body.scrollTop

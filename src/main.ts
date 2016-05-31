@@ -110,8 +110,11 @@ export class TraceWnd extends Wnd {
     }
     for (let i = inst.bytes; i < MAX_BYTES; ++i)
       this.bins[i] = '  '
-    const line = `${Util.hex(cpu.pc, 4)}: ${this.bins.join(' ')}   ${disassemble(inst, this.mem, 1, cpu.pc)}`
-    this.putConsole(line)
+
+    const pcStr = Util.hex(cpu.pc, 4)
+    const binStr = this.bins.join(' ')
+    const asmStr = disassemble(inst, this.mem, 1, cpu.pc)
+    this.putConsole(`${pcStr}: ${binStr}   ${asmStr}`)
   }
 
   private createContent(root: HTMLElement): void {
@@ -120,7 +123,7 @@ export class TraceWnd extends Wnd {
     textarea.style.fontSize = '14px'
     textarea.style.width = '100%'
     textarea.style.height = '160px'
-    textarea.style['resize'] = 'none'
+    textarea.style.resize = 'none'
     textarea.style.margin = '0'
     textarea.style.padding = '2px'
     textarea.style.border = 'none'
@@ -129,7 +132,7 @@ export class TraceWnd extends Wnd {
     this.textarea = textarea
   }
 
-  putConsole(line: string): void {
+  private putConsole(line: string): void {
     this.lines.push(line)
     if (this.lines.length > MAX_LINE)
       this.lines.shift()
@@ -192,7 +195,7 @@ class App {
     this.wndMgr = new WindowManager(root)
 
     this.nes = Nes.create()
-    window['nes'] = this.nes  // Put nes into global.
+    window.nes = this.nes  // Put nes into global.
 
     const screenWnd = new ScreenWnd(this.wndMgr, this.nes)
     this.wndMgr.add(screenWnd)

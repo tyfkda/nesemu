@@ -50,30 +50,6 @@ export class PaletWnd extends Wnd {
   private palet: Uint8Array
   private tmp: Uint8Array
 
-  public constructor(wndMgr: WindowManager, nes: Nes) {
-    const [content, boxes] = PaletWnd.createDom()
-
-    super(wndMgr, 128, 16, 'Palette', content)
-    this.nes = nes
-    this.boxes = boxes
-    this.palet = new Uint8Array(PaletWnd.W * PaletWnd.H)
-    this.tmp = new Uint8Array(PaletWnd.W * PaletWnd.H)
-  }
-
-  public update(): void {
-    const tmp = this.tmp
-    PaletWnd.getPalet(this.nes, tmp)
-
-    const n = PaletWnd.W * PaletWnd.H
-    for (let i = 0; i < n; ++i) {
-      const c = tmp[i]
-      if (c === this.palet[i])
-        continue
-      this.palet[i] = c
-      this.boxes[i].style.backgroundColor = Nes.getPaletColorString(c)
-    }
-  }
-
   private static createDom(): any {
     const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
     const root = document.createElement('div')
@@ -100,6 +76,30 @@ export class PaletWnd extends Wnd {
     const n = PaletWnd.W * PaletWnd.H
     for (let i = 0; i < n; ++i)
       buf[i] = nes.getPalet(i)
+  }
+
+  constructor(wndMgr: WindowManager, nes: Nes) {
+    const [content, boxes] = PaletWnd.createDom()
+
+    super(wndMgr, 128, 16, 'Palette', content)
+    this.nes = nes
+    this.boxes = boxes
+    this.palet = new Uint8Array(PaletWnd.W * PaletWnd.H)
+    this.tmp = new Uint8Array(PaletWnd.W * PaletWnd.H)
+  }
+
+  public update(): void {
+    const tmp = this.tmp
+    PaletWnd.getPalet(this.nes, tmp)
+
+    const n = PaletWnd.W * PaletWnd.H
+    for (let i = 0; i < n; ++i) {
+      const c = tmp[i]
+      if (c === this.palet[i])
+        continue
+      this.palet[i] = c
+      this.boxes[i].style.backgroundColor = Nes.getPaletColorString(c)
+    }
   }
 }
 
@@ -137,6 +137,17 @@ export class PatternTableWnd extends Wnd {
   private nes: Nes
   private canvas: HTMLCanvasElement
 
+  private static createCanvas(): HTMLCanvasElement {
+    const canvas = document.createElement('canvas') as HTMLCanvasElement
+    canvas.width = 256
+    canvas.height = 128
+    canvas.style.width = '256px'
+    canvas.style.height = '128px'
+    canvas.className = 'pixelated'
+    clearCanvas(canvas)
+    return canvas
+  }
+
   public constructor(wndMgr: WindowManager, nes: Nes) {
     const canvas = PatternTableWnd.createCanvas()
 
@@ -147,16 +158,5 @@ export class PatternTableWnd extends Wnd {
 
   public update(): void {
     this.nes.renderPatternTable(this.canvas, kPatternColors)
-  }
-
-  private static createCanvas(): HTMLCanvasElement {
-    const canvas = document.createElement('canvas') as HTMLCanvasElement
-    canvas.width = 256
-    canvas.height = 128
-    canvas.style.width = '256px'
-    canvas.style.height = '128px'
-    canvas.className = 'pixelated'
-    clearCanvas(canvas)
-    return canvas
   }
 }

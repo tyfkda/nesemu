@@ -1,7 +1,7 @@
 // NES: Nintendo Entertainment System
 
 import {Apu} from './apu.ts'
-import {Const, kColors} from './const.ts'
+import {kColors} from './const.ts'
 import {Cpu6502} from './cpu.ts'
 import {Ppu} from './ppu.ts'
 import {Util} from './util.ts'
@@ -53,6 +53,13 @@ export class Nes {
 
   public static create(): Nes {
     return new Nes()
+  }
+
+  public static getPaletColorString(col: number): string {
+    const r = kColors[col * 3]
+    const g = kColors[col * 3 + 1]
+    const b = kColors[col * 3 + 2]
+    return `rgb(${r},${g},${b})`
   }
 
   constructor() {
@@ -147,6 +154,12 @@ export class Nes {
     context.putImageData(imageData, 0, 0)
   }
 
+  public getPalet(pal: number): number {
+    const vram = this.ppu.vram
+    const paletTable = 0x3f00
+    return vram[paletTable + (pal & 31)] & 0x3f
+  }
+
   private setMemoryMap(mapperNo: number): void {
     const OAMDMA = 0x4014
 
@@ -214,23 +227,23 @@ export class Nes {
 
     case 0x04:  // MMC3
       {
-        const max_prg = (this.romData.length >> 13) - 1  // 0x2000
+        const maxPrg = (this.romData.length >> 13) - 1  // 0x2000
         let p0 = 0, p1 = 1, p2 = 2, p3 = 0
         const regs = new Uint8Array(8)
-        const prg_bank = (regs, swap) => {
+        const setPrgBank = (regs, swap) => {
           if ((swap & 0x40) === 0) {
-            p0 = (regs[6] & max_prg) << 13
-            p1 = (regs[7] & max_prg) << 13
-            p2 = (0xfe & max_prg) << 13
-            p3 = (0xff & max_prg) << 13
+            p0 = (regs[6] & maxPrg) << 13
+            p1 = (regs[7] & maxPrg) << 13
+            p2 = (0xfe & maxPrg) << 13
+            p3 = (0xff & maxPrg) << 13
           } else {
-            p2 = (regs[6] & max_prg) << 13
-            p1 = (regs[7] & max_prg) << 13
-            p0 = (0xfe & max_prg) << 13
-            p3 = (0xff & max_prg) << 13
+            p2 = (regs[6] & maxPrg) << 13
+            p1 = (regs[7] & maxPrg) << 13
+            p0 = (0xfe & maxPrg) << 13
+            p3 = (0xff & maxPrg) << 13
           }
         }
-        const chr_bank = (regs, swap) => {
+        const setChrBank = (regs, swap) => {
           if ((swap & 0x40) === 0) {
             this.ppu.setChrBankOffset(0, regs[0] & 0xfe)
             this.ppu.setChrBankOffset(1, regs[0] | 1)
@@ -269,21 +282,24 @@ export class Nes {
           switch (adr & 0xe001) {
           case 0x8000:
             bankSelect = value
-            prg_bank(regs, bankSelect)
-            chr_bank(regs, bankSelect)
+            setPrgBank(regs, bankSelect)
+            setChrBank(regs, bankSelect)
             break
           case 0x8001:
             const reg = bankSelect & 0x07
             regs[reg] = value
             if (reg < 6) {  // CHR
-              chr_bank(regs, bankSelect)
+              setChrBank(regs, bankSelect)
             } else {  // PRG
-              prg_bank(regs, bankSelect)
+              setPrgBank(regs, bankSelect)
             }
+            break
+          default:
+            break
           }
         })
 
-        prg_bank(max_prg - 1, 1, 0, max_prg)
+        setPrgBank(maxPrg - 1, 1, 0, maxPrg)
       }
       break
     }
@@ -297,18 +313,5 @@ export class Nes {
 
   private interruptNmi(): void {
     this.cpu.nmi()
-  }
-
-  public getPalet(pal: number): number {
-    const vram = this.ppu.vram
-    const paletTable = 0x3f00
-    return vram[paletTable + (pal & 31)] & 0x3f
-  }
-
-  public static getPaletColorString(col: number): string {
-    const r = kColors[col * 3]
-    const g = kColors[col * 3 + 1]
-    const b = kColors[col * 3 + 2]
-    return `rgb(${r},${g},${b})`
   }
 }

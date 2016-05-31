@@ -339,7 +339,6 @@ export class Ppu {
 
     const oam = this.oam
     const vram = this.vram
-    const chrRom = this.chrData
     const chrStart = this.getSpritePatternTableAddress()
     const paletTable = 0x3f10
     const pixels = imageData.data
@@ -400,7 +399,6 @@ export class Ppu {
     const W = 8
     const LINE_WIDTH = imageData.width
     const chrRom = this.chrData
-    const vram = this.vram
     const pixels = imageData.data
 
     for (let i = 0; i < 2; ++i) {
