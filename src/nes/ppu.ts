@@ -82,6 +82,10 @@ export class Ppu {
     this.oam = new Uint8Array(OAM_SIZE)
     this.mirrorMode = 0
     this.chrBank = 0
+
+    this.chrBankOffset = new Array(8)
+    for (let i = 0; i < 8; ++i)
+      this.chrBankOffset[i] = i << 10
   }
 
   public reset(): void {
@@ -93,15 +97,23 @@ export class Ppu {
     this.chrBank = 0
     this.latch = 0
     this.bufferedValue = 0
+
+    for (let i = 0; i < 8; ++i)
+      this.chrBankOffset[i] = i << 10
   }
 
-  public setChrBank(value): void {
-    const max = this.chrData.length >> 13  // 0x2000
-    this.chrBank = (value & (max - 1)) << 13
+  public setChrBank(value: number): void {
+    const max = this.chrData.length
+    this.chrBank = (value << 13) & (max - 1)  // 0x2000
   }
 
   public setChrData(chrData: Uint8Array): void {
     this.chrData = chrData
+  }
+
+  public setChrBankOffset(bank: number, value: number): void {
+    const max = this.chrData.length
+    this.chrBankOffset[bank] = (value << 10) & (max - 1)  // 0x0400
   }
 
   public setMirrorMode(mode: number): void {
@@ -207,9 +219,19 @@ export class Ppu {
   public doRenderBg(imageData: ImageData, scrollX: number, scrollY: number,
                     startX: number, startY: number, baseNameTable: number): void
   {
+    const getBgPat = (chridx, py, chrBank) => {
+      const idx = chridx + py
+
+      const bank = (idx >> 10) & 7
+      const bankOfs = this.chrBankOffset[bank]
+      const ofs = idx & 0x03ff
+      const p = bankOfs + ofs + chrBank
+
+      return (kStaggered[this.chrData[p + 8]] << 1) | kStaggered[this.chrData[p]]
+    }
+
     const W = 8
     const LINE_WIDTH = imageData.width
-    const chrRom = this.chrData
     const chrBank = this.chrBankSave
     const chrStart = this.getBgPatternTableAddress()
     const vram = this.vram
@@ -245,8 +267,7 @@ export class Ppu {
             continue
           if (yy >= Const.HEIGHT)
             break
-          const idx = chrBank + chridx + py
-          const pat = (kStaggered[chrRom[idx + 8]] << 1) | kStaggered[chrRom[idx]]
+          const pat = getBgPat(chridx, py, chrBank)
           for (let px = 0; px < W; ++px) {
             const xx = bbx * W + px - (scrollX & 7)
             if (xx < 0)
@@ -292,6 +313,24 @@ export class Ppu {
     if ((this.ppuMaskSave & SHOW_SPRITE) === 0)
       return
 
+    const getSpritePat = (chridx, ppy, flipHorz) => {
+      const idx = chridx + (ppy & 7) + ((ppy & 8) * 2)
+
+      const bank = (idx >> 10) & 7
+      const bankOfs = this.chrBankOffset[bank]
+      const ofs = idx & 0x03ff
+      const p = bankOfs + ofs
+
+      let patHi = this.chrData[p + 8]
+      let patLo = this.chrData[p]
+      if (flipHorz) {
+        patHi = kFlipBits[patHi]
+        patLo = kFlipBits[patLo]
+      }
+
+      return (kStaggered[patHi] << 1) | kStaggered[patLo]
+    }
+
     const W = 8
     const LINE_WIDTH = imageData.width
     const PALET = 0x03
@@ -311,6 +350,8 @@ export class Ppu {
       const y = oam[i * 4] + 1
       const index = oam[i * 4 + 1]
       const attr = oam[i * 4 + 2]
+      const flipVert = (attr & FLIP_VERT) !== 0
+      const flipHorz = (attr & FLIP_HORZ) !== 0
       const x = oam[i * 4 + 3]
 
       const chridx = (isSprite8x16
@@ -322,15 +363,8 @@ export class Ppu {
         if (y + py >= Const.HEIGHT)
           break
 
-        const ppy = (attr & FLIP_VERT) !== 0 ? (h - 1) - py : py
-        const idx = chridx + (ppy & 7) + ((ppy & 8) * 2)
-        let patHi = chrRom[idx + W]
-        let patLo = chrRom[idx]
-        if ((attr & FLIP_HORZ) !== 0) {
-          patHi = kFlipBits[patHi]
-          patLo = kFlipBits[patLo]
-        }
-        const pat = (kStaggered[patHi] << 1) | kStaggered[patLo]
+        const ppy = flipVert ? (h - 1) - py : py
+        const pat = getSpritePat(chridx, ppy, flipHorz)
         for (let px = 0; px < W; ++px) {
           if (x + px >= Const.WIDTH)
             break

@@ -211,6 +211,81 @@ export class Nes {
         this.ppu.setChrBank(value)
       })
       break
+
+    case 0x04:  // MMC3
+      {
+        const max_prg = (this.romData.length >> 13) - 1  // 0x2000
+        let p0 = 0, p1 = 1, p2 = 2, p3 = 0
+        const regs = new Uint8Array(8)
+        const prg_bank = (regs, swap) => {
+          if ((swap & 0x40) === 0) {
+            p0 = (regs[6] & max_prg) << 13
+            p1 = (regs[7] & max_prg) << 13
+            p2 = (0xfe & max_prg) << 13
+            p3 = (0xff & max_prg) << 13
+          } else {
+            p2 = (regs[6] & max_prg) << 13
+            p1 = (regs[7] & max_prg) << 13
+            p0 = (0xfe & max_prg) << 13
+            p3 = (0xff & max_prg) << 13
+          }
+        }
+        const chr_bank = (regs, swap) => {
+          if ((swap & 0x40) === 0) {
+            this.ppu.setChrBankOffset(0, regs[0] & 0xfe)
+            this.ppu.setChrBankOffset(1, regs[0] | 1)
+            this.ppu.setChrBankOffset(2, regs[1] & 0xfe)
+            this.ppu.setChrBankOffset(3, regs[1] | 1)
+            this.ppu.setChrBankOffset(4, regs[2])
+            this.ppu.setChrBankOffset(5, regs[3])
+            this.ppu.setChrBankOffset(6, regs[4])
+            this.ppu.setChrBankOffset(7, regs[5])
+          } else {
+            this.ppu.setChrBankOffset(4, regs[0] & 0xfe)
+            this.ppu.setChrBankOffset(5, regs[0] | 1)
+            this.ppu.setChrBankOffset(6, regs[1] & 0xfe)
+            this.ppu.setChrBankOffset(7, regs[1] | 1)
+            this.ppu.setChrBankOffset(0, regs[2])
+            this.ppu.setChrBankOffset(1, regs[3])
+            this.ppu.setChrBankOffset(2, regs[4])
+            this.ppu.setChrBankOffset(3, regs[5])
+          }
+        }
+
+        // PRG ROM
+        cpu.setReadMemory(0x8000, 0x9fff, (adr) => this.romData[(adr & 0x1fff) + p0])
+        cpu.setReadMemory(0xa000, 0xbfff, (adr) => this.romData[(adr & 0x1fff) + p1])
+        cpu.setReadMemory(0xc000, 0xdfff, (adr) => this.romData[(adr & 0x1fff) + p2])
+        cpu.setReadMemory(0xe000, 0xffff, (adr) => this.romData[(adr & 0x1fff) + p3])
+
+        // PRG RAM
+        //const ram = new Uint8Array(0x2000)
+        //cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
+        //cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+
+        // Select
+        let bankSelect = 0
+        cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+          switch (adr & 0xe001) {
+          case 0x8000:
+            bankSelect = value
+            prg_bank(regs, bankSelect)
+            chr_bank(regs, bankSelect)
+            break
+          case 0x8001:
+            const reg = bankSelect & 0x07
+            regs[reg] = value
+            if (reg < 6) {  // CHR
+              chr_bank(regs, bankSelect)
+            } else {  // PRG
+              prg_bank(regs, bankSelect)
+            }
+          }
+        })
+
+        prg_bank(max_prg - 1, 1, 0, max_prg)
+      }
+      break
     }
   }
 
