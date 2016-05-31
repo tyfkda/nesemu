@@ -39,7 +39,6 @@ export default class Wnd {
   private createRoot(): HTMLElement {
     const root = document.createElement('div')
     root.addEventListener('mousedown', (event) => {
-      event.preventDefault()
       event.stopPropagation()
       this.wndMgr.moveToTop(this)
       return false
