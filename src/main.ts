@@ -38,7 +38,7 @@ export class RegisterWnd extends Wnd {
     this.valueElems[3].value = Util.hex(cpu.y, 2)
     this.valueElems[4].value = Util.hex(cpu.s, 2)
     this.valueElems[5].value = Util.hex(cpu.p, 2)
-    this.valueElems[6].value = String(cpu.cycleCount)
+    this.valueElems[6].value = String(this.nes.cycleCount)
   }
 
   private createContent(root: HTMLElement): void {

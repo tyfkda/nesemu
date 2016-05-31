@@ -47,6 +47,7 @@ export class Nes {
   public cpu: Cpu6502
   public ram: Uint8Array
   public ppu: Ppu
+  public cycleCount: number
 
   private romData: Uint8Array
   private mapperNo: number
@@ -69,6 +70,7 @@ export class Nes {
     this.apu = new Apu()
     this.mapperNo = 0
     this.setMemoryMap(0)
+    this.cycleCount = 0
 
     this.romData = new Uint8Array(0)
   }
@@ -91,6 +93,7 @@ export class Nes {
     this.cpu.reset()
     this.ppu.reset()
     this.apu.reset()
+    this.cycleCount = 0
   }
 
   public setPadStatus(no: number, status: number): void {
@@ -111,9 +114,10 @@ export class Nes {
   }
 
   public step(): number {
-    const prevCount = this.cpu.cycleCount
+    const prevCount = this.cycleCount
     const cycle = this.cpu.step()
-    const currCount = this.cpu.cycleCount
+    this.cycleCount += cycle
+    const currCount = this.cycleCount
 
     if (triggerCycle(DUMMY_SPRITE0HIT, prevCount, currCount)) {
       this.ppu.setSprite0Hit()
@@ -128,7 +132,7 @@ export class Nes {
       this.ppu.clearVBlank()
     }
     if (triggerCycle(VRETURN, prevCount, currCount)) {
-      this.cpu.cycleCount -= VRETURN
+      this.cycleCount -= VRETURN
     }
     return cycle
   }

@@ -58,7 +58,6 @@ export class Cpu6502 {
                     //   Z: zero
                     //   C: carry
   public pc: number  // Program counter
-  public cycleCount: number
   public breakPoints: any
   public watchRead: {}
   public watchWrite: {}
@@ -75,7 +74,6 @@ export class Cpu6502 {
   constructor() {
     this.readerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
     this.writerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
-    this.cycleCount = 0
 
     this.a = this.x = this.y = this.s = 0
     this.breakPoints = {}
@@ -107,7 +105,6 @@ export class Cpu6502 {
     this.p = IRQBLK_FLAG | BREAK_FLAG | RESERVED_FLAG
     this.s = (this.s - 3) & 0xff
     this.pc = this.read16(0xfffc)
-    this.cycleCount = 0
     this.readErrorReported = this.writeErrorReported = false
   }
 
@@ -154,7 +151,6 @@ export class Cpu6502 {
 
     this.pc += inst.bytes
     kOpTypeTable[inst.opType](this, pc, inst.addressing)
-    this.cycleCount += inst.cycle
 
     if (this.breakPoints[this.pc]) {
       this.pausing = true
