@@ -52,6 +52,7 @@ export class Nes {
   private romData: Uint8Array
   private mapperNo: number
   private vblankCallback: (leftCycles: number) => void
+  private breakPointCallback: () => void
 
   public static create(): Nes {
     return new Nes()
@@ -73,12 +74,17 @@ export class Nes {
     this.setMemoryMap(0)
     this.cycleCount = 0
     this.vblankCallback = (_leftCycles) => {}
+    this.breakPointCallback = () => {}
 
     this.romData = new Uint8Array(0)
   }
 
   public setVblankCallback(callback: (leftCycles: number) => void): void {
     this.vblankCallback = callback
+  }
+
+  public setBreakPointCallback(callback: () => void): void {
+    this.breakPointCallback = callback
   }
 
   public setRomData(romData: Uint8Array): boolean {
@@ -109,9 +115,13 @@ export class Nes {
   public runCycles(cycles: number): number {
     try {
       let leftCycles = cycles
-      while (leftCycles > 0 && !this.cpu.isPaused()) {
+      while (leftCycles > 0) {
         const c = this.step(leftCycles)
         leftCycles -= c
+        if (this.cpu.isPaused()) {  // Hit break point.
+          this.breakPointCallback()
+          return 0
+        }
       }
       return -cycles
     } catch (e) {

@@ -197,6 +197,7 @@ class App {
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
     this.nes.setVblankCallback((leftCycles) => { this.onVblank(leftCycles) })
+    this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
 
     const screenWnd = new ScreenWnd(this.wndMgr, this.nes)
     this.wndMgr.add(screenWnd)
@@ -277,6 +278,10 @@ class App {
   private onVblank(leftCycles: number): void {
     if (leftCycles < 1)
       this.render()
+  }
+
+  private onBreakPoint(): void {
+    this.updateButtonState()
   }
 
   private startLoopAnimation(): void {
