@@ -13,6 +13,7 @@ const VBLANK_START = 241
 const VBLANK_NMI = 242
 const VBLANK_END = 261
 const VRETURN = 262
+const VCYCLE = (VRETURN * 341 / 3) | 0
 
 function getHblankCount(cpuCycle: number): number {
   return (cpuCycle * (3 / 341)) | 0
@@ -51,6 +52,7 @@ export class Nes {
 
   private romData: Uint8Array
   private mapperNo: number
+  private vblankCallback: (leftCycles: number) => void
 
   public static create(): Nes {
     return new Nes()
@@ -71,8 +73,13 @@ export class Nes {
     this.mapperNo = 0
     this.setMemoryMap(0)
     this.cycleCount = 0
+    this.vblankCallback = (_leftCycles) => {}
 
     this.romData = new Uint8Array(0)
+  }
+
+  public setVblankCallback(callback: (leftCycles: number) => void): void {
+    this.vblankCallback = callback
   }
 
   public setRomData(romData: Uint8Array): boolean {
@@ -102,9 +109,10 @@ export class Nes {
 
   public runCycles(cycles: number): number {
     try {
-      while (cycles > 0 && !this.cpu.isPaused()) {
-        const c = this.step()
-        cycles -= c
+      let leftCycles = cycles
+      while (leftCycles > 0 && !this.cpu.isPaused()) {
+        const c = this.step(leftCycles)
+        leftCycles -= c
       }
       return -cycles
     } catch (e) {
@@ -113,9 +121,9 @@ export class Nes {
     }
   }
 
-  public step(): number {
+  public step(leftCycles?: number): number {
     const cycle = this.cpu.step()
-    this.cycleCount = this.tryHblankEvent(this.cycleCount, cycle)
+    this.cycleCount = this.tryHblankEvent(this.cycleCount, cycle, leftCycles)
     return cycle
   }
 
@@ -291,7 +299,7 @@ export class Nes {
     }
   }
 
-  private tryHblankEvent(cycleCount: number, cycle: number): number {
+  private tryHblankEvent(cycleCount: number, cycle: number, leftCycles: number): number {
     let cycleCount2 = cycleCount + cycle
     const beforeHcount = getHblankCount(cycleCount)
     const hcount = getHblankCount(cycleCount2)
@@ -302,6 +310,7 @@ export class Nes {
         break
       case VBLANK_START:
         this.ppu.setVBlank()
+        this.vblankCallback(leftCycles / VCYCLE)
         break
       case VBLANK_NMI:
         this.interruptVBlank()

@@ -196,6 +196,7 @@ class App {
 
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
+    this.nes.setVblankCallback((leftCycles) => { this.onVblank(leftCycles) })
 
     const screenWnd = new ScreenWnd(this.wndMgr, this.nes)
     this.wndMgr.add(screenWnd)
@@ -273,6 +274,11 @@ class App {
     this.startLoopAnimation()
   }
 
+  private onVblank(leftCycles: number): void {
+    if (leftCycles < 1)
+      this.render()
+  }
+
   private startLoopAnimation(): void {
     let lastTime = window.performance.now()
     const loopFn = () => {
@@ -295,7 +301,6 @@ class App {
       const et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
       let cycles = (1789773 * et / 1000) | 0
       this.nes.runCycles(cycles)
-      this.render()
     }
   }
 
