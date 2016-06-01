@@ -64,6 +64,7 @@ export default class Wnd {
     }
     const dragFinish = (event) => {
       this.root.parentNode.removeEventListener('mousemove', dragMove)
+      this.root.parentNode.removeEventListener('mouseup', dragFinish)
     }
     titleBar.addEventListener('mousedown', (event) => {
       dragOfsX = dragOfsY = null
