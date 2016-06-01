@@ -1,6 +1,6 @@
-export const Const = {
-  WIDTH: 256,
-  HEIGHT: 240,
+export namespace Const {
+  export const WIDTH = 256
+  export const HEIGHT = 240
 }
 
 export const kColors: number[] = [
