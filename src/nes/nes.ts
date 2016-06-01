@@ -116,8 +116,8 @@ export class Nes {
       }
       return -cycles
     } catch (e) {
-      console.error(e)
       this.cpu.pause(true)
+      throw e
     }
   }
 
