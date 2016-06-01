@@ -23,8 +23,11 @@ export default class WindowManager {
   }
 
   public moveToTop(wnd: Wnd): void {
-    let prev = wnd
     const n = this.windows.length
+    if (n > 0 && this.windows[0] === wnd)  // Already on the top
+      return
+
+    let prev = wnd
     for (let i = 0; i < n; ++i) {
       const tmp = this.windows[i]
       this.windows[i] = prev
