@@ -36,6 +36,10 @@ const PPUSCROLL = 0x05  // $2005
 const PPUADDR = 0x06  // $2006
 const PPUDATA = 0x07  // $2007
 
+// Sprite
+const FLIP_HORZ = 0x40
+const FLIP_VERT = 0x80
+
 interface HEvents {
   length: number
   events: any[]
@@ -75,11 +79,6 @@ export class Ppu {
   private chrBank: number
   private latch: number
   private ppuAddr: number
-  private scrollXSave: number
-  private scrollYSave: number
-  private ppuCtrlSave: number
-  private ppuMaskSave: number
-  private chrBankSave: number
   private bufferedValue: number
   private chrBankOffset: number[]
   private hevents: HEvents
@@ -104,7 +103,7 @@ export class Ppu {
     this.vram.fill(0)
     this.oam.fill(0)
     this.hcount = 0
-    this.scrollX = this.scrollY = this.scrollXSave = this.scrollYSave = this.chrBankSave = 0
+    this.scrollX = this.scrollY = 0
     this.ppuAddr = 0
     this.chrBank = 0
     this.latch = 0
@@ -117,6 +116,9 @@ export class Ppu {
   public setChrBank(value: number): void {
     const max = this.chrData.length
     this.chrBank = (value << 13) & (max - 1)  // 0x2000
+
+    this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
+                    ppuMask: this.regs[PPUMASK], chrBank: this.chrBank})
   }
 
   public setChrData(chrData: Uint8Array): void {
@@ -154,12 +156,17 @@ export class Ppu {
     this.regs[reg] = value
 
     switch (reg) {
+    case PPUCTRL:
+      this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
+                      ppuMask: this.regs[PPUMASK], chrBank: this.chrBank})
+      break
     case PPUSCROLL:
       if (this.latch === 0) {
         this.scrollX = value
       } else {
         this.scrollY = value
-        this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY})
+        this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
+                        ppuMask: this.regs[PPUMASK], chrBank: this.chrBank})
       }
       this.latch = 1 - this.latch
       break
@@ -191,11 +198,6 @@ export class Ppu {
 
   public setVBlank(): void {
     this.regs[PPUSTATUS] = (this.regs[PPUSTATUS] | VBLANK) & ~SPRITE0HIT
-    this.scrollXSave = this.scrollX
-    this.scrollYSave = this.scrollY
-    this.ppuCtrlSave = this.regs[PPUCTRL]
-    this.ppuMaskSave = this.regs[PPUMASK]
-    this.chrBankSave = this.chrBank
 
     // Swap HEvents
     const tmp = this.hevents
@@ -203,14 +205,15 @@ export class Ppu {
     this.hevents2 = tmp
     this.hevents.length = 0
 
-    this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK], chrBankSave: this.chrBank})
+    this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
+                    ppuMask: this.regs[PPUMASK], chrBank: this.chrBank})
   }
   public clearVBlank(): void {
     this.regs[PPUSTATUS] &= ~VBLANK
   }
 
-  public setSprite0Hit(): void {
-    this.regs[PPUSTATUS] |= SPRITE0HIT  // TODO: Implmenet correctly
+  private setSprite0Hit(): void {
+    this.regs[PPUSTATUS] |= SPRITE0HIT
   }
 
   public interruptEnable(): boolean {
@@ -218,24 +221,23 @@ export class Ppu {
   }
 
   public getBgPatternTableAddress(): number {
-    return ((this.ppuCtrlSave & BG_PATTERN_TABLE_ADDRESS) << 8)
+    return ((this.regs[PPUCTRL] & BG_PATTERN_TABLE_ADDRESS) << 8)
   }
 
   public getSpritePatternTableAddress(): number {
-    if ((this.ppuCtrlSave & SPRITE_SIZE) === 0)
-      return ((this.ppuCtrlSave & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
+    if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
+      return ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
     return 0
   }
 
   public isSprite8x16(): boolean {
-    return (this.ppuCtrlSave & SPRITE_SIZE) !== 0
+    return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
   }
 
   public renderBg(imageData: ImageData): void {
-    if ((this.ppuMaskSave & SHOW_BG) === 0)
+    if ((this.regs[PPUMASK] & SHOW_BG) === 0)
       return this.clearBg(imageData)
-    this.doRenderBg(imageData, this.scrollXSave, this.scrollYSave, 0, 0,
-                    (this.ppuCtrlSave & BASE_NAMETABLE_ADDRESS) << 10)
+    this.doRenderBgLine(imageData)
   }
 
   public doRenderBg(imageData: ImageData, scrollX: number, scrollY: number,
@@ -254,7 +256,7 @@ export class Ppu {
 
     const W = 8
     const LINE_WIDTH = imageData.width
-    const chrBank = this.chrBankSave
+    const chrBank = this.chrBank
     const chrStart = this.getBgPatternTableAddress()
     const vram = this.vram
     const paletTable = 0x3f00
@@ -317,6 +319,99 @@ export class Ppu {
     }
   }
 
+  public doRenderBgLine(imageData: ImageData) {
+    const n = this.hevents.length
+    for (let i = 0; i < n; ++i) {
+      const h = this.hevents.events[i]
+      const hline0 = h.hcount
+      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240
+      if (hline0 >= hline1)
+        continue
+      const baseNameTable = (h.ppuCtrl & BASE_NAMETABLE_ADDRESS) << 10
+      const chrStart = (h.ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
+      this.doRenderBg2(imageData, h.scrollX, h.scrollY, baseNameTable, hline0, hline1,
+                       h.chrBank, chrStart)
+    }
+  }
+
+  public doRenderBg2(imageData: ImageData, scrollX: number, scrollY: number, baseNameTable: number,
+                     hline0: number, hline1: number, chrBank: number, chrStart: number): void
+  {
+    const getBgPat = (chridx, py, chrBank) => {
+      const idx = chridx + py
+
+      const bank = (idx >> 10) & 7
+      const bankOfs = this.chrBankOffset[bank]
+      const ofs = idx & 0x03ff
+      const p = bankOfs + ofs + chrBank
+
+      return (kStaggered[this.chrData[p + 8]] << 1) | kStaggered[this.chrData[p]]
+    }
+
+    const W = 8
+    const LINE_WIDTH = imageData.width
+    const vram = this.vram
+    const paletTable = 0x3f00
+    const pixels = imageData.data
+
+    const clearColor = vram[paletTable] & 0x3f  // Universal background color
+    const clearR = kColors[clearColor * 3 + 0]
+    const clearG = kColors[clearColor * 3 + 1]
+    const clearB = kColors[clearColor * 3 + 2]
+
+    if (scrollY >= 240)
+      scrollY = (scrollY - 256)
+
+    const bby0 = (hline0 / 8) | 0, bby1 = ((hline1 + 7) / 8) | 0
+    for (let bby = bby0; bby < bby1; ++bby) {
+      const by = ((bby + (scrollY >> 3)) + 60) % 60
+      const ay = by % 30
+      for (let bbx = 0; bbx < Const.WIDTH / W + 1; ++bbx) {
+        const bx = (bbx + (scrollX >> 3)) & 63
+        const ax = bx & 31
+
+        const nameTable = getNameTable(baseNameTable, bx, by, this.mirrorMode)
+        const name = vram[nameTable + ax + (ay << 5)]
+        const chridx = name * 16 + chrStart
+        const palShift = (ax & 2) + ((ay & 2) << 1)
+        const atrBlk = (ax >> 2) + ((ay << 1) & 0x0f8)
+        const attributeTable = nameTable + 0x3c0
+        const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
+
+        for (let py = 0; py < W; ++py) {
+          const yy = bby * W + py - (scrollY & 7)
+          if (yy < 0)
+            continue
+          if (yy >= Const.HEIGHT)
+            break
+          const pat = getBgPat(chridx, py, chrBank)
+          for (let px = 0; px < W; ++px) {
+            const xx = bbx * W + px - (scrollX & 7)
+            if (xx < 0)
+              continue
+            if (xx >= Const.WIDTH)
+              break
+            const pal = (pat >> ((W - 1 - px) * 2)) & 3
+            let r = clearR, g = clearG, b = clearB
+            if (pal !== 0) {
+              const palet = paletHigh + pal
+              const col = vram[paletTable + palet] & 0x3f
+              const c = col * 3
+              r = kColors[c]
+              g = kColors[c + 1]
+              b = kColors[c + 2]
+            }
+
+            const index = (yy * LINE_WIDTH + xx) * 4
+            pixels[index + 0] = r
+            pixels[index + 1] = g
+            pixels[index + 2] = b
+          }
+        }
+      }
+    }
+  }
+
   public clearBg(imageData: ImageData): void {
     const LINE_BYTES = imageData.width * 4
     const pixels = imageData.data
@@ -331,8 +426,54 @@ export class Ppu {
     }
   }
 
+  public setHcount(hcount: number) {
+    this.hcount = hcount
+
+    const sprite0y = this.oam[0] + 8
+    if ((this.regs[PPUSTATUS] & SPRITE0HIT) === 0 &&
+        sprite0y <= hcount && hcount < sprite0y + 16) {
+      const dy = this.getNonEmptySprite0Line()
+      if (dy >= 0 && hcount === sprite0y + dy)
+        this.setSprite0Hit()
+    }
+  }
+
+  private getNonEmptySprite0Line() {
+    const getSpritePat = (chridx, ppy) => {
+      const idx = chridx + (ppy & 7) + ((ppy & 8) * 2)
+      const bank = (idx >> 10) & 7
+      const bankOfs = this.chrBankOffset[bank]
+      const ofs = idx & 0x03ff
+      const p = bankOfs + ofs
+      let patHi = this.chrData[p + 8]
+      let patLo = this.chrData[p]
+      return (kStaggered[patHi] << 1) | kStaggered[patLo]
+    }
+
+    const oam = this.oam
+    const chrStart = this.getSpritePatternTableAddress()
+    const isSprite8x16 = this.isSprite8x16()
+    const h = isSprite8x16 ? 16 : 8
+    const i = 0
+    const y = oam[i * 4] + 1
+    const index = oam[i * 4 + 1]
+    const attr = oam[i * 4 + 2]
+    const flipVert = (attr & FLIP_VERT) !== 0
+    const chridx = (isSprite8x16
+                    ? (index & 0xfe) * 16 + ((index & 1) << 12)
+                    : index * 16 + chrStart)
+
+    for (let py = 0; py < h; ++py) {  // TODO: Handle 8x16 sprite mode.
+      const ppy = flipVert ? (h - 1) - py : py
+      const pat = getSpritePat(chridx, ppy)
+      if (pat !== 0)
+        return py
+    }
+    return -1
+  }
+
   public renderSprite(imageData: ImageData): void {
-    if ((this.ppuMaskSave & SHOW_SPRITE) === 0)
+    if ((this.regs[PPUMASK] & SHOW_SPRITE) === 0)
       return
 
     const getSpritePat = (chridx, ppy, flipHorz) => {
@@ -356,8 +497,6 @@ export class Ppu {
     const W = 8
     const LINE_WIDTH = imageData.width
     const PALET = 0x03
-    const FLIP_HORZ = 0x40
-    const FLIP_VERT = 0x80
 
     const oam = this.oam
     const vram = this.vram
