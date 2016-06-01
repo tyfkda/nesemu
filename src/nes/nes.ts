@@ -8,14 +8,14 @@ import {Util} from './util.ts'
 
 const RAM_SIZE = 0x0800
 
-const DUMMY_SPRITE0HIT = (20 * 341 / 3) | 0
-const VBLANK_START = (241 * 341 / 3) | 0
-const VBLANK_NMI = (242 * 341 / 3) | 0
-const VBLANK_END = (261 * 341 / 3) | 0
-const VRETURN = (262 * 341 / 3) | 0
+const DUMMY_SPRITE0HIT = 20
+const VBLANK_START = 241
+const VBLANK_NMI = 242
+const VBLANK_END = 261
+const VRETURN = 262
 
-function triggerCycle(count: number, prev: number, curr: number): boolean {
-  return prev < count && curr >= count
+function getHblankCount(cpuCycle: number): number {
+  return (cpuCycle * (3 / 341)) | 0
 }
 
 function isRomValid(romData: Uint8Array): boolean {
@@ -114,26 +114,8 @@ export class Nes {
   }
 
   public step(): number {
-    const prevCount = this.cycleCount
     const cycle = this.cpu.step()
-    this.cycleCount += cycle
-    const currCount = this.cycleCount
-
-    if (triggerCycle(DUMMY_SPRITE0HIT, prevCount, currCount)) {
-      this.ppu.setSprite0Hit()
-    }
-    if (triggerCycle(VBLANK_START, prevCount, currCount)) {
-      this.ppu.setVBlank()
-    }
-    if (triggerCycle(VBLANK_NMI, prevCount, currCount)) {
-      this.interruptVBlank()
-    }
-    if (triggerCycle(VBLANK_END, prevCount, currCount)) {
-      this.ppu.clearVBlank()
-    }
-    if (triggerCycle(VRETURN, prevCount, currCount)) {
-      this.cycleCount -= VRETURN
-    }
+    this.cycleCount = this.tryHblankEvent(this.cycleCount, cycle)
     return cycle
   }
 
@@ -307,6 +289,34 @@ export class Nes {
       }
       break
     }
+  }
+
+  private tryHblankEvent(cycleCount: number, cycle: number): number {
+    let cycleCount2 = cycleCount + cycle
+    const beforeHcount = getHblankCount(cycleCount)
+    const hcount = getHblankCount(cycleCount2)
+    if (hcount > beforeHcount) {
+      switch (hcount) {
+      case DUMMY_SPRITE0HIT:
+        this.ppu.setSprite0Hit()
+        break
+      case VBLANK_START:
+        this.ppu.setVBlank()
+        break
+      case VBLANK_NMI:
+        this.interruptVBlank()
+        break
+      case VBLANK_END:
+        this.ppu.clearVBlank()
+        break
+      case VRETURN:
+        cycleCount2 -= (VRETURN * 341 / 3) | 0
+        break
+      default:
+        break
+      }
+    }
+    return cycleCount2
   }
 
   private interruptVBlank(): void {
