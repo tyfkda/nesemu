@@ -36,6 +36,11 @@ const PPUSCROLL = 0x05  // $2005
 const PPUADDR = 0x06  // $2006
 const PPUDATA = 0x07  // $2007
 
+interface HEvents {
+  length: number
+  events: any[]
+}
+
 function getNameTable(baseNameTable: number, bx: number, by: number, mirrorMode: number): number {
   const adr = 0x2000 + baseNameTable
   if (mirrorMode === 0) {
@@ -63,6 +68,7 @@ export class Ppu {
   public chrData: Uint8Array
   public vram: Uint8Array
   public oam: Uint8Array  // Object Attribute Memory
+  public hcount: number
   public scrollX: number
   public scrollY: number
   public mirrorMode: number
@@ -76,6 +82,8 @@ export class Ppu {
   private chrBankSave: number
   private bufferedValue: number
   private chrBankOffset: number[]
+  private hevents: HEvents
+  private hevents2: HEvents
 
   constructor() {
     this.regs = new Uint8Array(REGISTER_COUNT)
@@ -83,6 +91,8 @@ export class Ppu {
     this.oam = new Uint8Array(OAM_SIZE)
     this.mirrorMode = 0
     this.chrBank = 0
+    this.hevents = {length: 0, events: []}
+    this.hevents2 = {length: 0, events: []}
 
     this.chrBankOffset = new Array(8)
     for (let i = 0; i < 8; ++i)
@@ -93,6 +103,7 @@ export class Ppu {
     this.regs.fill(0)
     this.vram.fill(0)
     this.oam.fill(0)
+    this.hcount = 0
     this.scrollX = this.scrollY = this.scrollXSave = this.scrollYSave = this.chrBankSave = 0
     this.ppuAddr = 0
     this.chrBank = 0
@@ -144,10 +155,12 @@ export class Ppu {
 
     switch (reg) {
     case PPUSCROLL:
-      if (this.latch === 0)
+      if (this.latch === 0) {
         this.scrollX = value
-      else
+      } else {
         this.scrollY = value
+        this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY})
+      }
       this.latch = 1 - this.latch
       break
     case PPUADDR:
@@ -183,6 +196,14 @@ export class Ppu {
     this.ppuCtrlSave = this.regs[PPUCTRL]
     this.ppuMaskSave = this.regs[PPUMASK]
     this.chrBankSave = this.chrBank
+
+    // Swap HEvents
+    const tmp = this.hevents
+    this.hevents = this.hevents2
+    this.hevents2 = tmp
+    this.hevents.length = 0
+
+    this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK], chrBankSave: this.chrBank})
   }
   public clearVBlank(): void {
     this.regs[PPUSTATUS] &= ~VBLANK
@@ -424,5 +445,23 @@ export class Ppu {
         }
       }
     }
+  }
+
+  private addHevent(param: any): void {
+    let hcount = this.hcount
+    if (hcount >= 240)
+      hcount = 0
+    const hevents = this.hevents
+    let n = hevents.length
+    if (n <= 0 || hevents.events[n - 1].hcount !== hcount) {
+      if (++n >= hevents.events.length) {
+        hevents.events.push({})
+      }
+    }
+    let event = hevents.events[n - 1]
+    event.hcount = hcount
+    for (let key of Object.keys(param))
+      event[key] = param[key]
+    hevents.length = n
   }
 }

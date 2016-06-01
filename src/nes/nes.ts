@@ -302,15 +302,16 @@ export class Nes {
   private tryHblankEvent(cycleCount: number, cycle: number, leftCycles: number): number {
     let cycleCount2 = cycleCount + cycle
     const beforeHcount = getHblankCount(cycleCount)
-    const hcount = getHblankCount(cycleCount2)
+    let hcount = getHblankCount(cycleCount2)
     if (hcount > beforeHcount) {
+      this.ppu.hcount = hcount
       switch (hcount) {
       case DUMMY_SPRITE0HIT:
         this.ppu.setSprite0Hit()
         break
       case VBLANK_START:
-        this.ppu.setVBlank()
         this.vblankCallback(leftCycles / VCYCLE)
+        this.ppu.setVBlank()
         break
       case VBLANK_NMI:
         this.interruptVBlank()
@@ -320,6 +321,7 @@ export class Nes {
         break
       case VRETURN:
         cycleCount2 -= (VRETURN * 341 / 3) | 0
+        this.ppu.hcount = 0
         break
       default:
         break
