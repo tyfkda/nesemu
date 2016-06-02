@@ -9,6 +9,9 @@ interface Window {
   mozRequestAnimationFrame: any
   webkitRequestAnimationFrame: any
 
+  AudioContext: any
+  webkitAudioContext: any
+
   nes: any
 }
 

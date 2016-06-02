@@ -6,6 +6,7 @@ import {Addressing, Instruction, OpType} from './nes/inst.ts'
 import {disassemble} from './nes/disasm.ts'
 import {Util} from './nes/util.ts'
 
+import {AudioManager} from './audio_manager.ts'
 import {PadKeyHandler} from './pad_key_handler.ts'
 
 import WindowManager from './wnd/window_manager.ts'
@@ -179,6 +180,7 @@ class App {
   private wndMgr: WindowManager
   private nes: Nes
   private padKeyHandler: PadKeyHandler
+  private audioManager: AudioManager
   private registerWnd: RegisterWnd
   private traceWnd: TraceWnd
 
@@ -186,6 +188,7 @@ class App {
   private runElem: HTMLElement
   private pauseElem: HTMLElement
   private resetElem: HTMLElement
+  private masterVolume: number
 
   public static create(root: HTMLElement): App {
     return new App(root)
@@ -198,6 +201,9 @@ class App {
     window.nes = this.nes  // Put nes into global.
     this.nes.setVblankCallback((leftCycles) => { this.onVblank(leftCycles) })
     this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
+
+    this.audioManager = new AudioManager()
+    this.masterVolume = 0.0
 
     const screenWnd = new ScreenWnd(this.wndMgr, this.nes)
     this.wndMgr.add(screenWnd)
@@ -257,6 +263,14 @@ class App {
       this.dumpCpu()
     })
 
+    const muteButton = document.getElementById('mute')
+    muteButton.addEventListener('change', () => {
+      const volume = muteButton.checked ? 0.0 : 1.0
+      this.masterVolume = volume
+      if (volume <= 0)
+        this.audioManager.stopAll()
+    })
+
     const captureElem = document.getElementById('capture')
     captureElem.addEventListener('click', () => {
       const img = document.getElementById('captured-image') as HTMLImageElement
@@ -278,6 +292,13 @@ class App {
   private onVblank(leftCycles: number): void {
     if (leftCycles < 1)
       this.render()
+
+    if (this.masterVolume > 0) {
+      for (let i = 0; i < 3; ++i) {
+        this.audioManager.setChannelFrequency(i, nes.apu.getFrequency(i))
+        this.audioManager.setChannelVolume(i, nes.apu.getVolume(i) * this.masterVolume)
+      }
+    }
   }
 
   private onBreakPoint(): void {
