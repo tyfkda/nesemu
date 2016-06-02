@@ -263,12 +263,12 @@ class App {
       this.dumpCpu()
     })
 
-    const muteButton = document.getElementById('mute')
+    const muteButton = document.getElementById('mute') as HTMLInputElement
     muteButton.addEventListener('change', () => {
       const volume = muteButton.checked ? 0.0 : 1.0
       this.masterVolume = volume
       for (let i = 0; i < AudioManager.CHANNEL; ++i)
-        this.audioManager.setChannelVolume(i, nes.apu.getVolume(i) * this.masterVolume)
+        this.audioManager.setChannelVolume(i, this.nes.apu.getVolume(i) * this.masterVolume)
     })
 
     const captureElem = document.getElementById('capture')
@@ -295,8 +295,8 @@ class App {
 
     if (this.masterVolume > 0) {
       for (let i = 0; i < AudioManager.CHANNEL; ++i) {
-        this.audioManager.setChannelFrequency(i, nes.apu.getFrequency(i))
-        this.audioManager.setChannelVolume(i, nes.apu.getVolume(i) * this.masterVolume)
+        this.audioManager.setChannelFrequency(i, this.nes.apu.getFrequency(i))
+        this.audioManager.setChannelVolume(i, this.nes.apu.getVolume(i) * this.masterVolume)
       }
     }
   }

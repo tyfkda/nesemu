@@ -7,7 +7,7 @@ class SoundChannel {
   constructor() {
   }
 
-  create(context: AudioContext, type: string): SoundChannel {
+  public create(context: AudioContext, type: string): SoundChannel {
     this.gainNode = context.createGain()
     this.gainNode.gain.value = 0
 
@@ -18,16 +18,16 @@ class SoundChannel {
     return this
   }
 
-  start(): SoundChannel {
+  public start(): SoundChannel {
     this.oscillator.start()
     return this
   }
 
-  setFrequency(frequency: number) {
+  public setFrequency(frequency: number) {
     this.oscillator.frequency.value = frequency
   }
 
-  setVolume(volume: number) {
+  public setVolume(volume: number) {
     this.gainNode.gain.value = volume
   }
 }
@@ -49,11 +49,11 @@ export class AudioManager {
     })
   }
 
-  setChannelFrequency(channel: number, frequency: number): void {
+  public setChannelFrequency(channel: number, frequency: number): void {
     this.channels[channel].setFrequency(frequency)
   }
 
-  setChannelVolume(channel: number, volume: number): void {
+  public setChannelVolume(channel: number, volume: number): void {
     this.channels[channel].setVolume(volume)
   }
 }

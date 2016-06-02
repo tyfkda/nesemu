@@ -212,10 +212,6 @@ export class Ppu {
     this.regs[PPUSTATUS] &= ~VBLANK
   }
 
-  private setSprite0Hit(): void {
-    this.regs[PPUSTATUS] |= SPRITE0HIT
-  }
-
   public interruptEnable(): boolean {
     return (this.regs[PPUCTRL] & VINT_ENABLE) !== 0
   }
@@ -438,40 +434,6 @@ export class Ppu {
     }
   }
 
-  private getNonEmptySprite0Line() {
-    const getSpritePat = (chridx, ppy) => {
-      const idx = chridx + (ppy & 7) + ((ppy & 8) * 2)
-      const bank = (idx >> 10) & 7
-      const bankOfs = this.chrBankOffset[bank]
-      const ofs = idx & 0x03ff
-      const p = bankOfs + ofs
-      let patHi = this.chrData[p + 8]
-      let patLo = this.chrData[p]
-      return (kStaggered[patHi] << 1) | kStaggered[patLo]
-    }
-
-    const oam = this.oam
-    const chrStart = this.getSpritePatternTableAddress()
-    const isSprite8x16 = this.isSprite8x16()
-    const h = isSprite8x16 ? 16 : 8
-    const i = 0
-    const y = oam[i * 4] + 1
-    const index = oam[i * 4 + 1]
-    const attr = oam[i * 4 + 2]
-    const flipVert = (attr & FLIP_VERT) !== 0
-    const chridx = (isSprite8x16
-                    ? (index & 0xfe) * 16 + ((index & 1) << 12)
-                    : index * 16 + chrStart)
-
-    for (let py = 0; py < h; ++py) {  // TODO: Handle 8x16 sprite mode.
-      const ppy = flipVert ? (h - 1) - py : py
-      const pat = getSpritePat(chridx, ppy)
-      if (pat !== 0)
-        return py
-    }
-    return -1
-  }
-
   public renderSprite(imageData: ImageData): void {
     if ((this.regs[PPUMASK] & SHOW_SPRITE) === 0)
       return
@@ -584,6 +546,43 @@ export class Ppu {
         }
       }
     }
+  }
+
+  private setSprite0Hit(): void {
+    this.regs[PPUSTATUS] |= SPRITE0HIT
+  }
+
+  private getNonEmptySprite0Line() {
+    const getSpritePat = (chridx, ppy) => {
+      const idx = chridx + (ppy & 7) + ((ppy & 8) * 2)
+      const bank = (idx >> 10) & 7
+      const bankOfs = this.chrBankOffset[bank]
+      const ofs = idx & 0x03ff
+      const p = bankOfs + ofs
+      let patHi = this.chrData[p + 8]
+      let patLo = this.chrData[p]
+      return (kStaggered[patHi] << 1) | kStaggered[patLo]
+    }
+
+    const oam = this.oam
+    const chrStart = this.getSpritePatternTableAddress()
+    const isSprite8x16 = this.isSprite8x16()
+    const h = isSprite8x16 ? 16 : 8
+    const i = 0
+    const index = oam[i * 4 + 1]
+    const attr = oam[i * 4 + 2]
+    const flipVert = (attr & FLIP_VERT) !== 0
+    const chridx = (isSprite8x16
+                    ? (index & 0xfe) * 16 + ((index & 1) << 12)
+                    : index * 16 + chrStart)
+
+    for (let py = 0; py < h; ++py) {  // TODO: Handle 8x16 sprite mode.
+      const ppy = flipVert ? (h - 1) - py : py
+      const pat = getSpritePat(chridx, ppy)
+      if (pat !== 0)
+        return py
+    }
+    return -1
   }
 
   private addHevent(param: any): void {
