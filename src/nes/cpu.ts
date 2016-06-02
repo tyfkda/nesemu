@@ -110,6 +110,8 @@ export class Cpu6502 {
 
   public deleteAllBreakPoints(): void {
     this.breakPoints = {}
+    this.watchRead = {}
+    this.watchWrite = {}
   }
 
   public pause(value: boolean): void {
