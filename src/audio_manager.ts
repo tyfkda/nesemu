@@ -24,7 +24,7 @@ class SoundChannel {
   }
 
   public setFrequency(frequency: number) {
-    this.oscillator.frequency.value = frequency
+    this.oscillator.frequency.setValueAtTime(frequency, 0)
   }
 
   public setVolume(volume: number) {
