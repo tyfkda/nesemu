@@ -52,10 +52,14 @@ export class Apu {
     switch (channel) {
     case 0:
     case 1:
-    case 2:
       {
         const value = this.regs[channel * 4 + 2] + ((this.regs[channel * 4 + 3] & 7) << 8)
         return ((1790000 / 16) / (value + 1)) | 0
+      }
+    case 2:
+      {
+        const value = this.regs[channel * 4 + 2] + ((this.regs[channel * 4 + 3] & 7) << 8)
+        return ((1790000 / 8) / (value + 1)) | 0
       }
     }
   }
@@ -65,10 +69,13 @@ export class Apu {
     case 0:
     case 1:
       {
-        return this.regs[channel * 4] / 15.0
+        const v = this.regs[channel * 4]
+        //if ((v & (1 << 4)) !== 0)
+        //  return 1.0  // TODO: Calculate from envelope.
+        return (v & 15) / 15.0
       }
     case 2:
-      return 0.5
+      return 1.0
     }
   }
 
