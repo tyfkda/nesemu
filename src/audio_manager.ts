@@ -54,4 +54,9 @@ export class AudioManager {
   setChannelVolume(channel: number, volume: number): void {
     this.channels[channel].setVolume(volume)
   }
+
+  stopAll(): void {
+    for (let channel of this.channels)
+      channel.setVolume(0)
+  }
 }

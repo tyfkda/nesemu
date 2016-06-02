@@ -188,6 +188,7 @@ class App {
   private runElem: HTMLElement
   private pauseElem: HTMLElement
   private resetElem: HTMLElement
+  private masterVolume: number
 
   public static create(root: HTMLElement): App {
     return new App(root)
@@ -202,6 +203,7 @@ class App {
     this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
 
     this.audioManager = new AudioManager()
+    this.masterVolume = 0.0
 
     const screenWnd = new ScreenWnd(this.wndMgr, this.nes)
     this.wndMgr.add(screenWnd)
@@ -261,6 +263,14 @@ class App {
       this.dumpCpu()
     })
 
+    const muteButton = document.getElementById('mute')
+    muteButton.addEventListener('change', () => {
+      const volume = muteButton.checked ? 0.0 : 1.0
+      this.masterVolume = volume
+      if (volume <= 0)
+        this.audioManager.stopAll()
+    })
+
     const captureElem = document.getElementById('capture')
     captureElem.addEventListener('click', () => {
       const img = document.getElementById('captured-image') as HTMLImageElement
@@ -283,9 +293,11 @@ class App {
     if (leftCycles < 1)
       this.render()
 
-    for (let i = 0; i < 3; ++i) {
-      this.audioManager.setChannelFrequency(i, nes.apu.getFrequency(i))
-      this.audioManager.setChannelVolume(i, nes.apu.getVolume(i))
+    if (this.masterVolume > 0) {
+      for (let i = 0; i < 3; ++i) {
+        this.audioManager.setChannelFrequency(i, nes.apu.getFrequency(i))
+        this.audioManager.setChannelVolume(i, nes.apu.getVolume(i) * this.masterVolume)
+      }
     }
   }
 
