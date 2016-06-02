@@ -65,6 +65,7 @@ export class RegisterWnd extends Wnd {
       const value = document.createElement('td')
       tr.appendChild(value)
       const valueInput = document.createElement('input')
+      valueInput.className = 'fixed-font'
       valueInput.type = 'text'
       valueInput.style.width = '100%'
       value.appendChild(valueInput)
