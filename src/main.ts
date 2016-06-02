@@ -303,6 +303,7 @@ class App {
 
   private onBreakPoint(): void {
     this.updateButtonState()
+    this.dumpCpu()
   }
 
   private startLoopAnimation(): void {
