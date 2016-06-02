@@ -320,7 +320,7 @@ export class Ppu {
     for (let i = 0; i < n; ++i) {
       const h = this.hevents.events[i]
       const hline0 = h.hcount
-      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240
+      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240 + 8
       if (hline0 >= hline1)
         continue
       const baseNameTable = (h.ppuCtrl & BASE_NAMETABLE_ADDRESS) << 10
