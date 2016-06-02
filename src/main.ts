@@ -267,8 +267,8 @@ class App {
     muteButton.addEventListener('change', () => {
       const volume = muteButton.checked ? 0.0 : 1.0
       this.masterVolume = volume
-      if (volume <= 0)
-        this.audioManager.stopAll()
+      for (let i = 0; i < AudioManager.CHANNEL; ++i)
+        this.audioManager.setChannelVolume(i, nes.apu.getVolume(i) * this.masterVolume)
     })
 
     const captureElem = document.getElementById('capture')
@@ -294,7 +294,7 @@ class App {
       this.render()
 
     if (this.masterVolume > 0) {
-      for (let i = 0; i < 3; ++i) {
+      for (let i = 0; i < AudioManager.CHANNEL; ++i) {
         this.audioManager.setChannelFrequency(i, nes.apu.getFrequency(i))
         this.audioManager.setChannelVolume(i, nes.apu.getVolume(i) * this.masterVolume)
       }
