@@ -102,6 +102,7 @@ export class Nes {
   }
 
   public reset(): void {
+    this.ram.fill(0xff)
     this.cpu.reset()
     this.ppu.reset()
     this.apu.reset()
