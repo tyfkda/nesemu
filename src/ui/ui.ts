@@ -19,8 +19,8 @@ export class ScreenWnd extends Wnd {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = 256
     canvas.height = 240
-    canvas.style.width = '512px'
-    canvas.style.height = '480px'
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
     canvas.className = 'pixelated'
     clearCanvas(canvas)
 
@@ -29,6 +29,7 @@ export class ScreenWnd extends Wnd {
     this.canvas = canvas
     this.context = this.canvas.getContext('2d')
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
+    this.addResizeBox()
   }
 
   public update(): void {

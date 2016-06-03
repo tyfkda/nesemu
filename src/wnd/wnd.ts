@@ -36,6 +36,49 @@ export default class Wnd {
   public update(): void {
   }
 
+  public onResize(width: number, height: number): void {
+  }
+
+  public addResizeBox() {
+    const W = 8
+    const resizeBox = document.createElement('div')
+    resizeBox.style.position = 'absolute'
+    resizeBox.style.right = resizeBox.style.bottom = '-1px'  // For border width.
+    resizeBox.style.width = resizeBox.style.height = `${W}px`
+    resizeBox.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'
+    resizeBox.style.zIndex = '100'
+    resizeBox.style.cursor = 'nwse-resize'
+
+    let dragOfsX, dragOfsY
+    const dragMove = (event) => {
+      const [x, y] = this.getMousePosIn(event, this.root.parentNode)
+      const rect = this.root.getBoundingClientRect()
+      const prect = (this.root.parentNode as HTMLElement).getBoundingClientRect()
+      let width = x + dragOfsX - (rect.left - prect.left) - 2  // For border size.
+      let height = y + dragOfsY - (rect.top - prect.top) - 2
+      if (width < 64)
+        width = 64
+      if (height < 24 + Wnd.HEADER_HEIGHT)
+        height = 24 + Wnd.HEADER_HEIGHT
+      this.root.style.width = `${width}px`
+      this.root.style.height = `${height}px`
+      this.onResize(width, height - Wnd.HEADER_HEIGHT)
+    }
+    const dragFinish = (event) => {
+      this.root.parentNode.removeEventListener('mousemove', dragMove)
+      this.root.parentNode.removeEventListener('mouseup', dragFinish)
+    }
+    resizeBox.addEventListener('mousedown', (event) => {
+      event.preventDefault()
+      const [x, y] = this.getMousePosIn(event, resizeBox)
+      dragOfsX = W - x
+      dragOfsY = W - y
+      this.root.parentNode.addEventListener('mousemove', dragMove)
+      this.root.parentNode.addEventListener('mouseup', dragFinish)
+    })
+    this.root.appendChild(resizeBox)
+  }
+
   private createRoot(): HTMLElement {
     const root = document.createElement('div')
     root.addEventListener('mousedown', (event) => {
