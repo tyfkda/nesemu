@@ -142,9 +142,16 @@ export class Ppu {
       this.latch = 0
       break
     case PPUDATA:
-      result = this.bufferedValue
-      this.bufferedValue = this.vram[getPpuAddr(this.ppuAddr)]
-      this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
+      {
+        result = this.bufferedValue
+        const addr = getPpuAddr(this.ppuAddr)
+        if (addr >= 0x2000) {
+          this.bufferedValue = this.vram[addr]
+        } else {
+          this.bufferedValue = this.chrData[(addr & (this.chrData.length - 1)) + this.chrBank]
+        }
+        this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
+      }
       break
     default:
       break
