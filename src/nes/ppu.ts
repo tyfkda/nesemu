@@ -41,7 +41,7 @@ const FLIP_HORZ = 0x40
 const FLIP_VERT = 0x80
 
 interface HEvents {
-  length: number
+  count: number
   events: any[]
 }
 
@@ -90,8 +90,8 @@ export class Ppu {
     this.oam = new Uint8Array(OAM_SIZE)
     this.mirrorMode = 0
     this.chrBank = 0
-    this.hevents = {length: 0, events: []}
-    this.hevents2 = {length: 0, events: []}
+    this.hevents = {count: 0, events: []}
+    this.hevents2 = {count: 0, events: []}
 
     this.chrBankOffset = new Array(8)
     for (let i = 0; i < 8; ++i)
@@ -223,7 +223,7 @@ export class Ppu {
     const tmp = this.hevents
     this.hevents = this.hevents2
     this.hevents2 = tmp
-    this.hevents.length = 0
+    this.hevents.count = 0
 
     this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
                     ppuMask: this.regs[PPUMASK], chrBank: this.chrBank})
@@ -336,7 +336,7 @@ export class Ppu {
   }
 
   public doRenderBgLine(imageData: ImageData) {
-    const n = this.hevents.length
+    const n = this.hevents.count
     for (let i = 0; i < n; ++i) {
       const h = this.hevents.events[i]
       const hline0 = h.hcount
@@ -610,7 +610,7 @@ export class Ppu {
     if (hcount >= 240)
       hcount = 0
     const hevents = this.hevents
-    let n = hevents.length
+    let n = hevents.count
     if (n <= 0 || hevents.events[n - 1].hcount !== hcount) {
       if (++n >= hevents.events.length) {
         hevents.events.push({})
@@ -620,6 +620,6 @@ export class Ppu {
     event.hcount = hcount
     for (let key of Object.keys(param))
       event[key] = param[key]
-    hevents.length = n
+    hevents.count = n
   }
 }
