@@ -66,6 +66,7 @@ const kOpcode = {
   [OpType.SED]: 'SED',
   [OpType.CLD]: 'CLD',
 
+  [OpType.BRK]: 'BRK',
   [OpType.NOP]: 'NOP',
 }
 

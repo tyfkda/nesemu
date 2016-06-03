@@ -92,6 +92,7 @@ export enum OpType {
   SED,
   CLD,
 
+  BRK,
   NOP,
 }
 
@@ -298,6 +299,7 @@ export const kInstTable: Instruction[] = (() => {
   setOp(OpType.SED, 0xf8, Addressing.IMPLIED, 1, 2)
   setOp(OpType.CLD, 0xd8, Addressing.IMPLIED, 1, 2)
 
+  setOp(OpType.BRK, 0x00, Addressing.IMPLIED, 1, 7)
   setOp(OpType.NOP, 0xea, Addressing.IMPLIED, 1, 2)
 
   return tbl

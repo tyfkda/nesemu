@@ -645,6 +645,13 @@ const kOpTypeTable = (() => {
     // not implemented on NES
   })
 
+  set(OpType.BRK, (cpu, _pc, _addressing) => {
+    //if ((cpu.p & IRQBLK_FLAG) === 0) {
+      cpu.push16(cpu.pc)
+      cpu.push(cpu.p | IRQBLK_FLAG | BREAK_FLAG)
+      cpu.pc = cpu.read16(0xfffe)
+    //}
+  })
   set(OpType.NOP, (_cpu, _pc, _addressing) => {})
 
   return tbl
