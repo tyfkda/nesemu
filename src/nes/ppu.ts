@@ -458,13 +458,13 @@ export class Ppu {
     if ((this.regs[PPUMASK] & SHOW_SPRITE) === 0)
       return
 
-    const getSpritePat = (chridx, ppy, flipHorz) => {
+    const getSpritePat = (chridx, ppy, chrBank, flipHorz) => {
       const idx = chridx + (ppy & 7) + ((ppy & 8) * 2)
 
       const bank = (idx >> 10) & 7
       const bankOfs = this.chrBankOffset[bank]
       const ofs = idx & 0x03ff
-      const p = bankOfs + ofs
+      const p = bankOfs + ofs + chrBank
 
       let patHi = this.chrData[p + 8]
       let patLo = this.chrData[p]
@@ -483,6 +483,7 @@ export class Ppu {
     const oam = this.oam
     const vram = this.vram
     const chrStart = this.getSpritePatternTableAddress()
+    const chrBank = this.chrBank
     const paletTable = 0x3f10
     const pixels = imageData.data
     const isSprite8x16 = this.isSprite8x16()
@@ -506,7 +507,7 @@ export class Ppu {
           break
 
         const ppy = flipVert ? (h - 1) - py : py
-        const pat = getSpritePat(chridx, ppy, flipHorz)
+        const pat = getSpritePat(chridx, ppy, chrBank, flipHorz)
         for (let px = 0; px < W; ++px) {
           if (x + px >= Const.WIDTH)
             break
