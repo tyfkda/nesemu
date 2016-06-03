@@ -58,7 +58,7 @@ export default class Wnd {
     // Move window position with dragging.
     let dragOfsX, dragOfsY
     const dragMove = (event) => {
-      const [x, y] = this.getMousePos(event)
+      const [x, y] = this.getMousePosIn(event, this.root.parentNode)
       this.root.style.left = `${x + dragOfsX}px`
       this.root.style.top = `${y + dragOfsY}px`
     }
@@ -71,12 +71,9 @@ export default class Wnd {
       if (event.button !== 0)
         return
       event.preventDefault()
-      const [x, y] = this.getMousePos(event)
-      const rect = this.root.getBoundingClientRect()
-      const scrollLeft = document.body.scrollLeft
-      const scrollTop = document.body.scrollTop
-      dragOfsX = rect.left - x - scrollLeft
-      dragOfsY = rect.top - y - scrollTop
+      const [x, y] = this.getMousePosIn(event, this.root)
+      dragOfsX = -x
+      dragOfsY = -y
       this.root.parentNode.addEventListener('mousemove', dragMove)
       this.root.parentNode.addEventListener('mouseup', dragFinish)
       return true
@@ -103,8 +100,8 @@ export default class Wnd {
     return text
   }
 
-  private getMousePos(event) {
-    const rect = (this.root.parentNode as HTMLElement).getBoundingClientRect()
+  private getMousePosIn(event: MouseEvent, elem: HTMLElement) {
+    const rect = elem.getBoundingClientRect()
     const scrollLeft = document.body.scrollLeft
     const scrollTop = document.body.scrollTop
     return [event.pageX - rect.left - scrollLeft,
