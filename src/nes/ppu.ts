@@ -122,7 +122,10 @@ export class Ppu {
   }
 
   public setChrData(chrData: Uint8Array): void {
-    this.chrData = chrData
+    if (chrData && chrData.length > 0)
+      this.chrData = chrData
+    else  // CHR RAM
+      this.chrData = this.vram
   }
 
   public setChrBankOffset(bank: number, value: number): void {
@@ -145,11 +148,7 @@ export class Ppu {
       {
         result = this.bufferedValue
         const addr = getPpuAddr(this.ppuAddr)
-        if (addr >= 0x2000) {
-          this.bufferedValue = this.vram[addr]
-        } else {
-          this.bufferedValue = this.chrData[(addr & (this.chrData.length - 1)) + this.chrBank]
-        }
+        this.bufferedValue = this.readPpuDirect(addr)
         this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
       }
       break
@@ -157,6 +156,14 @@ export class Ppu {
       break
     }
     return result
+  }
+
+  private readPpuDirect(addr: number): number {
+    if (addr >= 0x2000) {
+      return this.vram[addr]
+    } else {
+      return this.chrData[(addr & (this.chrData.length - 1)) + this.chrBank]
+    }
   }
 
   public write(reg: number, value: number): void {
@@ -185,8 +192,14 @@ export class Ppu {
       this.latch = 1 - this.latch
       break
     case PPUDATA:
-      this.vram[getPpuAddr(this.ppuAddr)] = value
-      this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
+      {
+        const addr = getPpuAddr(this.ppuAddr)
+        //if (addr < 0x2000) {
+        //  console.log(`CHR ROM write: ${Util.hex(addr, 4)}, ${Util.hex(value, 2)}`)
+        //}
+        this.vram[addr] = value
+        this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
+      }
       break
     default:
       break
@@ -538,7 +551,7 @@ export class Ppu {
           for (let py = 0; py < W; ++py) {
             const yy = by * W + py
             const idx = chridx + py
-            const pat = (kStaggered[chrRom[idx + 8]] << 1) | kStaggered[chrRom[idx]]
+            const pat = (kStaggered[this.readPpuDirect(idx + 8)] << 1) | kStaggered[this.readPpuDirect(idx)]
             for (let px = 0; px < W; ++px) {
               const xx = bx * W + px + i * (W * 16)
               const col = (pat >> ((W - 1 - px) * 2)) & 3

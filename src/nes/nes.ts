@@ -218,6 +218,24 @@ export class Nes {
       cpu.setReadMemory(0xc000, 0xffff, (adr) => this.romData[adr & (this.romData.length - 1)])
       break
 
+    case 0x02:  // UxROM
+      {
+        const BANK_SIZE = 16 * 1024
+        const size = this.romData.length
+        const count = size / BANK_SIZE
+        const lastBank = size - BANK_SIZE
+        let prgBank = 0
+        cpu.setReadMemory(0x8000, 0xbfff, (adr) => this.romData[(adr & (BANK_SIZE - 1)) + prgBank])
+        cpu.setReadMemory(0xc000, 0xffff,
+                          (adr) => this.romData[(adr & (BANK_SIZE - 1)) + size - BANK_SIZE])
+
+        // PRG ROM bank
+        cpu.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
+          prgBank = (value & (count - 1)) * BANK_SIZE
+        })
+      }
+      break
+
     case 0x03:
       // ROM
       cpu.setReadMemory(0x8000, 0xbfff, (adr) => this.romData[adr & (this.romData.length - 1)])

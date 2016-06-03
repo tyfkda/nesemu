@@ -207,8 +207,8 @@ export class Cpu6502 {
     const block = (adr / BLOCK_SIZE) | 0
     const writer = this.writerFuncTable[block]
     if (!writer) {
-      console.error(`Illegal write at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}, ${hex(value, 2)}`)
       if (!this.writeErrorReported) {
+        console.error(`Illegal write at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}, ${hex(value, 2)}`)
         this.pausing = true
         this.writeErrorReported = true
       }
