@@ -54,6 +54,8 @@ export default class Wnd {
   }
 
   public addResizeBox() {
+    this.root.classList.add('resizable')
+
     const W = 8
 
     const table = [
@@ -89,7 +91,6 @@ export default class Wnd {
         resizeBox.style[key] = param.styleParams[key]
       })
       resizeBox.style.width = resizeBox.style.height = `${W}px`
-      resizeBox.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'
       resizeBox.style.zIndex = '100'
 
       let dragOfsX, dragOfsY
