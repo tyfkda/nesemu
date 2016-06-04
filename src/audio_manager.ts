@@ -37,9 +37,11 @@ export class AudioManager {
 
   private context: AudioContext
   private channels: SoundChannel[]
+  private masterVolume: number
 
   constructor() {
     this.context = new (window.AudioContext || window.webkitAudioContext)()
+    this.masterVolume = 1.0
 
     this.channels = kTypes.map(type => {
       const c = new SoundChannel()
@@ -54,6 +56,14 @@ export class AudioManager {
   }
 
   public setChannelVolume(channel: number, volume: number): void {
-    this.channels[channel].setVolume(volume)
+    this.channels[channel].setVolume(volume * this.masterVolume)
+  }
+
+  public setMasterVolume(volume: number): void {
+    this.masterVolume = volume
+    if (volume <= 0) {
+      for (let channel of this.channels)
+        channel.setVolume(0)
+    }
   }
 }

@@ -143,6 +143,100 @@ export class TraceWnd extends Wnd {
   }
 }
 
+class ControlWnd extends Wnd {
+  private nes: Nes
+  private screenWnd: ScreenWnd
+  private audioManager: AudioManager
+  private stepBtn: HTMLButtonElement
+  private runBtn: HTMLButtonElement
+  private pauseBtn: HTMLButtonElement
+  private callback: (action) => void
+
+  public constructor(wndMgr: WindowManager, nes: Nes, screenWnd: ScreenWnd,
+                     audioManager: AudioManager, callback: (action) => void)
+  {
+    const root = document.createElement('div')
+
+    super(wndMgr, 384, 32, 'Control', root)
+    this.nes = nes
+    this.screenWnd = screenWnd
+    this.audioManager = audioManager
+    this.callback = callback
+
+    this.createElement(root)
+    this.updateState(true)
+  }
+
+  public updateState(paused: boolean): void {
+    this.stepBtn.disabled = paused ? '' : 'disabled'
+    this.runBtn.disabled = paused ? '' : 'disabled'
+    this.pauseBtn.disabled = paused ? 'disabled' : ''
+  }
+
+  private createElement(root: HTMLElement): void {
+    root.style.width = '384px'
+    root.style.height = '32px'
+
+    this.stepBtn = document.createElement('button') as HTMLButtonElement
+    this.stepBtn.innerText = 'Step'
+    this.stepBtn.addEventListener('click', () => {
+      const paused = this.nes.cpu.isPaused()
+      this.nes.cpu.pause(false)
+      this.nes.step()
+      if (paused)
+        this.nes.cpu.pause(true)
+      this.callback('step')
+    })
+    root.appendChild(this.stepBtn)
+
+    this.runBtn = document.createElement('button') as HTMLButtonElement
+    this.runBtn.innerText = 'Run'
+    this.runBtn.addEventListener('click', () => {
+      this.nes.cpu.pause(false)
+      this.updateState(false)
+    })
+    root.appendChild(this.runBtn)
+
+    this.pauseBtn = document.createElement('button') as HTMLButtonElement
+    this.pauseBtn.innerText = 'Pause'
+    this.pauseBtn.addEventListener('click', () => {
+      this.nes.cpu.pause(true)
+      this.updateState(true)
+      this.callback('paused')
+    })
+    root.appendChild(this.pauseBtn)
+
+    const resetBtn = document.createElement('button') as HTMLButtonElement
+    resetBtn.innerText = 'Reset'
+    resetBtn.addEventListener('click', () => {
+      this.nes.reset()
+      this.callback('reset')
+    })
+    root.appendChild(resetBtn)
+
+    const captureBtn = document.createElement('button') as HTMLButtonElement
+    captureBtn.innerText = 'Capture'
+    captureBtn.addEventListener('click', () => {
+      const img = document.createElement('img') as HTMLImageElement
+      img.src = this.screenWnd.capture()
+      document.body.appendChild(img)
+    })
+    root.appendChild(captureBtn)
+
+    const muteLabel = document.createElement('label')
+    const muteBtn = document.createElement('input') as HTMLInputElement
+    muteBtn.type = 'checkbox'
+    muteBtn.checked = true
+    muteBtn.addEventListener('click', () => {
+      const volume = muteBtn.checked ? 0.0 : 1.0
+      this.audioManager.setMasterVolume(volume)
+    })
+    muteLabel.appendChild(muteBtn)
+    muteLabel.appendChild(document.createTextNode('mute'))
+    root.appendChild(muteLabel)
+  }
+}
+
 const kIllegalInstruction: Instruction = {
   opType: OpType.UNKNOWN,
   addressing: Addressing.UNKNOWN,
@@ -184,12 +278,7 @@ class App {
   private audioManager: AudioManager
   private registerWnd: RegisterWnd
   private traceWnd: TraceWnd
-
-  private stepElem: HTMLElement
-  private runElem: HTMLElement
-  private pauseElem: HTMLElement
-  private resetElem: HTMLElement
-  private masterVolume: number
+  private ctrlWnd: ControlWnd
 
   public static create(root: HTMLElement): App {
     return new App(root)
@@ -204,7 +293,7 @@ class App {
     this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
 
     this.audioManager = new AudioManager()
-    this.masterVolume = 0.0
+    this.audioManager.setMasterVolume(0)
 
     const screenWnd = new ScreenWnd(this.wndMgr, this.nes)
     this.wndMgr.add(screenWnd)
@@ -230,54 +319,30 @@ class App {
     this.wndMgr.add(this.registerWnd)
     this.registerWnd.setPos(410, 500)
 
+    this.ctrlWnd = new ControlWnd(this.wndMgr, this.nes, screenWnd, this.audioManager, (action) => {
+      switch (action) {
+      case 'step':
+        this.dumpCpu()
+        this.render()
+        break
+      case 'paused':
+        this.dumpCpu()
+        break
+      case 'reset':
+        this.traceWnd.reset()
+        this.dumpCpu()
+        break
+      default:
+        break
+      }
+    })
+    this.wndMgr.add(this.ctrlWnd)
+    this.ctrlWnd.setPos(520, 500)
+
     this.nes.cpu.pause(true)
     this.nes.reset()
 
     this.dumpCpu()
-
-    this.stepElem = document.getElementById('step')
-    this.runElem = document.getElementById('run')
-    this.pauseElem = document.getElementById('pause')
-    this.resetElem = document.getElementById('reset')
-
-    this.stepElem.addEventListener('click', () => {
-      const paused = this.nes.cpu.isPaused()
-      this.nes.cpu.pause(false)
-      this.nes.step()
-      if (paused)
-        this.nes.cpu.pause(true)
-      this.dumpCpu()
-      this.render()
-    })
-    this.runElem.addEventListener('click', () => {
-      this.nes.cpu.pause(false)
-      this.updateButtonState()
-    })
-    this.pauseElem.addEventListener('click', () => {
-      this.nes.cpu.pause(true)
-      this.updateButtonState()
-      this.dumpCpu()
-    })
-    this.resetElem.addEventListener('click', () => {
-      this.nes.reset()
-      this.traceWnd.reset()
-      this.dumpCpu()
-    })
-
-    const muteButton = document.getElementById('mute') as HTMLInputElement
-    muteButton.addEventListener('change', () => {
-      const volume = muteButton.checked ? 0.0 : 1.0
-      this.masterVolume = volume
-      for (let i = 0; i < AudioManager.CHANNEL; ++i)
-        this.audioManager.setChannelVolume(i, this.nes.apu.getVolume(i) * this.masterVolume)
-    })
-
-    const captureElem = document.getElementById('capture')
-    captureElem.addEventListener('click', () => {
-      const img = document.getElementById('captured-image') as HTMLImageElement
-      img.src = screenWnd.capture()
-      img.style.visibility = 'visible'
-    })
 
     this.padKeyHandler = new PadKeyHandler()
     this.setUpKeyEvent(root, this.padKeyHandler)
@@ -294,11 +359,9 @@ class App {
     if (leftCycles < 1)
       this.render()
 
-    if (this.masterVolume > 0) {
-      for (let i = 0; i < AudioManager.CHANNEL; ++i) {
-        this.audioManager.setChannelFrequency(i, this.nes.apu.getFrequency(i))
-        this.audioManager.setChannelVolume(i, this.nes.apu.getVolume(i) * this.masterVolume)
-      }
+    for (let i = 0; i < AudioManager.CHANNEL; ++i) {
+      this.audioManager.setChannelFrequency(i, this.nes.apu.getFrequency(i))
+      this.audioManager.setChannelVolume(i, this.nes.apu.getVolume(i))
     }
   }
 
@@ -352,8 +415,7 @@ class App {
 
   private updateButtonState(): void {
     const paused = this.nes.cpu.isPaused()
-    this.pauseElem.disabled = paused
-    this.runElem.disabled = this.stepElem.disabled = !paused
+    this.ctrlWnd.updateState(paused)
   }
 
   private dumpCpu(): void {
