@@ -7,7 +7,7 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
   const maxPrg = (romData.length >> 13) - 1  // 0x2000
   let p0 = 0, p1 = 1, p2 = 2, p3 = 0
   const regs = new Uint8Array(8)
-  const setPrgBank = (regs, swap) => {
+  const setPrgBank = (swap) => {
     if ((swap & 0x40) === 0) {
       p0 = (regs[6] & maxPrg) << 13
       p1 = (regs[7] & maxPrg) << 13
@@ -20,7 +20,7 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
       p3 = (0xff & maxPrg) << 13
     }
   }
-  const setChrBank = (regs, swap) => {
+  const setChrBank = (swap) => {
     if ((swap & 0x40) === 0) {
       ppu.setChrBankOffset(0, regs[0] & 0xfe)
       ppu.setChrBankOffset(1, regs[0] | 1)
@@ -59,16 +59,16 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
     switch (adr & 0xe001) {
     case 0x8000:
       bankSelect = value
-      setPrgBank(regs, bankSelect)
-      setChrBank(regs, bankSelect)
+      setPrgBank(bankSelect)
+      setChrBank(bankSelect)
       break
     case 0x8001:
       const reg = bankSelect & 0x07
       regs[reg] = value
       if (reg < 6) {  // CHR
-        setChrBank(regs, bankSelect)
+        setChrBank(bankSelect)
       } else {  // PRG
-        setPrgBank(regs, bankSelect)
+        setPrgBank(bankSelect)
       }
       break
     default:
@@ -114,5 +114,5 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
     }
   })
 
-  setPrgBank(regs, bankSelect)  // Initial
+  setPrgBank(bankSelect)  // Initial
 }

@@ -4,7 +4,7 @@ import {mapper02} from './mapper02.ts'
 import {mapper03} from './mapper03.ts'
 import {mapper04} from './mapper04.ts'
 
-export const kMapperTable = {
+export const kMapperTable: {[key: number]: Function} = {
   0x00: mapper00,
   0x01: mapper01,
   0x02: mapper02,

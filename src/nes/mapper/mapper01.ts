@@ -6,7 +6,6 @@ export function mapper01(romData: Uint8Array, cpu: Cpu6502, _ppu: Ppu) {
   const BANK_SIZE = 16 * 1024
   const size = romData.length
   const count = size / BANK_SIZE
-  const lastBank = size - BANK_SIZE
   let prgBank = 0
   cpu.setReadMemory(0x8000, 0xbfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank])
   cpu.setReadMemory(0xc000, 0xffff,

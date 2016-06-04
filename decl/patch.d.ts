@@ -23,3 +23,7 @@ interface CSSStyleDeclaration {
   imageRendering: string
   resize: string
 }
+
+interface AudioContext {
+  close: () => void
+}

@@ -3,12 +3,12 @@ import WindowManager from './window_manager.ts'
 export default class Wnd {
   public static HEADER_HEIGHT = 12
 
-  private callback: Function
+  protected callback: Function
   private root: HTMLElement
   private titleBar: HTMLElement
   private titleElem: HTMLElement
 
-  public constructor(private wndMgr: WindowManager,
+  public constructor(protected wndMgr: WindowManager,
                      width: number, height: number, title: string, content: HTMLElement)
   {
     this.callback = () => {}
@@ -95,7 +95,7 @@ export default class Wnd {
 
       let dragOfsX, dragOfsY
       const dragMove = (event) => {
-        const [x, y] = this.getMousePosIn(event, this.root.parentNode)
+        const [x, y] = this.getMousePosIn(event, this.root.parentNode as HTMLElement)
         const rect = this.root.getBoundingClientRect()
         const prect = (this.root.parentNode as HTMLElement).getBoundingClientRect()
         const box = {
@@ -163,7 +163,7 @@ export default class Wnd {
     // Move window position with dragging.
     let dragOfsX, dragOfsY
     const dragMove = (event) => {
-      const [x, y] = this.getMousePosIn(event, this.root.parentNode)
+      const [x, y] = this.getMousePosIn(event, this.root.parentNode as HTMLElement)
       this.root.style.left = `${x + dragOfsX}px`
       this.root.style.top = `${y + dragOfsY}px`
     }

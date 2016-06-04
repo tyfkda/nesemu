@@ -158,14 +158,6 @@ export class Ppu {
     return result
   }
 
-  private readPpuDirect(addr: number): number {
-    if (addr >= 0x2000) {
-      return this.vram[addr]
-    } else {
-      return this.chrData[(addr & (this.chrData.length - 1)) + this.chrBank]
-    }
-  }
-
   public write(reg: number, value: number): void {
     this.regs[reg] = value
 
@@ -542,7 +534,6 @@ export class Ppu {
   public renderPattern(imageData: ImageData, colors: number[]): void {
     const W = 8
     const LINE_WIDTH = imageData.width
-    const chrRom = this.chrData
     const pixels = imageData.data
 
     for (let i = 0; i < 2; ++i) {
@@ -552,7 +543,8 @@ export class Ppu {
           for (let py = 0; py < W; ++py) {
             const yy = by * W + py
             const idx = chridx + py
-            const pat = (kStaggered[this.readPpuDirect(idx + 8)] << 1) | kStaggered[this.readPpuDirect(idx)]
+            const pat = ((kStaggered[this.readPpuDirect(idx + 8)] << 1) |
+                         kStaggered[this.readPpuDirect(idx)])
             for (let px = 0; px < W; ++px) {
               const xx = bx * W + px + i * (W * 16)
               const col = (pat >> ((W - 1 - px) * 2)) & 3
@@ -622,5 +614,13 @@ export class Ppu {
     for (let key of Object.keys(param))
       event[key] = param[key]
     hevents.count = n
+  }
+
+  private readPpuDirect(addr: number): number {
+    if (addr >= 0x2000) {
+      return this.vram[addr]
+    } else {
+      return this.chrData[(addr & (this.chrData.length - 1)) + this.chrBank]
+    }
   }
 }

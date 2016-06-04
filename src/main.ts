@@ -150,10 +150,9 @@ class ControlWnd extends Wnd {
   private stepBtn: HTMLButtonElement
   private runBtn: HTMLButtonElement
   private pauseBtn: HTMLButtonElement
-  private callback: (action) => void
 
   public constructor(wndMgr: WindowManager, nes: Nes, screenWnd: ScreenWnd,
-                     audioManager: AudioManager, callback: (action) => void)
+                     audioManager: AudioManager)
   {
     const root = document.createElement('div')
 
@@ -161,16 +160,15 @@ class ControlWnd extends Wnd {
     this.nes = nes
     this.screenWnd = screenWnd
     this.audioManager = audioManager
-    this.callback = callback
 
     this.createElement(root)
     this.updateState(true)
   }
 
   public updateState(paused: boolean): void {
-    this.stepBtn.disabled = paused ? '' : 'disabled'
-    this.runBtn.disabled = paused ? '' : 'disabled'
-    this.pauseBtn.disabled = paused ? 'disabled' : ''
+    this.stepBtn.disabled = !paused
+    this.runBtn.disabled = !paused
+    this.pauseBtn.disabled = paused
   }
 
   private createElement(root: HTMLElement): void {
@@ -340,7 +338,8 @@ class App {
     this.wndMgr.add(this.registerWnd)
     this.registerWnd.setPos(410, 500)
 
-    this.ctrlWnd = new ControlWnd(this.wndMgr, this.nes, this.screenWnd, this.audioManager, (action) => {
+    this.ctrlWnd = new ControlWnd(this.wndMgr, this.nes, this.screenWnd, this.audioManager)
+    this.ctrlWnd.setCallback((action) => {
       switch (action) {
       case 'step':
         this.dumpCpu()
