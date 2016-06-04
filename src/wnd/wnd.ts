@@ -5,30 +5,34 @@ export default class Wnd {
 
   private callback: Function
   private root: HTMLElement
+  private titleBar: HTMLElement
+  private titleElem: HTMLElement
 
   public constructor(private wndMgr: WindowManager,
                      width: number, height: number, title: string, content: HTMLElement)
   {
     this.callback = () => {}
-    const root = this.createRoot()
-    this.root = root
-    root.className = 'wnd'
-    root.style.position = 'absolute'
-    root.style.width = `${width}px`
-    root.style.height = `${height + Wnd.HEADER_HEIGHT}px`
+    this.root = this.createRoot()
+    this.root.className = 'wnd'
+    this.root.style.position = 'absolute'
+    this.root.style.width = `${width}px`
+    this.root.style.height = `${height + Wnd.HEADER_HEIGHT}px`
 
-    const titleBar = this.createTitleBar(title)
-    root.appendChild(titleBar)
+    this.createTitleBar(title)
 
     const contentHolder = document.createElement('div')
     contentHolder.className = 'content-holder'
     contentHolder.appendChild(content)
-    root.appendChild(contentHolder)
+    this.root.appendChild(contentHolder)
   }
 
   public setPos(x: number, y: number): void {
     this.root.style.left = `${x}px`
     this.root.style.top = `${y}px`
+  }
+
+  public setTitle(title: string): void {
+    this.titleElem.innerText = title
   }
 
   public setCallback(callback: Function): void {
@@ -146,14 +150,14 @@ export default class Wnd {
     return root
   }
 
-  private createTitleBar(title: string): HTMLElement {
-    const titleBar = document.createElement('div')
-    titleBar.className = 'title-bar clearfix'
+  private createTitleBar(title: string): void {
+    this.titleBar = document.createElement('div')
+    this.titleBar.className = 'title-bar clearfix'
 
-    this.addTitleButton(titleBar, 'close', () => {
+    this.addTitleButton(this.titleBar, 'close', () => {
       this.close()
     })
-    this.addTitle(titleBar, title)
+    this.titleElem = this.addTitle(this.titleBar, title)
 
     // Move window position with dragging.
     let dragOfsX, dragOfsY
@@ -166,7 +170,7 @@ export default class Wnd {
       this.root.parentNode.removeEventListener('mousemove', dragMove)
       this.root.parentNode.removeEventListener('mouseup', dragFinish)
     }
-    titleBar.addEventListener('mousedown', (event) => {
+    this.titleBar.addEventListener('mousedown', (event) => {
       dragOfsX = dragOfsY = null
       if (event.button !== 0)
         return
@@ -179,10 +183,10 @@ export default class Wnd {
       return true
     })
 
-    return titleBar
+    this.root.appendChild(this.titleBar)
   }
 
-  private addTitleButton(element: HTMLElement, className: string,
+  private addTitleButton(parent: HTMLElement, className: string,
                          clickCallback: EventListener): HTMLElement
   {
     const button = document.createElement('div')
@@ -192,16 +196,16 @@ export default class Wnd {
       event.preventDefault()
       event.stopPropagation()
     })
-    element.appendChild(button)
+    parent.appendChild(button)
     return button
   }
 
-  private addTitle(titleBar: HTMLElement, title: string): HTMLElement {
-    const text = document.createElement('div')
-    text.className = 'title'
-    text.appendChild(document.createTextNode(title))
-    titleBar.appendChild(text)
-    return text
+  private addTitle(parent: HTMLElement, title: string): HTMLElement {
+    const titleElem = document.createElement('div')
+    titleElem.className = 'title'
+    titleElem.appendChild(document.createTextNode(title))
+    parent.appendChild(titleElem)
+    return titleElem
   }
 
   private getMousePosIn(event: MouseEvent, elem: HTMLElement) {

@@ -260,7 +260,7 @@ function handleFileDrop(dropZone, onDropped) {
       const reader = new FileReader()
       reader.onload = function(e) {
         const binary = new Uint8Array((e.target as any).result)
-        onDropped(binary)
+        onDropped(binary, files[0].name)
       }
       reader.readAsArrayBuffer(files[0])
     }
@@ -293,11 +293,11 @@ class App {
   private traceWnd: TraceWnd
   private ctrlWnd: ControlWnd
 
-  public static create(wndMgr: WindowManager, root: HTMLElement): App {
-    return new App(wndMgr, root)
+  public static create(wndMgr: WindowManager, root: HTMLElement, title: string): App {
+    return new App(wndMgr, root, title)
   }
 
-  constructor(private wndMgr: WindowManager, private root: HTMLElement) {
+  constructor(private wndMgr: WindowManager, private root: HTMLElement, title: string) {
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
     this.nes.setVblankCallback((leftCycles) => { this.onVblank(leftCycles) })
@@ -309,6 +309,7 @@ class App {
     this.screenWnd = new ScreenWnd(this.wndMgr, this.nes)
     this.wndMgr.add(this.screenWnd)
     this.screenWnd.setPos(0, 0)
+    this.screenWnd.setTitle(title)
     this.screenWnd.setCallback((action, ...params) => {
       switch (action) {
       case 'close':
@@ -483,8 +484,8 @@ window.addEventListener('load', () => {
 
   // Handle file drop.
   if (window.File && window.FileReader && window.FileList && window.Blob) {
-    handleFileDrop(root, (romData) => {
-      const app = App.create(wndMgr, root)
+    handleFileDrop(root, (romData, name) => {
+      const app = App.create(wndMgr, root, name)
       app.loadRom(romData)
     })
   }
