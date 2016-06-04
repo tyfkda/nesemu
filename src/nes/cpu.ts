@@ -122,6 +122,17 @@ export class Cpu6502 {
     return this.pausing
   }
 
+  public requestIrq(): boolean {
+    if ((this.p & IRQBLK_FLAG) !== 0)
+      return false
+
+    console.log('IRQ!')
+    this.push16(this.pc)
+    this.push(this.p | IRQBLK_FLAG)
+    this.pc = this.read16(0xfffe)
+    return true
+  }
+
   public setCarry(value: boolean): void {
     this.p = setReset(this.p, value, CARRY_FLAG)
   }

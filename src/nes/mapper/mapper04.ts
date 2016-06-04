@@ -1,8 +1,9 @@
 import {Cpu6502} from '../cpu.ts'
+import {Nes} from '../nes.ts'
 import {Ppu} from '../ppu.ts'
 import {Util} from '../util.ts'
 
-export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
+export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) {
   const maxPrg = (romData.length >> 13) - 1  // 0x2000
   let p0 = 0, p1 = 1, p2 = 2, p3 = 0
   const regs = new Uint8Array(8)
@@ -48,9 +49,9 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
   cpu.setReadMemory(0xe000, 0xffff, (adr) => romData[(adr & 0x1fff) + p3])
 
   // PRG RAM
-  //const ram = new Uint8Array(0x2000)
-  //cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
-  //cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+  const ram = new Uint8Array(0x2000)
+  cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
+  cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
 
   // Select
   let bankSelect = 0
@@ -76,8 +77,6 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
     }
   })
 
-  setPrgBank(regs, bankSelect)
-
   // Mirroring
   cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
     console.log(`Set mirroring: ${Util.hex(adr, 4)} = ${Util.hex(value, 2)}`)
@@ -87,4 +86,33 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
       // PRG RAM protect, TODO: Implement.
     }
   })
+
+  // IRQ
+  let irqHline = -1
+  let irqEnable = false
+  cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
+    if ((adr & 1) === 0) {
+      irqHline = value
+      nes.setIrqHline(irqHline)
+    } else {
+      // TODO: IRQ relaod
+    }
+  })
+  cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
+    if ((adr & 1) === 0) {
+      nes.setIrqHline(-1)
+      if (irqEnable) {
+        console.log('MMC3 IRQ disabled')
+        irqEnable = false
+      }
+    } else {
+      nes.setIrqHline(irqHline)
+      if (!irqEnable) {
+        console.log('MMC3 IRQ enabled')
+        irqEnable = true
+      }
+    }
+  })
+
+  setPrgBank(regs, bankSelect)  // Initial
 }

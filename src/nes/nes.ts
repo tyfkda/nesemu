@@ -55,6 +55,7 @@ export class Nes {
   private mapperNo: number
   private vblankCallback: (leftCycles: number) => void
   private breakPointCallback: () => void
+  private irqHline: number
 
   public static create(): Nes {
     return new Nes()
@@ -76,6 +77,7 @@ export class Nes {
     this.cycleCount = 0
     this.vblankCallback = (_leftCycles) => {}
     this.breakPointCallback = () => {}
+    this.irqHline = -1
 
     this.romData = new Uint8Array(0)
   }
@@ -108,6 +110,7 @@ export class Nes {
     this.ppu.reset()
     this.apu.reset()
     this.cycleCount = 0
+    this.irqHline = -1
   }
 
   public setPadStatus(no: number, status: number): void {
@@ -136,6 +139,10 @@ export class Nes {
     const cycle = this.cpu.step()
     this.cycleCount = this.tryHblankEvent(this.cycleCount, cycle, leftCycles)
     return cycle
+  }
+
+  public setIrqHline(line: number): void {
+    this.irqHline = line
   }
 
   public render(context: CanvasRenderingContext2D, imageData: ImageData): void {
@@ -208,11 +215,11 @@ export class Nes {
   private setMemoryMapForMapper(mapperNo: number): void {
     console.log(`Mapper ${Util.hex(mapperNo, 2)}`)
     if (mapperNo in kMapperTable) {
-      kMapperTable[mapperNo](this.romData, this.cpu, this.ppu)
+      kMapperTable[mapperNo](this.romData, this.cpu, this.ppu, this)
     } else {
       console.error(`  not supported`)
       // Use mapper 0
-      kMapperTable[0](this.romData, this.cpu, this.ppu)
+      kMapperTable[0](this.romData, this.cpu, this.ppu, this)
     }
   }
 
@@ -240,6 +247,10 @@ export class Nes {
         break
       default:
         break
+      }
+
+      if (hcount === this.irqHline) {
+        this.cpu.requestIrq()
       }
     }
     return cycleCount2
