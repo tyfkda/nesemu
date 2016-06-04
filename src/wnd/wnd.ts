@@ -51,42 +51,89 @@ export default class Wnd {
 
   public addResizeBox() {
     const W = 8
-    const resizeBox = document.createElement('div')
-    resizeBox.style.position = 'absolute'
-    resizeBox.style.right = resizeBox.style.bottom = '-1px'  // For border width.
-    resizeBox.style.width = resizeBox.style.height = `${W}px`
-    resizeBox.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'
-    resizeBox.style.zIndex = '100'
-    resizeBox.style.cursor = 'nwse-resize'
 
-    let dragOfsX, dragOfsY
-    const dragMove = (event) => {
-      const [x, y] = this.getMousePosIn(event, this.root.parentNode)
-      const rect = this.root.getBoundingClientRect()
-      const prect = (this.root.parentNode as HTMLElement).getBoundingClientRect()
-      let width = x + dragOfsX - (rect.left - prect.left) - 2  // For border size.
-      let height = y + dragOfsY - (rect.top - prect.top) - 2
-      if (width < 64)
-        width = 64
-      if (height < 24 + Wnd.HEADER_HEIGHT)
-        height = 24 + Wnd.HEADER_HEIGHT
-      this.root.style.width = `${width}px`
-      this.root.style.height = `${height}px`
-      this.callback('resize', width, height - Wnd.HEADER_HEIGHT)
-    }
-    const dragFinish = (event) => {
-      this.root.parentNode.removeEventListener('mousemove', dragMove)
-      this.root.parentNode.removeEventListener('mouseup', dragFinish)
-    }
-    resizeBox.addEventListener('mousedown', (event) => {
-      event.preventDefault()
-      const [x, y] = this.getMousePosIn(event, resizeBox)
-      dragOfsX = W - x
-      dragOfsY = W - y
-      this.root.parentNode.addEventListener('mousemove', dragMove)
-      this.root.parentNode.addEventListener('mouseup', dragFinish)
+    const table = [
+      {
+        styleParams: { right: '-1px', bottom: '-1px', cursor: 'nwse-resize' },
+        horz: 'right',
+        vert: 'bottom',
+      },
+      {
+        styleParams: { left: '-1px', bottom: '-1px', cursor: 'nesw-resize' },
+        horz: 'left',
+        vert: 'bottom',
+      },
+      {
+        styleParams: { right: '-1px', top: '-1px', cursor: 'nesw-resize' },
+        horz: 'right',
+        vert: 'top',
+      },
+      {
+        styleParams: { left: '-1px', top: '-1px', cursor: 'nwse-resize' },
+        horz: 'left',
+        vert: 'top',
+      },
+    ]
+
+    const MIN_WIDTH = 64
+    const MIN_HEIGHT = 24 + Wnd.HEADER_HEIGHT
+
+    table.forEach(param => {
+      const resizeBox = document.createElement('div')
+      resizeBox.style.position = 'absolute'
+      Object.keys(param.styleParams).forEach(key => {
+        resizeBox.style[key] = param.styleParams[key]
+      })
+      resizeBox.style.width = resizeBox.style.height = `${W}px`
+      resizeBox.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'
+      resizeBox.style.zIndex = '100'
+
+      let dragOfsX, dragOfsY
+      const dragMove = (event) => {
+        const [x, y] = this.getMousePosIn(event, this.root.parentNode)
+        const rect = this.root.getBoundingClientRect()
+        const prect = (this.root.parentNode as HTMLElement).getBoundingClientRect()
+        const box = {
+          left: rect.left - prect.left,
+          top: rect.top - prect.top,
+          right: rect.right - prect.left,
+          bottom: rect.bottom - prect.top,
+        }
+        box[param.horz] = x + dragOfsX
+        box[param.vert] = y + dragOfsY
+
+        let width = box.right - box.left - 2  // For border width.
+        let height = box.bottom - box.top - 2
+        if (width < MIN_WIDTH) {
+          box[param.horz] -= (MIN_WIDTH - width) * (param.horz === 'left' ? 1 : -1)
+        }
+        if (height < MIN_HEIGHT) {
+          box[param.vert] -= (MIN_HEIGHT - height) * (param.vert === 'top' ? 1 : -1)
+        }
+        this.root.style.width = `${box.right - box.left -  2}px`
+        this.root.style.height = `${box.bottom - box.top - 2}px`
+        this.root.style.left = `${box.left}px`
+        this.root.style.top = `${box.top}px`
+        this.callback('resize', width, height - Wnd.HEADER_HEIGHT)
+      }
+      const dragFinish = (event) => {
+        this.root.parentNode.removeEventListener('mousemove', dragMove)
+        this.root.parentNode.removeEventListener('mouseup', dragFinish)
+      }
+
+      resizeBox.addEventListener('mousedown', (event) => {
+        event.stopPropagation()
+        event.preventDefault()
+        const [x, y] = this.getMousePosIn(event, resizeBox)
+        dragOfsX = param.horz === 'left' ? -x : W - x
+        dragOfsY = param.vert === 'top' ? -y : W - y
+
+        this.root.parentNode.addEventListener('mousemove', dragMove)
+        this.root.parentNode.addEventListener('mouseup', dragFinish)
+        this.wndMgr.moveToTop(this)
+      })
+      this.root.appendChild(resizeBox)
     })
-    this.root.appendChild(resizeBox)
   }
 
   private createRoot(): HTMLElement {
@@ -141,6 +188,10 @@ export default class Wnd {
     const button = document.createElement('div')
     button.className = `${className} btn`
     button.addEventListener('click', clickCallback)
+    button.addEventListener('mousedown', (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+    })
     element.appendChild(button)
     return button
   }
