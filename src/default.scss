@@ -85,7 +85,7 @@ body {
       margin-left: 5px;
       margin-top: -1px;
       height: 12px;
-      color: black;
+      color: #444;
       font-size: 10px;
       font-weight: bold;
     }
@@ -99,5 +99,13 @@ body {
     bottom: 0;
     overflow: hidden;
     border-radius:0 0 5px 5px;
+  }
+}
+.wnd:focus {
+  .title-bar {
+    background: linear-gradient(#eee, #aaa);
+    .title {
+      color: black;
+    }
   }
 }
