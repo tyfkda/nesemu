@@ -218,8 +218,15 @@ class ControlWnd extends Wnd {
     captureBtn.innerText = 'Capture'
     captureBtn.addEventListener('click', () => {
       const img = document.createElement('img') as HTMLImageElement
+      const title = String(Date.now())
       img.src = this.screenWnd.capture()
-      document.body.appendChild(img)
+      img.className = 'pixelated'
+      img.style.width = img.style.height = '100%'
+      img.title = img.alt = title
+
+      const imgWnd = new Wnd(this.wndMgr, 256, 240, title, img)
+      imgWnd.addResizeBox()
+      this.wndMgr.add(imgWnd)
     })
     root.appendChild(captureBtn)
 
