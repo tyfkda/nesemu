@@ -67,6 +67,9 @@ export class Apu {
   }
 
   public getVolume(channel: number): number {
+    if ((this.regs[0x15] & (1 << channel)) === 0)
+      return 0
+
     switch (channel) {
     case 0:
     case 1:
