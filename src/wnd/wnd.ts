@@ -3,11 +3,13 @@ import WindowManager from './window_manager.ts'
 export default class Wnd {
   public static HEADER_HEIGHT = 12
 
+  private callback: Function
   private root: HTMLElement
 
   public constructor(private wndMgr: WindowManager,
                      width: number, height: number, title: string, content: HTMLElement)
   {
+    this.callback = () => {}
     const root = this.createRoot()
     this.root = root
     root.className = 'wnd'
@@ -29,14 +31,22 @@ export default class Wnd {
     this.root.style.top = `${y}px`
   }
 
+  public setCallback(callback: Function): void {
+    this.callback = callback
+  }
+
   public getRootNode(): HTMLElement {
     return this.root
   }
 
-  public update(): void {
+  public close(): void {
+    if (this.callback('close') === false)
+      return  // Cancel close
+    this.wndMgr.remove(this)
+    this.root = null
   }
 
-  public onResize(width: number, height: number): void {
+  public update(): void {
   }
 
   public addResizeBox() {
@@ -62,7 +72,7 @@ export default class Wnd {
         height = 24 + Wnd.HEADER_HEIGHT
       this.root.style.width = `${width}px`
       this.root.style.height = `${height}px`
-      this.onResize(width, height - Wnd.HEADER_HEIGHT)
+      this.callback('resize', width, height - Wnd.HEADER_HEIGHT)
     }
     const dragFinish = (event) => {
       this.root.parentNode.removeEventListener('mousemove', dragMove)
@@ -94,7 +104,7 @@ export default class Wnd {
     titleBar.className = 'title-bar clearfix'
 
     this.addTitleButton(titleBar, 'close', () => {
-      this.wndMgr.remove(this)
+      this.close()
     })
     this.addTitle(titleBar, title)
 

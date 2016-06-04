@@ -19,7 +19,8 @@ export default class WindowManager {
     this.removeWnd(wnd)
 
     const elem = wnd.getRootNode()
-    elem.parentNode.removeChild(elem)
+    if (elem != null)
+      elem.parentNode.removeChild(elem)
   }
 
   public moveToTop(wnd: Wnd): void {

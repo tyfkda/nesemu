@@ -279,9 +279,16 @@ function handleFileDrop(dropZone, onDropped) {
 }
 
 class App {
+  private destroying = false
   private nes: Nes
   private padKeyHandler: PadKeyHandler
   private audioManager: AudioManager
+
+  private screenWnd: ScreenWnd
+  private paletWnd: PaletWnd
+  private nameTableWnd: NameTableWnd
+  private patternTableWnd: PatternTableWnd
+
   private registerWnd: RegisterWnd
   private traceWnd: TraceWnd
   private ctrlWnd: ControlWnd
@@ -299,21 +306,30 @@ class App {
     this.audioManager = new AudioManager()
     this.audioManager.setMasterVolume(0)
 
-    const screenWnd = new ScreenWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(screenWnd)
-    screenWnd.setPos(0, 0)
+    this.screenWnd = new ScreenWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.screenWnd)
+    this.screenWnd.setPos(0, 0)
+    this.screenWnd.setCallback((action, ...params) => {
+      switch (action) {
+      case 'close':
+        this.cleanUp()
+        break
+      default:
+        break
+      }
+    })
 
-    const paletWnd = new PaletWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(paletWnd)
-    paletWnd.setPos(520, 0)
+    this.paletWnd = new PaletWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.paletWnd)
+    this.paletWnd.setPos(520, 0)
 
-    const nameTableWnd = new NameTableWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(nameTableWnd)
-    nameTableWnd.setPos(520, 40)
+    this.nameTableWnd = new NameTableWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.nameTableWnd)
+    this.nameTableWnd.setPos(520, 40)
 
-    const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(patternTableWnd)
-    patternTableWnd.setPos(520, 300)
+    this.patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.patternTableWnd)
+    this.patternTableWnd.setPos(520, 300)
 
     this.traceWnd = new TraceWnd(this.wndMgr, this.nes)
     this.wndMgr.add(this.traceWnd)
@@ -323,7 +339,7 @@ class App {
     this.wndMgr.add(this.registerWnd)
     this.registerWnd.setPos(410, 500)
 
-    this.ctrlWnd = new ControlWnd(this.wndMgr, this.nes, screenWnd, this.audioManager, (action) => {
+    this.ctrlWnd = new ControlWnd(this.wndMgr, this.nes, this.screenWnd, this.audioManager, (action) => {
       switch (action) {
       case 'step':
         this.dumpCpu()
@@ -349,7 +365,7 @@ class App {
     this.dumpCpu()
 
     this.padKeyHandler = new PadKeyHandler()
-    this.setUpKeyEvent(root, this.padKeyHandler)
+    this.setUpKeyEvent(this.screenWnd.getRootNode(), this.padKeyHandler)
 
     this.startLoopAnimation()
   }
@@ -366,6 +382,26 @@ class App {
     this.updateButtonState()
     this.root.focus()
     return true
+  }
+
+  private cleanUp() {
+    this.destroying = true
+    this.audioManager.destroy()
+
+    this.paletWnd.close()
+    this.nameTableWnd.close()
+    this.patternTableWnd.close()
+    this.registerWnd.close()
+    this.traceWnd.close()
+    this.ctrlWnd.close()
+    this.paletWnd = null
+    this.nameTableWnd = null
+    this.patternTableWnd = null
+    this.registerWnd = null
+    this.traceWnd = null
+    this.ctrlWnd = null
+
+    this.wndMgr = null
   }
 
   private onVblank(leftCycles: number): void {
@@ -386,6 +422,9 @@ class App {
   private startLoopAnimation(): void {
     let lastTime = window.performance.now()
     const loopFn = () => {
+      if (this.destroying)
+        return
+
       const curTime = window.performance.now()
       const elapsedTime = curTime - lastTime
       lastTime = curTime
@@ -424,6 +463,7 @@ class App {
 
   private setUpKeyEvent(root: HTMLElement, padKeyHandler: PadKeyHandler): void {
     root.setAttribute('tabindex', '1')  // To accept key event.
+    root.style.outline = 'none'
     root.addEventListener('keydown', (event) => {
       if (event.ctrlKey || event.altKey || event.metaKey)
         return
@@ -441,10 +481,11 @@ window.addEventListener('load', () => {
   const root = document.getElementById('nesroot')
   const wndMgr = new WindowManager(root)
 
-  const app = App.create(wndMgr, root)
-
   // Handle file drop.
   if (window.File && window.FileReader && window.FileList && window.Blob) {
-    handleFileDrop(root, (romData) => { app.loadRom(romData) })
+    handleFileDrop(root, (romData) => {
+      const app = App.create(wndMgr, root)
+      app.loadRom(romData)
+    })
   }
 })

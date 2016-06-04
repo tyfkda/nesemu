@@ -7,6 +7,17 @@ class SoundChannel {
   constructor() {
   }
 
+  public destroy() {
+    if (this.gainNode != null) {
+      this.gainNode.disconnect()
+      this.gainNode = null
+    }
+    if (this.oscillator != null) {
+      this.oscillator.disconnect()
+      this.oscillator = null
+    }
+  }
+
   public create(context: AudioContext, type: string): SoundChannel {
     this.gainNode = context.createGain()
     this.gainNode.gain.value = 0
@@ -49,6 +60,14 @@ export class AudioManager {
         .start()
       return c
     })
+  }
+
+  public destroy() {
+    for (let channel of this.channels) {
+      channel.destroy()
+    }
+    this.context.close()
+    this.context = null
   }
 
   public setChannelFrequency(channel: number, frequency: number): void {
