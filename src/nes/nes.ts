@@ -6,6 +6,8 @@ import {Cpu6502} from './cpu.ts'
 import {Ppu} from './ppu.ts'
 import {Util} from './util.ts'
 
+import {kMapperTable} from './mapper/mapper_table.ts'
+
 const RAM_SIZE = 0x0800
 
 const VBLANK_START = 241
@@ -71,7 +73,6 @@ export class Nes {
     this.ppu = new Ppu()
     this.apu = new Apu()
     this.mapperNo = 0
-    this.setMemoryMap(0)
     this.cycleCount = 0
     this.vblankCallback = (_leftCycles) => {}
     this.breakPointCallback = () => {}
@@ -205,155 +206,13 @@ export class Nes {
   }
 
   private setMemoryMapForMapper(mapperNo: number): void {
-    const cpu = this.cpu
     console.log(`Mapper ${Util.hex(mapperNo, 2)}`)
-
-    switch (mapperNo) {
-    default:
-      console.error(`  not implemented`)
-      // Fall
-    case 0:
-      // ROM
-      cpu.setReadMemory(0x8000, 0xbfff, (adr) => this.romData[adr & (this.romData.length - 1)])
-      cpu.setReadMemory(0xc000, 0xffff, (adr) => this.romData[adr & (this.romData.length - 1)])
-      break
-
-    case 0x01:  // MMC1
-      {
-        const BANK_SIZE = 16 * 1024
-        const size = this.romData.length
-        const count = size / BANK_SIZE
-        const lastBank = size - BANK_SIZE
-        let prgBank = 0
-        cpu.setReadMemory(0x8000, 0xbfff, (adr) => this.romData[(adr & (BANK_SIZE - 1)) + prgBank])
-        cpu.setReadMemory(0xc000, 0xffff,
-                          (adr) => this.romData[(adr & (BANK_SIZE - 1)) + size - BANK_SIZE])
-
-        // PRG ROM bank
-        cpu.setWriteMemory(0x8000, 0xffff, (adr, value) => {
-          console.log(`MMC1: Write ${Util.hex(adr, 4)} <= ${Util.hex(value, 2)}`)
-          prgBank = (value & (count - 1)) * BANK_SIZE
-        })
-      }
-      break
-
-    case 0x02:  // UxROM
-      {
-        const BANK_SIZE = 16 * 1024
-        const size = this.romData.length
-        const count = size / BANK_SIZE
-        const lastBank = size - BANK_SIZE
-        let prgBank = 0
-        cpu.setReadMemory(0x8000, 0xbfff, (adr) => this.romData[(adr & (BANK_SIZE - 1)) + prgBank])
-        cpu.setReadMemory(0xc000, 0xffff,
-                          (adr) => this.romData[(adr & (BANK_SIZE - 1)) + size - BANK_SIZE])
-
-        // PRG ROM bank
-        cpu.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
-          prgBank = (value & (count - 1)) * BANK_SIZE
-        })
-      }
-      break
-
-    case 0x03:
-      // ROM
-      cpu.setReadMemory(0x8000, 0xbfff, (adr) => this.romData[adr & (this.romData.length - 1)])
-      cpu.setReadMemory(0xc000, 0xffff, (adr) => this.romData[adr & (this.romData.length - 1)])
-
-      // Chr ROM bank
-      cpu.setWriteMemory(0x8000, 0xffff, (adr, value) => {
-        this.ppu.setChrBank(value)
-      })
-      break
-
-    case 0x04:  // MMC3
-      {
-        const maxPrg = (this.romData.length >> 13) - 1  // 0x2000
-        let p0 = 0, p1 = 1, p2 = 2, p3 = 0
-        const regs = new Uint8Array(8)
-        const setPrgBank = (regs, swap) => {
-          if ((swap & 0x40) === 0) {
-            p0 = (regs[6] & maxPrg) << 13
-            p1 = (regs[7] & maxPrg) << 13
-            p2 = (0xfe & maxPrg) << 13
-            p3 = (0xff & maxPrg) << 13
-          } else {
-            p2 = (regs[6] & maxPrg) << 13
-            p1 = (regs[7] & maxPrg) << 13
-            p0 = (0xfe & maxPrg) << 13
-            p3 = (0xff & maxPrg) << 13
-          }
-        }
-        const setChrBank = (regs, swap) => {
-          if ((swap & 0x40) === 0) {
-            this.ppu.setChrBankOffset(0, regs[0] & 0xfe)
-            this.ppu.setChrBankOffset(1, regs[0] | 1)
-            this.ppu.setChrBankOffset(2, regs[1] & 0xfe)
-            this.ppu.setChrBankOffset(3, regs[1] | 1)
-            this.ppu.setChrBankOffset(4, regs[2])
-            this.ppu.setChrBankOffset(5, regs[3])
-            this.ppu.setChrBankOffset(6, regs[4])
-            this.ppu.setChrBankOffset(7, regs[5])
-          } else {
-            this.ppu.setChrBankOffset(4, regs[0] & 0xfe)
-            this.ppu.setChrBankOffset(5, regs[0] | 1)
-            this.ppu.setChrBankOffset(6, regs[1] & 0xfe)
-            this.ppu.setChrBankOffset(7, regs[1] | 1)
-            this.ppu.setChrBankOffset(0, regs[2])
-            this.ppu.setChrBankOffset(1, regs[3])
-            this.ppu.setChrBankOffset(2, regs[4])
-            this.ppu.setChrBankOffset(3, regs[5])
-          }
-        }
-
-        // PRG ROM
-        cpu.setReadMemory(0x8000, 0x9fff, (adr) => this.romData[(adr & 0x1fff) + p0])
-        cpu.setReadMemory(0xa000, 0xbfff, (adr) => this.romData[(adr & 0x1fff) + p1])
-        cpu.setReadMemory(0xc000, 0xdfff, (adr) => this.romData[(adr & 0x1fff) + p2])
-        cpu.setReadMemory(0xe000, 0xffff, (adr) => this.romData[(adr & 0x1fff) + p3])
-
-        // PRG RAM
-        //const ram = new Uint8Array(0x2000)
-        //cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
-        //cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
-
-        // Select
-        let bankSelect = 0
-        cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
-          switch (adr & 0xe001) {
-          case 0x8000:
-            bankSelect = value
-            setPrgBank(regs, bankSelect)
-            setChrBank(regs, bankSelect)
-            break
-          case 0x8001:
-            const reg = bankSelect & 0x07
-            regs[reg] = value
-            if (reg < 6) {  // CHR
-              setChrBank(regs, bankSelect)
-            } else {  // PRG
-              setPrgBank(regs, bankSelect)
-            }
-            break
-          default:
-            console.log(`Unhandled write: ${Util.hex(adr, 4)} = ${Util.hex(value, 2)}`)
-            break
-          }
-        })
-
-        setPrgBank(regs, bankSelect)
-
-        // Mirroring
-        cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
-          console.log(`Set mirroring: ${Util.hex(adr, 4)} = ${Util.hex(value, 2)}`)
-          if ((adr & 1) === 0) {
-            this.ppu.setMirrorMode(value & 1)
-          } else {
-            // PRG RAM protect, TODO: Implement.
-          }
-        })
-      }
-      break
+    if (mapperNo in kMapperTable) {
+      kMapperTable[mapperNo](this.romData, this.cpu, this.ppu)
+    } else {
+      console.error(`  not supported`)
+      // Use mapper 0
+      kMapperTable[0](this.romData, this.cpu, this.ppu)
     }
   }
 
