@@ -19,6 +19,15 @@ body {
   font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
 }
 
+.flex-center {
+  display: -webkit-flex;
+  display: flex;
+  -webkit-align-items: center;
+  align-items: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+}
+
 .reg {
   text-align: right;
   font-family:monospace;

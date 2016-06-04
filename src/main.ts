@@ -279,7 +279,6 @@ function handleFileDrop(dropZone, onDropped) {
 }
 
 class App {
-  private wndMgr: WindowManager
   private nes: Nes
   private padKeyHandler: PadKeyHandler
   private audioManager: AudioManager
@@ -287,13 +286,11 @@ class App {
   private traceWnd: TraceWnd
   private ctrlWnd: ControlWnd
 
-  public static create(root: HTMLElement): App {
-    return new App(root)
+  public static create(wndMgr: WindowManager, root: HTMLElement): App {
+    return new App(wndMgr, root)
   }
 
-  constructor(private root: HTMLElement) {
-    this.wndMgr = new WindowManager(root)
-
+  constructor(private wndMgr: WindowManager, private root: HTMLElement) {
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
     this.nes.setVblankCallback((leftCycles) => { this.onVblank(leftCycles) })
@@ -354,12 +351,21 @@ class App {
     this.padKeyHandler = new PadKeyHandler()
     this.setUpKeyEvent(root, this.padKeyHandler)
 
-    // Handle file drop.
-    if (window.File && window.FileReader && window.FileList && window.Blob) {
-      handleFileDrop(root, (romData) => { this.loadRom(romData) })
-    }
-
     this.startLoopAnimation()
+  }
+
+  public loadRom(romData: Uint8Array): boolean {
+    if (!this.nes.setRomData(romData)) {
+      alert(`Illegal ROM format`)
+      return false
+    }
+    this.nes.reset()
+    this.nes.cpu.pause(false)
+    this.traceWnd.reset()
+    this.dumpCpu()
+    this.updateButtonState()
+    this.root.focus()
+    return true
   }
 
   private onVblank(leftCycles: number): void {
@@ -406,20 +412,6 @@ class App {
     this.wndMgr.update()
   }
 
-  private loadRom(romData: Uint8Array): boolean {
-    if (!this.nes.setRomData(romData)) {
-      alert(`Illegal ROM format`)
-      return false
-    }
-    this.nes.reset()
-    this.nes.cpu.pause(false)
-    this.traceWnd.reset()
-    this.dumpCpu()
-    this.updateButtonState()
-    this.root.focus()
-    return true
-  }
-
   private updateButtonState(): void {
     const paused = this.nes.cpu.isPaused()
     this.ctrlWnd.updateState(paused)
@@ -447,5 +439,12 @@ class App {
 
 window.addEventListener('load', () => {
   const root = document.getElementById('nesroot')
-  App.create(root)
+  const wndMgr = new WindowManager(root)
+
+  const app = App.create(wndMgr, root)
+
+  // Handle file drop.
+  if (window.File && window.FileReader && window.FileList && window.Blob) {
+    handleFileDrop(root, (romData) => { app.loadRom(romData) })
+  }
 })
