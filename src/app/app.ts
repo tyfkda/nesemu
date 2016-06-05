@@ -6,7 +6,6 @@ import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
         RegisterWnd, TraceWnd, ControlWnd} from './ui.ts'
 
 import WindowManager from '../wnd/window_manager.ts'
-import Wnd from '../wnd/wnd.ts'
 
 export class App {
   private destroying = false
