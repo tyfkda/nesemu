@@ -21,7 +21,7 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
     }
   }
   const setChrBank = (swap) => {
-    if ((swap & 0x40) === 0) {
+    if ((swap & 0x80) === 0) {
       ppu.setChrBankOffset(0, regs[0] & 0xfe)
       ppu.setChrBankOffset(1, regs[0] | 1)
       ppu.setChrBankOffset(2, regs[1] & 0xfe)
