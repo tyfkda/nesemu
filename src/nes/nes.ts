@@ -232,6 +232,9 @@ export class Nes {
 
       switch (hcount) {
       case VBLANK_START:
+        if (this.apu.isIrqEnabled()) {
+          this.cpu.requestIrq()
+        }
         this.vblankCallback(leftCycles / VCYCLE)
         this.ppu.setVBlank()
         break

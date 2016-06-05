@@ -13,6 +13,11 @@ export enum PadBit {
   R = 1 << 7,
 }
 
+const BASE = 0x4000
+const PAD_STATUS = 0x4016
+const FRAME_COUNTER = 0x4017
+const IRQ_INHIBIT = 1 << 6
+
 export class Apu {
   private padStatus: number[] = new Array(2)
   private padTmp: number[] = new Array(2)
@@ -20,10 +25,13 @@ export class Apu {
 
   public reset() {
     this.regs.fill(0)
+    this.regs[FRAME_COUNTER - BASE] = IRQ_INHIBIT
   }
 
   public read(adr: number): number {
     switch (adr) {
+    case 0x4015:  // Status
+      return 0xc0
     case 0x4016:  // Pad 1
     case 0x4017:  // Pad 2
       return this.shiftPad(adr - 0x4016)
@@ -38,7 +46,7 @@ export class Apu {
     }
 
     switch (adr) {
-    case 0x4016:  // Pad status. bit0 = Controller shift register strobe
+    case PAD_STATUS:  // Pad status. bit0 = Controller shift register strobe
       if ((value & 1) === 0) {
         this.latchPad()
       }
@@ -88,6 +96,10 @@ export class Apu {
 
   public setPadStatus(no: number, status: number): void {
     this.padStatus[no] = status
+  }
+
+  public isIrqEnabled(): boolean {
+    return (this.regs[FRAME_COUNTER - BASE] & IRQ_INHIBIT) === 0
   }
 
   private latchPad(): void {
