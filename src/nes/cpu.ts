@@ -126,10 +126,10 @@ export class Cpu6502 {
     if ((this.p & IRQBLK_FLAG) !== 0)
       return false
 
-    console.log('IRQ!')
     this.push16(this.pc)
-    this.push(this.p | IRQBLK_FLAG)
+    this.push(this.p)
     this.pc = this.read16(0xfffe)
+    this.p |= IRQBLK_FLAG
     return true
   }
 
@@ -641,10 +641,10 @@ const kOpTypeTable = (() => {
   })
 
   set(OpType.SEI, (cpu, _pc, _) => {  // SEI: Disable IRQ
-    cpu.p |= IRQBLK_BIT
+    cpu.p |= IRQBLK_FLAG
   })
   set(OpType.CLI, (cpu, _pc, _) => {  // CLI: Enable IRQ
-    cpu.p &= ~IRQBLK_BIT
+    cpu.p &= ~IRQBLK_FLAG
   })
   set(OpType.CLV, (cpu, _pc, _) => {
     cpu.p &= ~OVERFLOW_FLAG
