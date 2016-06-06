@@ -108,4 +108,10 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
   })
 
   setPrgBank(bankSelect)  // Initial
+
+  // http://wiki.nesdev.com/w/index.php/INES#Flags_6
+  // iNes header, flags 6
+  // > Some mappers, such as MMC1, MMC3, and AxROM, can control nametable mirroring.
+  // > They ignore bit 0
+  ppu.setMirrorMode(1)  // Default vertical mirroring?
 }
