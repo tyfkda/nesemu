@@ -3,25 +3,11 @@
 import {Addressing, Instruction, OpType, kInstTable} from './inst.ts'
 import {Util} from './util.ts'
 
+import {disassemble} from './disasm.ts'
+
+const DEBUG = false
+
 const hex = Util.hex
-
-function setReset(p, flag, mask) {
-  if (flag)
-    return p | mask
-  return p & ~mask
-}
-
-function inc8(value) {
-  return (value + 1) & 0xff
-}
-
-function dec8(value) {
-  return (value - 1) & 0xff
-}
-
-function toSigned(value: number): number {
-  return value < 0x80 ? value : value - 0x0100
-}
 
 const CARRY_BIT = 0
 const ZERO_BIT = 1
@@ -41,7 +27,59 @@ const RESERVED_FLAG = 1 << RESERVED_BIT
 const OVERFLOW_FLAG = 1 << OVERFLOW_BIT
 const NEGATIVE_FLAG = 1 << NEGATIVE_BIT
 
+const VEC_NMI = 0xfffa
+const VEC_RESET = 0xfffc
+const VEC_IRQ = 0xfffe
+
 const BLOCK_SIZE = 0x2000
+
+const MAX_STEP_LOG = 200
+
+function setReset(p, flag, mask) {
+  if (flag)
+    return p | mask
+  return p & ~mask
+}
+
+function inc8(value) {
+  return (value + 1) & 0xff
+}
+
+function dec8(value) {
+  return (value - 1) & 0xff
+}
+
+function toSigned(value: number): number {
+  return value < 0x80 ? value : value - 0x0100
+}
+
+const disasm = (() => {
+  const kIllegalInstruction: Instruction = {
+    opType: OpType.UNKNOWN,
+    addressing: Addressing.UNKNOWN,
+    bytes: 1,
+    cycle: 0,
+  }
+  const mem = new Uint8Array(3)
+  const bins = new Array(3) as string[]
+
+  return function disasm(cpu: Cpu6502, pc: number): string {
+    const op = cpu.read8Raw(pc)
+    const inst = Cpu6502.getInst(op) || kIllegalInstruction
+    for (let i = 0; i < inst.bytes; ++i) {
+      const m = cpu.read8Raw(cpu.pc + i)
+      mem[i] = m
+      bins[i] = Util.hex(m, 2)
+    }
+    for (let i = inst.bytes; i < 3; ++i)
+      bins[i] = '  '
+
+    const pcStr = Util.hex(cpu.pc, 4)
+    const binStr = bins.join(' ')
+    const asmStr = disassemble(inst, mem, 1, cpu.pc)
+    return `${pcStr}: ${binStr}   ${asmStr}`
+  }
+})()
 
 export class Cpu6502 {
   public a: number  // A register
@@ -67,6 +105,8 @@ export class Cpu6502 {
   private readErrorReported: boolean
   private writeErrorReported: boolean
 
+  private stepLogs: string[]
+
   public static getInst(opcode: number): Instruction {
     return kInstTable[opcode]
   }
@@ -80,6 +120,8 @@ export class Cpu6502 {
     this.watchRead = {}
     this.watchWrite = {}
     this.pausing = false
+
+    this.stepLogs = []
   }
 
   public resetMemoryMap() {
@@ -104,8 +146,9 @@ export class Cpu6502 {
   public reset(): void {
     this.p = IRQBLK_FLAG | BREAK_FLAG | RESERVED_FLAG
     this.s = (this.s - 3) & 0xff
-    this.pc = this.read16(0xfffc)
+    this.pc = this.read16(VEC_RESET)
     this.readErrorReported = this.writeErrorReported = false
+    this.stepLogs.length = 0
   }
 
   public deleteAllBreakPoints(): void {
@@ -126,10 +169,14 @@ export class Cpu6502 {
     if ((this.p & IRQBLK_FLAG) !== 0)
       return false
 
+    if (DEBUG) {
+      this.addStepLog('IRQ occurred')
+    }
     this.push16(this.pc)
     this.push(this.p)
-    this.pc = this.read16(0xfffe)
+    this.pc = this.read16(VEC_IRQ)
     this.p |= IRQBLK_FLAG
+//console.log(`irq triggered: pc=${Util.hex(this.pc, 4)}`)
     return true
   }
 
@@ -154,6 +201,9 @@ export class Cpu6502 {
       return 0
 
     let pc = this.pc
+    if (DEBUG) {
+      this.addStepLog(disasm(this, pc))
+    }
     const op = this.read8(pc++)
     const inst = Cpu6502.getInst(op)
     if (inst == null) {
@@ -263,15 +313,19 @@ export class Cpu6502 {
 
   // Non-maskable interrupt
   public nmi(): void {
-    const vector = this.read16(0xfffa)
+    const vector = this.read16(VEC_NMI)
     if (this.breakPoints.nmi) {
       this.pausing = true
       console.warn(`paused because NMI: ${Util.hex(this.pc, 4)}, ${Util.hex(vector, 4)}`)
     }
 
+    if (DEBUG) {
+      this.addStepLog('NMI occurred')
+    }
     this.push16(this.pc)
-    this.push((this.p | IRQBLK_FLAG) & ~BREAK_FLAG)
+    this.push(this.p)
     this.pc = vector
+    this.p = (this.p | IRQBLK_FLAG) & ~BREAK_FLAG
   }
 
   public dump(start: number, count: number): void {
@@ -283,6 +337,16 @@ export class Cpu6502 {
     for (let i = 0; i < count; i += 16) {
       const line = mem.splice(0, 16).map(x => Util.hex(x, 2)).join(' ')
       console.log(`${Util.hex(start + i, 4)}: ${line}`)
+    }
+  }
+
+  private addStepLog(line: string): void {
+    if (this.stepLogs.length < MAX_STEP_LOG) {
+      this.stepLogs.push(line)
+    } else {
+      for (let i = 1; i < MAX_STEP_LOG; ++i)
+        this.stepLogs[i - 1] = this.stepLogs[i]
+      this.stepLogs[MAX_STEP_LOG - 1] = line
     }
   }
 }
@@ -657,11 +721,19 @@ const kOpTypeTable = (() => {
   })
 
   set(OpType.BRK, (cpu, _pc, _addressing) => {
-    //if ((cpu.p & IRQBLK_FLAG) === 0) {
-      cpu.push16(cpu.pc)
-      cpu.push(cpu.p | IRQBLK_FLAG | BREAK_FLAG)
-      cpu.pc = cpu.read16(0xfffe)
-    //}
+    //if ((cpu.p & IRQBLK_FLAG) !== 0)
+    //  return
+
+    if (DEBUG) {
+      cpu.addStepLog('BRK occurred')
+    }
+
+    cpu.p |= BREAK_FLAG
+    cpu.pc += 1
+    cpu.push16(cpu.pc)
+    cpu.push(cpu.p)
+    cpu.pc = cpu.read16(VEC_IRQ)
+    cpu.p |= IRQBLK_FLAG
   })
   set(OpType.NOP, (_cpu, _pc, _addressing) => {})
 

@@ -45,6 +45,10 @@ interface HEvents {
   events: any[]
 }
 
+function cloneArray(array) {
+  return array.concat()
+}
+
 function getNameTable(baseNameTable: number, bx: number, by: number, mirrorMode: number): number {
   const adr = 0x2000 + baseNameTable
   if (mirrorMode === 0) {
@@ -118,7 +122,8 @@ export class Ppu {
     this.chrBank = (value << 13) & (max - 1)  // 0x2000
 
     this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                    ppuMask: this.regs[PPUMASK], chrBank: this.chrBank})
+                    ppuMask: this.regs[PPUMASK], chrBank: this.chrBank,
+                    chrBankOffset: cloneArray(this.chrBankOffset)})
   }
 
   public setChrData(chrData: Uint8Array): void {
@@ -131,6 +136,10 @@ export class Ppu {
   public setChrBankOffset(bank: number, value: number): void {
     const max = this.chrData.length
     this.chrBankOffset[bank] = (value << 10) & (max - 1)  // 0x0400
+
+    this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
+                    ppuMask: this.regs[PPUMASK], chrBank: this.chrBank,
+                    chrBankOffset: cloneArray(this.chrBankOffset)})
   }
 
   public setMirrorMode(mode: number): void {
@@ -164,7 +173,8 @@ export class Ppu {
     switch (reg) {
     case PPUCTRL:
       this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                      ppuMask: this.regs[PPUMASK], chrBank: this.chrBank})
+                      ppuMask: this.regs[PPUMASK], chrBank: this.chrBank,
+                      chrBankOffset: cloneArray(this.chrBankOffset)})
       break
     case PPUSCROLL:
       if (this.latch === 0) {
@@ -172,7 +182,8 @@ export class Ppu {
       } else {
         this.scrollY = value
         this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                        ppuMask: this.regs[PPUMASK], chrBank: this.chrBank})
+                        ppuMask: this.regs[PPUMASK], chrBank: this.chrBank,
+                        chrBankOffset: cloneArray(this.chrBankOffset)})
       }
       this.latch = 1 - this.latch
       break
@@ -218,7 +229,8 @@ export class Ppu {
     this.hevents.count = 0
 
     this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                    ppuMask: this.regs[PPUMASK], chrBank: this.chrBank})
+                    ppuMask: this.regs[PPUMASK], chrBank: this.chrBank,
+                    chrBankOffset: cloneArray(this.chrBankOffset)})
   }
   public clearVBlank(): void {
     this.regs[PPUSTATUS] &= ~VBLANK
@@ -338,18 +350,19 @@ export class Ppu {
       const baseNameTable = (h.ppuCtrl & BASE_NAMETABLE_ADDRESS) << 10
       const chrStart = (h.ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
       this.doRenderBg2(imageData, h.scrollX, h.scrollY, baseNameTable, hline0, hline1,
-                       h.chrBank, chrStart)
+                       h.chrBank, h.chrBankOffset, chrStart)
     }
   }
 
   public doRenderBg2(imageData: ImageData, scrollX: number, scrollY: number, baseNameTable: number,
-                     hline0: number, hline1: number, chrBank: number, chrStart: number): void
+                     hline0: number, hline1: number, chrBank: number, chrBankOffset: number,
+                     chrStart: number): void
   {
-    const getBgPat = (chridx, py, chrBank) => {
+    const getBgPat = (chridx, py, chrBank, chrBankOffset) => {
       const idx = chridx + py
 
       const bank = (idx >> 10) & 7
-      const bankOfs = this.chrBankOffset[bank]
+      const bankOfs = chrBankOffset[bank]
       const ofs = idx & 0x03ff
       const p = bankOfs + ofs + chrBank
 
@@ -392,7 +405,7 @@ export class Ppu {
             continue
           if (yy >= Const.HEIGHT)
             break
-          const pat = getBgPat(chridx, py, chrBank)
+          const pat = getBgPat(chridx, py, chrBank, chrBankOffset)
           for (let px = 0; px < W; ++px) {
             const xx = bbx * W + px - (scrollX & 7)
             if (xx < 0)
@@ -600,6 +613,7 @@ export class Ppu {
 
   private addHevent(param: any): void {
     let hcount = this.hcount
+//console.log(`addHevent: hcount=${hcount}`)
     if (hcount >= 240)
       hcount = 0
     const hevents = this.hevents

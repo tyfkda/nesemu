@@ -5,19 +5,17 @@ import {Util} from '../util.ts'
 
 export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) {
   const maxPrg = (romData.length >> 13) - 1  // 0x2000
-  let p0 = 0, p1 = 1, p2 = 2, p3 = 0
+  let p0 = 0, p1 = 1, p2 = 2, p3 = maxPrg << 13
   const regs = new Uint8Array(8)
   const setPrgBank = (swap) => {
     if ((swap & 0x40) === 0) {
       p0 = (regs[6] & maxPrg) << 13
       p1 = (regs[7] & maxPrg) << 13
       p2 = (0xfe & maxPrg) << 13
-      p3 = (0xff & maxPrg) << 13
     } else {
       p2 = (regs[6] & maxPrg) << 13
       p1 = (regs[7] & maxPrg) << 13
       p0 = (0xfe & maxPrg) << 13
-      p3 = (0xff & maxPrg) << 13
     }
   }
   const setChrBank = (swap) => {
@@ -56,13 +54,11 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
   // Select
   let bankSelect = 0
   cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
-    switch (adr & 0xe001) {
-    case 0x8000:
+    if ((adr & 1) === 0) {
       bankSelect = value
       setPrgBank(bankSelect)
       setChrBank(bankSelect)
-      break
-    case 0x8001:
+    } else {
       const reg = bankSelect & 0x07
       regs[reg] = value
       if (reg < 6) {  // CHR
@@ -70,20 +66,16 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
       } else {  // PRG
         setPrgBank(bankSelect)
       }
-      break
-    default:
-      console.log(`Unhandled write: ${Util.hex(adr, 4)} = ${Util.hex(value, 2)}`)
-      break
     }
   })
 
   // Mirroring
   cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
-    console.log(`Set mirroring: ${Util.hex(adr, 4)} = ${Util.hex(value, 2)}`)
     if ((adr & 1) === 0) {
       ppu.setMirrorMode(value & 1)
     } else {
       // PRG RAM protect, TODO: Implement.
+      console.log(`RAM write protect: ${Util.hex(value, 2)}`)
     }
   })
 
@@ -93,23 +85,24 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
   cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
     if ((adr & 1) === 0) {
       irqHline = value
-      nes.setIrqHline(irqHline)
+      if (irqEnable)
+        nes.setIrqHline(irqHline)
     } else {
       // TODO: IRQ relaod
     }
   })
   cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
     if ((adr & 1) === 0) {
-      nes.setIrqHline(-1)
       if (irqEnable) {
-        console.log('MMC3 IRQ disabled')
+        //console.log('MMC3 IRQ disabled')
         irqEnable = false
+        nes.setIrqHline(-1)
       }
     } else {
-      nes.setIrqHline(irqHline)
       if (!irqEnable) {
-        console.log('MMC3 IRQ enabled')
+        //console.log('MMC3 IRQ enabled')
         irqEnable = true
+        nes.setIrqHline(irqHline)
       }
     }
   })
