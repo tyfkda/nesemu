@@ -7,6 +7,9 @@ import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
 
 import WindowManager from '../wnd/window_manager.ts'
 
+const CPU_HZ = 1789773
+const MAX_ELAPSED_TIME = 1000 / 20
+
 export class App {
   private destroying = false
   private nes: Nes
@@ -167,15 +170,15 @@ export class App {
   }
 
   private loop(elapsedTime: number): void {
-    const MAX_ELAPSED_TIME = 1000 / 20
-    if (!this.nes.cpu.isPaused()) {
-      this.nes.setPadStatus(0, this.padKeyHandler.getStatus(0))
-      this.nes.setPadStatus(1, this.padKeyHandler.getStatus(1))
+    if (this.nes.cpu.isPaused())
+      return
 
-      const et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
-      let cycles = (1789773 * et / 1000) | 0
-      this.nes.runCycles(cycles)
-    }
+    for (let i = 0; i < 2; ++i)
+      this.nes.setPadStatus(i, this.padKeyHandler.getStatus(i))
+
+    const et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
+    let cycles = (CPU_HZ * et / 1000) | 0
+    this.nes.runCycles(cycles)
   }
 
   private render(): void {

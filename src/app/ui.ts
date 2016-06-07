@@ -335,11 +335,7 @@ export class ControlWnd extends Wnd {
     this.stepBtn = document.createElement('button') as HTMLButtonElement
     this.stepBtn.innerText = 'Step'
     this.stepBtn.addEventListener('click', () => {
-      const paused = this.nes.cpu.isPaused()
-      this.nes.cpu.pause(false)
       this.nes.step()
-      if (paused)
-        this.nes.cpu.pause(true)
       this.callback('step')
     })
     root.appendChild(this.stepBtn)

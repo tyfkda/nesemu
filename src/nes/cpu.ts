@@ -99,7 +99,7 @@ export class Cpu6502 {
   public breakPoints: any
   public watchRead: {}
   public watchWrite: {}
-  public pausing: boolean
+  public paused: boolean
   private readerFuncTable: Function[]
   private writerFuncTable: Function[]
   private readErrorReported: boolean
@@ -119,7 +119,7 @@ export class Cpu6502 {
     this.breakPoints = {}
     this.watchRead = {}
     this.watchWrite = {}
-    this.pausing = false
+    this.paused = false
 
     this.stepLogs = []
   }
@@ -158,11 +158,11 @@ export class Cpu6502 {
   }
 
   public pause(value: boolean): void {
-    this.pausing = value
+    this.paused = value
   }
 
   public isPaused(): boolean {
-    return this.pausing
+    return this.paused
   }
 
   public requestIrq(): boolean {
@@ -197,9 +197,6 @@ export class Cpu6502 {
   }
 
   public step(): number {
-    if (this.pausing)
-      return 0
-
     let pc = this.pc
     if (DEBUG) {
       this.addStepLog(disasm(this, pc))
@@ -208,7 +205,7 @@ export class Cpu6502 {
     const inst = Cpu6502.getInst(op)
     if (inst == null) {
       console.error(`Unhandled OPCODE, ${hex(this.pc - 1, 4)}: ${hex(op, 2)}`)
-      this.pausing = true
+      this.paused = true
       return 0
     }
 
@@ -216,7 +213,7 @@ export class Cpu6502 {
     kOpTypeTable[inst.opType](this, pc, inst.addressing)
 
     if (this.breakPoints[this.pc]) {
-      this.pausing = true
+      this.paused = true
       console.warn(`paused because PC matched break point: ${Util.hex(this.pc, 4)}`)
     }
 
@@ -231,7 +228,7 @@ export class Cpu6502 {
   public read8(adr: number): number {
     const value = this.read8Raw(adr)
     if (this.watchRead[adr]) {
-      this.pausing = true
+      this.paused = true
       console.warn(
         `Break because watched point read: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
     }
@@ -244,7 +241,7 @@ export class Cpu6502 {
     if (!reader) {
       if (!this.readErrorReported) {
         console.error(`Illegal read at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}`)
-        this.pausing = true
+        this.paused = true
         this.readErrorReported = true
       }
       return 0
@@ -270,13 +267,13 @@ export class Cpu6502 {
     if (!writer) {
       if (!this.writeErrorReported) {
         console.error(`Illegal write at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}, ${hex(value, 2)}`)
-        this.pausing = true
+        this.paused = true
         this.writeErrorReported = true
       }
       return
     }
     if (this.watchWrite[adr]) {
-      this.pausing = true
+      this.paused = true
       console.warn(
         `Break because watched point write: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
     }
@@ -315,7 +312,7 @@ export class Cpu6502 {
   public nmi(): void {
     const vector = this.read16(VEC_NMI)
     if (this.breakPoints.nmi) {
-      this.pausing = true
+      this.paused = true
       console.warn(`paused because NMI: ${Util.hex(this.pc, 4)}, ${Util.hex(vector, 4)}`)
     }
 
@@ -398,7 +395,7 @@ const kOpTypeTable = (() => {
       break
     default:
       console.error(`Illegal addressing: ${addressing}`)
-      cpu.pausing = true
+      cpu.paused = true
       return
     }
     return cpu.read8(adr)
@@ -442,7 +439,7 @@ const kOpTypeTable = (() => {
       break
     default:
       console.error(`Illegal store: ${addressing}`)
-      cpu.pausing = true
+      cpu.paused = true
       return
     }
     cpu.write8(adr, value)
