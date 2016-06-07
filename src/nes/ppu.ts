@@ -30,7 +30,7 @@ const SPRITE0HIT = 0x40
 const OAMADDR = 0x03
 
 // OAMDATA ($2004)
-//const OAMDATA = 0x04
+const OAMDATA = 0x04
 
 const PPUSCROLL = 0x05  // $2005
 const PPUADDR = 0x06  // $2006
@@ -49,6 +49,11 @@ interface HEvents {
   events: any[]
 }
 
+const kInitialPalette = [
+  0x09, 0x01, 0x00, 0x01, 0x00, 0x02, 0x02, 0x0d, 0x08, 0x10, 0x08, 0x24, 0x00, 0x00, 0x04, 0x2c,
+  0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 0x08, 0x3a, 0x00, 0x02, 0x00, 0x20, 0x2c, 0x08,
+]
+
 function cloneArray(array) {
   return array.concat()
 }
@@ -64,6 +69,8 @@ function getNameTable(baseNameTable: number, bx: number, by: number, mirrorMode:
 }
 
 function getPpuAddr(adr: number, mirrorMode: number): number {
+  if (0x3000 <= adr && adr < 0x3f00)
+    adr -= 0x1000  // Map 0x3000~3eff to 0x2000~
   if (0x2000 <= adr && adr < 0x3000) {
     if (mirrorMode === MIRROR_HORZ)
       adr &= ~0x0400
@@ -71,10 +78,13 @@ function getPpuAddr(adr: number, mirrorMode: number): number {
       adr &= ~0x0800
   }
 
-  // "Addresses $3F10/$3F14/$3F18/$3F1C are mirrors of $3F00/$3F04/$3F08/$3F0C."
-  // http://wiki.nesdev.com/w/index.php/PPU_palettes#Memory_Map
-  if ((adr & 0xfff3) === 0x3f10)
-    adr &= 0xffef
+  if (0x3f00 <= adr && adr <= 0x3fff) {
+    adr &= 0xff1f  // Repeat 0x3f00~0x3f1f --> 0x3fff
+    // "Addresses $3F10/$3F14/$3F18/$3F1C are mirrors of $3F00/$3F04/$3F08/$3F0C."
+    // http://wiki.nesdev.com/w/index.php/PPU_palettes#Memory_Map
+    if ((adr & 0xfff3) === 0x3f10)
+      adr &= 0xffef
+  }
   return adr
 }
 
@@ -126,6 +136,9 @@ export class Ppu {
 
     for (let i = 0; i < 8; ++i)
       this.chrBankOffset[i] = i << 10
+
+    for (let i = 0; i < 16 * 2; ++i)
+      this.vram[0x3f00 + i] = kInitialPalette[i]
   }
 
   public setChrData(chrData: Uint8Array): void {
@@ -159,12 +172,22 @@ export class Ppu {
       this.regs[PPUSTATUS] &= ~VBLANK
       this.latch = 0
       break
+    case OAMDATA:
+      result = this.oam[this.regs[OAMADDR]]
+      break
     case PPUDATA:
       {
-        result = this.bufferedValue
-        const addr = getPpuAddr(this.ppuAddr, this.mirrorMode)
-        this.bufferedValue = this.readPpuDirect(addr)
-        this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
+        const ppuAddr = this.ppuAddr
+        const addr = getPpuAddr(ppuAddr, this.mirrorMode)
+        if (0x3f00 <= addr && addr <= 0x3fff) {  // Palette
+          result = this.readPpuDirect(addr)  // Palette read shouldn't be buffered like other VRAM
+          // Palette read should also read VRAM into read buffer
+          this.bufferedValue = this.readPpuDirect(getPpuAddr(ppuAddr - 0x1000, this.mirrorMode))
+        } else {
+          result = this.bufferedValue
+          this.bufferedValue = this.readPpuDirect(addr)
+        }
+        this.ppuAddr = incPpuAddr(ppuAddr, this.regs[PPUCTRL])
       }
       break
     default:
@@ -180,6 +203,13 @@ export class Ppu {
     case PPUCTRL:
       this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
                       ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset)})
+      break
+    case OAMDATA:
+      {
+        const oamAddr = this.regs[OAMADDR]
+        this.oam[oamAddr] = value
+        this.regs[OAMADDR] = (oamAddr + 1) & 0xff
+      }
       break
     case PPUSCROLL:
       if (this.latch === 0) {
