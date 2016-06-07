@@ -72,7 +72,7 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
   // Mirroring
   cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
     if ((adr & 1) === 0) {
-      ppu.setMirrorMode(value & 1)
+      ppu.setMirrorMode(1 - (value & 1))
     } else {
       // PRG RAM protect, TODO: Implement.
       console.log(`RAM write protect: ${Util.hex(value, 2)}`)

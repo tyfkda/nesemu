@@ -40,6 +40,10 @@ const PPUDATA = 0x07  // $2007
 const FLIP_HORZ = 0x40
 const FLIP_VERT = 0x80
 
+// Mirror mode
+const MIRROR_HORZ = 0
+const MIRROR_VERT = 1
+
 interface HEvents {
   count: number
   events: any[]
@@ -51,19 +55,27 @@ function cloneArray(array) {
 
 function getNameTable(baseNameTable: number, bx: number, by: number, mirrorMode: number): number {
   const adr = 0x2000 + baseNameTable
-  if (mirrorMode === 0) {
-    return adr ^ (((by / 30) & 1) << 11)
+  if (mirrorMode === MIRROR_HORZ) {
+    return (adr ^ (((by / 30) & 1) << 11)) & ~0x0400  // 0x0800
   } else {
-    return adr ^ ((bx & 32) << 5)
+    return (adr ^ ((bx & 32) << 5)) & ~0x0800  // 0x0400
   }
+  //return adr ^ (((by / 30) & 1) << 11) ^ ((bx & 32) << 5)
 }
 
-function getPpuAddr(addr: number): number {
+function getPpuAddr(adr: number, mirrorMode: number): number {
+  if (0x2000 <= adr && adr < 0x3000) {
+    if (mirrorMode === MIRROR_HORZ)
+      adr &= ~0x0400
+    else
+      adr &= ~0x0800
+  }
+
   // "Addresses $3F10/$3F14/$3F18/$3F1C are mirrors of $3F00/$3F04/$3F08/$3F0C."
   // http://wiki.nesdev.com/w/index.php/PPU_palettes#Memory_Map
-  if ((addr & 0xfff3) === 0x3f10)
-    addr &= 0xffef
-  return addr
+  if ((adr & 0xfff3) === 0x3f10)
+    adr &= 0xffef
+  return adr
 }
 
 function incPpuAddr(ppuAddr: number, ppuCtrl: number): number {
@@ -150,7 +162,7 @@ export class Ppu {
     case PPUDATA:
       {
         result = this.bufferedValue
-        const addr = getPpuAddr(this.ppuAddr)
+        const addr = getPpuAddr(this.ppuAddr, this.mirrorMode)
         this.bufferedValue = this.readPpuDirect(addr)
         this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
       }
@@ -188,7 +200,7 @@ export class Ppu {
       break
     case PPUDATA:
       {
-        const addr = getPpuAddr(this.ppuAddr)
+        const addr = getPpuAddr(this.ppuAddr, this.mirrorMode)
         //if (addr < 0x2000) {
         //  console.log(`CHR ROM write: ${Util.hex(addr, 4)}, ${Util.hex(value, 2)}`)
         //}
@@ -524,7 +536,7 @@ export class Ppu {
   public dumpVram(start: number, count: number): void {
     const mem = []
     for (let i = 0; i < count; ++i) {
-      mem.push(this.vram[getPpuAddr(start + i)])
+      mem.push(this.vram[getPpuAddr(start + i, this.mirrorMode)])
     }
 
     for (let i = 0; i < count; i += 16) {
