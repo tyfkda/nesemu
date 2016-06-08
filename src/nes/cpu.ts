@@ -241,7 +241,6 @@ export class Cpu6502 {
     if (!reader) {
       if (!this.readErrorReported) {
         console.error(`Illegal read at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}`)
-        this.paused = true
         this.readErrorReported = true
       }
       return 0
@@ -267,7 +266,6 @@ export class Cpu6502 {
     if (!writer) {
       if (!this.writeErrorReported) {
         console.error(`Illegal write at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}, ${hex(value, 2)}`)
-        this.paused = true
         this.writeErrorReported = true
       }
       return
