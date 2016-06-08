@@ -254,7 +254,7 @@ export class Ppu {
   }
 
   public setVBlank(): void {
-    this.regs[PPUSTATUS] = (this.regs[PPUSTATUS] | VBLANK) & ~SPRITE0HIT
+    this.regs[PPUSTATUS] = this.regs[PPUSTATUS] | VBLANK
 
     // Swap HEvents
     const tmp = this.hevents
@@ -266,7 +266,7 @@ export class Ppu {
                     ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset)})
   }
   public clearVBlank(): void {
-    this.regs[PPUSTATUS] &= ~VBLANK
+    this.regs[PPUSTATUS] &= ~(VBLANK | SPRITE0HIT)
   }
 
   public interruptEnable(): boolean {
@@ -350,7 +350,7 @@ export class Ppu {
               continue
             if (xx >= Const.WIDTH)
               break
-            const pal = (pat >> ((W - 1 - px) * 2)) & 3
+            const pal = (pat >> ((W - 1 - px) << 1)) & 3
             let r = clearR, g = clearG, b = clearB
             if (pal !== 0) {
               const palet = paletHigh + pal
@@ -415,7 +415,8 @@ export class Ppu {
     if (scrollY >= 240)
       scrollY = (scrollY - 256)
 
-    const bby0 = (hline0 / 8) | 0, bby1 = ((hline1 + 7) / 8) | 0
+    const bby0 = (hline0 / 8) | 0 , bby1 = ((hline1 + 7) / 8) | 0
+    let py0 = 0  // hline0 & 7
     for (let bby = bby0; bby < bby1; ++bby) {
       const by = ((bby + (scrollY >> 3)) + 60) % 60
       const ay = by % 30
@@ -431,7 +432,7 @@ export class Ppu {
         const attributeTable = nameTable + 0x3c0
         const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
 
-        for (let py = 0; py < W; ++py) {
+        for (let py = py0; py < W; ++py) {
           const yy = bby * W + py - (scrollY & 7)
           if (yy < 0)
             continue
@@ -444,7 +445,7 @@ export class Ppu {
               continue
             if (xx >= Const.WIDTH)
               break
-            const pal = (pat >> ((W - 1 - px) * 2)) & 3
+            const pal = (pat >> ((W - 1 - px) << 1)) & 3
             let r = clearR, g = clearG, b = clearB
             if (pal !== 0) {
               const palet = paletHigh + pal
@@ -461,6 +462,7 @@ export class Ppu {
             pixels[index + 2] = b
           }
         }
+        py0 = 0
       }
     }
   }
@@ -481,25 +483,33 @@ export class Ppu {
 
   public setHcount(hcount: number) {
     this.hcount = hcount
-
-    const sprite0y = this.oam[0] + 8
-    if ((this.regs[PPUSTATUS] & SPRITE0HIT) === 0 &&
-        sprite0y <= hcount && hcount < sprite0y + 16) {
-      const dy = this.getNonEmptySprite0Line()
-      if (dy >= 0 && hcount === sprite0y + dy)
-        this.setSprite0Hit()
-    }
+    this.checkSprite0Hit(hcount)
   }
 
   public renderSprite(imageData: ImageData): void {
     if ((this.regs[PPUMASK] & SHOW_SPRITE) === 0)
       return
 
+    let chrStart = 0
+    const n = this.hevents.count
+    for (let i = 0; i < n; ++i) {
+      const h = this.hevents.events[i]
+      const hline0 = h.hcount
+      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240 + 8
+      if (hline0 >= hline1)
+        continue
+      if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
+        chrStart = ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
+      this.renderSprite2(imageData, hline0, hline1, h.chrBankOffset, chrStart)
+    }
+  }
+
+  public renderSprite2(imageData: ImageData, hline0: number, hline1: number, chrBankOffset: number, chrStart: number): void {
     const getSpritePat = (chridx, ppy, flipHorz) => {
-      const idx = chridx + (ppy & 7) + ((ppy & 8) * 2)
+      const idx = chridx + (ppy & 7) + ((ppy & 8) << 1)
 
       const bank = (idx >> 10) & 7
-      const bankOfs = this.chrBankOffset[bank]
+      const bankOfs = chrBankOffset[bank]
       const ofs = idx & 0x03ff
       const p = bankOfs + ofs
 
@@ -519,7 +529,6 @@ export class Ppu {
 
     const oam = this.oam
     const vram = this.vram
-    const chrStart = this.getSpritePatternTableAddress()
     const paletTable = 0x3f10
     const pixels = imageData.data
     const isSprite8x16 = this.isSprite8x16()
@@ -527,6 +536,9 @@ export class Ppu {
 
     for (let i = 64; --i >= 0; ) {
       const y = oam[i * 4] + 1
+      if (y < hline0 || y >= hline1)
+        continue
+
       const index = oam[i * 4 + 1]
       const attr = oam[i * 4 + 2]
       const flipVert = (attr & FLIP_VERT) !== 0
@@ -548,7 +560,7 @@ export class Ppu {
           if (x + px >= Const.WIDTH)
             break
 
-          const pal = (pat >> ((W - 1 - px) * 2)) & 3
+          const pal = (pat >> ((W - 1 - px) << 1)) & 3
           if (pal === 0)
             continue
           const palet = paletHigh + pal
@@ -591,7 +603,7 @@ export class Ppu {
                          kStaggered[this.readPpuDirect(idx)])
             for (let px = 0; px < W; ++px) {
               const xx = bx * W + px + i * (W * 16)
-              const col = (pat >> ((W - 1 - px) * 2)) & 3
+              const col = (pat >> ((W - 1 - px) << 1)) & 3
               const c = col * 3
 
               const index = (yy * LINE_WIDTH + xx) * 4
@@ -605,13 +617,28 @@ export class Ppu {
     }
   }
 
-  private setSprite0Hit(): void {
+  private checkSprite0Hit(hcount: number): void {
+    if ((this.regs[PPUSTATUS] & SPRITE0HIT) !== 0 ||
+        (this.regs[PPUMASK] & (SHOW_BG | SHOW_SPRITE)) !== (SHOW_BG | SHOW_SPRITE))
+      return
+
+    const sprite0y = this.oam[0]
+    if (hcount < sprite0y || hcount >= sprite0y + 16)
+      return
+    const sprite0x = this.oam[3]
+    if (sprite0x >= 255)
+      return
+
+    const dy = this.getNonEmptySprite0Line()
+    if (dy < 0 || hcount !== sprite0y + dy)
+      return
+
     this.regs[PPUSTATUS] |= SPRITE0HIT
   }
 
   private getNonEmptySprite0Line() {
     const getSpritePat = (chridx, ppy) => {
-      const idx = chridx + (ppy & 7) + ((ppy & 8) * 2)
+      const idx = chridx + (ppy & 7) + ((ppy & 8) << 1)
       const bank = (idx >> 10) & 7
       const bankOfs = this.chrBankOffset[bank]
       const ofs = idx & 0x03ff
@@ -633,7 +660,7 @@ export class Ppu {
                     ? (index & 0xfe) * 16 + ((index & 1) << 12)
                     : index * 16 + chrStart)
 
-    for (let py = 0; py < h; ++py) {  // TODO: Handle 8x16 sprite mode.
+    for (let py = 0; py < h; ++py) {
       const ppy = flipVert ? (h - 1) - py : py
       const pat = getSpritePat(chridx, ppy)
       if (pat !== 0)
