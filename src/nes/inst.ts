@@ -18,6 +18,227 @@ export enum Addressing {
   RELATIVE,
 }
 
+export enum OpType {
+  UNKNOWN,
+
+  NOP,
+  LDA, STA, LDX, STX, LDY, STY,
+  TAX, TAY, TXA, TYA, TXS, TSX,
+
+  ADC, SBC,
+  INX, INY, INC,
+  DEX, DEY, DEC,
+  AND, ORA, EOR,
+  ROL, ROR, ASL, LSR,
+  BIT,
+  CMP, CPX, CPY,
+
+  JMP, JSR, RTS, RTI,
+  BCC, BCS, BPL, BMI, BNE, BEQ, BVC, BVS,
+
+  PHA, PHP, PLA, PLP,
+
+  CLC, SEC,
+  SEI, CLI, CLV, SED, CLD,
+  BRK,
+}
+
+const kTable = [
+  [0xea, OpType.NOP, Addressing.IMPLIED, 1, 2],
+  // LDA
+  [0xa9, OpType.LDA, Addressing.IMMEDIATE, 2, 2],
+  [0xa5, OpType.LDA, Addressing.ZEROPAGE, 2, 3],
+  [0xb5, OpType.LDA, Addressing.ZEROPAGE_X, 2, 4],
+  [0xad, OpType.LDA, Addressing.ABSOLUTE, 3, 4],
+  [0xbd, OpType.LDA, Addressing.ABSOLUTE_X, 3, 4],
+  [0xb9, OpType.LDA, Addressing.ABSOLUTE_Y, 3, 4],
+  [0xa1, OpType.LDA, Addressing.INDIRECT_X, 2, 6],
+  [0xb1, OpType.LDA, Addressing.INDIRECT_Y, 2, 5],
+  // STA
+  [0x85, OpType.STA, Addressing.ZEROPAGE, 2, 3],
+  [0x95, OpType.STA, Addressing.ZEROPAGE_X, 2, 4],
+  [0x8d, OpType.STA, Addressing.ABSOLUTE, 3, 4],
+  [0x9d, OpType.STA, Addressing.ABSOLUTE_X, 3, 5],
+  [0x99, OpType.STA, Addressing.ABSOLUTE_Y, 3, 5],
+  [0x95, OpType.STA, Addressing.ZEROPAGE_X, 2, 4],
+  [0x81, OpType.STA, Addressing.INDIRECT_X, 2, 6],
+  [0x91, OpType.STA, Addressing.INDIRECT_Y, 2, 6],
+  // LDX
+  [0xa2, OpType.LDX, Addressing.IMMEDIATE, 2, 2],
+  [0xa6, OpType.LDX, Addressing.ZEROPAGE, 2, 3],
+  [0xb6, OpType.LDX, Addressing.ZEROPAGE_Y, 2, 4],
+  [0xae, OpType.LDX, Addressing.ABSOLUTE, 3, 4],
+  [0xbe, OpType.LDX, Addressing.ABSOLUTE_Y, 3, 4],
+  // STX
+  [0x86, OpType.STX, Addressing.ZEROPAGE, 2, 3],
+  [0x96, OpType.STX, Addressing.ZEROPAGE_Y, 2, 4],
+  [0x8e, OpType.STX, Addressing.ABSOLUTE, 3, 4],
+  // LDY
+  [0xa0, OpType.LDY, Addressing.IMMEDIATE, 2, 2],
+  [0xa4, OpType.LDY, Addressing.ZEROPAGE, 2, 3],
+  [0xb4, OpType.LDY, Addressing.ZEROPAGE_X, 2, 4],
+  [0xac, OpType.LDY, Addressing.ABSOLUTE, 3, 4],
+  [0xbc, OpType.LDY, Addressing.ABSOLUTE_X, 3, 4],
+  // STY
+  [0x84, OpType.STY, Addressing.ZEROPAGE, 2, 3],
+  [0x94, OpType.STY, Addressing.ZEROPAGE_X, 2, 4],
+  [0x8c, OpType.STY, Addressing.ABSOLUTE, 3, 4],
+  //// T??
+  [0xaa, OpType.TAX, Addressing.IMPLIED, 1, 2],
+  [0xa8, OpType.TAY, Addressing.IMPLIED, 1, 2],
+  [0x8a, OpType.TXA, Addressing.IMPLIED, 1, 2],
+  [0x98, OpType.TYA, Addressing.IMPLIED, 1, 2],
+  [0x9a, OpType.TXS, Addressing.IMPLIED, 1, 2],
+  [0xba, OpType.TSX, Addressing.IMPLIED, 1, 2],
+
+  // ADC
+  [0x69, OpType.ADC, Addressing.IMMEDIATE, 2, 2],
+  [0x65, OpType.ADC, Addressing.ZEROPAGE, 2, 3],
+  [0x75, OpType.ADC, Addressing.ZEROPAGE_X, 2, 4],
+  [0x6d, OpType.ADC, Addressing.ABSOLUTE, 3, 4],
+  [0x7d, OpType.ADC, Addressing.ABSOLUTE_X, 3, 4],
+  [0x79, OpType.ADC, Addressing.ABSOLUTE_Y, 3, 4],
+  [0x61, OpType.ADC, Addressing.INDIRECT_X, 2, 6],
+  [0x71, OpType.ADC, Addressing.INDIRECT_Y, 2, 5],
+  // SBC
+  [0xe9, OpType.SBC, Addressing.IMMEDIATE, 2, 2],
+  [0xe5, OpType.SBC, Addressing.ZEROPAGE, 2, 3],
+  [0xf5, OpType.SBC, Addressing.ZEROPAGE_X, 2, 4],
+  [0xed, OpType.SBC, Addressing.ABSOLUTE, 3, 4],
+  [0xfd, OpType.SBC, Addressing.ABSOLUTE_X, 3, 4],
+  [0xf9, OpType.SBC, Addressing.ABSOLUTE_Y, 3, 4],
+  [0xe1, OpType.SBC, Addressing.INDIRECT_X, 2, 6],
+  [0xf1, OpType.SBC, Addressing.INDIRECT_Y, 2, 5],
+
+  // CMP
+  [0xc9, OpType.CMP, Addressing.IMMEDIATE, 2, 2],
+  [0xc5, OpType.CMP, Addressing.ZEROPAGE, 2, 3],
+  [0xd5, OpType.CMP, Addressing.ZEROPAGE_X, 2, 4],
+  [0xcd, OpType.CMP, Addressing.ABSOLUTE, 3, 4],
+  [0xdd, OpType.CMP, Addressing.ABSOLUTE_X, 3, 4],
+  [0xd9, OpType.CMP, Addressing.ABSOLUTE_Y, 3, 4],
+  [0xc1, OpType.CMP, Addressing.INDIRECT_X, 2, 6],
+  [0xd1, OpType.CMP, Addressing.INDIRECT_Y, 2, 5],
+  // CPX
+  [0xe0, OpType.CPX, Addressing.IMMEDIATE, 2, 2],
+  [0xe4, OpType.CPX, Addressing.ZEROPAGE, 2, 3],
+  [0xec, OpType.CPX, Addressing.ABSOLUTE, 3, 4],
+  // CPY
+  [0xc0, OpType.CPY, Addressing.IMMEDIATE, 2, 2],
+  [0xc4, OpType.CPY, Addressing.ZEROPAGE, 2, 3],
+  [0xcc, OpType.CPY, Addressing.ABSOLUTE, 3, 4],
+  // INX
+  [0xe8, OpType.INX, Addressing.IMPLIED, 1, 2],
+  // INY
+  [0xc8, OpType.INY, Addressing.IMPLIED, 1, 2],
+  // INC
+  [0xe6, OpType.INC, Addressing.ZEROPAGE, 2, 5],
+  [0xf6, OpType.INC, Addressing.ZEROPAGE_X, 2, 6],
+  [0xee, OpType.INC, Addressing.ABSOLUTE, 3, 6],
+  [0xfe, OpType.INC, Addressing.ABSOLUTE_X, 3, 7],
+
+  // DEX
+  [0xca, OpType.DEX, Addressing.IMPLIED, 1, 2],
+  // DEY
+  [0x88, OpType.DEY, Addressing.IMPLIED, 1, 2],
+  // DEC
+  [0xc6, OpType.DEC, Addressing.ZEROPAGE, 2, 5],
+  [0xd6, OpType.DEC, Addressing.ZEROPAGE_X, 2, 6],
+  [0xce, OpType.DEC, Addressing.ABSOLUTE, 3, 6],
+  [0xde, OpType.DEC, Addressing.ABSOLUTE_X, 3, 7],
+
+  // AND
+  [0x29, OpType.AND, Addressing.IMMEDIATE, 2, 2],
+  [0x25, OpType.AND, Addressing.ZEROPAGE, 2, 3],
+  [0x35, OpType.AND, Addressing.ZEROPAGE_X, 2, 4],
+  [0x2d, OpType.AND, Addressing.ABSOLUTE, 3, 4],
+  [0x3d, OpType.AND, Addressing.ABSOLUTE_X, 3, 4],
+  [0x39, OpType.AND, Addressing.ABSOLUTE_Y, 3, 4],
+  [0x21, OpType.AND, Addressing.INDIRECT_X, 2, 6],
+  [0x31, OpType.AND, Addressing.INDIRECT_Y, 2, 5],
+  // ORA
+  [0x09, OpType.ORA, Addressing.IMMEDIATE, 2, 2],
+  [0x05, OpType.ORA, Addressing.ZEROPAGE, 2, 3],
+  [0x15, OpType.ORA, Addressing.ZEROPAGE_X, 2, 4],
+  [0x0d, OpType.ORA, Addressing.ABSOLUTE, 3, 4],
+  [0x1d, OpType.ORA, Addressing.ABSOLUTE_X, 3, 4],
+  [0x19, OpType.ORA, Addressing.ABSOLUTE_Y, 3, 4],
+  [0x01, OpType.ORA, Addressing.INDIRECT_X, 2, 6],
+  [0x11, OpType.ORA, Addressing.INDIRECT_Y, 2, 5],
+  // EOR
+  [0x49, OpType.EOR, Addressing.IMMEDIATE, 2, 2],
+  [0x45, OpType.EOR, Addressing.ZEROPAGE, 2, 3],
+  [0x55, OpType.EOR, Addressing.ZEROPAGE_X, 2, 4],
+  [0x4d, OpType.EOR, Addressing.ABSOLUTE, 3, 4],
+  [0x5d, OpType.EOR, Addressing.ABSOLUTE_X, 3, 4],
+  [0x59, OpType.EOR, Addressing.ABSOLUTE_Y, 3, 4],
+  [0x41, OpType.EOR, Addressing.INDIRECT_X, 2, 6],
+  [0x51, OpType.EOR, Addressing.INDIRECT_Y, 2, 5],
+  // ROL
+  [0x2a, OpType.ROL, Addressing.ACCUMULATOR, 1, 2],
+  [0x26, OpType.ROL, Addressing.ZEROPAGE, 2, 5],
+  [0x36, OpType.ROL, Addressing.ZEROPAGE_X, 2, 6],
+  [0x2e, OpType.ROL, Addressing.ABSOLUTE, 3, 6],
+  [0x3e, OpType.ROL, Addressing.ABSOLUTE_X, 3, 7],
+  // ROR
+  [0x6a, OpType.ROR, Addressing.ACCUMULATOR, 1, 2],
+  [0x66, OpType.ROR, Addressing.ZEROPAGE, 2, 5],
+  [0x76, OpType.ROR, Addressing.ZEROPAGE_X, 2, 6],
+  [0x6e, OpType.ROR, Addressing.ABSOLUTE, 3, 6],
+  [0x7e, OpType.ROR, Addressing.ABSOLUTE_X, 3, 7],
+  // ASL
+  [0x0a, OpType.ASL, Addressing.ACCUMULATOR, 1, 2],
+  [0x06, OpType.ASL, Addressing.ZEROPAGE, 2, 5],
+  [0x16, OpType.ASL, Addressing.ZEROPAGE_X, 2, 6],
+  [0x0e, OpType.ASL, Addressing.ABSOLUTE, 3, 6],
+  [0x1e, OpType.ASL, Addressing.ABSOLUTE_X, 3, 7],
+  // LSR
+  [0x4a, OpType.LSR, Addressing.ACCUMULATOR, 1, 2],
+  [0x46, OpType.LSR, Addressing.ZEROPAGE, 2, 5],
+  [0x56, OpType.LSR, Addressing.ZEROPAGE_X, 2, 6],
+  [0x4e, OpType.LSR, Addressing.ABSOLUTE, 3, 6],
+  [0x5e, OpType.LSR, Addressing.ABSOLUTE_X, 3, 7],
+  // BIT
+  [0x24, OpType.BIT, Addressing.ZEROPAGE, 2, 3],
+  [0x2c, OpType.BIT, Addressing.ABSOLUTE, 3, 4],
+
+  // JMP
+  [0x4c, OpType.JMP, Addressing.ABSOLUTE, 3, 3],
+  [0x6c, OpType.JMP, Addressing.INDIRECT, 3, 5],
+  // JSR
+  [0x20, OpType.JSR, Addressing.ABSOLUTE, 3, 6],
+  // RTS
+  [0x60, OpType.RTS, Addressing.IMPLIED, 1, 6],
+  // RTI
+  [0x40, OpType.RTI, Addressing.IMPLIED, 1, 6],
+  // Branch
+  [0x90, OpType.BCC, Addressing.RELATIVE, 2, 2],
+  [0xb0, OpType.BCS, Addressing.RELATIVE, 2, 2],
+  [0x10, OpType.BPL, Addressing.RELATIVE, 2, 2],
+  [0x30, OpType.BMI, Addressing.RELATIVE, 2, 2],
+  [0xd0, OpType.BNE, Addressing.RELATIVE, 2, 2],
+  [0xf0, OpType.BEQ, Addressing.RELATIVE, 2, 2],
+  [0x50, OpType.BVC, Addressing.RELATIVE, 2, 2],
+  [0x70, OpType.BVS, Addressing.RELATIVE, 2, 2],
+
+  // Push, Pop
+  [0x48, OpType.PHA, Addressing.IMPLIED, 1, 3],
+  [0x08, OpType.PHP, Addressing.IMPLIED, 1, 3],
+  [0x68, OpType.PLA, Addressing.IMPLIED, 1, 4],
+  [0x28, OpType.PLP, Addressing.IMPLIED, 1, 4],
+
+  [0x18, OpType.CLC, Addressing.IMPLIED, 1, 2],
+  [0x38, OpType.SEC, Addressing.IMPLIED, 1, 2],
+
+  [0x78, OpType.SEI, Addressing.IMPLIED, 1, 2],
+  [0x58, OpType.CLI, Addressing.IMPLIED, 1, 2],
+  [0xb8, OpType.CLV, Addressing.IMPLIED, 1, 2],
+  [0xf8, OpType.SED, Addressing.IMPLIED, 1, 2],
+  [0xd8, OpType.CLD, Addressing.IMPLIED, 1, 2],
+
+  [0x00, OpType.BRK, Addressing.IMPLIED, 1, 7],
+]
+
 export interface Instruction {
   opType: OpType
   addressing: Addressing
@@ -25,282 +246,12 @@ export interface Instruction {
   cycle: number
 }
 
-export enum OpType {
-  UNKNOWN,
-
-  LDA,
-  STA,
-  LDX,
-  STX,
-  LDY,
-  STY,
-
-  TAX,
-  TAY,
-  TXA,
-  TYA,
-  TXS,
-  TSX,
-
-  ADC,
-  SBC,
-
-  INX,
-  INY,
-  INC,
-
-  DEX,
-  DEY,
-  DEC,
-
-  AND,
-  ORA,
-  EOR,
-  ROL,
-  ROR,
-  ASL,
-  LSR,
-  BIT,
-  CMP,
-  CPX,
-  CPY,
-
-  JMP,
-  JSR,
-  RTS,
-  RTI,
-  BCC,
-  BCS,
-  BPL,
-  BMI,
-  BNE,
-  BEQ,
-  BVC,
-  BVS,
-
-  PHA,
-  PHP,
-  PLA,
-  PLP,
-
-  CLC,
-  SEC,
-
-  SEI,
-  CLI,
-  CLV,
-  SED,
-  CLD,
-
-  BRK,
-  NOP,
-}
-
 export const kInstTable: Instruction[] = (() => {
-  const tbl = []
-  function setOp(opType: OpType, opcode: number, addressing: Addressing,
-                 bytes: number, cycle: number) {
-    tbl[opcode] = {
-      opType,
-      addressing,
-      bytes,
-      cycle,
-    }
-  }
-
-  // LDA
-  setOp(OpType.LDA, 0xa9, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.LDA, 0xa5, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.LDA, 0xb5, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.LDA, 0xad, Addressing.ABSOLUTE, 3, 4)
-  setOp(OpType.LDA, 0xbd, Addressing.ABSOLUTE_X, 3, 4)
-  setOp(OpType.LDA, 0xb9, Addressing.ABSOLUTE_Y, 3, 4)
-  setOp(OpType.LDA, 0xa1, Addressing.INDIRECT_X, 2, 6)
-  setOp(OpType.LDA, 0xb1, Addressing.INDIRECT_Y, 2, 5)
-  // STA
-  setOp(OpType.STA, 0x85, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.STA, 0x95, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.STA, 0x8d, Addressing.ABSOLUTE, 3, 4)
-  setOp(OpType.STA, 0x9d, Addressing.ABSOLUTE_X, 3, 5)
-  setOp(OpType.STA, 0x99, Addressing.ABSOLUTE_Y, 3, 5)
-  setOp(OpType.STA, 0x95, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.STA, 0x81, Addressing.INDIRECT_X, 2, 6)
-  setOp(OpType.STA, 0x91, Addressing.INDIRECT_Y, 2, 6)
-  // LDX
-  setOp(OpType.LDX, 0xa2, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.LDX, 0xa6, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.LDX, 0xb6, Addressing.ZEROPAGE_Y, 2, 4)
-  setOp(OpType.LDX, 0xae, Addressing.ABSOLUTE, 3, 4)
-  setOp(OpType.LDX, 0xbe, Addressing.ABSOLUTE_Y, 3, 4)
-  // STX
-  setOp(OpType.STX, 0x86, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.STX, 0x96, Addressing.ZEROPAGE_Y, 2, 4)
-  setOp(OpType.STX, 0x8e, Addressing.ABSOLUTE, 3, 4)
-  // LDY
-  setOp(OpType.LDY, 0xa0, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.LDY, 0xa4, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.LDY, 0xb4, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.LDY, 0xac, Addressing.ABSOLUTE, 3, 4)
-  setOp(OpType.LDY, 0xbc, Addressing.ABSOLUTE_X, 3, 4)
-  // STY
-  setOp(OpType.STY, 0x84, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.STY, 0x94, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.STY, 0x8c, Addressing.ABSOLUTE, 3, 4)
-  //// T??
-  setOp(OpType.TAX, 0xaa, Addressing.IMPLIED, 1, 2)
-  setOp(OpType.TAY, 0xa8, Addressing.IMPLIED, 1, 2)
-  setOp(OpType.TXA, 0x8a, Addressing.IMPLIED, 1, 2)
-  setOp(OpType.TYA, 0x98, Addressing.IMPLIED, 1, 2)
-  setOp(OpType.TXS, 0x9a, Addressing.IMPLIED, 1, 2)
-  setOp(OpType.TSX, 0xba, Addressing.IMPLIED, 1, 2)
-
-  // ADC
-  setOp(OpType.ADC, 0x69, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.ADC, 0x65, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.ADC, 0x75, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.ADC, 0x6d, Addressing.ABSOLUTE, 3, 4)
-  setOp(OpType.ADC, 0x7d, Addressing.ABSOLUTE_X, 3, 4)
-  setOp(OpType.ADC, 0x79, Addressing.ABSOLUTE_Y, 3, 4)
-  setOp(OpType.ADC, 0x61, Addressing.INDIRECT_X, 2, 6)
-  setOp(OpType.ADC, 0x71, Addressing.INDIRECT_Y, 2, 5)
-  // SBC
-  setOp(OpType.SBC, 0xe9, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.SBC, 0xe5, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.SBC, 0xf5, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.SBC, 0xed, Addressing.ABSOLUTE, 3, 4)
-  setOp(OpType.SBC, 0xfd, Addressing.ABSOLUTE_X, 3, 4)
-  setOp(OpType.SBC, 0xf9, Addressing.ABSOLUTE_Y, 3, 4)
-  setOp(OpType.SBC, 0xe1, Addressing.INDIRECT_X, 2, 6)
-  setOp(OpType.SBC, 0xf1, Addressing.INDIRECT_Y, 2, 5)
-
-  // CMP
-  setOp(OpType.CMP, 0xc9, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.CMP, 0xc5, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.CMP, 0xd5, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.CMP, 0xcd, Addressing.ABSOLUTE, 3, 4)
-  setOp(OpType.CMP, 0xdd, Addressing.ABSOLUTE_X, 3, 4)
-  setOp(OpType.CMP, 0xd9, Addressing.ABSOLUTE_Y, 3, 4)
-  setOp(OpType.CMP, 0xc1, Addressing.INDIRECT_X, 2, 6)
-  setOp(OpType.CMP, 0xd1, Addressing.INDIRECT_Y, 2, 5)
-  // CPX
-  setOp(OpType.CPX, 0xe0, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.CPX, 0xe4, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.CPX, 0xec, Addressing.ABSOLUTE, 3, 4)
-  // CPY
-  setOp(OpType.CPY, 0xc0, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.CPY, 0xc4, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.CPY, 0xcc, Addressing.ABSOLUTE, 3, 4)
-  // INX
-  setOp(OpType.INX, 0xe8, Addressing.IMPLIED, 1, 2)
-  // INY
-  setOp(OpType.INY, 0xc8, Addressing.IMPLIED, 1, 2)
-  // INC
-  setOp(OpType.INC, 0xe6, Addressing.ZEROPAGE, 2, 5)
-  setOp(OpType.INC, 0xf6, Addressing.ZEROPAGE_X, 2, 6)
-  setOp(OpType.INC, 0xee, Addressing.ABSOLUTE, 3, 6)
-  setOp(OpType.INC, 0xfe, Addressing.ABSOLUTE_X, 3, 7)
-
-  // DEX
-  setOp(OpType.DEX, 0xca, Addressing.IMPLIED, 1, 2)
-  // DEY
-  setOp(OpType.DEY, 0x88, Addressing.IMPLIED, 1, 2)
-  // DEC
-  setOp(OpType.DEC, 0xc6, Addressing.ZEROPAGE, 2, 5)
-  setOp(OpType.DEC, 0xd6, Addressing.ZEROPAGE_X, 2, 6)
-  setOp(OpType.DEC, 0xce, Addressing.ABSOLUTE, 3, 6)
-  setOp(OpType.DEC, 0xde, Addressing.ABSOLUTE_X, 3, 7)
-
-  // AND
-  setOp(OpType.AND, 0x29, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.AND, 0x25, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.AND, 0x35, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.AND, 0x2d, Addressing.ABSOLUTE, 3, 4)
-  setOp(OpType.AND, 0x3d, Addressing.ABSOLUTE_X, 3, 4)
-  setOp(OpType.AND, 0x39, Addressing.ABSOLUTE_Y, 3, 4)
-  setOp(OpType.AND, 0x21, Addressing.INDIRECT_X, 2, 6)
-  setOp(OpType.AND, 0x31, Addressing.INDIRECT_Y, 2, 5)
-  // ORA
-  setOp(OpType.ORA, 0x09, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.ORA, 0x05, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.ORA, 0x15, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.ORA, 0x0d, Addressing.ABSOLUTE, 3, 4)
-  setOp(OpType.ORA, 0x1d, Addressing.ABSOLUTE_X, 3, 4)
-  setOp(OpType.ORA, 0x19, Addressing.ABSOLUTE_Y, 3, 4)
-  setOp(OpType.ORA, 0x01, Addressing.INDIRECT_X, 2, 6)
-  setOp(OpType.ORA, 0x11, Addressing.INDIRECT_Y, 2, 5)
-  // EOR
-  setOp(OpType.EOR, 0x49, Addressing.IMMEDIATE, 2, 2)
-  setOp(OpType.EOR, 0x45, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.EOR, 0x55, Addressing.ZEROPAGE_X, 2, 4)
-  setOp(OpType.EOR, 0x4d, Addressing.ABSOLUTE, 3, 4)
-  setOp(OpType.EOR, 0x5d, Addressing.ABSOLUTE_X, 3, 4)
-  setOp(OpType.EOR, 0x59, Addressing.ABSOLUTE_Y, 3, 4)
-  setOp(OpType.EOR, 0x41, Addressing.INDIRECT_X, 2, 6)
-  setOp(OpType.EOR, 0x51, Addressing.INDIRECT_Y, 2, 5)
-  // ROL
-  setOp(OpType.ROL, 0x2a, Addressing.ACCUMULATOR, 1, 2)
-  setOp(OpType.ROL, 0x26, Addressing.ZEROPAGE, 2, 5)
-  setOp(OpType.ROL, 0x36, Addressing.ZEROPAGE_X, 2, 6)
-  setOp(OpType.ROL, 0x2e, Addressing.ABSOLUTE, 3, 6)
-  setOp(OpType.ROL, 0x3e, Addressing.ABSOLUTE_X, 3, 7)
-  // ROR
-  setOp(OpType.ROR, 0x6a, Addressing.ACCUMULATOR, 1, 2)
-  setOp(OpType.ROR, 0x66, Addressing.ZEROPAGE, 2, 5)
-  setOp(OpType.ROR, 0x76, Addressing.ZEROPAGE_X, 2, 6)
-  setOp(OpType.ROR, 0x6e, Addressing.ABSOLUTE, 3, 6)
-  setOp(OpType.ROR, 0x7e, Addressing.ABSOLUTE_X, 3, 7)
-  // ASL
-  setOp(OpType.ASL, 0x0a, Addressing.ACCUMULATOR, 1, 2)
-  setOp(OpType.ASL, 0x06, Addressing.ZEROPAGE, 2, 5)
-  setOp(OpType.ASL, 0x16, Addressing.ZEROPAGE_X, 2, 6)
-  setOp(OpType.ASL, 0x0e, Addressing.ABSOLUTE, 3, 6)
-  setOp(OpType.ASL, 0x1e, Addressing.ABSOLUTE_X, 3, 7)
-  // LSR
-  setOp(OpType.LSR, 0x4a, Addressing.ACCUMULATOR, 1, 2)
-  setOp(OpType.LSR, 0x46, Addressing.ZEROPAGE, 2, 5)
-  setOp(OpType.LSR, 0x56, Addressing.ZEROPAGE_X, 2, 6)
-  setOp(OpType.LSR, 0x4e, Addressing.ABSOLUTE, 3, 6)
-  setOp(OpType.LSR, 0x5e, Addressing.ABSOLUTE_X, 3, 7)
-  // BIT
-  setOp(OpType.BIT, 0x24, Addressing.ZEROPAGE, 2, 3)
-  setOp(OpType.BIT, 0x2c, Addressing.ABSOLUTE, 3, 4)
-
-  // JMP
-  setOp(OpType.JMP, 0x4c, Addressing.ABSOLUTE, 3, 3)
-  setOp(OpType.JMP, 0x6c, Addressing.INDIRECT, 3, 5)
-  // JSR
-  setOp(OpType.JSR, 0x20, Addressing.ABSOLUTE, 3, 6)
-  // RTS
-  setOp(OpType.RTS, 0x60, Addressing.IMPLIED, 1, 6)
-  // RTI
-  setOp(OpType.RTI, 0x40, Addressing.IMPLIED, 1, 6)
-  // Branch
-  setOp(OpType.BCC, 0x90, Addressing.RELATIVE, 2, 2)
-  setOp(OpType.BCS, 0xb0, Addressing.RELATIVE, 2, 2)
-  setOp(OpType.BPL, 0x10, Addressing.RELATIVE, 2, 2)
-  setOp(OpType.BMI, 0x30, Addressing.RELATIVE, 2, 2)
-  setOp(OpType.BNE, 0xd0, Addressing.RELATIVE, 2, 2)
-  setOp(OpType.BEQ, 0xf0, Addressing.RELATIVE, 2, 2)
-  setOp(OpType.BVC, 0x50, Addressing.RELATIVE, 2, 2)
-  setOp(OpType.BVS, 0x70, Addressing.RELATIVE, 2, 2)
-
-  // Push, Pop
-  setOp(OpType.PHA, 0x48, Addressing.IMPLIED, 1, 3)
-  setOp(OpType.PHP, 0x08, Addressing.IMPLIED, 1, 3)
-  setOp(OpType.PLA, 0x68, Addressing.IMPLIED, 1, 4)
-  setOp(OpType.PLP, 0x28, Addressing.IMPLIED, 1, 4)
-
-  setOp(OpType.CLC, 0x18, Addressing.IMPLIED, 1, 2)
-  setOp(OpType.SEC, 0x38, Addressing.IMPLIED, 1, 2)
-
-  setOp(OpType.SEI, 0x78, Addressing.IMPLIED, 1, 2)
-  setOp(OpType.CLI, 0x58, Addressing.IMPLIED, 1, 2)
-  setOp(OpType.CLV, 0xb8, Addressing.IMPLIED, 1, 2)
-  setOp(OpType.SED, 0xf8, Addressing.IMPLIED, 1, 2)
-  setOp(OpType.CLD, 0xd8, Addressing.IMPLIED, 1, 2)
-
-  setOp(OpType.BRK, 0x00, Addressing.IMPLIED, 1, 7)
-  setOp(OpType.NOP, 0xea, Addressing.IMPLIED, 1, 2)
-
-  return tbl
+  const table = new Array<Instruction>(256)
+  table.fill(null)
+  kTable.forEach(inst => {
+    const [code, opType, addressing, bytes, cycle] = inst
+    table[code] = { opType, addressing, bytes, cycle }
+  })
+  return table
 })()

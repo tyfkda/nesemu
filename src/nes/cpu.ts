@@ -310,12 +310,12 @@ if (this.s === 0) {
     this.s = dec8(s)
   }
 
-  public pop(value: number): number {
+  public pop(): number {
     this.s = inc8(this.s)
     return this.read8(0x0100 + this.s)
   }
 
-  public pop16(value: number): number {
+  public pop16(): number {
     let s = this.s
     s = inc8(s)
     const l = this.read8(0x0100 + s)
@@ -337,7 +337,7 @@ if (this.s === 0) {
     }
   }
 
-  private addStepLog(line: string): void {
+  public addStepLog(line: string): void {
     if (this.stepLogs.length < MAX_STEP_LOG) {
       this.stepLogs.push(line)
     } else {
@@ -349,12 +349,6 @@ if (this.s === 0) {
 }
 
 const kOpTypeTable = (() => {
-  const tbl = []
-
-  function set(opType: OpType, func: Function) {
-    tbl[opType] = func
-  }
-
   function load(cpu: Cpu6502, pc: number, addressing: Addressing) {
     let adr
     switch (addressing) {
@@ -447,289 +441,350 @@ const kOpTypeTable = (() => {
     cpu.write8(adr, value)
   }
 
-  set(OpType.LDA, (cpu, pc, addressing) => {
-    cpu.a = load(cpu, pc, addressing)
-    cpu.setFlag(cpu.a)
-  })
-  set(OpType.STA, (cpu, pc, addressing) => {
-    store(cpu, pc, addressing, cpu.a)
-  })
+  const kTable: ((cpu: Cpu6502, pc: number, addressing: Addressing) => void)[] = [
+    // UNKNOWN
+    null,
+    // NOP
+    (_cpu, _pc, _addressing) => {},
+    // LDA
+    (cpu, pc, addressing) => {
+      cpu.a = load(cpu, pc, addressing)
+      cpu.setFlag(cpu.a)
+    },
+    // STA
+    (cpu, pc, addressing) => {
+      store(cpu, pc, addressing, cpu.a)
+    },
 
-  set(OpType.LDX, (cpu, pc, addressing) => {
-    cpu.x = load(cpu, pc, addressing)
-    cpu.setFlag(cpu.x)
-  })
-  set(OpType.STX, (cpu, pc, addressing) => {
-    store(cpu, pc, addressing, cpu.x)
-  })
+    // LDX
+    (cpu, pc, addressing) => {
+      cpu.x = load(cpu, pc, addressing)
+      cpu.setFlag(cpu.x)
+    },
+    // STX
+    (cpu, pc, addressing) => {
+      store(cpu, pc, addressing, cpu.x)
+    },
 
-  set(OpType.LDY, (cpu, pc, addressing) => {
-    cpu.y = load(cpu, pc, addressing)
-    cpu.setFlag(cpu.y)
-  })
-  set(OpType.STY, (cpu, pc, addressing) => {
-    store(cpu, pc, addressing, cpu.y)
-  })
+    // LDY
+    (cpu, pc, addressing) => {
+      cpu.y = load(cpu, pc, addressing)
+      cpu.setFlag(cpu.y)
+    },
+    // STY
+    (cpu, pc, addressing) => {
+      store(cpu, pc, addressing, cpu.y)
+    },
 
-  set(OpType.TAX, (cpu, _pc, _) => {
-    cpu.x = cpu.a
-    cpu.setFlag(cpu.x)
-  })
-  set(OpType.TAY, (cpu, _pc, _) => {
-    cpu.y = cpu.a
-    cpu.setFlag(cpu.y)
-  })
-  set(OpType.TXA, (cpu, _pc, _) => {
-    cpu.a = cpu.x
-    cpu.setFlag(cpu.x)
-  })
-  set(OpType.TYA, (cpu, _pc, _) => {
-    cpu.a = cpu.y
-    cpu.setFlag(cpu.a)
-  })
-  set(OpType.TXS, (cpu, _pc, _) => {
-    cpu.s = cpu.x
-  })
-  set(OpType.TSX, (cpu, _pc, _) => {
-    cpu.x = cpu.s
-    cpu.setFlag(cpu.x)
-  })
+    // TAX
+    (cpu, _pc, _) => {
+      cpu.x = cpu.a
+      cpu.setFlag(cpu.x)
+    },
+    // TAY
+    (cpu, _pc, _) => {
+      cpu.y = cpu.a
+      cpu.setFlag(cpu.y)
+    },
+    // TXA
+    (cpu, _pc, _) => {
+      cpu.a = cpu.x
+      cpu.setFlag(cpu.x)
+    },
+    // TYA
+    (cpu, _pc, _) => {
+      cpu.a = cpu.y
+      cpu.setFlag(cpu.a)
+    },
+    // TXS
+    (cpu, _pc, _) => {
+      cpu.s = cpu.x
+    },
+    // TSX
+    (cpu, _pc, _) => {
+      cpu.x = cpu.s
+      cpu.setFlag(cpu.x)
+    },
 
-  set(OpType.ADC, (cpu, pc, addressing) => {
-    const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
-    const operand = load(cpu, pc, addressing)
-    const result = cpu.a + operand + carry
-    const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
-    cpu.a = result & 0xff
-    cpu.setFlag(cpu.a)
-    cpu.setCarry(result >= 0x0100)
-    cpu.setOverFlow(overflow)
-  })
-  set(OpType.SBC, (cpu, pc, addressing) => {
-    // The 6502 overflow flag explained mathematically
-    // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
-    const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
-    const operand = 255 - load(cpu, pc, addressing)
-    const result = cpu.a + operand + carry
-    const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
-    cpu.a = result & 0xff
-    cpu.setFlag(cpu.a)
-    cpu.setCarry(result >= 0x0100)
-    cpu.setOverFlow(overflow)
-  })
+    // ADC
+    (cpu, pc, addressing) => {
+      const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
+      const operand = load(cpu, pc, addressing)
+      const result = cpu.a + operand + carry
+      const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
+      cpu.a = result & 0xff
+      cpu.setFlag(cpu.a)
+      cpu.setCarry(result >= 0x0100)
+      cpu.setOverFlow(overflow)
+    },
+    // SBC
+    (cpu, pc, addressing) => {
+      // The 6502 overflow flag explained mathematically
+      // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+      const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
+      const operand = 255 - load(cpu, pc, addressing)
+      const result = cpu.a + operand + carry
+      const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
+      cpu.a = result & 0xff
+      cpu.setFlag(cpu.a)
+      cpu.setCarry(result >= 0x0100)
+      cpu.setOverFlow(overflow)
+    },
 
-  set(OpType.INX, (cpu, _pc, _) => {
-    cpu.x = inc8(cpu.x)
-    cpu.setFlag(cpu.x)
-  })
-  set(OpType.INY, (cpu, _pc, _) => {
-    cpu.y = inc8(cpu.y)
-    cpu.setFlag(cpu.y)
-  })
-  set(OpType.INC, (cpu, pc, addressing) => {
-    const value = inc8(load(cpu, pc, addressing))
-    store(cpu, pc, addressing, value)
-    cpu.setFlag(value)
-  })
+    // INX
+    (cpu, _pc, _) => {
+      cpu.x = inc8(cpu.x)
+      cpu.setFlag(cpu.x)
+    },
+    // INY
+    (cpu, _pc, _) => {
+      cpu.y = inc8(cpu.y)
+      cpu.setFlag(cpu.y)
+    },
+    // INC
+    (cpu, pc, addressing) => {
+      const value = inc8(load(cpu, pc, addressing))
+      store(cpu, pc, addressing, value)
+      cpu.setFlag(value)
+    },
 
-  set(OpType.DEX, (cpu, _pc, _) => {
-    cpu.x = dec8(cpu.x)
-    cpu.setFlag(cpu.x)
-  })
-  set(OpType.DEY, (cpu, _pc, _) => {
-    cpu.y = dec8(cpu.y)
-    cpu.setFlag(cpu.y)
-  })
-  set(OpType.DEC, (cpu, pc, addressing) => {
-    const value = dec8(load(cpu, pc, addressing))
-    store(cpu, pc, addressing, value)
-    cpu.setFlag(value)
-  })
+    // DEX
+    (cpu, _pc, _) => {
+      cpu.x = dec8(cpu.x)
+      cpu.setFlag(cpu.x)
+    },
+    // DEY
+    (cpu, _pc, _) => {
+      cpu.y = dec8(cpu.y)
+      cpu.setFlag(cpu.y)
+    },
+    // DEC
+    (cpu, pc, addressing) => {
+      const value = dec8(load(cpu, pc, addressing))
+      store(cpu, pc, addressing, value)
+      cpu.setFlag(value)
+    },
 
-  set(OpType.AND, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    cpu.a &= value
-    cpu.setFlag(cpu.a)
-  })
-  set(OpType.ORA, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    cpu.a |= value
-    cpu.setFlag(cpu.a)
-  })
-  set(OpType.EOR, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    cpu.a ^= value
-    cpu.setFlag(cpu.a)
-  })
-  set(OpType.ROL, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
-    const newCarry = (value & 0x80) !== 0
-    const newValue = ((value << 1) | oldCarry) & 0xff
-    store(cpu, pc, addressing, newValue)
-    cpu.setFlag(newValue)
-    cpu.setCarry(newCarry)
-  })
-  set(OpType.ROR, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 0x80 : 0
-    const newCarry = (value & 0x01) !== 0
-    const newValue = (value >> 1) | oldCarry
-    store(cpu, pc, addressing, newValue)
-    cpu.setFlag(newValue)
-    cpu.setCarry(newCarry)
-  })
-  set(OpType.ASL, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    const newCarry = (value & 0x80) !== 0
-    const newValue = (value << 1) & 0xff
-    store(cpu, pc, addressing, newValue)
-    cpu.setFlag(newValue)
-    cpu.setCarry(newCarry)
-  })
-  set(OpType.LSR, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    const newCarry = (value & 0x01) !== 0
-    const newValue = (value >> 1) & 0xff
-    store(cpu, pc, addressing, newValue)
-    cpu.setFlag(newValue)
-    cpu.setCarry(newCarry)
-  })
-  set(OpType.BIT, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    const result = cpu.a & value
-    cpu.setZero(result === 0)
+    // AND
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      cpu.a &= value
+      cpu.setFlag(cpu.a)
+    },
+    // ORA
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      cpu.a |= value
+      cpu.setFlag(cpu.a)
+    },
+    // EOR
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      cpu.a ^= value
+      cpu.setFlag(cpu.a)
+    },
+    // ROL
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
+      const newCarry = (value & 0x80) !== 0
+      const newValue = ((value << 1) | oldCarry) & 0xff
+      store(cpu, pc, addressing, newValue)
+      cpu.setFlag(newValue)
+      cpu.setCarry(newCarry)
+    },
+    // ROR
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 0x80 : 0
+      const newCarry = (value & 0x01) !== 0
+      const newValue = (value >> 1) | oldCarry
+      store(cpu, pc, addressing, newValue)
+      cpu.setFlag(newValue)
+      cpu.setCarry(newCarry)
+    },
+    // ASL
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      const newCarry = (value & 0x80) !== 0
+      const newValue = (value << 1) & 0xff
+      store(cpu, pc, addressing, newValue)
+      cpu.setFlag(newValue)
+      cpu.setCarry(newCarry)
+    },
+    // LSR
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      const newCarry = (value & 0x01) !== 0
+      const newValue = (value >> 1) & 0xff
+      store(cpu, pc, addressing, newValue)
+      cpu.setFlag(newValue)
+      cpu.setCarry(newCarry)
+    },
+    // BIT
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      const result = cpu.a & value
+      cpu.setZero(result === 0)
 
-    const mask = NEGATIVE_FLAG | OVERFLOW_FLAG
-    cpu.p = (cpu.p & ~mask) | (value & mask)
-  })
-  set(OpType.CMP, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    const result = cpu.a - value
-    cpu.setFlag(result)
-    cpu.setCarry(result >= 0)
-  })
-  set(OpType.CPX, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    const result = cpu.x - value
-    cpu.setFlag(result)
-    cpu.setCarry(result >= 0)
-  })
-  set(OpType.CPY, (cpu, pc, addressing) => {
-    const value = load(cpu, pc, addressing)
-    const result = cpu.y - value
-    cpu.setFlag(result)
-    cpu.setCarry(result >= 0)
-  })
+      const mask = NEGATIVE_FLAG | OVERFLOW_FLAG
+      cpu.p = (cpu.p & ~mask) | (value & mask)
+    },
+    // CMP
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      const result = cpu.a - value
+      cpu.setFlag(result)
+      cpu.setCarry(result >= 0)
+    },
+    // CPX
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      const result = cpu.x - value
+      cpu.setFlag(result)
+      cpu.setCarry(result >= 0)
+    },
+    // CPY
+    (cpu, pc, addressing) => {
+      const value = load(cpu, pc, addressing)
+      const result = cpu.y - value
+      cpu.setFlag(result)
+      cpu.setCarry(result >= 0)
+    },
 
-  set(OpType.JMP, (cpu, pc, addressing) => {
-    let adr = cpu.read16(pc)
-    if (addressing !== Addressing.ABSOLUTE)  // Indirect address
-      adr = cpu.read16Indirect(adr)
-    cpu.pc = adr
-  })
-  set(OpType.JSR, (cpu, pc, _) => {
-    const adr = cpu.read16(pc)
-    cpu.push16(pc + 1)
-    cpu.pc = adr
-  })
-  set(OpType.RTS, (cpu, _pc, _) => {
-    cpu.pc = cpu.pop16() + 1
-  })
-  set(OpType.RTI, (cpu, _pc, _) => {
-    cpu.p = cpu.pop() | RESERVED_FLAG
-    cpu.pc = cpu.pop16()
-  })
+    // JMP
+    (cpu, pc, addressing) => {
+      let adr = cpu.read16(pc)
+      if (addressing !== Addressing.ABSOLUTE)  // Indirect address
+        adr = cpu.read16Indirect(adr)
+      cpu.pc = adr
+    },
+    // JSR
+    (cpu, pc, _) => {
+      const adr = cpu.read16(pc)
+      cpu.push16(pc + 1)
+      cpu.pc = adr
+    },
+    // RTS
+    (cpu, _pc, _) => {
+      cpu.pc = cpu.pop16() + 1
+    },
+    // RTI
+    (cpu, _pc, _) => {
+      cpu.p = cpu.pop() | RESERVED_FLAG
+      cpu.pc = cpu.pop16()
+    },
 
-  set(OpType.BCC, (cpu, pc, _) => {
-    const offset = toSigned(cpu.read8(pc))
-    if ((cpu.p & CARRY_FLAG) === 0)
-      cpu.pc += offset
-  })
-  set(OpType.BCS, (cpu, pc, _) => {
-    const offset = toSigned(cpu.read8(pc))
-    if ((cpu.p & CARRY_FLAG) !== 0)
-      cpu.pc += offset
-  })
-  set(OpType.BPL, (cpu, pc, _) => {
-    const offset = toSigned(cpu.read8(pc))
-    if ((cpu.p & NEGATIVE_FLAG) === 0)
-      cpu.pc += offset
-  })
-  set(OpType.BMI, (cpu, pc, _) => {
-    const offset = toSigned(cpu.read8(pc))
-    if ((cpu.p & NEGATIVE_FLAG) !== 0)
-      cpu.pc += offset
-  })
-  set(OpType.BNE, (cpu, pc, _) => {
-    const offset = toSigned(cpu.read8(pc))
-    if ((cpu.p & ZERO_FLAG) === 0)
-      cpu.pc += offset
-  })
-  set(OpType.BEQ, (cpu, pc, _) => {
-    const offset = toSigned(cpu.read8(pc))
-    if ((cpu.p & ZERO_FLAG) !== 0)
-      cpu.pc += offset
-  })
-  set(OpType.BVC, (cpu, pc, _) => {
-    const offset = toSigned(cpu.read8(pc))
-    if ((cpu.p & OVERFLOW_FLAG) === 0)
-      cpu.pc += offset
-  })
-  set(OpType.BVS, (cpu, pc, _) => {
-    const offset = toSigned(cpu.read8(pc))
-    if ((cpu.p & OVERFLOW_FLAG) !== 0)
-      cpu.pc += offset
-  })
+    // BCC
+    (cpu, pc, _) => {
+      const offset = toSigned(cpu.read8(pc))
+      if ((cpu.p & CARRY_FLAG) === 0)
+        cpu.pc += offset
+    },
+    // BCS
+    (cpu, pc, _) => {
+      const offset = toSigned(cpu.read8(pc))
+      if ((cpu.p & CARRY_FLAG) !== 0)
+        cpu.pc += offset
+    },
+    // BPL
+    (cpu, pc, _) => {
+      const offset = toSigned(cpu.read8(pc))
+      if ((cpu.p & NEGATIVE_FLAG) === 0)
+        cpu.pc += offset
+    },
+    // BMI
+    (cpu, pc, _) => {
+      const offset = toSigned(cpu.read8(pc))
+      if ((cpu.p & NEGATIVE_FLAG) !== 0)
+        cpu.pc += offset
+    },
+    // BNE
+    (cpu, pc, _) => {
+      const offset = toSigned(cpu.read8(pc))
+      if ((cpu.p & ZERO_FLAG) === 0)
+        cpu.pc += offset
+    },
+    // BEQ
+    (cpu, pc, _) => {
+      const offset = toSigned(cpu.read8(pc))
+      if ((cpu.p & ZERO_FLAG) !== 0)
+        cpu.pc += offset
+    },
+    // BVC
+    (cpu, pc, _) => {
+      const offset = toSigned(cpu.read8(pc))
+      if ((cpu.p & OVERFLOW_FLAG) === 0)
+        cpu.pc += offset
+    },
+    // BVS
+    (cpu, pc, _) => {
+      const offset = toSigned(cpu.read8(pc))
+      if ((cpu.p & OVERFLOW_FLAG) !== 0)
+        cpu.pc += offset
+    },
 
-  set(OpType.PHA, (cpu, _pc, _) => {
-    cpu.push(cpu.a)
-  })
-  set(OpType.PHP, (cpu, _pc, _) => {
-    cpu.push(cpu.p | BREAK_FLAG)
-  })
-  set(OpType.PLA, (cpu, _pc, _) => {
-    cpu.a = cpu.pop()
-    cpu.setFlag(cpu.a)
-  })
-  set(OpType.PLP, (cpu, _pc, _) => {
-    cpu.p = cpu.pop() | RESERVED_FLAG
-  })
+    // PHA
+    (cpu, _pc, _) => {
+      cpu.push(cpu.a)
+    },
+    // PHP
+    (cpu, _pc, _) => {
+      cpu.push(cpu.p | BREAK_FLAG)
+    },
+    // PLA
+    (cpu, _pc, _) => {
+      cpu.a = cpu.pop()
+      cpu.setFlag(cpu.a)
+    },
+    // PLP
+    (cpu, _pc, _) => {
+      cpu.p = cpu.pop() | RESERVED_FLAG
+    },
 
-  set(OpType.CLC, (cpu, _pc, _) => {
-    cpu.p &= ~CARRY_FLAG
-  })
-  set(OpType.SEC, (cpu, _pc, _) => {
-    cpu.p |= CARRY_FLAG
-  })
+    // CLC
+    (cpu, _pc, _) => {
+      cpu.p &= ~CARRY_FLAG
+    },
+    // SEC
+    (cpu, _pc, _) => {
+      cpu.p |= CARRY_FLAG
+    },
 
-  set(OpType.SEI, (cpu, _pc, _) => {  // SEI: Disable IRQ
-    cpu.p |= IRQBLK_FLAG
-  })
-  set(OpType.CLI, (cpu, _pc, _) => {  // CLI: Enable IRQ
-    cpu.p &= ~IRQBLK_FLAG
-  })
-  set(OpType.CLV, (cpu, _pc, _) => {
-    cpu.p &= ~OVERFLOW_FLAG
-  })
-  set(OpType.SED, (_cpu, _pc, _) => {  // SED: normal to BCD mode
-    // not implemented on NES
-  })
-  set(OpType.CLD, (_cpu, _pc, _) => {  // CLD: BCD to normal mode
-    // not implemented on NES
-  })
+    // SEI
+    (cpu, _pc, _) => {
+      cpu.p |= IRQBLK_FLAG
+    },
+    // CLI
+    (cpu, _pc, _) => {
+      cpu.p &= ~IRQBLK_FLAG
+    },
+    // CLV
+    (cpu, _pc, _) => {
+      cpu.p &= ~OVERFLOW_FLAG
+    },
+    // SED
+    (_cpu, _pc, _) => {
+      // SED: normal to BCD mode
+      // not implemented on NES
+    },
+    // CLD
+    (_cpu, _pc, _) => {
+      // CLD: BCD to normal mode
+      // not implemented on NES
+    },
 
-  set(OpType.BRK, (cpu, pc, _addressing) => {
-    if (DEBUG) {
-      cpu.addStepLog('BRK occurred')
-    }
+    // BRK
+    (cpu, pc, _addressing) => {
+      if (DEBUG) {
+        cpu.addStepLog('BRK occurred')
+      }
 
-    cpu.push16(pc + 1)
-    cpu.push(cpu.p | BREAK_FLAG)
-    cpu.pc = cpu.read16(VEC_IRQ)
-    cpu.p |= IRQBLK_FLAG
-  })
-  set(OpType.NOP, (_cpu, _pc, _addressing) => {})
-
-  return tbl
+      cpu.push16(pc + 1)
+      cpu.push(cpu.p | BREAK_FLAG)
+      cpu.pc = cpu.read16(VEC_IRQ)
+      cpu.p |= IRQBLK_FLAG
+    },
+  ]
+  return kTable
 })()
