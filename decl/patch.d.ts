@@ -25,5 +25,5 @@ interface CSSStyleDeclaration {
 }
 
 interface AudioContext {
-  close: () => void
+  close(): void
 }
