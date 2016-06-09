@@ -11,11 +11,11 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
     if ((swap & 0x40) === 0) {
       p0 = (regs[6] & maxPrg) << 13
       p1 = (regs[7] & maxPrg) << 13
-      p2 = (0xfe & maxPrg) << 13
+      p2 = (maxPrg - 1) << 13
     } else {
       p2 = (regs[6] & maxPrg) << 13
       p1 = (regs[7] & maxPrg) << 13
-      p0 = (0xfe & maxPrg) << 13
+      p0 = (maxPrg - 1) << 13
     }
   }
   const setChrBank = (swap) => {
@@ -80,30 +80,20 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
   })
 
   // IRQ
-  let irqHline = -1
-  let irqEnable = false
   cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
     if ((adr & 1) === 0) {
-      irqHline = value
-      if (irqEnable)
-        nes.setIrqHline(irqHline)
+      nes.setIrqHlineValue(value)
     } else {
       // TODO: IRQ relaod
+      nes.resetIrqHlineCounter()
     }
   })
   cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
     if ((adr & 1) === 0) {
-      if (irqEnable) {
-        //console.log('MMC3 IRQ disabled')
-        irqEnable = false
-        nes.setIrqHline(-1)
-      }
+      nes.enableIrqHline(false)
+      nes.resetIrqHlineCounter()
     } else {
-      if (!irqEnable) {
-        //console.log('MMC3 IRQ enabled')
-        irqEnable = true
-        nes.setIrqHline(irqHline)
-      }
+      nes.enableIrqHline(true)
     }
   })
 

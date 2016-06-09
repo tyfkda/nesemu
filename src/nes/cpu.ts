@@ -637,7 +637,7 @@ const kOpTypeTable = (() => {
     cpu.pc = cpu.pop16() + 1
   })
   set(OpType.RTI, (cpu, _pc, _) => {
-    cpu.p = cpu.pop()
+    cpu.p = cpu.pop() | RESERVED_FLAG
     cpu.pc = cpu.pop16()
   })
 

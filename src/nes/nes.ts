@@ -55,7 +55,9 @@ export class Nes {
   private mapperNo: number
   private vblankCallback: (leftCycles: number) => void
   private breakPointCallback: () => void
-  private irqHline: number
+  private irqHlineEnable: boolean
+  private irqHlineValue: number
+  private irqHlineCounter: number
 
   public static create(): Nes {
     return new Nes()
@@ -77,7 +79,8 @@ export class Nes {
     this.cycleCount = 0
     this.vblankCallback = (_leftCycles) => {}
     this.breakPointCallback = () => {}
-    this.irqHline = -1
+    this.irqHlineEnable = false
+    this.irqHlineValue = this.irqHlineCounter = -1
 
     this.romData = new Uint8Array(0)
   }
@@ -110,7 +113,8 @@ export class Nes {
     this.ppu.reset()
     this.apu.reset()
     this.cycleCount = 0
-    this.irqHline = -1
+    this.irqHlineEnable = false
+    this.irqHlineValue = this.irqHlineCounter = -1
   }
 
   public setPadStatus(no: number, status: number): void {
@@ -141,8 +145,16 @@ export class Nes {
     return cycle
   }
 
-  public setIrqHline(line: number): void {
-    this.irqHline = line
+  public enableIrqHline(value: boolean): void {
+    this.irqHlineEnable = value
+  }
+
+  public setIrqHlineValue(line: number): void {
+    this.irqHlineValue = line
+  }
+
+  public resetIrqHlineCounter(): void {
+    this.irqHlineCounter = 0
   }
 
   public render(context: CanvasRenderingContext2D, imageData: ImageData): void {
@@ -247,13 +259,19 @@ export class Nes {
       case VRETURN:
         cycleCount2 -= (VRETURN * 341 / 3) | 0
         this.ppu.hcount = 0
+        this.irqHlineCounter = this.irqHlineValue
         break
       default:
         break
       }
 
-      if (hcount === this.irqHline) {
-        this.cpu.requestIrq()
+      // http://bobrost.com/nes/files/mmc3irqs.txt
+      // Note: BGs OR sprites MUST be enabled in $2001 (bits 3 and 4)
+      // in order for the countdown to occur.
+      if ((this.ppu.regs[1] & 0x18) !== 0) {
+        if (--this.irqHlineCounter === 0 && this.irqHlineEnable) {
+          this.cpu.requestIrq()
+        }
       }
     }
     return cycleCount2
