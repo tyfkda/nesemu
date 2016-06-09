@@ -51,7 +51,14 @@ export class AudioManager {
   private masterVolume: number
 
   constructor() {
-    this.context = new (window.AudioContext || window.webkitAudioContext)()
+    const ContextClass = window.AudioContext || window.webkitAudioContext
+    if (ContextClass == null) {
+      this.context = null
+      this.masterVolume = 0
+      return
+    }
+
+    this.context = new ContextClass()
     if (this.context.close == null) {  // Patch for MSEdge, which doesn't have close method.
       this.context.close = () => {}
     }
@@ -66,6 +73,9 @@ export class AudioManager {
   }
 
   public destroy() {
+    if (this.context == null)
+      return
+
     for (let channel of this.channels) {
       channel.destroy()
     }
@@ -74,14 +84,20 @@ export class AudioManager {
   }
 
   public setChannelFrequency(channel: number, frequency: number): void {
+    if (this.context == null)
+      return
     this.channels[channel].setFrequency(frequency)
   }
 
   public setChannelVolume(channel: number, volume: number): void {
+    if (this.context == null)
+      return
     this.channels[channel].setVolume(volume * this.masterVolume)
   }
 
   public setMasterVolume(volume: number): void {
+    if (this.context == null)
+      return
     this.masterVolume = volume
     if (volume <= 0) {
       for (let channel of this.channels)

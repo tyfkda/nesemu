@@ -683,8 +683,9 @@ export class Ppu {
     }
     let event = hevents.events[n - 1]
     event.hcount = hcount
-    for (let key of Object.keys(param))
+    Object.keys(param).forEach(key => {
       event[key] = param[key]
+    })
     hevents.count = n
   }
 

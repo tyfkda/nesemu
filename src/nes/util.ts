@@ -1,5 +1,16 @@
 const kHexTbl = '0123456789abcdef'
 
+if (!('fill' in Array.prototype)) {
+  // IE doesn't support fill method for Array.
+  /* tslint:disable:no-invalid-this */
+  Array.prototype.fill = function(value: number, start: number = 0,
+                                  end: number = this.length): Array {
+    for (let i = start; i < end; ++i)
+      this[i] = value
+    return this
+  }
+}
+
 if (!('fill' in Uint8Array.prototype)) {
   // Safari doesn't support fill method for typed array.
   /* tslint:disable:no-invalid-this */
