@@ -17,6 +17,7 @@ const BASE = 0x4000
 const PAD_STATUS = 0x4016
 const FRAME_COUNTER = 0x4017
 const IRQ_INHIBIT = 1 << 6
+const SEQUENCER_MODE = 1 << 7
 
 export class Apu {
   private padStatus: number[] = new Array(2)
@@ -99,7 +100,9 @@ export class Apu {
   }
 
   public isIrqEnabled(): boolean {
-    return (this.regs[FRAME_COUNTER - BASE] & IRQ_INHIBIT) === 0
+    // http://wiki.nesdev.com/w/index.php/IRQ
+    // Enable: $4017 write with bits 7-6 = 00
+    return (this.regs[FRAME_COUNTER - BASE] & (IRQ_INHIBIT | SEQUENCER_MODE)) === 0
   }
 
   private latchPad(): void {
