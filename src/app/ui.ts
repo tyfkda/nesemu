@@ -384,7 +384,6 @@ export class ControlWnd extends Wnd {
     const muteLabel = document.createElement('label')
     const muteBtn = document.createElement('input') as HTMLInputElement
     muteBtn.type = 'checkbox'
-    muteBtn.checked = true
     muteBtn.addEventListener('click', () => {
       const volume = muteBtn.checked ? 0.0 : 1.0
       this.audioManager.setMasterVolume(volume)

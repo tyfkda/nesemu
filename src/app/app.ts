@@ -36,7 +36,6 @@ export class App {
     this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
 
     this.audioManager = new AudioManager()
-    this.audioManager.setMasterVolume(0)
 
     this.screenWnd = new ScreenWnd(this.wndMgr, this.nes)
     this.wndMgr.add(this.screenWnd)
