@@ -52,6 +52,9 @@ export class AudioManager {
 
   constructor() {
     this.context = new (window.AudioContext || window.webkitAudioContext)()
+    if (this.context.close == null) {  // Patch for MSEdge, which doesn't have close method.
+      this.context.close = () => {}
+    }
     this.masterVolume = 1.0
 
     this.channels = kTypes.map(type => {
