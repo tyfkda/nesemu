@@ -5,11 +5,12 @@ export default class Wnd {
 
   protected callback: Function
   private root: HTMLElement
+  private contentHolder: HTMLElement
   private titleBar: HTMLElement
   private titleElem: HTMLElement
 
-  public constructor(protected wndMgr: WindowManager,
-                     width: number, height: number, title: string, content: HTMLElement)
+  public constructor(protected wndMgr: WindowManager, width: number, height: number,
+                     title: string)
   {
     this.callback = () => {}
     this.root = this.createRoot()
@@ -20,23 +21,30 @@ export default class Wnd {
 
     this.createTitleBar(title)
 
-    const contentHolder = document.createElement('div')
-    contentHolder.className = 'content-holder'
-    contentHolder.appendChild(content)
-    this.root.appendChild(contentHolder)
+    this.contentHolder = document.createElement('div')
+    this.contentHolder.className = 'content-holder'
+    this.root.appendChild(this.contentHolder)
   }
 
-  public setPos(x: number, y: number): void {
+  public setContent(content: HTMLElement): Wnd {
+    this.contentHolder.appendChild(content)
+    return this
+  }
+
+  public setPos(x: number, y: number): Wnd {
     this.root.style.left = `${x}px`
     this.root.style.top = `${y}px`
+    return this
   }
 
-  public setTitle(title: string): void {
+  public setTitle(title: string): Wnd {
     this.titleElem.innerText = title
+    return this
   }
 
-  public setCallback(callback: Function): void {
+  public setCallback(callback: Function): Wnd {
     this.callback = callback
+    return this
   }
 
   public getRootNode(): HTMLElement {

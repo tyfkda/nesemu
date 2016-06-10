@@ -23,6 +23,9 @@ export class ScreenWnd extends Wnd {
   private imageData: ImageData
 
   public constructor(wndMgr: WindowManager, nes: Nes) {
+    super(wndMgr, 512, 480, 'NES')
+    this.nes = nes
+
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = 256
     canvas.height = 240
@@ -31,8 +34,7 @@ export class ScreenWnd extends Wnd {
     canvas.className = 'pixelated'
     clearCanvas(canvas)
 
-    super(wndMgr, 512, 480, 'NES', canvas)
-    this.nes = nes
+    this.setContent(canvas)
     this.canvas = canvas
     this.context = this.canvas.getContext('2d')
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
@@ -87,13 +89,14 @@ export class PaletWnd extends Wnd {
   }
 
   constructor(wndMgr: WindowManager, nes: Nes) {
-    const [content, boxes] = PaletWnd.createDom()
-
-    super(wndMgr, 128, 16, 'Palette', content)
+    super(wndMgr, 128, 16, 'Palette')
     this.nes = nes
-    this.boxes = boxes
     this.palet = new Uint8Array(PaletWnd.W * PaletWnd.H)
     this.tmp = new Uint8Array(PaletWnd.W * PaletWnd.H)
+
+    const [content, boxes] = PaletWnd.createDom()
+    this.setContent(content)
+    this.boxes = boxes
   }
 
   public update(): void {
@@ -116,6 +119,9 @@ export class NameTableWnd extends Wnd {
   private canvas: HTMLCanvasElement
 
   public constructor(wndMgr: WindowManager, nes: Nes) {
+    super(wndMgr, 512, 240, 'NameTable')
+    this.nes = nes
+
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = 512
     canvas.height = 240
@@ -124,8 +130,7 @@ export class NameTableWnd extends Wnd {
     canvas.className = 'pixelated'
     clearCanvas(canvas)
 
-    super(wndMgr, 512, 240, 'NameTable', canvas)
-    this.nes = nes
+    this.setContent(canvas)
     this.canvas = canvas
   }
 
@@ -157,10 +162,11 @@ export class PatternTableWnd extends Wnd {
   }
 
   public constructor(wndMgr: WindowManager, nes: Nes) {
-    const canvas = PatternTableWnd.createCanvas()
-
-    super(wndMgr, 256, 128, 'PatternTable', canvas)
+    super(wndMgr, 256, 128, 'PatternTable')
     this.nes = nes
+
+    const canvas = PatternTableWnd.createCanvas()
+    this.setContent(canvas)
     this.canvas = canvas
   }
 
@@ -174,11 +180,11 @@ export class RegisterWnd extends Wnd {
   private valueElems: HTMLInputElement[]
 
   public constructor(wndMgr: WindowManager, nes: Nes) {
-    const root = document.createElement('div')
-    root.className = 'fixed-font'
-    super(wndMgr, 100, 160, 'Regs', root)
+    super(wndMgr, 100, 160, 'Regs')
     this.nes = nes
-    this.createContent(root)
+
+    const content = this.createContent()
+    this.setContent(content)
   }
 
   public updateStatus(): void {
@@ -192,7 +198,10 @@ export class RegisterWnd extends Wnd {
     this.valueElems[6].value = String(this.nes.cycleCount)
   }
 
-  private createContent(root: HTMLElement): void {
+  private createContent(): HTMLElement {
+    const root = document.createElement('div')
+    root.className = 'fixed-font'
+
     const kElems = [
       { name: 'PC' },
       { name: 'A' },
@@ -222,6 +231,7 @@ export class RegisterWnd extends Wnd {
       this.valueElems.push(valueInput)
     }
     root.appendChild(table)
+    return root
   }
 }
 
@@ -244,12 +254,13 @@ export class TraceWnd extends Wnd {
   private lines: string[]
 
   public constructor(wndMgr: WindowManager, nes: Nes) {
-    const root = document.createElement('div')
-    super(wndMgr, 400, 160, 'Trace', root)
+    super(wndMgr, 400, 160, 'Trace')
     this.nes = nes
-    this.createContent(root)
     this.mem = new Uint8Array(MAX_BYTES)
     this.bins = new Array(MAX_BYTES)
+
+    const content = this.createContent()
+    this.setContent(content)
     this.reset()
   }
 
@@ -276,7 +287,8 @@ export class TraceWnd extends Wnd {
     this.putConsole(`${pcStr}: ${binStr}   ${asmStr}`)
   }
 
-  private createContent(root: HTMLElement): void {
+  private createContent(): HTMLElement {
+    const root = document.createElement('div')
     const textarea = document.createElement('textarea')
     textarea.className = 'fixed-font'
     textarea.style.fontSize = '14px'
@@ -289,6 +301,7 @@ export class TraceWnd extends Wnd {
     textarea.style.boxSizing = 'border-box'
     root.appendChild(textarea)
     this.textarea = textarea
+    return root
   }
 
   private putConsole(line: string): void {
@@ -311,14 +324,13 @@ export class ControlWnd extends Wnd {
   public constructor(wndMgr: WindowManager, nes: Nes, screenWnd: ScreenWnd,
                      audioManager: AudioManager)
   {
-    const root = document.createElement('div')
-
-    super(wndMgr, 384, 32, 'Control', root)
+    super(wndMgr, 384, 32, 'Control')
     this.nes = nes
     this.screenWnd = screenWnd
     this.audioManager = audioManager
 
-    this.createElement(root)
+    const content = this.createElement()
+    this.setContent(content)
     this.updateState(true)
   }
 
@@ -328,7 +340,8 @@ export class ControlWnd extends Wnd {
     this.pauseBtn.disabled = paused
   }
 
-  private createElement(root: HTMLElement): void {
+  private createElement(): HTMLElement {
+    const root = document.createElement('div')
     root.style.width = '384px'
     root.style.height = '32px'
 
@@ -375,7 +388,8 @@ export class ControlWnd extends Wnd {
       img.style.width = img.style.height = '100%'
       img.title = img.alt = title
 
-      const imgWnd = new Wnd(this.wndMgr, 256, 240, title, img)
+      const imgWnd = new Wnd(this.wndMgr, 256, 240, title)
+      imgWnd.setContent(img)
       imgWnd.addResizeBox()
       this.wndMgr.add(imgWnd)
     })
@@ -391,5 +405,7 @@ export class ControlWnd extends Wnd {
     muteLabel.appendChild(muteBtn)
     muteLabel.appendChild(document.createTextNode('mute'))
     root.appendChild(muteLabel)
+
+    return root
   }
 }
