@@ -297,9 +297,6 @@ export class Cpu6502 {
 
   public push(value: number): void {
     this.write8(0x0100 + this.s, value)
-if (this.s === 0) {
-  console.error('Stack overflow')
-}
     this.s = dec8(this.s)
   }
 
