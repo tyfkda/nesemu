@@ -196,22 +196,6 @@ export class Cpu6502 {
     return true
   }
 
-  public setCarry(value: boolean): void {
-    this.p = setReset(this.p, value, CARRY_FLAG)
-  }
-
-  public setZero(value: boolean): void {
-    this.p = setReset(this.p, value, ZERO_FLAG)
-  }
-
-  public setOverFlow(value: boolean): void {
-    this.p = setReset(this.p, value, OVERFLOW_FLAG)
-  }
-
-  public setNegative(value: boolean): void {
-    this.p = setReset(this.p, value, NEGATIVE_FLAG)
-  }
-
   public step(): number {
     let pc = this.pc
     if (DEBUG) {
@@ -237,9 +221,26 @@ export class Cpu6502 {
     return inst.cycle
   }
 
-  public setFlag(value: number) {
+  // Set N and Z flag for the given value.
+  public setNZFlag(value: number) {
     this.setZero(value === 0)
     this.setNegative((value & 0x80) !== 0)
+  }
+
+  public setCarry(value: boolean): void {
+    this.p = setReset(this.p, value, CARRY_FLAG)
+  }
+
+  public setZero(value: boolean): void {
+    this.p = setReset(this.p, value, ZERO_FLAG)
+  }
+
+  public setOverFlow(value: boolean): void {
+    this.p = setReset(this.p, value, OVERFLOW_FLAG)
+  }
+
+  public setNegative(value: boolean): void {
+    this.p = setReset(this.p, value, NEGATIVE_FLAG)
   }
 
   public read8(adr: number): number {
@@ -398,7 +399,7 @@ const kOpTypeTable = (() => {
     // LDA
     (cpu, adr) => {
       cpu.a = cpu.read8(adr)
-      cpu.setFlag(cpu.a)
+      cpu.setNZFlag(cpu.a)
     },
     // STA
     (cpu, adr) => {
@@ -408,7 +409,7 @@ const kOpTypeTable = (() => {
     // LDX
     (cpu, adr) => {
       cpu.x = cpu.read8(adr)
-      cpu.setFlag(cpu.x)
+      cpu.setNZFlag(cpu.x)
     },
     // STX
     (cpu, adr) => {
@@ -418,7 +419,7 @@ const kOpTypeTable = (() => {
     // LDY
     (cpu, adr) => {
       cpu.y = cpu.read8(adr)
-      cpu.setFlag(cpu.y)
+      cpu.setNZFlag(cpu.y)
     },
     // STY
     (cpu, adr) => {
@@ -428,22 +429,22 @@ const kOpTypeTable = (() => {
     // TAX
     (cpu, _) => {
       cpu.x = cpu.a
-      cpu.setFlag(cpu.x)
+      cpu.setNZFlag(cpu.x)
     },
     // TAY
     (cpu, _) => {
       cpu.y = cpu.a
-      cpu.setFlag(cpu.y)
+      cpu.setNZFlag(cpu.y)
     },
     // TXA
     (cpu, _) => {
       cpu.a = cpu.x
-      cpu.setFlag(cpu.x)
+      cpu.setNZFlag(cpu.x)
     },
     // TYA
     (cpu, _) => {
       cpu.a = cpu.y
-      cpu.setFlag(cpu.a)
+      cpu.setNZFlag(cpu.a)
     },
     // TXS
     (cpu, _) => {
@@ -452,7 +453,7 @@ const kOpTypeTable = (() => {
     // TSX
     (cpu, _) => {
       cpu.x = cpu.s
-      cpu.setFlag(cpu.x)
+      cpu.setNZFlag(cpu.x)
     },
 
     // ADC
@@ -462,7 +463,7 @@ const kOpTypeTable = (() => {
       const result = cpu.a + operand + carry
       const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
       cpu.a = result & 0xff
-      cpu.setFlag(cpu.a)
+      cpu.setNZFlag(cpu.a)
       cpu.setCarry(result >= 0x0100)
       cpu.setOverFlow(overflow)
     },
@@ -475,7 +476,7 @@ const kOpTypeTable = (() => {
       const result = cpu.a + operand + carry
       const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
       cpu.a = result & 0xff
-      cpu.setFlag(cpu.a)
+      cpu.setNZFlag(cpu.a)
       cpu.setCarry(result >= 0x0100)
       cpu.setOverFlow(overflow)
     },
@@ -483,54 +484,54 @@ const kOpTypeTable = (() => {
     // INX
     (cpu, _) => {
       cpu.x = inc8(cpu.x)
-      cpu.setFlag(cpu.x)
+      cpu.setNZFlag(cpu.x)
     },
     // INY
     (cpu, _) => {
       cpu.y = inc8(cpu.y)
-      cpu.setFlag(cpu.y)
+      cpu.setNZFlag(cpu.y)
     },
     // INC
     (cpu, adr) => {
       const value = inc8(cpu.read8(adr))
       cpu.write8(adr, value)
-      cpu.setFlag(value)
+      cpu.setNZFlag(value)
     },
 
     // DEX
     (cpu, _) => {
       cpu.x = dec8(cpu.x)
-      cpu.setFlag(cpu.x)
+      cpu.setNZFlag(cpu.x)
     },
     // DEY
     (cpu, _) => {
       cpu.y = dec8(cpu.y)
-      cpu.setFlag(cpu.y)
+      cpu.setNZFlag(cpu.y)
     },
     // DEC
     (cpu, adr) => {
       const value = dec8(cpu.read8(adr))
       cpu.write8(adr, value)
-      cpu.setFlag(value)
+      cpu.setNZFlag(value)
     },
 
     // AND
     (cpu, adr) => {
       const value = cpu.read8(adr)
       cpu.a &= value
-      cpu.setFlag(cpu.a)
+      cpu.setNZFlag(cpu.a)
     },
     // ORA
     (cpu, adr) => {
       const value = cpu.read8(adr)
       cpu.a |= value
-      cpu.setFlag(cpu.a)
+      cpu.setNZFlag(cpu.a)
     },
     // EOR
     (cpu, adr) => {
       const value = cpu.read8(adr)
       cpu.a ^= value
-      cpu.setFlag(cpu.a)
+      cpu.setNZFlag(cpu.a)
     },
     // ROL
     (cpu, adr) => {
@@ -542,7 +543,7 @@ const kOpTypeTable = (() => {
         cpu.a = newValue
       else
         cpu.write8(adr, newValue)
-      cpu.setFlag(newValue)
+      cpu.setNZFlag(newValue)
       cpu.setCarry(newCarry)
     },
     // ROR
@@ -555,7 +556,7 @@ const kOpTypeTable = (() => {
         cpu.a = newValue
       else
         cpu.write8(adr, newValue)
-      cpu.setFlag(newValue)
+      cpu.setNZFlag(newValue)
       cpu.setCarry(newCarry)
     },
     // ASL
@@ -567,7 +568,7 @@ const kOpTypeTable = (() => {
         cpu.a = newValue
       else
         cpu.write8(adr, newValue)
-      cpu.setFlag(newValue)
+      cpu.setNZFlag(newValue)
       cpu.setCarry(newCarry)
     },
     // LSR
@@ -579,7 +580,7 @@ const kOpTypeTable = (() => {
         cpu.a = newValue
       else
         cpu.write8(adr, newValue)
-      cpu.setFlag(newValue)
+      cpu.setNZFlag(newValue)
       cpu.setCarry(newCarry)
     },
     // BIT
@@ -595,21 +596,21 @@ const kOpTypeTable = (() => {
     (cpu, adr) => {
       const value = cpu.read8(adr)
       const result = cpu.a - value
-      cpu.setFlag(result)
+      cpu.setNZFlag(result)
       cpu.setCarry(result >= 0)
     },
     // CPX
     (cpu, adr) => {
       const value = cpu.read8(adr)
       const result = cpu.x - value
-      cpu.setFlag(result)
+      cpu.setNZFlag(result)
       cpu.setCarry(result >= 0)
     },
     // CPY
     (cpu, adr) => {
       const value = cpu.read8(adr)
       const result = cpu.y - value
-      cpu.setFlag(result)
+      cpu.setNZFlag(result)
       cpu.setCarry(result >= 0)
     },
 
@@ -692,7 +693,7 @@ const kOpTypeTable = (() => {
     // PLA
     (cpu, _) => {
       cpu.a = cpu.pop()
-      cpu.setFlag(cpu.a)
+      cpu.setNZFlag(cpu.a)
     },
     // PLP
     (cpu, _) => {
