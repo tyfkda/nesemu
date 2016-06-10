@@ -226,7 +226,8 @@ export class Cpu6502 {
     }
 
     this.pc += inst.bytes
-    kOpTypeTable[inst.opType](this, pc, inst.addressing)
+    const adr = this.getAdr(pc, inst.addressing)
+    kOpTypeTable[inst.opType](this, adr)
 
     if (this.breakPoints[this.pc]) {
       this.paused = true
@@ -346,170 +347,121 @@ if (this.s === 0) {
       this.stepLogs[MAX_STEP_LOG - 1] = line
     }
   }
+
+  private getAdr(pc: number, addressing: Addressing) {
+    switch (addressing) {
+    case Addressing.ACCUMULATOR:
+    case Addressing.IMPLIED:
+      return null  // Dummy.
+    case Addressing.IMMEDIATE:
+    case Addressing.RELATIVE:
+      return pc
+    case Addressing.ZEROPAGE:
+      return this.read8(pc)
+    case Addressing.ZEROPAGE_X:
+      return (this.read8(pc) + this.x) & 0xff
+    case Addressing.ZEROPAGE_Y:
+      return (this.read8(pc) + this.y) & 0xff
+    case Addressing.ABSOLUTE:
+      return this.read16(pc)
+    case Addressing.ABSOLUTE_X:
+      return (this.read16(pc) + this.x) & 0xffff
+    case Addressing.ABSOLUTE_Y:
+      return (this.read16(pc) + this.y) & 0xffff
+    case Addressing.INDIRECT_X:
+      {
+        const zeroPageAdr = this.read8(pc)
+        return this.read16Indirect((zeroPageAdr + this.x) & 0xff)
+      }
+    case Addressing.INDIRECT_Y:
+      {
+        const zeroPageAdr = this.read8(pc)
+        const base = this.read16Indirect(zeroPageAdr)
+        return (base + this.y) & 0xffff
+      }
+    case Addressing.INDIRECT:
+      {
+        const adr = this.read16(pc)
+        return this.read16Indirect(adr)
+      }
+    default:
+      console.error(`Illegal addressing: ${addressing}`)
+      this.paused = true
+      return null
+    }
+  }
 }
 
 const kOpTypeTable = (() => {
-  function load(cpu: Cpu6502, pc: number, addressing: Addressing) {
-    let adr
-    switch (addressing) {
-    case Addressing.ACCUMULATOR:
-      return cpu.a
-    case Addressing.IMMEDIATE:
-      adr = pc
-      break
-    case Addressing.ZEROPAGE:
-      adr = cpu.read8(pc)
-      break
-    case Addressing.ZEROPAGE_X:
-      adr = (cpu.read8(pc) + cpu.x) & 0xff
-      break
-    case Addressing.ZEROPAGE_Y:
-      adr = (cpu.read8(pc) + cpu.y) & 0xff
-      break
-    case Addressing.ABSOLUTE:
-      adr = cpu.read16(pc)
-      break
-    case Addressing.ABSOLUTE_X:
-      adr = (cpu.read16(pc) + cpu.x) & 0xffff
-      break
-    case Addressing.ABSOLUTE_Y:
-      adr = (cpu.read16(pc) + cpu.y) & 0xffff
-      break
-    case Addressing.INDIRECT_X:
-      {
-        const zeroPageAdr = cpu.read8(pc)
-        adr = cpu.read16Indirect((zeroPageAdr + cpu.x) & 0xff)
-      }
-      break
-    case Addressing.INDIRECT_Y:
-      {
-        const zeroPageAdr = cpu.read8(pc)
-        const base = cpu.read16Indirect(zeroPageAdr)
-        adr = (base + cpu.y) & 0xffff
-      }
-      break
-    default:
-      console.error(`Illegal addressing: ${addressing}`)
-      cpu.paused = true
-      return
-    }
-    return cpu.read8(adr)
-  }
-
-  function store(cpu: Cpu6502, pc: number, addressing: Addressing, value: number) {
-    let adr
-    switch (addressing) {
-    case Addressing.ACCUMULATOR:
-      cpu.a = value
-      return
-    case Addressing.ZEROPAGE:
-      adr = cpu.read8(pc)
-      break
-    case Addressing.ZEROPAGE_X:
-      adr = (cpu.read8(pc) + cpu.x) & 0xff
-      break
-    case Addressing.ZEROPAGE_Y:
-      adr = (cpu.read8(pc) + cpu.y) & 0xff
-      break
-    case Addressing.ABSOLUTE:
-      adr = cpu.read16(pc)
-      break
-    case Addressing.ABSOLUTE_X:
-      adr = (cpu.read16(pc) + cpu.x) & 0xffff
-      break
-    case Addressing.ABSOLUTE_Y:
-      adr = (cpu.read16(pc) + cpu.y) & 0xffff
-      break
-    case Addressing.INDIRECT_X:
-      {
-        const zeroPageAdr = cpu.read8(pc)
-        adr = cpu.read16Indirect((zeroPageAdr + cpu.x) & 0xff)
-      }
-      break
-    case Addressing.INDIRECT_Y:
-      {
-        const zeroPageAdr = cpu.read8(pc)
-        const base = cpu.read16Indirect(zeroPageAdr)
-        adr = (base + cpu.y) & 0xffff
-      }
-      break
-    default:
-      console.error(`Illegal store: ${addressing}`)
-      cpu.paused = true
-      return
-    }
-    cpu.write8(adr, value)
-  }
-
-  const kTable: ((cpu: Cpu6502, pc: number, addressing: Addressing) => void)[] = [
+  const kTable: ((cpu: Cpu6502, adr: number) => void)[] = [
     // UNKNOWN
     null,
     // NOP
-    (_cpu, _pc, _addressing) => {},
+    (_cpu, _) => {},
     // LDA
-    (cpu, pc, addressing) => {
-      cpu.a = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      cpu.a = cpu.read8(adr)
       cpu.setFlag(cpu.a)
     },
     // STA
-    (cpu, pc, addressing) => {
-      store(cpu, pc, addressing, cpu.a)
+    (cpu, adr) => {
+      cpu.write8(adr, cpu.a)
     },
 
     // LDX
-    (cpu, pc, addressing) => {
-      cpu.x = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      cpu.x = cpu.read8(adr)
       cpu.setFlag(cpu.x)
     },
     // STX
-    (cpu, pc, addressing) => {
-      store(cpu, pc, addressing, cpu.x)
+    (cpu, adr) => {
+      cpu.write8(adr, cpu.x)
     },
 
     // LDY
-    (cpu, pc, addressing) => {
-      cpu.y = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      cpu.y = cpu.read8(adr)
       cpu.setFlag(cpu.y)
     },
     // STY
-    (cpu, pc, addressing) => {
-      store(cpu, pc, addressing, cpu.y)
+    (cpu, adr) => {
+      cpu.write8(adr, cpu.y)
     },
 
     // TAX
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.x = cpu.a
       cpu.setFlag(cpu.x)
     },
     // TAY
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.y = cpu.a
       cpu.setFlag(cpu.y)
     },
     // TXA
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.a = cpu.x
       cpu.setFlag(cpu.x)
     },
     // TYA
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.a = cpu.y
       cpu.setFlag(cpu.a)
     },
     // TXS
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.s = cpu.x
     },
     // TSX
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.x = cpu.s
       cpu.setFlag(cpu.x)
     },
 
     // ADC
-    (cpu, pc, addressing) => {
+    (cpu, adr) => {
       const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
-      const operand = load(cpu, pc, addressing)
+      const operand = cpu.read8(adr)
       const result = cpu.a + operand + carry
       const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
       cpu.a = result & 0xff
@@ -518,11 +470,11 @@ const kOpTypeTable = (() => {
       cpu.setOverFlow(overflow)
     },
     // SBC
-    (cpu, pc, addressing) => {
+    (cpu, adr) => {
       // The 6502 overflow flag explained mathematically
       // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
       const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
-      const operand = 255 - load(cpu, pc, addressing)
+      const operand = 255 - cpu.read8(adr)
       const result = cpu.a + operand + carry
       const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
       cpu.a = result & 0xff
@@ -532,98 +484,110 @@ const kOpTypeTable = (() => {
     },
 
     // INX
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.x = inc8(cpu.x)
       cpu.setFlag(cpu.x)
     },
     // INY
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.y = inc8(cpu.y)
       cpu.setFlag(cpu.y)
     },
     // INC
-    (cpu, pc, addressing) => {
-      const value = inc8(load(cpu, pc, addressing))
-      store(cpu, pc, addressing, value)
+    (cpu, adr) => {
+      const value = inc8(cpu.read8(adr))
+      cpu.write8(adr, value)
       cpu.setFlag(value)
     },
 
     // DEX
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.x = dec8(cpu.x)
       cpu.setFlag(cpu.x)
     },
     // DEY
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.y = dec8(cpu.y)
       cpu.setFlag(cpu.y)
     },
     // DEC
-    (cpu, pc, addressing) => {
-      const value = dec8(load(cpu, pc, addressing))
-      store(cpu, pc, addressing, value)
+    (cpu, adr) => {
+      const value = dec8(cpu.read8(adr))
+      cpu.write8(adr, value)
       cpu.setFlag(value)
     },
 
     // AND
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = cpu.read8(adr)
       cpu.a &= value
       cpu.setFlag(cpu.a)
     },
     // ORA
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = cpu.read8(adr)
       cpu.a |= value
       cpu.setFlag(cpu.a)
     },
     // EOR
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = cpu.read8(adr)
       cpu.a ^= value
       cpu.setFlag(cpu.a)
     },
     // ROL
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = adr == null ? cpu.a : cpu.read8(adr)
       const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
       const newCarry = (value & 0x80) !== 0
       const newValue = ((value << 1) | oldCarry) & 0xff
-      store(cpu, pc, addressing, newValue)
+      if (adr == null)
+        cpu.a = newValue
+      else
+        cpu.write8(adr, newValue)
       cpu.setFlag(newValue)
       cpu.setCarry(newCarry)
     },
     // ROR
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = adr == null ? cpu.a : cpu.read8(adr)
       const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 0x80 : 0
       const newCarry = (value & 0x01) !== 0
       const newValue = (value >> 1) | oldCarry
-      store(cpu, pc, addressing, newValue)
+      if (adr == null)
+        cpu.a = newValue
+      else
+        cpu.write8(adr, newValue)
       cpu.setFlag(newValue)
       cpu.setCarry(newCarry)
     },
     // ASL
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = adr == null ? cpu.a : cpu.read8(adr)
       const newCarry = (value & 0x80) !== 0
       const newValue = (value << 1) & 0xff
-      store(cpu, pc, addressing, newValue)
+      if (adr == null)
+        cpu.a = newValue
+      else
+        cpu.write8(adr, newValue)
       cpu.setFlag(newValue)
       cpu.setCarry(newCarry)
     },
     // LSR
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = adr == null ? cpu.a : cpu.read8(adr)
       const newCarry = (value & 0x01) !== 0
       const newValue = (value >> 1) & 0xff
-      store(cpu, pc, addressing, newValue)
+      if (adr == null)
+        cpu.a = newValue
+      else
+        cpu.write8(adr, newValue)
       cpu.setFlag(newValue)
       cpu.setCarry(newCarry)
     },
     // BIT
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = cpu.read8(adr)
       const result = cpu.a & value
       cpu.setZero(result === 0)
 
@@ -631,156 +595,152 @@ const kOpTypeTable = (() => {
       cpu.p = (cpu.p & ~mask) | (value & mask)
     },
     // CMP
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = cpu.read8(adr)
       const result = cpu.a - value
       cpu.setFlag(result)
       cpu.setCarry(result >= 0)
     },
     // CPX
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = cpu.read8(adr)
       const result = cpu.x - value
       cpu.setFlag(result)
       cpu.setCarry(result >= 0)
     },
     // CPY
-    (cpu, pc, addressing) => {
-      const value = load(cpu, pc, addressing)
+    (cpu, adr) => {
+      const value = cpu.read8(adr)
       const result = cpu.y - value
       cpu.setFlag(result)
       cpu.setCarry(result >= 0)
     },
 
     // JMP
-    (cpu, pc, addressing) => {
-      let adr = cpu.read16(pc)
-      if (addressing !== Addressing.ABSOLUTE)  // Indirect address
-        adr = cpu.read16Indirect(adr)
+    (cpu, adr) => {
       cpu.pc = adr
     },
     // JSR
-    (cpu, pc, _) => {
-      const adr = cpu.read16(pc)
-      cpu.push16(pc + 1)
+    (cpu, adr) => {
+      cpu.push16(cpu.pc - 1)
       cpu.pc = adr
     },
     // RTS
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.pc = cpu.pop16() + 1
     },
     // RTI
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.p = cpu.pop() | RESERVED_FLAG
       cpu.pc = cpu.pop16()
     },
 
     // BCC
-    (cpu, pc, _) => {
-      const offset = toSigned(cpu.read8(pc))
+    (cpu, adr) => {
+      const offset = toSigned(cpu.read8(adr))
       if ((cpu.p & CARRY_FLAG) === 0)
         cpu.pc += offset
     },
     // BCS
-    (cpu, pc, _) => {
-      const offset = toSigned(cpu.read8(pc))
+    (cpu, adr) => {
+      const offset = toSigned(cpu.read8(adr))
       if ((cpu.p & CARRY_FLAG) !== 0)
         cpu.pc += offset
     },
     // BPL
-    (cpu, pc, _) => {
-      const offset = toSigned(cpu.read8(pc))
+    (cpu, adr) => {
+      const offset = toSigned(cpu.read8(adr))
       if ((cpu.p & NEGATIVE_FLAG) === 0)
         cpu.pc += offset
     },
     // BMI
-    (cpu, pc, _) => {
-      const offset = toSigned(cpu.read8(pc))
+    (cpu, adr) => {
+      const offset = toSigned(cpu.read8(adr))
       if ((cpu.p & NEGATIVE_FLAG) !== 0)
         cpu.pc += offset
     },
     // BNE
-    (cpu, pc, _) => {
-      const offset = toSigned(cpu.read8(pc))
+    (cpu, adr) => {
+      const offset = toSigned(cpu.read8(adr))
       if ((cpu.p & ZERO_FLAG) === 0)
         cpu.pc += offset
     },
     // BEQ
-    (cpu, pc, _) => {
-      const offset = toSigned(cpu.read8(pc))
+    (cpu, adr) => {
+      const offset = toSigned(cpu.read8(adr))
       if ((cpu.p & ZERO_FLAG) !== 0)
         cpu.pc += offset
     },
     // BVC
-    (cpu, pc, _) => {
-      const offset = toSigned(cpu.read8(pc))
+    (cpu, adr) => {
+      const offset = toSigned(cpu.read8(adr))
       if ((cpu.p & OVERFLOW_FLAG) === 0)
         cpu.pc += offset
     },
     // BVS
-    (cpu, pc, _) => {
-      const offset = toSigned(cpu.read8(pc))
+    (cpu, adr) => {
+      const offset = toSigned(cpu.read8(adr))
       if ((cpu.p & OVERFLOW_FLAG) !== 0)
         cpu.pc += offset
     },
 
     // PHA
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.push(cpu.a)
     },
     // PHP
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.push(cpu.p | BREAK_FLAG)
     },
     // PLA
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.a = cpu.pop()
       cpu.setFlag(cpu.a)
     },
     // PLP
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.p = cpu.pop() | RESERVED_FLAG
     },
 
     // CLC
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.p &= ~CARRY_FLAG
     },
     // SEC
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.p |= CARRY_FLAG
     },
 
     // SEI
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.p |= IRQBLK_FLAG
     },
     // CLI
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.p &= ~IRQBLK_FLAG
     },
     // CLV
-    (cpu, _pc, _) => {
+    (cpu, _) => {
       cpu.p &= ~OVERFLOW_FLAG
     },
     // SED
-    (_cpu, _pc, _) => {
+    (_cpu, _) => {
       // SED: normal to BCD mode
       // not implemented on NES
     },
     // CLD
-    (_cpu, _pc, _) => {
+    (_cpu, _) => {
       // CLD: BCD to normal mode
       // not implemented on NES
     },
 
     // BRK
-    (cpu, pc, _addressing) => {
+    (cpu, _) => {
       if (DEBUG) {
         cpu.addStepLog('BRK occurred')
       }
 
-      cpu.push16(pc + 1)
+      cpu.push16(cpu.pc + 1)
       cpu.push(cpu.p | BREAK_FLAG)
       cpu.pc = cpu.read16(VEC_IRQ)
       cpu.p |= IRQBLK_FLAG
