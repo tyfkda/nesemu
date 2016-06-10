@@ -122,8 +122,8 @@ export default class Wnd {
         this.callback('resize', width, height - Wnd.HEADER_HEIGHT)
       }
       const dragFinish = (event) => {
-        this.root.parentNode.removeEventListener('mousemove', dragMove)
-        this.root.parentNode.removeEventListener('mouseup', dragFinish)
+        document.removeEventListener('mousemove', dragMove)
+        document.removeEventListener('mouseup', dragFinish)
       }
 
       resizeBox.addEventListener('mousedown', (event) => {
@@ -133,8 +133,8 @@ export default class Wnd {
         dragOfsX = param.horz === 'left' ? -x : W - x
         dragOfsY = param.vert === 'top' ? -y : W - y
 
-        this.root.parentNode.addEventListener('mousemove', dragMove)
-        this.root.parentNode.addEventListener('mouseup', dragFinish)
+        document.addEventListener('mousemove', dragMove)
+        document.addEventListener('mouseup', dragFinish)
         this.wndMgr.moveToTop(this)
       })
       this.root.appendChild(resizeBox)
@@ -168,8 +168,8 @@ export default class Wnd {
       this.root.style.top = `${y + dragOfsY}px`
     }
     const dragFinish = (event) => {
-      this.root.parentNode.removeEventListener('mousemove', dragMove)
-      this.root.parentNode.removeEventListener('mouseup', dragFinish)
+      document.removeEventListener('mousemove', dragMove)
+      document.removeEventListener('mouseup', dragFinish)
     }
     this.titleBar.addEventListener('mousedown', (event) => {
       dragOfsX = dragOfsY = null
@@ -179,8 +179,8 @@ export default class Wnd {
       const [x, y] = this.getMousePosIn(event, this.root)
       dragOfsX = -x
       dragOfsY = -y
-      this.root.parentNode.addEventListener('mousemove', dragMove)
-      this.root.parentNode.addEventListener('mouseup', dragFinish)
+      document.addEventListener('mousemove', dragMove)
+      document.addEventListener('mouseup', dragFinish)
       return true
     })
 
