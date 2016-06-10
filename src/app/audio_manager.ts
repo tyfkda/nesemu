@@ -51,14 +51,14 @@ export class AudioManager {
   private masterVolume: number
 
   constructor() {
-    const ContextClass = window.AudioContext || window.webkitAudioContext
-    if (ContextClass == null) {
+    const contextClass = window.AudioContext || window.webkitAudioContext
+    if (contextClass == null) {
       this.context = null
       this.masterVolume = 0
       return
     }
 
-    this.context = new ContextClass()
+    this.context = new contextClass()
     if (this.context.close == null) {  // Patch for MSEdge, which doesn't have close method.
       this.context.close = () => {}
     }

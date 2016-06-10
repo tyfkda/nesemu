@@ -4,7 +4,7 @@ if (!('fill' in Array.prototype)) {
   // IE doesn't support fill method for Array.
   /* tslint:disable:no-invalid-this */
   Array.prototype.fill = function(value: number, start: number = 0,
-                                  end: number = this.length): Array {
+                                  end: number = this.length): Array<any> {
     for (let i = start; i < end; ++i)
       this[i] = value
     return this

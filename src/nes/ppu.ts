@@ -42,7 +42,7 @@ const FLIP_VERT = 0x80
 
 // Mirror mode
 const MIRROR_HORZ = 0
-const MIRROR_VERT = 1
+// const MIRROR_VERT = 1
 
 interface HEvents {
   count: number
@@ -504,7 +504,9 @@ export class Ppu {
     }
   }
 
-  public renderSprite2(imageData: ImageData, hline0: number, hline1: number, chrBankOffset: number, chrStart: number): void {
+  public renderSprite2(imageData: ImageData, hline0: number, hline1: number, chrBankOffset: number,
+                       chrStart: number): void
+  {
     const getSpritePat = (chridx, ppy, flipHorz) => {
       const idx = chridx + (ppy & 7) + ((ppy & 8) << 1)
 

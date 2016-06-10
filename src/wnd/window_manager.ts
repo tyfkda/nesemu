@@ -54,7 +54,6 @@ export default class WindowManager {
       return
     this.windows.splice(index, 1)
 
-    const n = this.windows.length
     for (let i = 0; i < index; ++i)
       setWindowZIndex(this.windows[i], i, this.windows.length)
   }
