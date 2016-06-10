@@ -211,7 +211,331 @@ export class Cpu6502 {
 
     this.pc += inst.bytes
     const adr = this.getAdr(pc, inst.addressing)
-    kOpTypeTable[inst.opType](this, adr)
+
+    //========================================================
+    // Dispatch
+    switch (inst.opType) {
+    default:
+    case 0:  // UNKNOWN
+      break
+    case 1:  // NOP
+      break
+    case 2:  // LDA
+      this.a = this.read8(adr)
+      this.setNZFlag(this.a)
+      break
+    case 3:  // STA
+      this.write8(adr, this.a)
+      break
+
+    case 4:  // LDX
+      this.x = this.read8(adr)
+      this.setNZFlag(this.x)
+      break
+    case 5:  // STX
+      this.write8(adr, this.x)
+      break
+
+    case 6:  // LDY
+      this.y = this.read8(adr)
+      this.setNZFlag(this.y)
+      break
+    case 7:  // STY
+      this.write8(adr, this.y)
+      break
+
+    case 8:  // TAX
+      this.x = this.a
+      this.setNZFlag(this.x)
+      break
+    case 9:  // TAY
+      this.y = this.a
+      this.setNZFlag(this.y)
+      break
+    case 10:  // TXA
+      this.a = this.x
+      this.setNZFlag(this.x)
+      break
+    case 11:  // TYA
+      this.a = this.y
+      this.setNZFlag(this.a)
+      break
+    case 12:  // TXS
+      this.s = this.x
+      break
+    case 13:  // TSX
+      this.x = this.s
+      this.setNZFlag(this.x)
+      break
+
+    case 14:  // ADC
+      {
+        const carry = (this.p & CARRY_FLAG) !== 0 ? 1 : 0
+        const operand = this.read8(adr)
+        const result = this.a + operand + carry
+        const overflow = ((this.a ^ result) & (operand ^ result) & 0x80) !== 0
+        this.a = result & 0xff
+        this.setNZFlag(this.a)
+        this.setCarry(result >= 0x0100)
+        this.setOverFlow(overflow)
+      }
+      break
+    case 15:  // SBC
+      // The 6502 overflow flag explained mathematically
+      // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
+      {
+        const carry = (this.p & CARRY_FLAG) !== 0 ? 1 : 0
+        const operand = 255 - this.read8(adr)
+        const result = this.a + operand + carry
+        const overflow = ((this.a ^ result) & (operand ^ result) & 0x80) !== 0
+        this.a = result & 0xff
+        this.setNZFlag(this.a)
+        this.setCarry(result >= 0x0100)
+        this.setOverFlow(overflow)
+      }
+      break
+
+    case 16:  // INX
+      this.x = inc8(this.x)
+      this.setNZFlag(this.x)
+      break
+    case 17:  // INY
+      this.y = inc8(this.y)
+      this.setNZFlag(this.y)
+      break
+    case 18:  // INC
+      {
+        const value = inc8(this.read8(adr))
+        this.write8(adr, value)
+        this.setNZFlag(value)
+      }
+      break
+
+    case 19:  // DEX
+      this.x = dec8(this.x)
+      this.setNZFlag(this.x)
+      break
+    case 20:  // DEY
+      this.y = dec8(this.y)
+      this.setNZFlag(this.y)
+      break
+    case 21:  // DEC
+      {
+        const value = dec8(this.read8(adr))
+        this.write8(adr, value)
+        this.setNZFlag(value)
+      }
+      break
+
+    case 22:  // AND
+      {
+        const value = this.read8(adr)
+        this.a &= value
+        this.setNZFlag(this.a)
+      }
+      break
+    case 23:  // ORA
+      {
+        const value = this.read8(adr)
+        this.a |= value
+        this.setNZFlag(this.a)
+      }
+      break
+    case 24:  // EOR
+      {
+        const value = this.read8(adr)
+        this.a ^= value
+        this.setNZFlag(this.a)
+      }
+      break
+    case 25:  // ROL
+      {
+        const value = adr == null ? this.a : this.read8(adr)
+        const oldCarry = (this.p & CARRY_FLAG) !== 0 ? 1 : 0
+        const newCarry = (value & 0x80) !== 0
+        const newValue = ((value << 1) | oldCarry) & 0xff
+        if (adr == null)
+          this.a = newValue
+        else
+          this.write8(adr, newValue)
+        this.setNZFlag(newValue)
+        this.setCarry(newCarry)
+      }
+      break
+    case 26:  // ROR
+      {
+        const value = adr == null ? this.a : this.read8(adr)
+        const oldCarry = (this.p & CARRY_FLAG) !== 0 ? 0x80 : 0
+        const newCarry = (value & 0x01) !== 0
+        const newValue = (value >> 1) | oldCarry
+        if (adr == null)
+          this.a = newValue
+        else
+          this.write8(adr, newValue)
+        this.setNZFlag(newValue)
+        this.setCarry(newCarry)
+      }
+      break
+    case 27:  // ASL
+      {
+        const value = adr == null ? this.a : this.read8(adr)
+        const newCarry = (value & 0x80) !== 0
+        const newValue = (value << 1) & 0xff
+        if (adr == null)
+          this.a = newValue
+        else
+          this.write8(adr, newValue)
+        this.setNZFlag(newValue)
+        this.setCarry(newCarry)
+      }
+      break
+    case 28:  // LSR
+      {
+        const value = adr == null ? this.a : this.read8(adr)
+        const newCarry = (value & 0x01) !== 0
+        const newValue = (value >> 1) & 0xff
+        if (adr == null)
+          this.a = newValue
+        else
+          this.write8(adr, newValue)
+        this.setNZFlag(newValue)
+        this.setCarry(newCarry)
+      }
+      break
+    case 29:  // BIT
+      {
+        const value = this.read8(adr)
+        const result = this.a & value
+        this.setZero(result === 0)
+
+        const mask = NEGATIVE_FLAG | OVERFLOW_FLAG
+        this.p = (this.p & ~mask) | (value & mask)
+      }
+      break
+    case 30:  // CMP
+      {
+        const value = this.read8(adr)
+        const result = this.a - value
+        this.setNZFlag(result)
+        this.setCarry(result >= 0)
+      }
+      break
+    case 31:  // CPX
+      {
+        const value = this.read8(adr)
+        const result = this.x - value
+        this.setNZFlag(result)
+        this.setCarry(result >= 0)
+      }
+      break
+    case 32:  // CPY
+      {
+        const value = this.read8(adr)
+        const result = this.y - value
+        this.setNZFlag(result)
+        this.setCarry(result >= 0)
+      }
+      break
+
+    case 33:  // JMP
+      this.pc = adr
+      break
+    case 34:  // JSR
+      this.push16(this.pc - 1)
+      this.pc = adr
+      break
+    case 35:  // RTS
+      this.pc = this.pop16() + 1
+      break
+    case 36:  // RTI
+      this.p = this.pop() | RESERVED_FLAG
+      this.pc = this.pop16()
+      break
+
+    case 37:  // BCC
+      if ((this.p & CARRY_FLAG) === 0)
+        this.pc += toSigned(this.read8(adr))
+      break
+    case 38:  // BCS
+      if ((this.p & CARRY_FLAG) !== 0)
+        this.pc += toSigned(this.read8(adr))
+      break
+    case 39:  // BPL
+      if ((this.p & NEGATIVE_FLAG) === 0)
+        this.pc += toSigned(this.read8(adr))
+      break
+    case 40:  // BMI
+      if ((this.p & NEGATIVE_FLAG) !== 0)
+        this.pc += toSigned(this.read8(adr))
+      break
+    case 41:  // BNE
+      if ((this.p & ZERO_FLAG) === 0)
+        this.pc += toSigned(this.read8(adr))
+      break
+    case 42:  // BEQ
+      if ((this.p & ZERO_FLAG) !== 0)
+        this.pc += toSigned(this.read8(adr))
+      break
+    case 43:  // BVC
+      if ((this.p & OVERFLOW_FLAG) === 0)
+        this.pc += toSigned(this.read8(adr))
+      break
+    case 44:  // BVS
+      if ((this.p & OVERFLOW_FLAG) !== 0)
+        this.pc += toSigned(this.read8(adr))
+      break
+
+    case 45:  // PHA
+      this.push(this.a)
+      break
+    case 46:  // PHP
+      this.push(this.p | BREAK_FLAG)
+      break
+    case 47:  // PLA
+      this.a = this.pop()
+      this.setNZFlag(this.a)
+      break
+    case 48:  // PLP
+      this.p = this.pop() | RESERVED_FLAG
+      break
+
+    case 49:  // CLC
+      this.p &= ~CARRY_FLAG
+      break
+    case 50:  // SEC
+      this.p |= CARRY_FLAG
+      break
+
+    case 51:  // SEI
+      this.p |= IRQBLK_FLAG
+      break
+    case 52:  // CLI
+      this.p &= ~IRQBLK_FLAG
+      break
+    case 53:  // CLV
+      this.p &= ~OVERFLOW_FLAG
+      break
+    case 54:  // SED
+      // SED: normal to BCD mode
+      // not implemented on NES
+      break
+    case 55:  // CLD
+      // CLD: BCD to normal mode
+      // not implemented on NES
+      break
+
+    case 56:  // BRK
+      if (DEBUG) {
+        this.addStepLog('BRK occurred')
+      }
+
+      this.push16(this.pc + 1)
+      this.push(this.p | BREAK_FLAG)
+      this.pc = this.read16(VEC_IRQ)
+      this.p |= IRQBLK_FLAG
+      break
+    }
+    //========================================================
 
     if (this.breakPoints[this.pc]) {
       this.paused = true
@@ -296,34 +620,6 @@ export class Cpu6502 {
     return this.writerFuncTable[block](adr, value)
   }
 
-  public push(value: number): void {
-    this.write8(0x0100 + this.s, value)
-    this.s = dec8(this.s)
-  }
-
-  public push16(value: number): void {
-    let s = this.s
-    this.write8(0x0100 + s, value >> 8)
-    s = dec8(s)
-    this.write8(0x0100 + s, value & 0xff)
-    this.s = dec8(s)
-  }
-
-  public pop(): number {
-    this.s = inc8(this.s)
-    return this.read8(0x0100 + this.s)
-  }
-
-  public pop16(): number {
-    let s = this.s
-    s = inc8(s)
-    const l = this.read8(0x0100 + s)
-    s = inc8(s)
-    const h = this.read8(0x0100 + s)
-    this.s = s
-    return (h << 8) | l
-  }
-
   public dump(start: number, count: number): void {
     const mem = []
     for (let i = 0; i < count; ++i) {
@@ -336,7 +632,35 @@ export class Cpu6502 {
     }
   }
 
-  public addStepLog(line: string): void {
+  private push(value: number): void {
+    this.write8(0x0100 + this.s, value)
+    this.s = dec8(this.s)
+  }
+
+  private push16(value: number): void {
+    let s = this.s
+    this.write8(0x0100 + s, value >> 8)
+    s = dec8(s)
+    this.write8(0x0100 + s, value & 0xff)
+    this.s = dec8(s)
+  }
+
+  private pop(): number {
+    this.s = inc8(this.s)
+    return this.read8(0x0100 + this.s)
+  }
+
+  private pop16(): number {
+    let s = this.s
+    s = inc8(s)
+    const l = this.read8(0x0100 + s)
+    s = inc8(s)
+    const h = this.read8(0x0100 + s)
+    this.s = s
+    return (h << 8) | l
+  }
+
+  private addStepLog(line: string): void {
     if (this.stepLogs.length < MAX_STEP_LOG) {
       this.stepLogs.push(line)
     } else {
@@ -389,360 +713,3 @@ export class Cpu6502 {
     }
   }
 }
-
-const kOpTypeTable = (() => {
-  const kTable: ((cpu: Cpu6502, adr: number) => void)[] = [
-    // UNKNOWN
-    null,
-    // NOP
-    (_cpu, _) => {},
-    // LDA
-    (cpu, adr) => {
-      cpu.a = cpu.read8(adr)
-      cpu.setNZFlag(cpu.a)
-    },
-    // STA
-    (cpu, adr) => {
-      cpu.write8(adr, cpu.a)
-    },
-
-    // LDX
-    (cpu, adr) => {
-      cpu.x = cpu.read8(adr)
-      cpu.setNZFlag(cpu.x)
-    },
-    // STX
-    (cpu, adr) => {
-      cpu.write8(adr, cpu.x)
-    },
-
-    // LDY
-    (cpu, adr) => {
-      cpu.y = cpu.read8(adr)
-      cpu.setNZFlag(cpu.y)
-    },
-    // STY
-    (cpu, adr) => {
-      cpu.write8(adr, cpu.y)
-    },
-
-    // TAX
-    (cpu, _) => {
-      cpu.x = cpu.a
-      cpu.setNZFlag(cpu.x)
-    },
-    // TAY
-    (cpu, _) => {
-      cpu.y = cpu.a
-      cpu.setNZFlag(cpu.y)
-    },
-    // TXA
-    (cpu, _) => {
-      cpu.a = cpu.x
-      cpu.setNZFlag(cpu.x)
-    },
-    // TYA
-    (cpu, _) => {
-      cpu.a = cpu.y
-      cpu.setNZFlag(cpu.a)
-    },
-    // TXS
-    (cpu, _) => {
-      cpu.s = cpu.x
-    },
-    // TSX
-    (cpu, _) => {
-      cpu.x = cpu.s
-      cpu.setNZFlag(cpu.x)
-    },
-
-    // ADC
-    (cpu, adr) => {
-      const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
-      const operand = cpu.read8(adr)
-      const result = cpu.a + operand + carry
-      const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
-      cpu.a = result & 0xff
-      cpu.setNZFlag(cpu.a)
-      cpu.setCarry(result >= 0x0100)
-      cpu.setOverFlow(overflow)
-    },
-    // SBC
-    (cpu, adr) => {
-      // The 6502 overflow flag explained mathematically
-      // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
-      const carry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
-      const operand = 255 - cpu.read8(adr)
-      const result = cpu.a + operand + carry
-      const overflow = ((cpu.a ^ result) & (operand ^ result) & 0x80) !== 0
-      cpu.a = result & 0xff
-      cpu.setNZFlag(cpu.a)
-      cpu.setCarry(result >= 0x0100)
-      cpu.setOverFlow(overflow)
-    },
-
-    // INX
-    (cpu, _) => {
-      cpu.x = inc8(cpu.x)
-      cpu.setNZFlag(cpu.x)
-    },
-    // INY
-    (cpu, _) => {
-      cpu.y = inc8(cpu.y)
-      cpu.setNZFlag(cpu.y)
-    },
-    // INC
-    (cpu, adr) => {
-      const value = inc8(cpu.read8(adr))
-      cpu.write8(adr, value)
-      cpu.setNZFlag(value)
-    },
-
-    // DEX
-    (cpu, _) => {
-      cpu.x = dec8(cpu.x)
-      cpu.setNZFlag(cpu.x)
-    },
-    // DEY
-    (cpu, _) => {
-      cpu.y = dec8(cpu.y)
-      cpu.setNZFlag(cpu.y)
-    },
-    // DEC
-    (cpu, adr) => {
-      const value = dec8(cpu.read8(adr))
-      cpu.write8(adr, value)
-      cpu.setNZFlag(value)
-    },
-
-    // AND
-    (cpu, adr) => {
-      const value = cpu.read8(adr)
-      cpu.a &= value
-      cpu.setNZFlag(cpu.a)
-    },
-    // ORA
-    (cpu, adr) => {
-      const value = cpu.read8(adr)
-      cpu.a |= value
-      cpu.setNZFlag(cpu.a)
-    },
-    // EOR
-    (cpu, adr) => {
-      const value = cpu.read8(adr)
-      cpu.a ^= value
-      cpu.setNZFlag(cpu.a)
-    },
-    // ROL
-    (cpu, adr) => {
-      const value = adr == null ? cpu.a : cpu.read8(adr)
-      const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 1 : 0
-      const newCarry = (value & 0x80) !== 0
-      const newValue = ((value << 1) | oldCarry) & 0xff
-      if (adr == null)
-        cpu.a = newValue
-      else
-        cpu.write8(adr, newValue)
-      cpu.setNZFlag(newValue)
-      cpu.setCarry(newCarry)
-    },
-    // ROR
-    (cpu, adr) => {
-      const value = adr == null ? cpu.a : cpu.read8(adr)
-      const oldCarry = (cpu.p & CARRY_FLAG) !== 0 ? 0x80 : 0
-      const newCarry = (value & 0x01) !== 0
-      const newValue = (value >> 1) | oldCarry
-      if (adr == null)
-        cpu.a = newValue
-      else
-        cpu.write8(adr, newValue)
-      cpu.setNZFlag(newValue)
-      cpu.setCarry(newCarry)
-    },
-    // ASL
-    (cpu, adr) => {
-      const value = adr == null ? cpu.a : cpu.read8(adr)
-      const newCarry = (value & 0x80) !== 0
-      const newValue = (value << 1) & 0xff
-      if (adr == null)
-        cpu.a = newValue
-      else
-        cpu.write8(adr, newValue)
-      cpu.setNZFlag(newValue)
-      cpu.setCarry(newCarry)
-    },
-    // LSR
-    (cpu, adr) => {
-      const value = adr == null ? cpu.a : cpu.read8(adr)
-      const newCarry = (value & 0x01) !== 0
-      const newValue = (value >> 1) & 0xff
-      if (adr == null)
-        cpu.a = newValue
-      else
-        cpu.write8(adr, newValue)
-      cpu.setNZFlag(newValue)
-      cpu.setCarry(newCarry)
-    },
-    // BIT
-    (cpu, adr) => {
-      const value = cpu.read8(adr)
-      const result = cpu.a & value
-      cpu.setZero(result === 0)
-
-      const mask = NEGATIVE_FLAG | OVERFLOW_FLAG
-      cpu.p = (cpu.p & ~mask) | (value & mask)
-    },
-    // CMP
-    (cpu, adr) => {
-      const value = cpu.read8(adr)
-      const result = cpu.a - value
-      cpu.setNZFlag(result)
-      cpu.setCarry(result >= 0)
-    },
-    // CPX
-    (cpu, adr) => {
-      const value = cpu.read8(adr)
-      const result = cpu.x - value
-      cpu.setNZFlag(result)
-      cpu.setCarry(result >= 0)
-    },
-    // CPY
-    (cpu, adr) => {
-      const value = cpu.read8(adr)
-      const result = cpu.y - value
-      cpu.setNZFlag(result)
-      cpu.setCarry(result >= 0)
-    },
-
-    // JMP
-    (cpu, adr) => {
-      cpu.pc = adr
-    },
-    // JSR
-    (cpu, adr) => {
-      cpu.push16(cpu.pc - 1)
-      cpu.pc = adr
-    },
-    // RTS
-    (cpu, _) => {
-      cpu.pc = cpu.pop16() + 1
-    },
-    // RTI
-    (cpu, _) => {
-      cpu.p = cpu.pop() | RESERVED_FLAG
-      cpu.pc = cpu.pop16()
-    },
-
-    // BCC
-    (cpu, adr) => {
-      const offset = toSigned(cpu.read8(adr))
-      if ((cpu.p & CARRY_FLAG) === 0)
-        cpu.pc += offset
-    },
-    // BCS
-    (cpu, adr) => {
-      const offset = toSigned(cpu.read8(adr))
-      if ((cpu.p & CARRY_FLAG) !== 0)
-        cpu.pc += offset
-    },
-    // BPL
-    (cpu, adr) => {
-      const offset = toSigned(cpu.read8(adr))
-      if ((cpu.p & NEGATIVE_FLAG) === 0)
-        cpu.pc += offset
-    },
-    // BMI
-    (cpu, adr) => {
-      const offset = toSigned(cpu.read8(adr))
-      if ((cpu.p & NEGATIVE_FLAG) !== 0)
-        cpu.pc += offset
-    },
-    // BNE
-    (cpu, adr) => {
-      const offset = toSigned(cpu.read8(adr))
-      if ((cpu.p & ZERO_FLAG) === 0)
-        cpu.pc += offset
-    },
-    // BEQ
-    (cpu, adr) => {
-      const offset = toSigned(cpu.read8(adr))
-      if ((cpu.p & ZERO_FLAG) !== 0)
-        cpu.pc += offset
-    },
-    // BVC
-    (cpu, adr) => {
-      const offset = toSigned(cpu.read8(adr))
-      if ((cpu.p & OVERFLOW_FLAG) === 0)
-        cpu.pc += offset
-    },
-    // BVS
-    (cpu, adr) => {
-      const offset = toSigned(cpu.read8(adr))
-      if ((cpu.p & OVERFLOW_FLAG) !== 0)
-        cpu.pc += offset
-    },
-
-    // PHA
-    (cpu, _) => {
-      cpu.push(cpu.a)
-    },
-    // PHP
-    (cpu, _) => {
-      cpu.push(cpu.p | BREAK_FLAG)
-    },
-    // PLA
-    (cpu, _) => {
-      cpu.a = cpu.pop()
-      cpu.setNZFlag(cpu.a)
-    },
-    // PLP
-    (cpu, _) => {
-      cpu.p = cpu.pop() | RESERVED_FLAG
-    },
-
-    // CLC
-    (cpu, _) => {
-      cpu.p &= ~CARRY_FLAG
-    },
-    // SEC
-    (cpu, _) => {
-      cpu.p |= CARRY_FLAG
-    },
-
-    // SEI
-    (cpu, _) => {
-      cpu.p |= IRQBLK_FLAG
-    },
-    // CLI
-    (cpu, _) => {
-      cpu.p &= ~IRQBLK_FLAG
-    },
-    // CLV
-    (cpu, _) => {
-      cpu.p &= ~OVERFLOW_FLAG
-    },
-    // SED
-    (_cpu, _) => {
-      // SED: normal to BCD mode
-      // not implemented on NES
-    },
-    // CLD
-    (_cpu, _) => {
-      // CLD: BCD to normal mode
-      // not implemented on NES
-    },
-
-    // BRK
-    (cpu, _) => {
-      if (DEBUG) {
-        cpu.addStepLog('BRK occurred')
-      }
-
-      cpu.push16(cpu.pc + 1)
-      cpu.push(cpu.p | BREAK_FLAG)
-      cpu.pc = cpu.read16(VEC_IRQ)
-      cpu.p |= IRQBLK_FLAG
-    },
-  ]
-  return kTable
-})()
