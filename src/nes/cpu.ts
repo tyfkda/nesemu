@@ -35,17 +35,17 @@ const BLOCK_SIZE = 0x2000
 
 const MAX_STEP_LOG = 200
 
-function setReset(p, flag, mask) {
+function setReset(p, flag, mask): number {
   if (flag)
     return p | mask
   return p & ~mask
 }
 
-function inc8(value) {
+function inc8(value): number {
   return (value + 1) & 0xff
 }
 
-function dec8(value) {
+function dec8(value): number {
   return (value - 1) & 0xff
 }
 
@@ -120,7 +120,7 @@ export class Cpu6502 {
     this.stepLogs = []
   }
 
-  public resetMemoryMap() {
+  public resetMemoryMap(): void {
     this.readerFuncTable.fill(null)
     this.writerFuncTable.fill(null)
   }
@@ -542,7 +542,7 @@ export class Cpu6502 {
   }
 
   // Set N and Z flag for the given value.
-  public setNZFlag(value: number) {
+  public setNZFlag(value: number): void {
     this.setZero(value === 0)
     this.setNegative((value & 0x80) !== 0)
   }
@@ -666,7 +666,7 @@ export class Cpu6502 {
     }
   }
 
-  private getAdr(pc: number, addressing: Addressing) {
+  private getAdr(pc: number, addressing: Addressing): number {
     switch (addressing) {
     case Addressing.ACCUMULATOR:
     case Addressing.IMPLIED:
