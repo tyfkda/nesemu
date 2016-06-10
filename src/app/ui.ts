@@ -3,7 +3,7 @@ import Wnd from '../wnd/wnd.ts'
 
 import {Nes} from '../nes/nes.ts'
 import {Cpu6502} from '../nes/cpu.ts'
-import {Addressing, Instruction, OpType} from '../nes/inst.ts'
+import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst.ts'
 import {disassemble} from '../nes/disasm.ts'
 import {Util} from '../nes/util.ts'
 
@@ -260,7 +260,7 @@ export class TraceWnd extends Wnd {
   public updateStatus(): void {
     const cpu = this.nes.cpu
     const op = cpu.read8Raw(cpu.pc)
-    const inst = Cpu6502.getInst(op) || kIllegalInstruction
+    const inst = kInstTable[op] || kIllegalInstruction
 
     for (let i = 0; i < inst.bytes; ++i) {
       const m = cpu.read8Raw(cpu.pc + i)

@@ -65,7 +65,7 @@ const disasm = (() => {
 
   return function disasm(cpu: Cpu6502, pc: number): string {
     const op = cpu.read8Raw(pc)
-    const inst = Cpu6502.getInst(op) || kIllegalInstruction
+    const inst = kInstTable[op] || kIllegalInstruction
     for (let i = 0; i < inst.bytes; ++i) {
       const m = cpu.read8Raw(cpu.pc + i)
       mem[i] = m
@@ -106,10 +106,6 @@ export class Cpu6502 {
   private writeErrorReported: boolean
 
   private stepLogs: string[]
-
-  public static getInst(opcode: number): Instruction {
-    return kInstTable[opcode]
-  }
 
   constructor() {
     this.readerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
@@ -202,7 +198,7 @@ export class Cpu6502 {
       this.addStepLog(disasm(this, pc))
     }
     const op = this.read8(pc++)
-    const inst = Cpu6502.getInst(op)
+    const inst = kInstTable[op]
     if (inst == null) {
       console.error(`Unhandled OPCODE, ${hex(this.pc - 1, 4)}: ${hex(op, 2)}`)
       this.paused = true
