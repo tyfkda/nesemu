@@ -71,7 +71,6 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Quit',
             click: () => {
-              console.log('Quit clicked')
               this.close()
             },
           },
