@@ -113,6 +113,16 @@ export class App {
     this.nes.cpu.pause(false)
     this.screenWnd.setFocus()
     this.stream.triggerLoadRom()
+
+    if (window.$DEBUG) {  // Accessing global variable!!!
+      this.createPaletWnd()
+      this.createNameTableWnd()
+      this.createPatternTableWnd()
+      this.createTraceWnd()
+      this.createRegisterWnd()
+      this.createControlWnd()
+    }
+
     return true
   }
 

@@ -5,8 +5,6 @@ import {Util} from './util.ts'
 
 import {disassemble} from './disasm.ts'
 
-const DEBUG = false
-
 const hex = Util.hex
 
 const CARRY_BIT = 0
@@ -105,9 +103,12 @@ export class Cpu6502 {
   private readErrorReported: boolean
   private writeErrorReported: boolean
 
+  private $DEBUG: boolean
   private stepLogs: string[]
 
   constructor() {
+    this.$DEBUG = !!window.$DEBUG  // Accessing global variable!!!
+
     this.readerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
     this.writerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
 
@@ -169,7 +170,7 @@ export class Cpu6502 {
       console.warn(`paused because NMI: ${Util.hex(this.pc, 4)}, ${Util.hex(vector, 4)}`)
     }
 
-    if (DEBUG) {
+    if (this.$DEBUG) {
       this.addStepLog(`NMI occurred at pc=${Util.hex(this.pc, 4)}`)
     }
     this.push16(this.pc)
@@ -182,7 +183,7 @@ export class Cpu6502 {
     if ((this.p & IRQBLK_FLAG) !== 0)
       return false
 
-    if (DEBUG) {
+    if (this.$DEBUG) {
       this.addStepLog(`IRQ occurred at pc=${Util.hex(this.pc, 4)}`)
     }
     this.push16(this.pc)
@@ -194,7 +195,7 @@ export class Cpu6502 {
 
   public step(): number {
     let pc = this.pc
-    if (DEBUG) {
+    if (this.$DEBUG) {
       this.addStepLog(disasm(this, pc))
     }
     const op = this.read8(pc++)
@@ -521,7 +522,7 @@ export class Cpu6502 {
       break
 
     case 56:  // BRK
-      if (DEBUG) {
+      if (this.$DEBUG) {
         this.addStepLog('BRK occurred')
       }
 
