@@ -9,6 +9,9 @@ import {Util} from '../nes/util.ts'
 
 import {AudioManager} from './audio_manager.ts'
 
+const WIDTH = 256
+const HEIGHT = 240
+
 function clearCanvas(canvas: HTMLCanvasElement): void {
   const context = canvas.getContext('2d')
   context.strokeStyle = ''
@@ -16,19 +19,133 @@ function clearCanvas(canvas: HTMLCanvasElement): void {
   context.fillRect(0, 0, canvas.width, canvas.height)
 }
 
+function takeScreenshot(wndMgr: WindowManager, screenWnd, ScreenWnd): Wnd {
+  const img = document.createElement('img') as HTMLImageElement
+  const title = String(Date.now())
+  img.src = screenWnd.capture()
+  img.className = 'pixelated'
+  img.style.width = img.style.height = '100%'
+  img.title = img.alt = title
+
+  const imgWnd = new Wnd(wndMgr, WIDTH, HEIGHT, title)
+  imgWnd.setContent(img)
+  imgWnd.addResizeBox()
+  wndMgr.add(imgWnd)
+  return imgWnd
+}
+
 export class ScreenWnd extends Wnd {
+  private app: App
   private nes: Nes
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
-  public constructor(wndMgr: WindowManager, nes: Nes) {
-    super(wndMgr, 512, 480, 'NES')
+  public constructor(app: App, wndMgr: WindowManager, nes: Nes) {
+    super(wndMgr, WIDTH * 2, HEIGHT * 2, 'NES')
+    this.app = app
     this.nes = nes
+    this.addMenuBar([
+      {
+        label: 'File',
+        submenu: [
+          {
+            label: 'Pause',
+            click: () => {
+              this.nes.cpu.pause(!this.nes.cpu.paused)
+            },
+          },
+          {
+            label: 'Reset',
+            click: () => {
+              this.nes.reset()
+            },
+          },
+          {
+            label: 'Screenshot',
+            click: () => {
+              takeScreenshot(this.wndMgr, this)
+            },
+          },
+          {
+            label: 'Quit',
+            click: () => {
+              console.log('Quit clicked')
+              this.close()
+            },
+          },
+        ],
+      },
+      {
+        label: 'View',
+        submenu: [
+          {
+            label: '1x1',
+            click: () => {
+              this.setSize(WIDTH, HEIGHT)
+            },
+          },
+          {
+            label: '2x2',
+            click: () => {
+              this.setSize(WIDTH * 2, HEIGHT * 2)
+            },
+          },
+          {
+            label: 'Max',
+            click: () => {
+              this.setSize(window.innerWidth - 2, window.innerHeight - Wnd.HEADER_HEIGHT - 2)  // For border size
+              this.setPos(0, 0)
+            },
+          },
+        ],
+      },
+      {
+        label: 'Debug',
+        submenu: [
+          {
+            label: 'Palette',
+            click: () => {
+              this.app.createPaletWnd()
+            },
+          },
+          {
+            label: 'NameTable',
+            click: () => {
+              this.app.createNameTableWnd()
+            },
+          },
+          {
+            label: 'PatternTable',
+            click: () => {
+              this.app.createPatternTableWnd()
+            },
+          },
+          {
+            label: 'Trace',
+            click: () => {
+              this.app.createTraceWnd()
+            },
+          },
+          {
+            label: 'Registers',
+            click: () => {
+              this.app.createRegisterWnd()
+            },
+          },
+          {
+            label: 'Control',
+            click: () => {
+              this.app.createControlWnd()
+            },
+          },
+        ],
+      },
+    ])
 
     const canvas = document.createElement('canvas') as HTMLCanvasElement
-    canvas.width = 256
-    canvas.height = 240
+    canvas.width = WIDTH
+    canvas.height = HEIGHT
     canvas.style.width = '100%'
     canvas.style.height = '100%'
     canvas.className = 'pixelated'
@@ -381,17 +498,7 @@ export class ControlWnd extends Wnd {
     const captureBtn = document.createElement('button') as HTMLButtonElement
     captureBtn.innerText = 'Capture'
     captureBtn.addEventListener('click', () => {
-      const img = document.createElement('img') as HTMLImageElement
-      const title = String(Date.now())
-      img.src = this.screenWnd.capture()
-      img.className = 'pixelated'
-      img.style.width = img.style.height = '100%'
-      img.title = img.alt = title
-
-      const imgWnd = new Wnd(this.wndMgr, 256, 240, title)
-      imgWnd.setContent(img)
-      imgWnd.addResizeBox()
-      this.wndMgr.add(imgWnd)
+      takeScreenshot(this.wndMgr, this.screenWnd)
     })
     root.appendChild(captureBtn)
 

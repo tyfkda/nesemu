@@ -1,5 +1,19 @@
 import WindowManager from './window_manager.ts'
 
+const Z_MENUBAR = 1000
+const Z_MENU_SUBITEM = Z_MENUBAR + 1
+
+function getOffsetRect(parent, target) {
+  const prect = parent.getBoundingClientRect()
+  const trect = target.getBoundingClientRect()
+  return {
+    left: trect.left - prect.left,
+    top: trect.top - prect.top,
+    right: trect.right - prect.left,
+    bottom: trect.bottom - prect.top,
+  }
+}
+
 export default class Wnd {
   public static HEADER_HEIGHT = 12
 
@@ -8,6 +22,7 @@ export default class Wnd {
   private contentHolder: HTMLElement
   private titleBar: HTMLElement
   private titleElem: HTMLElement
+  private menuBar: HTMLElement
 
   public constructor(protected wndMgr: WindowManager, width: number, height: number,
                      title: string)
@@ -16,8 +31,7 @@ export default class Wnd {
     this.root = this.createRoot()
     this.root.className = 'wnd'
     this.root.style.position = 'absolute'
-    this.root.style.width = `${width}px`
-    this.root.style.height = `${height + Wnd.HEADER_HEIGHT}px`
+    this.setSize(width, height)
 
     this.createTitleBar(title)
 
@@ -42,9 +56,66 @@ export default class Wnd {
     return this
   }
 
+  public setSize(width: number, height: number): Wnd {
+    this.root.style.width = `${width}px`
+    this.root.style.height = `${height + Wnd.HEADER_HEIGHT}px`
+    return this
+  }
+
   public setCallback(callback: Function): Wnd {
     this.callback = callback
     return this
+  }
+
+  public addMenuBar(menu: any): Wnd {
+    this.menuBar = document.createElement('div')
+    this.menuBar.className = 'menu-bar'
+    this.menuBar.style.zIndex = String(Z_MENUBAR)
+
+    menu.forEach(menuItem => {
+      const itemElem = document.createElement('div')
+      itemElem.className = 'menu-item pull-left'
+      itemElem.innerText = menuItem.label
+      itemElem.addEventListener('click', (event) => {
+        //event.stopPropagation()
+        if ('submenu' in menuItem) {
+          this.addSubmenu(menuItem, itemElem)
+        }
+      })
+      this.menuBar.appendChild(itemElem)
+      this.root.appendChild(this.menuBar)
+    })
+
+    return this
+  }
+
+  private addSubmenu(menuItem, itemElem) {
+    const subItemHolder = document.createElement('div')
+    subItemHolder.className = 'menu-subitem-holder'
+    subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
+    menuItem.submenu.forEach(submenuItem => {
+      const subItemElem = document.createElement('div')
+      subItemElem.className = 'menu-item'
+      subItemElem.innerText = submenuItem.label
+      subItemElem.addEventListener('click', (event) => {
+        event.stopPropagation()
+        if ('click' in submenuItem)
+          submenuItem.click()
+      })
+      subItemHolder.appendChild(subItemElem)
+    })
+    this.root.appendChild(subItemHolder)
+
+    const rect = getOffsetRect(this.root, itemElem)
+    subItemHolder.style.left = `${rect.left - 1}px`  // For border size
+    subItemHolder.style.top = `${rect.bottom - 1}px`
+
+    // To handle earlier than menu open, pass useCapture=true
+    const onClickOther = (event) => {
+      subItemHolder.parentNode.removeChild(subItemHolder)
+      document.removeEventListener('click', onClickOther, true)
+    }
+    document.addEventListener('click', onClickOther, true)
   }
 
   public getRootNode(): HTMLElement {

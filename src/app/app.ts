@@ -37,7 +37,7 @@ export class App {
 
     this.audioManager = new AudioManager()
 
-    this.screenWnd = new ScreenWnd(this.wndMgr, this.nes)
+    this.screenWnd = new ScreenWnd(this, this.wndMgr, this.nes)
     this.wndMgr.add(this.screenWnd)
     this.screenWnd.setPos(0, 0)
     this.screenWnd.setTitle(title)
@@ -50,47 +50,6 @@ export class App {
         break
       }
     })
-
-    this.paletWnd = new PaletWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(this.paletWnd)
-    this.paletWnd.setPos(520, 0)
-
-    this.nameTableWnd = new NameTableWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(this.nameTableWnd)
-    this.nameTableWnd.setPos(520, 40)
-
-    this.patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(this.patternTableWnd)
-    this.patternTableWnd.setPos(520, 300)
-
-    this.traceWnd = new TraceWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(this.traceWnd)
-    this.traceWnd.setPos(0, 500)
-
-    this.registerWnd = new RegisterWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(this.registerWnd)
-    this.registerWnd.setPos(410, 500)
-
-    this.ctrlWnd = new ControlWnd(this.wndMgr, this.nes, this.screenWnd, this.audioManager)
-    this.ctrlWnd.setCallback((action) => {
-      switch (action) {
-      case 'step':
-        this.dumpCpu()
-        this.render()
-        break
-      case 'paused':
-        this.dumpCpu()
-        break
-      case 'reset':
-        this.traceWnd.reset()
-        this.dumpCpu()
-        break
-      default:
-        break
-      }
-    })
-    this.wndMgr.add(this.ctrlWnd)
-    this.ctrlWnd.setPos(520, 500)
 
     this.nes.cpu.pause(true)
     this.nes.reset()
@@ -110,10 +69,116 @@ export class App {
     }
     this.nes.reset()
     this.nes.cpu.pause(false)
-    this.traceWnd.reset()
+    if (this.traceWnd != null)
+      this.traceWnd.reset()
     this.dumpCpu()
     this.updateButtonState()
     this.root.focus()
+    return true
+  }
+
+  public createPaletWnd(): boolean {
+    if (this.paletWnd != null)
+      return false
+    this.paletWnd = new PaletWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.paletWnd)
+    this.paletWnd.setPos(520, 0)
+    this.paletWnd.setCallback(action => {
+      if (action === 'close') {
+        this.paletWnd = null
+      }
+    })
+    return true
+  }
+
+  public createNameTableWnd(): boolean {
+    if (this.nameTableWnd != null)
+      return false
+    this.nameTableWnd = new NameTableWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.nameTableWnd)
+    this.nameTableWnd.setPos(520, 40)
+    this.nameTableWnd.setCallback(action => {
+      if (action === 'close') {
+        this.nameTableWnd = null
+      }
+    })
+    return true
+  }
+
+  public createPatternTableWnd(): boolean {
+    if (this.patternTableWnd != null)
+      return false
+    this.patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.patternTableWnd)
+    this.patternTableWnd.setPos(520, 300)
+    this.patternTableWnd.setCallback(action => {
+      if (action === 'close') {
+        this.patternTableWnd = null
+      }
+    })
+    return true
+  }
+
+  public createTraceWnd(): boolean {
+    if (this.traceWnd != null)
+      return false
+    this.traceWnd = new TraceWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.traceWnd)
+    this.traceWnd.setPos(0, 500)
+    this.traceWnd.setCallback(action => {
+      if (action === 'close') {
+        this.traceWnd = null
+      }
+    })
+
+    this.dumpCpu()
+    return true
+  }
+
+  public createRegisterWnd(): boolean {
+    if (this.registerWnd != null)
+      return false
+    this.registerWnd = new RegisterWnd(this.wndMgr, this.nes)
+    this.wndMgr.add(this.registerWnd)
+    this.registerWnd.setPos(410, 500)
+    this.registerWnd.setCallback(action => {
+      if (action === 'close') {
+        this.registerWnd = null
+      }
+    })
+
+    this.dumpCpu()
+    return true
+  }
+
+  public createControlWnd(): boolean {
+    if (this.ctrlWnd != null)
+      return false
+    this.ctrlWnd = new ControlWnd(this.wndMgr, this.nes, this.screenWnd, this.audioManager)
+    this.ctrlWnd.setCallback((action) => {
+      switch (action) {
+      case 'close':
+        this.ctrlWnd = null
+        break
+      case 'step':
+        this.dumpCpu()
+        this.render()
+        break
+      case 'paused':
+        this.dumpCpu()
+        break
+      case 'reset':
+        this.traceWnd.reset()
+        this.dumpCpu()
+        break
+      default:
+        break
+      }
+    })
+    this.wndMgr.add(this.ctrlWnd)
+    this.ctrlWnd.setPos(520, 500)
+
+    this.updateButtonState()
     return true
   }
 
@@ -121,18 +186,30 @@ export class App {
     this.destroying = true
     this.audioManager.destroy()
 
-    this.paletWnd.close()
-    this.nameTableWnd.close()
-    this.patternTableWnd.close()
-    this.registerWnd.close()
-    this.traceWnd.close()
-    this.ctrlWnd.close()
-    this.paletWnd = null
-    this.nameTableWnd = null
-    this.patternTableWnd = null
-    this.registerWnd = null
-    this.traceWnd = null
-    this.ctrlWnd = null
+    if (this.paletWnd != null) {
+      this.paletWnd.close()
+      this.paletWnd = null
+    }
+    if (this.nameTableWnd != null) {
+      this.nameTableWnd.close()
+      this.nameTableWnd = null
+    }
+    if (this.patternTableWnd != null) {
+      this.patternTableWnd.close()
+      this.patternTableWnd = null
+    }
+    if (this.registerWnd != null) {
+      this.registerWnd.close()
+      this.registerWnd = null
+    }
+    if (this.traceWnd != null) {
+      this.traceWnd.close()
+      this.traceWnd = null
+    }
+    if (this.ctrlWnd != null) {
+      this.ctrlWnd.close()
+      this.ctrlWnd = null
+    }
 
     this.wndMgr = null
   }
@@ -186,12 +263,15 @@ export class App {
 
   private updateButtonState(): void {
     const paused = this.nes.cpu.isPaused()
-    this.ctrlWnd.updateState(paused)
+    if (this.ctrlWnd != null)
+      this.ctrlWnd.updateState(paused)
   }
 
   private dumpCpu(): void {
-    this.registerWnd.updateStatus()
-    this.traceWnd.updateStatus()
+    if (this.registerWnd != null)
+      this.registerWnd.updateStatus()
+    if (this.traceWnd != null)
+      this.traceWnd.updateStatus()
   }
 
   private setUpKeyEvent(root: HTMLElement, padKeyHandler: PadKeyHandler): void {
