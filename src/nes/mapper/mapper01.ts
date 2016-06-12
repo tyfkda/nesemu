@@ -8,12 +8,11 @@ export function mapper01(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
   const BANK_SIZE = 1 << 14  // 16KB
   const size = romData.length
 
-  let register = 0, count = 0
+  let register = 0x10
   let prgBankMode = 3, prgBank = [0, size - BANK_SIZE]
 
   const resetRegister = () => {
     register = 0x10
-    count = 0
   }
 
   // PRG ROM
@@ -28,8 +27,9 @@ export function mapper01(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
     if ((value & 0x80) !== 0)  // Reset
       return resetRegister()
 
-    register = ((register >> 1) & 0x0f) | ((value & 1) << 4)
-    if (++count < 5)
+    const filled = (register & 1) !== 0
+    register = (register >> 1) | ((value & 1) << 4)
+    if (!filled)
       return
 
     // Register filled: branch according to bit 13~14.
@@ -67,19 +67,22 @@ export function mapper01(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
       }
       break
     case 0xe000:  // PRG bank
-      switch (prgBankMode) {
-      case 0: case 1:
-        prgBank[0] = (register & ~1) << 14
-        prgBank[1] = (register | 1) << 14
-        break
-      case 2:
-        prgBank[1] = register << 14
-        break
-      case 3:
-        prgBank[0] = register << 14
-        break
-      default:
-        break
+      {
+        const bank = register & 0x0f
+        switch (prgBankMode) {
+        case 0: case 1:
+          prgBank[0] = (bank & ~1) << 14
+          prgBank[1] = (bank | 1) << 14
+          break
+        case 2:
+          prgBank[1] = bank << 14
+          break
+        case 3:
+          prgBank[0] = bank << 14
+          break
+        default:
+          break
+        }
       }
       break
     default:
