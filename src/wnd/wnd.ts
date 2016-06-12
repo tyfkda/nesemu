@@ -31,7 +31,7 @@ export default class Wnd {
     this.root = this.createRoot()
     this.root.className = 'wnd'
     this.root.style.position = 'absolute'
-    this.setSize(width, height)
+    this.setClientSize(width, height)
 
     this.createTitleBar(title)
 
@@ -56,10 +56,16 @@ export default class Wnd {
     return this
   }
 
-  public setSize(width: number, height: number): Wnd {
+  public setClientSize(width: number, height: number): Wnd {
     this.root.style.width = `${width}px`
     this.root.style.height = `${height + Wnd.HEADER_HEIGHT}px`
     return this
+  }
+
+  public getWindowSize(): any {
+    const width = parseInt(this.root.style.width)
+    const height = parseInt(this.root.style.height)
+    return { width, height }
   }
 
   public setCallback(callback: Function): Wnd {

@@ -7,6 +7,7 @@ import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst.ts'
 import {disassemble} from '../nes/disasm.ts'
 import {Util} from '../nes/util.ts'
 
+import {App} from './app.ts'
 import {AudioManager} from './audio_manager.ts'
 
 const WIDTH = 256
@@ -82,19 +83,28 @@ export class ScreenWnd extends Wnd {
           {
             label: '1x1',
             click: () => {
-              this.setSize(WIDTH, HEIGHT)
+              this.setClientSize(WIDTH, HEIGHT)
             },
           },
           {
             label: '2x2',
             click: () => {
-              this.setSize(WIDTH * 2, HEIGHT * 2)
+              this.setClientSize(WIDTH * 2, HEIGHT * 2)
+            },
+          },
+          {
+            label: 'Adjust aspect ratio',
+            click: () => {
+              const root = this.getRootNode()
+              const width = parseInt(root.style.width)
+              const height = (width * (HEIGHT / WIDTH)) | 0
+              this.setClientSize(width, height)
             },
           },
           {
             label: 'Max',
             click: () => {
-              this.setSize(window.innerWidth - 2, window.innerHeight - Wnd.HEADER_HEIGHT - 2)  // For border size
+              this.setClientSize(window.innerWidth - 2, window.innerHeight - Wnd.HEADER_HEIGHT - 2)  // For border size
               this.setPos(0, 0)
             },
           },

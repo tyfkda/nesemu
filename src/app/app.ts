@@ -10,6 +10,16 @@ import WindowManager from '../wnd/window_manager.ts'
 const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 20
 
+function clamp(x, min, max) {
+  if (x < min)
+    return min
+  if (max < min)
+    max = min
+  if (x > max)
+    return max
+  return x
+}
+
 export class App {
   private destroying = false
   private nes: Nes
@@ -25,11 +35,11 @@ export class App {
   private traceWnd: TraceWnd
   private ctrlWnd: ControlWnd
 
-  public static create(wndMgr: WindowManager, root: HTMLElement, title: string): App {
-    return new App(wndMgr, root, title)
+  public static create(wndMgr: WindowManager, root: HTMLElement, option: any): App {
+    return new App(wndMgr, root, option)
   }
 
-  constructor(private wndMgr: WindowManager, private root: HTMLElement, title: string) {
+  constructor(private wndMgr: WindowManager, private root: HTMLElement, option: any) {
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
     this.nes.setVblankCallback((leftCycles) => { this.onVblank(leftCycles) })
@@ -39,8 +49,8 @@ export class App {
 
     this.screenWnd = new ScreenWnd(this, this.wndMgr, this.nes)
     this.wndMgr.add(this.screenWnd)
-    this.screenWnd.setPos(0, 0)
-    this.screenWnd.setTitle(title)
+    if (option.title)
+      this.screenWnd.setTitle(option.title as string)
     this.screenWnd.setCallback((action, ...params) => {
       switch (action) {
       case 'close':
@@ -50,6 +60,11 @@ export class App {
         break
       }
     })
+
+    const size = this.screenWnd.getWindowSize()
+    let x = clamp((option.centerX || 0) - size.width / 2, 0, window.innerWidth - size.width - 1)
+    let y = clamp((option.centerY || 0) - size.height / 2, 0, window.innerHeight - size.height - 1)
+    this.screenWnd.setPos(x, y)
 
     this.nes.cpu.pause(true)
     this.nes.reset()
