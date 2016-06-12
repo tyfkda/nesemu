@@ -73,7 +73,7 @@ export class App {
       this.traceWnd.reset()
     this.dumpCpu()
     this.updateButtonState()
-    this.root.focus()
+    this.screenWnd.setFocus()
     return true
   }
 

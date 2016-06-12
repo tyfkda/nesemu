@@ -67,6 +67,11 @@ export default class Wnd {
     return this
   }
 
+  public setFocus(): Wnd {
+    this.root.focus()
+    return this
+  }
+
   public addMenuBar(menu: any): Wnd {
     this.menuBar = document.createElement('div')
     this.menuBar.className = 'menu-bar'
