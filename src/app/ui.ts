@@ -34,6 +34,34 @@ function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   return imgWnd
 }
 
+function tryFullscreen(element: HTMLElement, callback: Function): boolean {
+  const list = [
+    'requestFullscreen',
+    'webkitRequestFullScreen',
+    'mozRequestFullScreen',
+    'msRequestFullscreen'
+  ]
+  for (let i = 0; i < list.length; ++i) {
+    if (element[list[i]]) {
+      element[list[i]]()
+
+      const kChangeEvents = ['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange']
+      function exitHandler() {
+        const isFullscreen = (document.fullScreen || document.mozFullScreen ||
+                              document.webkitIsFullScreen)
+        if (callback)
+          callback(isFullscreen)
+        if (!isFullscreen) {  // End
+          kChangeEvents.forEach(eventName => { document.removeEventListener(eventName, exitHandler, false) })
+        }
+      }
+      kChangeEvents.forEach(eventName => { document.addEventListener(eventName, exitHandler, false) })
+      return true
+    }
+  }
+  return false
+}
+
 export class ScreenWnd extends Wnd {
   private app: App
   private nes: Nes
@@ -107,6 +135,12 @@ export class ScreenWnd extends Wnd {
               this.setPos(0, 0)
             },
           },
+          {
+            label: 'Fullscreen',
+            click: () => {
+              this.setFullscreen()
+            },
+          },
         ],
       },
       {
@@ -177,6 +211,29 @@ export class ScreenWnd extends Wnd {
 
   public getCanvas(): HTMLCanvasElement {
     return this.canvas
+  }
+
+  public setFullscreen(callback: Function): boolean {
+    return tryFullscreen(this.contentHolder, (isFullscreen) => {
+      const style = this.contentHolder.style
+      if (isFullscreen) {
+        let width = window.parent.screen.width
+        let height = window.parent.screen.height
+        if (width / height >= WIDTH / HEIGHT) {
+          width = (height * (WIDTH / HEIGHT)) | 0
+        } else {
+          height = (width * (HEIGHT / WIDTH)) | 0
+        }
+        style.width = `${width}px`
+        style.height = `${height}px`
+        style.margin = 'auto'
+        style.backgroundColor = 'black'
+      } else {
+        style.width = style.height = style.margin = style.backgroundColor = ''
+      }
+      if (callback)
+        callback(isFullscreen)
+    })
   }
 }
 

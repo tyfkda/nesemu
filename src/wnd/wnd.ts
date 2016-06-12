@@ -18,8 +18,8 @@ export default class Wnd {
   public static HEADER_HEIGHT = 12
 
   protected callback: Function
+  protected contentHolder: HTMLElement
   private root: HTMLElement
-  private contentHolder: HTMLElement
   private titleBar: HTMLElement
   private titleElem: HTMLElement
   private menuBar: HTMLElement
