@@ -10,6 +10,7 @@ export function mapper01(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
 
   let register = 0x10
   let prgBankMode = 3, prgBank = [0, size - BANK_SIZE]
+  let chrBank4k = true
 
   const resetRegister = () => {
     register = 0x10
@@ -57,13 +58,22 @@ export function mapper01(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
         default:
           break
         }
+
+        chrBank4k = (register & 0x10) !== 0
       }
       break
     case 0xa000: case 0xc000:  // CHR bank
-      {
-        const bank = ((adr - 0xa000) & 0x2000) >> 1  // 0x1000
+      if (chrBank4k) {
+        const chr = ((adr - 0xa000) & 0x2000) >> 11  // 0x0004
+        const bank = (register & 0x1f) << 2
         for (let i = 0; i < 4; ++i)
-          ppu.setChrBankOffset(bank + i, value + i)
+          ppu.setChrBankOffset(chr + i, bank + i)
+      } else {
+        if ((adr & 0x2000) !== 0) {  // 0x0004
+          const bank = (register & 0x1e) << 2
+          for (let i = 0; i < 8; ++i)
+            ppu.setChrBankOffset(i, bank + i)
+        }
       }
       break
     case 0xe000:  // PRG bank
