@@ -1,8 +1,8 @@
 ///<reference path="../decl/patch.d.ts" />
 
 import {App} from './app/app.ts'
-
 import WindowManager from './wnd/window_manager.ts'
+import './nes/polyfill.ts'
 
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
