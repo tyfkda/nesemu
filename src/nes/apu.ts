@@ -14,7 +14,9 @@ export enum PadBit {
 }
 
 const BASE = 0x4000
-const PAD_STATUS = 0x4016
+const STATUS_REG = 0x4015
+const PAD1_REG = 0x4016
+const PAD2_REG = 0x4017
 const FRAME_COUNTER = 0x4017
 const IRQ_INHIBIT = 1 << 6
 const SEQUENCER_MODE = 1 << 7
@@ -31,11 +33,11 @@ export class Apu {
 
   public read(adr: number): number {
     switch (adr) {
-    case 0x4015:  // Status
-      return 0xc0
-    case 0x4016:  // Pad 1
-    case 0x4017:  // Pad 2
-      return this.shiftPad(adr - 0x4016)
+    case STATUS_REG:
+      return 0xc0  // TODO: Implement.
+    case PAD1_REG:
+    case PAD2_REG:
+      return this.shiftPad(adr - PAD1_REG)
     default:
       return 0
     }
@@ -47,7 +49,7 @@ export class Apu {
     }
 
     switch (adr) {
-    case PAD_STATUS:  // Pad status. bit0 = Controller shift register strobe
+    case PAD1_REG:  // Pad status. bit0 = Controller shift register strobe
       if ((value & 1) === 0) {
         this.latchPad()
       }
