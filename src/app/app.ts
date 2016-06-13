@@ -8,7 +8,7 @@ import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
 import WindowManager from '../wnd/window_manager.ts'
 
 const CPU_HZ = 1789773
-const MAX_ELAPSED_TIME = 1000 / 20
+const MAX_ELAPSED_TIME = 1000 / 15
 
 function clamp(x, min, max) {
   if (x < min)
