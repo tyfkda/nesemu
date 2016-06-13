@@ -48,6 +48,7 @@ export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) 
 
   // PRG RAM
   const ram = new Uint8Array(0x2000)
+  ram.fill(0xff)
   cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
   cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
 
