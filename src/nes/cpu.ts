@@ -613,7 +613,7 @@ export class Cpu6502 {
       console.warn(
         `Break because watched point write: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
     }
-    return this.writerFuncTable[block](adr, value)
+    return writer(adr, value)
   }
 
   public dump(start: number, count: number): void {
