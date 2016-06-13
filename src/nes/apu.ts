@@ -25,16 +25,26 @@ export class Apu {
   private padStatus: number[] = new Array(2)
   private padTmp: number[] = new Array(2)
   private regs: Uint8Array = new Uint8Array(0x20)
+  private frameInterrupt: number  // 0=not occurred, 0x40=occurred
+  private dmcInterrupt: number  // 0=not occurred, 0x80=occurred
 
   public reset() {
     this.regs.fill(0)
     this.regs[FRAME_COUNTER - BASE] = IRQ_INHIBIT
+    this.frameInterrupt = 0
+    this.dmcInterrupt = 0x80  // TODO: Implement
   }
 
   public read(adr: number): number {
     switch (adr) {
     case STATUS_REG:
-      return 0xc0  // TODO: Implement.
+      {
+        // TODO: Implement.
+        const result = this.dmcInterrupt | this.frameInterrupt
+        // Reading this register clears the frame interrupt flag (but not the DMC interrupt flag).
+        this.frameInterrupt = 0
+        return result
+      }
     case PAD1_REG:
     case PAD2_REG:
       return this.shiftPad(adr - PAD1_REG)
@@ -49,6 +59,9 @@ export class Apu {
     }
 
     switch (adr) {
+    case STATUS_REG:
+      this.dmcInterrupt = 0  // Writing to this register clears the DMC interrupt flag.
+      break
     case PAD1_REG:  // Pad status. bit0 = Controller shift register strobe
       if ((value & 1) === 0) {
         this.latchPad()
@@ -105,6 +118,10 @@ export class Apu {
     // http://wiki.nesdev.com/w/index.php/IRQ
     // Enable: $4017 write with bits 7-6 = 00
     return (this.regs[FRAME_COUNTER - BASE] & (IRQ_INHIBIT | SEQUENCER_MODE)) === 0
+  }
+
+  public setFrameInterrupt(): void {
+    this.frameInterrupt = 0x40
   }
 
   private latchPad(): void {
