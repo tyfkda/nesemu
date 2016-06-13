@@ -1,15 +1,15 @@
-import {mapper00} from './mapper00.ts'
-import {mapper01} from './mapper01.ts'
-import {mapper02, mapper5d} from './mapper02.ts'
-import {mapper03} from './mapper03.ts'
-import {mapper04} from './mapper04.ts'
+import {mapper000} from './mapper000.ts'
+import {mapper001} from './mapper001.ts'
+import {mapper002, mapper093} from './mapper002.ts'
+import {mapper003} from './mapper003.ts'
+import {mapper004} from './mapper004.ts'
 
 export const kMapperTable: {[key: number]: Function} = {
-  0x00: mapper00,
-  0x01: mapper01,
-  0x02: mapper02,
-  0x03: mapper03,
-  0x04: mapper04,
+  0: mapper000,
+  1: mapper001,
+  2: mapper002,
+  3: mapper003,
+  4: mapper004,
 
-  0x5d: mapper5d,  // INES Mapper 093: Sunsoft-2 IC
+  93: mapper093,  // INES Mapper 093: Sunsoft-2 IC
 }

@@ -3,7 +3,7 @@ import {Nes} from '../nes.ts'
 import {Ppu} from '../ppu.ts'
 import {Util} from '../util.ts'
 
-export function mapper04(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) {
+export function mapper004(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) {
   const maxPrg = (romData.length >> 13) - 1  // 0x2000
   let p0 = 0, p1 = 1, p2 = 2, p3 = maxPrg << 13
   const regs = new Uint8Array(8)

@@ -225,7 +225,7 @@ export class Nes {
   }
 
   private setMemoryMapForMapper(mapperNo: number): void {
-    console.log(`Mapper ${Util.hex(mapperNo, 2)}`)
+    console.log(`Mapper ${mapperNo}`)
     if (mapperNo in kMapperTable) {
       kMapperTable[mapperNo](this.romData, this.cpu, this.ppu, this)
     } else {
