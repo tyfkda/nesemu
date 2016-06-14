@@ -2,7 +2,6 @@ import WindowManager from '../wnd/window_manager.ts'
 import Wnd from '../wnd/wnd.ts'
 
 import {Nes} from '../nes/nes.ts'
-import {Cpu6502} from '../nes/cpu.ts'
 import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst.ts'
 import {disassemble} from '../nes/disasm.ts'
 import {Util} from '../nes/util.ts'
@@ -20,7 +19,7 @@ function clearCanvas(canvas: HTMLCanvasElement): void {
   context.fillRect(0, 0, canvas.width, canvas.height)
 }
 
-function takeScreenshot(wndMgr: WindowManager, screenWnd, ScreenWnd): Wnd {
+function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const img = document.createElement('img') as HTMLImageElement
   const title = String(Date.now())
   img.src = screenWnd.capture()
@@ -95,7 +94,7 @@ export class ScreenWnd extends Wnd {
             label: 'Adjust aspect ratio',
             click: () => {
               const root = this.getRootNode()
-              const width = parseInt(root.style.width)
+              const width = parseInt(root.style.width, 10)
               const height = (width * (HEIGHT / WIDTH)) | 0
               this.setClientSize(width, height)
             },
@@ -103,7 +102,8 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Max',
             click: () => {
-              this.setClientSize(window.innerWidth - 2, window.innerHeight - Wnd.HEADER_HEIGHT - 2)  // For border size
+              this.setClientSize(window.innerWidth - 2,
+                                 window.innerHeight - Wnd.HEADER_HEIGHT - 2)  // -2 for border size
               this.setPos(0, 0)
             },
           },

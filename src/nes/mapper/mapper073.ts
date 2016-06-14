@@ -3,7 +3,6 @@
 
 import {Cpu6502} from '../cpu.ts'
 import {Ppu} from '../ppu.ts'
-import {Util} from '../util.ts'
 
 export function mapper073(romData: Uint8Array, cpu: Cpu6502, _ppu: Ppu) {
   const BANK_BIT = 14

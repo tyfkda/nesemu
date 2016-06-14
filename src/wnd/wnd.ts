@@ -63,8 +63,8 @@ export default class Wnd {
   }
 
   public getWindowSize(): any {
-    const width = parseInt(this.root.style.width)
-    const height = parseInt(this.root.style.height)
+    const width = parseInt(this.root.style.width, 10)
+    const height = parseInt(this.root.style.height, 10)
     return { width, height }
   }
 
@@ -88,7 +88,6 @@ export default class Wnd {
       itemElem.className = 'menu-item pull-left'
       itemElem.innerText = menuItem.label
       itemElem.addEventListener('click', (event) => {
-        //event.stopPropagation()
         if ('submenu' in menuItem) {
           this.addSubmenu(menuItem, itemElem)
         }
@@ -98,35 +97,6 @@ export default class Wnd {
     })
 
     return this
-  }
-
-  private addSubmenu(menuItem, itemElem) {
-    const subItemHolder = document.createElement('div')
-    subItemHolder.className = 'menu-subitem-holder'
-    subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
-    menuItem.submenu.forEach(submenuItem => {
-      const subItemElem = document.createElement('div')
-      subItemElem.className = 'menu-item'
-      subItemElem.innerText = submenuItem.label
-      subItemElem.addEventListener('click', (event) => {
-        event.stopPropagation()
-        if ('click' in submenuItem)
-          submenuItem.click()
-      })
-      subItemHolder.appendChild(subItemElem)
-    })
-    this.root.appendChild(subItemHolder)
-
-    const rect = getOffsetRect(this.root, itemElem)
-    subItemHolder.style.left = `${rect.left - 1}px`  // For border size
-    subItemHolder.style.top = `${rect.bottom - 1}px`
-
-    // To handle earlier than menu open, pass useCapture=true
-    const onClickOther = (event) => {
-      subItemHolder.parentNode.removeChild(subItemHolder)
-      document.removeEventListener('click', onClickOther, true)
-    }
-    document.addEventListener('click', onClickOther, true)
   }
 
   public getRootNode(): HTMLElement {
@@ -297,6 +267,35 @@ export default class Wnd {
     titleElem.appendChild(document.createTextNode(title))
     parent.appendChild(titleElem)
     return titleElem
+  }
+
+  private addSubmenu(menuItem, itemElem) {
+    const subItemHolder = document.createElement('div')
+    subItemHolder.className = 'menu-subitem-holder'
+    subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
+    menuItem.submenu.forEach(submenuItem => {
+      const subItemElem = document.createElement('div')
+      subItemElem.className = 'menu-item'
+      subItemElem.innerText = submenuItem.label
+      subItemElem.addEventListener('click', (event) => {
+        event.stopPropagation()
+        if ('click' in submenuItem)
+          submenuItem.click()
+      })
+      subItemHolder.appendChild(subItemElem)
+    })
+    this.root.appendChild(subItemHolder)
+
+    const rect = getOffsetRect(this.root, itemElem)
+    subItemHolder.style.left = `${rect.left - 1}px`  // For border size
+    subItemHolder.style.top = `${rect.bottom - 1}px`
+
+    // To handle earlier than menu open, pass useCapture=true
+    const onClickOther = (event) => {
+      subItemHolder.parentNode.removeChild(subItemHolder)
+      document.removeEventListener('click', onClickOther, true)
+    }
+    document.addEventListener('click', onClickOther, true)
   }
 
   private getMousePosIn(event: MouseEvent, elem: HTMLElement) {

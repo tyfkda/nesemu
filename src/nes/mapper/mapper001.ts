@@ -2,7 +2,6 @@
 
 import {Cpu6502} from '../cpu.ts'
 import {Ppu} from '../ppu.ts'
-import {Util} from '../util.ts'
 
 export function mapper001(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
   const BANK_SIZE = 1 << 14  // 16KB

@@ -16,7 +16,7 @@ export function mapper007(romData: Uint8Array, cpu: Cpu6502, _ppu: Ppu) {
   cpu.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
     prgBank = (value & (count - 1)) << BANK_BIT
 
-    const namePage = (value >> 4) & 1
+    // const namePage = (value >> 4) & 1
     // TODO: Use namePage
   })
 }
