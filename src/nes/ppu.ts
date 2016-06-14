@@ -691,6 +691,15 @@ export class Ppu {
     hevents.count = n
   }
 
+  public writePpuDirect(addr: number, value: number): void {
+    if (addr >= 0x2000) {
+      this.vram[addr] = value
+    } else {
+      const bankOffset = this.chrBankOffset[(addr >> 10) & 7]
+      this.chrData[(addr & 0x3ff) + bankOffset] = value
+    }
+  }
+
   private readPpuDirect(addr: number): number {
     if (addr >= 0x2000) {
       return this.vram[addr]

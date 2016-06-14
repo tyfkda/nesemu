@@ -10,3 +10,8 @@ export function mapper003(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
     ppu.setChrBank(value)
   })
 }
+
+export function mapper185(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
+  ppu.writePpuDirect(0x0000, 1)  // For "Mighty bomb jack(J)"
+  return mapper003(romData, cpu, ppu)
+}
