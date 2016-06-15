@@ -10,9 +10,25 @@ export function mapper001(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
   let register = 0x10
   let prgBankMode = 3, prgBank = [0, size - BANK_SIZE]
   let chrBank4k = true
+  let chrBank = [0 << 2, 1 << 2]
 
   const resetRegister = () => {
     register = 0x10
+  }
+
+  const setChrBank = (hilo, bank) => {
+    if (chrBank4k) {
+      const chr = hilo << 2
+      for (let i = 0; i < 4; ++i)
+        ppu.setChrBankOffset(chr + i, bank + i)
+    } else {
+      if (hilo === 0) {
+        bank = bank & -8
+        for (let i = 0; i < 8; ++i)
+          ppu.setChrBankOffset(i, bank + i)
+      }
+    }
+    chrBank[hilo] = bank
   }
 
   // PRG ROM
@@ -58,21 +74,20 @@ export function mapper001(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
           break
         }
 
-        chrBank4k = (register & 0x10) !== 0
+        const newChrBank4k = (register & 0x10) !== 0
+        if (chrBank4k !== newChrBank4k) {
+          chrBank4k = newChrBank4k
+          setChrBank(0, chrBank[0])
+          setChrBank(1, chrBank[1])
+        }
       }
       break
     case 0xa000: case 0xc000:  // CHR bank
-      if (chrBank4k) {
-        const chr = ((adr - 0xa000) & 0x2000) >> 11  // 0x0004
+      {
+        const hilo = ((adr - 0xa000) >> 13) & 1
         const bank = (register & 0x1f) << 2
-        for (let i = 0; i < 4; ++i)
-          ppu.setChrBankOffset(chr + i, bank + i)
-      } else {
-        if ((adr & 0x2000) !== 0) {  // 0x0004
-          const bank = (register & 0x1e) << 2
-          for (let i = 0; i < 8; ++i)
-            ppu.setChrBankOffset(i, bank + i)
-        }
+        if (chrBank[hilo] !== bank)
+          setChrBank(hilo, bank)
       }
       break
     case 0xe000:  // PRG bank
