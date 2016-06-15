@@ -2,7 +2,7 @@
 
 import {Cpu6502} from '../cpu.ts'
 import {Nes} from '../nes.ts'
-import {Ppu} from '../ppu.ts'
+import {Ppu, MirrorMode} from '../ppu.ts'
 import {Util} from '../util.ts'
 
 export function mapper004(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) {
@@ -79,10 +79,9 @@ export function mapper004(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes)
   // Mirroring
   cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
     if ((adr & 1) === 0) {
-      ppu.setMirrorMode(1 - (value & 1))
+      ppu.setMirrorMode((value & 1) === 0 ? MirrorMode.VERT : MirrorMode.HORZ)
     } else {
       // PRG RAM protect, TODO: Implement.
-      console.log(`RAM write protect: ${Util.hex(value, 2)}`)
     }
   })
 
@@ -110,5 +109,5 @@ export function mapper004(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes)
   // iNes header, flags 6
   // > Some mappers, such as MMC1, MMC3, and AxROM, can control nametable mirroring.
   // > They ignore bit 0
-  ppu.setMirrorMode(1)  // Default vertical mirroring?
+  ppu.setMirrorMode(MirrorMode.VERT)  // Default vertical mirroring?
 }

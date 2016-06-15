@@ -40,14 +40,19 @@ const PPUDATA = 0x07  // $2007
 const FLIP_HORZ = 0x40
 const FLIP_VERT = 0x80
 
-// Mirror mode
-const MIRROR_HORZ = 0
-// const MIRROR_VERT = 1
+export enum MirrorMode {
+  HORZ = 0,
+  VERT = 1,
+  SINGLE0 = 2,
+  SINGLE1 = 3,
+}
 
 interface HEvents {
   count: number
   events: any[]
 }
+
+const kMirrorModeBitTable = [0x50, 0x44, 0x00, 0x55]
 
 const kInitialPalette = [
   0x09, 0x01, 0x00, 0x01, 0x00, 0x02, 0x02, 0x0d, 0x08, 0x10, 0x08, 0x24, 0x00, 0x00, 0x04, 0x2c,
@@ -58,24 +63,19 @@ function cloneArray(array) {
   return array.concat()
 }
 
-function getNameTable(baseNameTable: number, bx: number, by: number, mirrorMode: number): number {
-  const adr = 0x2000 + baseNameTable
-  if (mirrorMode === MIRROR_HORZ) {
-    return (adr ^ (((by / 30) & 1) << 11)) & ~0x0400  // 0x0800
-  } else {
-    return (adr ^ ((bx & 32) << 5)) & ~0x0800  // 0x0400
-  }
-  //return adr ^ (((by / 30) & 1) << 11) ^ ((bx & 32) << 5)
+function getNameTable(baseNameTable: number, bx: number, by: number, mirrorModeBit: number): number {
+  const page = (((bx >> 5) & 1) + (((by / 30) & 1) << 1) + baseNameTable) & 3  // 0~3
+  const m = (mirrorModeBit << (10 - (page << 1))) & 0x0c00
+  return 0x2000 + m
 }
 
-function getPpuAddr(adr: number, mirrorMode: number): number {
+function getPpuAddr(adr: number, mirrorModeBit: number): number {
   if (0x3000 <= adr && adr < 0x3f00)
     adr -= 0x1000  // Map 0x3000~3eff to 0x2000~
   if (0x2000 <= adr && adr < 0x3000) {
-    if (mirrorMode === MIRROR_HORZ)
-      adr &= ~0x0400
-    else
-      adr &= ~0x0800
+    const page = (adr >> 10) & 3
+    const m = (mirrorModeBit << (10 - (page << 1))) & 0x0c00
+    return (adr & 0xf3ff) | m
   }
 
   if (0x3f00 <= adr && adr <= 0x3fff) {
@@ -101,7 +101,7 @@ export class Ppu {
   public hcount: number
   public scrollX: number
   public scrollY: number
-  public mirrorMode: number
+  public mirrorModeBit: number  // 2bit x 4page
   private latch: number
   private ppuAddr: number
   private bufferedValue: number
@@ -113,7 +113,7 @@ export class Ppu {
     this.regs = new Uint8Array(REGISTER_COUNT)
     this.vram = new Uint8Array(VRAM_SIZE)
     this.oam = new Uint8Array(OAM_SIZE)
-    this.mirrorMode = 0
+    this.mirrorModeBit = 0x44
     this.hevents = {count: 0, events: []}
     this.hevents2 = {count: 0, events: []}
 
@@ -158,11 +158,16 @@ export class Ppu {
     this.chrBankOffset[bank] = (value << 10) & (max - 1)  // 0x0400
 
     this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                    ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset)})
+                    ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset),
+                    mirrorModeBit: this.mirrorModeBit})
   }
 
-  public setMirrorMode(mode: number): void {
-    this.mirrorMode = mode
+  public setMirrorMode(mode: MirrorMode): void {
+    this.mirrorModeBit = kMirrorModeBitTable[mode]
+
+    this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
+                    ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset),
+                    mirrorModeBit: this.mirrorModeBit})
   }
 
   public read(reg: number): number {
@@ -178,11 +183,11 @@ export class Ppu {
     case PPUDATA:
       {
         const ppuAddr = this.ppuAddr
-        const addr = getPpuAddr(ppuAddr, this.mirrorMode)
+        const addr = getPpuAddr(ppuAddr, this.mirrorModeBit)
         if (0x3f00 <= addr && addr <= 0x3fff) {  // Palette
           result = this.readPpuDirect(addr)  // Palette read shouldn't be buffered like other VRAM
           // Palette read should also read VRAM into read buffer
-          this.bufferedValue = this.readPpuDirect(getPpuAddr(ppuAddr - 0x1000, this.mirrorMode))
+          this.bufferedValue = this.readPpuDirect(getPpuAddr(ppuAddr - 0x1000, this.mirrorModeBit))
         } else {
           result = this.bufferedValue
           this.bufferedValue = this.readPpuDirect(addr)
@@ -203,7 +208,8 @@ export class Ppu {
     case PPUCTRL:
     case PPUMASK:
       this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                      ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset)})
+                      ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset),
+                      mirrorModeBit: this.mirrorModeBit})
       break
     case OAMDATA:
       {
@@ -216,9 +222,12 @@ export class Ppu {
       if (this.latch === 0) {
         this.scrollX = value
       } else {
-        this.scrollY = value
+        //this.scrollY = value
+        if (this.hcount >= 240)
+          this.scrollY = value
         this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                        ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset)})
+                        ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset),
+                        mirrorModeBit: this.mirrorModeBit})
       }
       this.latch = 1 - this.latch
       break
@@ -231,7 +240,7 @@ export class Ppu {
       break
     case PPUDATA:
       {
-        const addr = getPpuAddr(this.ppuAddr, this.mirrorMode)
+        const addr = getPpuAddr(this.ppuAddr, this.mirrorModeBit)
         //if (addr < 0x2000) {
         //  console.log(`CHR ROM write: ${Util.hex(addr, 4)}, ${Util.hex(value, 2)}`)
         //}
@@ -264,7 +273,8 @@ export class Ppu {
     this.hevents.count = 0
 
     this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                    ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset)})
+                    ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset),
+                    mirrorModeBit: this.mirrorModeBit})
   }
   public clearVBlank(): void {
     this.regs[PPUSTATUS] &= ~(VBLANK | SPRITE0HIT)
@@ -293,7 +303,7 @@ export class Ppu {
   }
 
   public doRenderBg(imageData: ImageData, scrollX: number, scrollY: number,
-                    startX: number, startY: number, baseNameTable: number): void
+                    startX: number, startY: number, nameTableOffset: number): void
   {
     const getBgPat = (chridx, py) => {
       const idx = chridx + py
@@ -328,7 +338,7 @@ export class Ppu {
         const bx = (bbx + (scrollX >> 3)) & 63
         const ax = bx & 31
 
-        const nameTable = getNameTable(baseNameTable, bx, by, this.mirrorMode)
+        const nameTable = getNameTable(0, bx, by, this.mirrorModeBit) + nameTableOffset
         const name = vram[nameTable + ax + (ay << 5)]
         const chridx = name * 16 + chrStart
         const palShift = (ax & 2) + ((ay & 2) << 1)
@@ -382,15 +392,15 @@ export class Ppu {
         this.clearBg(imageData, hline0, hline1)
         continue
       }
-      const baseNameTable = (h.ppuCtrl & BASE_NAMETABLE_ADDRESS) << 10
+      const baseNameTable = h.ppuCtrl & BASE_NAMETABLE_ADDRESS
       const chrStart = (h.ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
       this.doRenderBg2(imageData, h.scrollX, h.scrollY, baseNameTable, hline0, hline1,
-                       h.chrBankOffset, chrStart)
+                       h.chrBankOffset, h.mirrorModeBit, chrStart)
     }
   }
 
   public doRenderBg2(imageData: ImageData, scrollX: number, scrollY: number, baseNameTable: number,
-                     hline0: number, hline1: number, chrBankOffset: number,
+                     hline0: number, hline1: number, chrBankOffset: number, mirrorModeBit: number,
                      chrStart: number): void
   {
     const getBgPat = (chridx, py, chrBankOffset) => {
@@ -427,7 +437,7 @@ export class Ppu {
         const bx = (bbx + (scrollX >> 3)) & 63
         const ax = bx & 31
 
-        const nameTable = getNameTable(baseNameTable, bx, by, this.mirrorMode)
+        const nameTable = getNameTable(baseNameTable, bx, by, mirrorModeBit)
         const name = vram[nameTable + ax + (ay << 5)]
         const chridx = name * 16 + chrStart
         const palShift = (ax & 2) + ((ay & 2) << 1)
@@ -582,7 +592,7 @@ export class Ppu {
   public dumpVram(start: number, count: number): void {
     const mem = []
     for (let i = 0; i < count; ++i) {
-      mem.push(this.vram[getPpuAddr(start + i, this.mirrorMode)])
+      mem.push(this.vram[getPpuAddr(start + i, this.mirrorModeBit)])
     }
 
     for (let i = 0; i < count; i += 16) {

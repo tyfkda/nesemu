@@ -2,7 +2,7 @@
 // http://wiki.nesdev.com/w/index.php/INES_Mapper_023
 
 import {Cpu6502} from '../cpu.ts'
-import {Ppu} from '../ppu.ts'
+import {Ppu, MirrorMode} from '../ppu.ts'
 import {Util} from '../util.ts'
 
 export function mapper023(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
@@ -34,9 +34,10 @@ console.log(`prgBank2: ${value}, ${Util.hex(prgBank2, 8)}, ${prgBankMode}`)
         break
       }
     } else if ((adr & 0xfffb) === 0x9000) {  // 0x9000, 0x9002
+      const kTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
       const mirrorMode = value & 3
 console.log(`Mirror mode: ${mirrorMode}`)
-      ppu.setMirrorMode(mirrorMode)
+      ppu.setMirrorMode(kTable[mirrorMode])
     } else if ((adr & 0xfffb) === 0x9008) {  // 0x9004, 0x9006
       prgBankMode = (value >> 1) & 1
 console.log(`prgBankMode: ${prgBankMode}`)

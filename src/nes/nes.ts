@@ -3,7 +3,7 @@
 import {Apu} from './apu.ts'
 import {kColors} from './const.ts'
 import {Cpu6502} from './cpu.ts'
-import {Ppu} from './ppu.ts'
+import {Ppu, MirrorMode} from './ppu.ts'
 import {Util} from './util.ts'
 
 import {kMapperTable} from './mapper/mapper_table.ts'
@@ -99,7 +99,7 @@ export class Nes {
     this.mapperNo = getMapperNo(romData)
     this.romData = loadPrgRom(romData)
     this.ppu.setChrData(loadChrRom(romData))
-    this.ppu.setMirrorMode(romData[6] & 1)
+    this.ppu.setMirrorMode((romData[6] & 1) === 0 ? MirrorMode.HORZ : MirrorMode.VERT)
     this.cpu.deleteAllBreakPoints()
 
     this.setMemoryMap(this.mapperNo)
@@ -167,7 +167,7 @@ export class Nes {
     const context = bgCanvas.getContext('2d')
     const imageData = context.getImageData(0, 0, bgCanvas.width, bgCanvas.height)
     this.ppu.doRenderBg(imageData, 0, 0, 0, 0, 0)
-    this.ppu.doRenderBg(imageData, 0, 0, 256, 0, this.ppu.mirrorMode === 0 ? 0x0800 : 0x0400)
+    this.ppu.doRenderBg(imageData, 0, 0, 256, 0, 0x0400)
     context.putImageData(imageData, 0, 0)
   }
 

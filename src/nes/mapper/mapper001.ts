@@ -1,7 +1,7 @@
 // MMC1
 
 import {Cpu6502} from '../cpu.ts'
-import {Ppu} from '../ppu.ts'
+import {Ppu, MirrorMode} from '../ppu.ts'
 
 export function mapper001(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
   const BANK_SIZE = 1 << 14  // 16KB
@@ -54,11 +54,17 @@ export function mapper001(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
       {
         const mirrorMode = register & 3
         switch (mirrorMode) {
+        case 0:
+          ppu.setMirrorMode(MirrorMode.SINGLE0)
+          break
+        case 1:
+          ppu.setMirrorMode(MirrorMode.SINGLE1)
+          break
         case 2:
-          ppu.setMirrorMode(1)
+          ppu.setMirrorMode(MirrorMode.VERT)
           break
         case 3:
-          ppu.setMirrorMode(0)
+          ppu.setMirrorMode(MirrorMode.HORZ)
           break
         }
 
