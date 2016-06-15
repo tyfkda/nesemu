@@ -1,21 +1,28 @@
+// MMC3
+
 import {Cpu6502} from '../cpu.ts'
 import {Nes} from '../nes.ts'
 import {Ppu} from '../ppu.ts'
 import {Util} from '../util.ts'
 
 export function mapper004(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) {
-  const maxPrg = (romData.length >> 13) - 1  // 0x2000
-  let p0 = 0, p1 = 1, p2 = 2, p3 = maxPrg << 13
+  const BANK_BIT = 13  // 0x2000
+  const BANK_MASK = (1 << BANK_BIT) - 1
   const regs = new Uint8Array(8)
+  const maxPrg = (romData.length >> BANK_BIT) - 1
+
+  let bankSelect = 0
+  let p0 = 0, p1 = 1 << BANK_BIT, p2 = 2 << BANK_BIT, p3 = maxPrg << BANK_BIT
+
   const setPrgBank = (swap) => {
     if ((swap & 0x40) === 0) {
-      p0 = (regs[6] & maxPrg) << 13
-      p1 = (regs[7] & maxPrg) << 13
-      p2 = (maxPrg - 1) << 13
+      p0 = (regs[6] & maxPrg) << BANK_BIT
+      p1 = (regs[7] & maxPrg) << BANK_BIT
+      p2 = (maxPrg - 1) << BANK_BIT
     } else {
-      p2 = (regs[6] & maxPrg) << 13
-      p1 = (regs[7] & maxPrg) << 13
-      p0 = (maxPrg - 1) << 13
+      p2 = (regs[6] & maxPrg) << BANK_BIT
+      p1 = (regs[7] & maxPrg) << BANK_BIT
+      p0 = (maxPrg - 1) << BANK_BIT
     }
   }
   const setChrBank = (swap) => {
@@ -41,10 +48,10 @@ export function mapper004(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes)
   }
 
   // PRG ROM
-  cpu.setReadMemory(0x8000, 0x9fff, (adr) => romData[(adr & 0x1fff) + p0])
-  cpu.setReadMemory(0xa000, 0xbfff, (adr) => romData[(adr & 0x1fff) + p1])
-  cpu.setReadMemory(0xc000, 0xdfff, (adr) => romData[(adr & 0x1fff) + p2])
-  cpu.setReadMemory(0xe000, 0xffff, (adr) => romData[(adr & 0x1fff) + p3])
+  cpu.setReadMemory(0x8000, 0x9fff, (adr) => romData[(adr & BANK_MASK) + p0])
+  cpu.setReadMemory(0xa000, 0xbfff, (adr) => romData[(adr & BANK_MASK) + p1])
+  cpu.setReadMemory(0xc000, 0xdfff, (adr) => romData[(adr & BANK_MASK) + p2])
+  cpu.setReadMemory(0xe000, 0xffff, (adr) => romData[(adr & BANK_MASK) + p3])
 
   // PRG RAM
   const ram = new Uint8Array(0x2000)
@@ -53,7 +60,6 @@ export function mapper004(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes)
   cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
 
   // Select
-  let bankSelect = 0
   cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
     if ((adr & 1) === 0) {
       bankSelect = value
