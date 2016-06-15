@@ -38,7 +38,7 @@ console.log(`prgBank2: ${value}, ${Util.hex(prgBank2, 8)}, ${prgBankMode}`)
 console.log(`Mirror mode: ${mirrorMode}`)
       ppu.setMirrorMode(mirrorMode)
     } else if ((adr & 0xfffb) === 0x9008) {  // 0x9004, 0x9006
-      prgBankMode = value & 1
+      prgBankMode = (value >> 1) & 1
 console.log(`prgBankMode: ${prgBankMode}`)
       switch (prgBankMode) {
       case 0:

@@ -201,6 +201,7 @@ export class Ppu {
 
     switch (reg) {
     case PPUCTRL:
+    case PPUMASK:
       this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
                       ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset)})
       break
@@ -288,8 +289,6 @@ export class Ppu {
   }
 
   public renderBg(imageData: ImageData): void {
-    if ((this.regs[PPUMASK] & SHOW_BG) === 0)
-      return this.clearBg(imageData)
     this.doRenderBgLine(imageData)
   }
 
@@ -379,6 +378,10 @@ export class Ppu {
       const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240 + 8
       if (hline0 >= hline1)
         continue
+      if ((h.ppuMask & SHOW_BG) === 0) {
+        this.clearBg(imageData, hline0, hline1)
+        continue
+      }
       const baseNameTable = (h.ppuCtrl & BASE_NAMETABLE_ADDRESS) << 10
       const chrStart = (h.ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
       this.doRenderBg2(imageData, h.scrollX, h.scrollY, baseNameTable, hline0, hline1,
@@ -467,10 +470,10 @@ export class Ppu {
     }
   }
 
-  public clearBg(imageData: ImageData): void {
+  public clearBg(imageData: ImageData, hline0: number, hline1: number): void {
     const LINE_BYTES = imageData.width * 4
     const pixels = imageData.data
-    for (let i = 0; i < imageData.height; ++i) {
+    for (let i = hline0; i < hline1; ++i) {
       let index = i * LINE_BYTES
       for (let j = 0; j < imageData.width; ++j) {
         pixels[index++] = 0
@@ -487,13 +490,12 @@ export class Ppu {
   }
 
   public renderSprite(imageData: ImageData): void {
-    if ((this.regs[PPUMASK] & SHOW_SPRITE) === 0)
-      return
-
     let chrStart = 0
     const n = this.hevents.count
     for (let i = 0; i < n; ++i) {
       const h = this.hevents.events[i]
+      if ((h.ppuMask & SHOW_SPRITE) === 0)
+        continue
       const hline0 = h.hcount
       const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240 + 8
       if (hline0 >= hline1)
