@@ -1,4 +1,4 @@
-const kTypes = ['square', 'square', 'triangle']
+const kTypes = ['square', 'square', 'triangle', 'noise']
 
 class SoundChannel {
   public gainNode
@@ -23,7 +23,19 @@ class SoundChannel {
     this.gainNode.gain.value = 0
 
     this.oscillator = context.createOscillator()
-    this.oscillator.type = type
+    if (type !== 'noise') {
+      this.oscillator.type = type
+    } else {
+      const count = 1024
+      const real = new Float32Array(count)
+      const imag = new Float32Array(count)
+      for (let i = 0; i < count; ++i) {
+        real[i] = Math.random() * 2 - 1
+        imag[i] = 0  //Math.random() * 1
+      }
+      const wave = context.createPeriodicWave(real, imag)
+      this.oscillator.setPeriodicWave(wave)
+    }
     this.oscillator.connect(this.gainNode)
     this.gainNode.connect(context.destination)
     return this
@@ -44,7 +56,7 @@ class SoundChannel {
 }
 
 export class AudioManager {
-  public static CHANNEL = 3
+  public static CHANNEL = 4
 
   private context: AudioContext
   private channels: SoundChannel[]
@@ -100,8 +112,9 @@ export class AudioManager {
       return
     this.masterVolume = volume
     if (volume <= 0) {
-      for (let channel of this.channels)
+      this.channels.forEach(channel => {
         channel.setVolume(0)
+      })
     }
   }
 }

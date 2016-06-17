@@ -21,18 +21,39 @@ const FRAME_COUNTER = 0x4017
 const IRQ_INHIBIT = 1 << 6
 const SEQUENCER_MODE = 1 << 7
 
+const CONSTANT_VOLUME = 0x10
+const LENGTH_COUNTER_HALT = 0x20
+
+const kLengthTable = [
+  0x0a, 0xfe, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06, 0xa0, 0x08, 0x3c, 0x0a, 0x0e, 0x0c, 0x1a, 0x0e,
+  0x0c, 0x10, 0x18, 0x12, 0x30, 0x14, 0x60, 0x16, 0xc0, 0x18, 0x48, 0x1a, 0x10, 0x1c, 0x20, 0x1e,
+]
+
+const kNoiseFrequencies = (
+  [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068]
+    .map(v => v * 1))
+
 export class Apu {
+  public static CHANNEL = 4
+
   private padStatus: number[] = new Array(2)
   private padTmp: number[] = new Array(2)
   private regs: Uint8Array = new Uint8Array(0x20)
   private frameInterrupt: number  // 0=not occurred, 0x40=occurred
   private dmcInterrupt: number  // 0=not occurred, 0x80=occurred
+  private lengthCounter: number[] = new Array(Apu.CHANNEL)
+  private channelStopped: boolean[] = new Array(Apu.CHANNEL)
 
   public reset() {
     this.regs.fill(0)
     this.regs[FRAME_COUNTER - BASE] = IRQ_INHIBIT
     this.frameInterrupt = 0
     this.dmcInterrupt = 0x80  // TODO: Implement
+
+    for (let i = 0; i < Apu.CHANNEL; ++i) {
+      this.lengthCounter[i] = 0
+      this.channelStopped[i] = true
+    }
   }
 
   public read(adr: number): number {
@@ -40,7 +61,12 @@ export class Apu {
     case STATUS_REG:
       {
         // TODO: Implement.
-        const result = this.dmcInterrupt | this.frameInterrupt
+        let result = this.dmcInterrupt | this.frameInterrupt
+        for (let ch = 0; ch < Apu.CHANNEL; ++ch) {
+          if (this.lengthCounter[ch] > 0)
+            result |= 1 << ch
+        }
+
         // Reading this register clears the frame interrupt flag (but not the DMC interrupt flag).
         this.frameInterrupt = 0
         return result
@@ -54,8 +80,28 @@ export class Apu {
   }
 
   public write(adr: number, value: number): void {
+//const ch = 3
+//if (adr < 0x4010 && !(0x4000 + ch * 4 <= adr && adr <= 0x4003 + ch * 4))  // ひとまずオフ
+//  return
+//if (adr === 0x4003 + ch * 4) {
+//  const timer = this.regs[ch * 4 + 2] + ((value /*this.regs[ch * 4 + 3]*/ & 7) << 8)
+//  const length = kLengthTable[value >> 3]
+//  //if ((value & 0x20) !== 0) {
+//    console.log(`APU Channel${ch}, length=${length}`)
+//  //}
+//}
+
     if (adr < 0x4020) {
       this.regs[adr - 0x4000] = value
+
+      if (adr < 0x4010) {  // Sound
+        const ch = (adr - 0x4000) >> 2
+        if ((adr & 3) === 3) {  // Set length.
+          const length = kLengthTable[value >> 3]
+          this.lengthCounter[ch] = length
+          this.channelStopped[ch] = false
+        }
+      }
     }
 
     switch (adr) {
@@ -85,29 +131,48 @@ export class Apu {
         const value = this.regs[channel * 4 + 2] + ((this.regs[channel * 4 + 3] & 7) << 8)
         return ((1790000 / 8) / (value + 1)) | 0
       }
+    case 3:
+      {
+        const period = this.regs[channel * 4 + 2] & 15
+        return kNoiseFrequencies[period]
+      }
     default:
       break
     }
   }
 
   public getVolume(channel: number): number {
-    if ((this.regs[0x15] & (1 << channel)) === 0)
+    if ((this.regs[0x15] & (1 << channel)) === 0 ||
+       this.channelStopped[channel])
       return 0
+
+    let l = this.lengthCounter[channel]
+    let v = this.regs[channel * 4]
+    if ((v & LENGTH_COUNTER_HALT) === 0) {
+      this.lengthCounter[channel] = l -= 2
+      if (l <= 0) {
+        this.regs[channel * 4] = v = (v & 0xf0)  // Set volume = 0
+        this.lengthCounter[channel] = 0
+        this.channelStopped[channel] = true
+        return 0
+      }
+    }
 
     switch (channel) {
     case 0:
     case 1:
+    case 3:
       {
-        const v = this.regs[channel * 4]
-        //if ((v & (1 << 4)) !== 0)
-        //  return 1.0  // TODO: Calculate from envelope.
-        return (v & 15) / 15.0
+        if ((v & CONSTANT_VOLUME) !== 0)
+          return (v & 15) / 15.0
+        return 1
       }
     case 2:
       return 1.0
     default:
       break
     }
+    return 0.0
   }
 
   public setPadStatus(no: number, status: number): void {
