@@ -1,4 +1,5 @@
 import {Nes} from '../nes/nes.ts'
+import {PadBit} from '../nes/apu.ts'
 
 import {AudioManager} from './audio_manager.ts'
 import {PadKeyHandler} from './pad_key_handler.ts'
@@ -264,8 +265,13 @@ export class App {
     if (this.nes.cpu.isPaused())
       return
 
-    for (let i = 0; i < 2; ++i)
-      this.nes.setPadStatus(i, this.padKeyHandler.getStatus(i))
+    const isFocused = this.screenWnd.isFocused()
+    for (let i = 0; i < 2; ++i) {
+      let pad = this.padKeyHandler.getStatus(i)
+      if (isFocused)
+        pad |= this.getGamepadStatus(i)
+      this.nes.setPadStatus(i, pad)
+    }
 
     const et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
     let cycles = (CPU_HZ * et / 1000) | 0
@@ -302,5 +308,38 @@ export class App {
       event.preventDefault()
       padKeyHandler.onKeyUp(event.keyCode)
     })
+  }
+
+  private getGamepadStatus(padNo: number): number {
+    const THRESHOLD = 0.5
+
+    if (!window.Gamepad)
+      return 0
+    const gamepads = navigator.getGamepads()
+    if (padNo >= gamepads.length)
+      return 0
+
+    const gamepad = gamepads[padNo]
+    if (!gamepad)
+      return 0
+
+    let pad = 0
+    if (gamepad.axes[0] < -THRESHOLD)
+      pad |= PadBit.L
+    if (gamepad.axes[0] > THRESHOLD)
+      pad |= PadBit.R
+    if (gamepad.axes[1] < -THRESHOLD)
+      pad |= PadBit.U
+    if (gamepad.axes[1] > THRESHOLD)
+      pad |= PadBit.D
+    if (gamepad.buttons[0].pressed)
+      pad |= PadBit.B
+    if (gamepad.buttons[1].pressed)
+      pad |= PadBit.A
+    if (gamepad.buttons[8].pressed)
+      pad |= PadBit.SELECT
+    if (gamepad.buttons[9].pressed)
+      pad |= PadBit.START
+    return pad
   }
 }

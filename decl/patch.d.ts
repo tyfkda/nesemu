@@ -12,6 +12,8 @@ interface Window {
   AudioContext: any
   webkitAudioContext: any
 
+  Gamepad: any
+
   nes: any
 }
 

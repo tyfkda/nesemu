@@ -42,6 +42,10 @@ export default class WindowManager {
     }
   }
 
+  public isTop(wnd: Wnd): boolean {
+    return this.windows.length > 0 && this.windows[0] === wnd
+  }
+
   public update(): void {
     this.windows.forEach(wnd => {
       wnd.update()
