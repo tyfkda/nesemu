@@ -36,11 +36,11 @@ export class App {
   private traceWnd: TraceWnd
   private ctrlWnd: ControlWnd
 
-  public static create(wndMgr: WindowManager, root: HTMLElement, option: any): App {
-    return new App(wndMgr, root, option)
+  public static create(wndMgr: WindowManager, option: any): App {
+    return new App(wndMgr, option)
   }
 
-  constructor(private wndMgr: WindowManager, private root: HTMLElement, option: any) {
+  constructor(private wndMgr: WindowManager, option: any) {
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
     this.nes.setVblankCallback((leftCycles) => { this.onVblank(leftCycles) })
@@ -73,7 +73,7 @@ export class App {
     this.dumpCpu()
 
     this.padKeyHandler = new PadKeyHandler()
-    this.setUpKeyEvent(this.screenWnd.getRootNode(), this.padKeyHandler)
+    this.setUpKeyEvent(this.screenWnd.getCanvas(), this.padKeyHandler)
 
     this.startLoopAnimation()
   }

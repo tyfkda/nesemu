@@ -174,6 +174,10 @@ export class ScreenWnd extends Wnd {
   public capture(): string {
     return this.canvas.toDataURL()
   }
+
+  public getCanvas(): HTMLCanvasElement {
+    return this.canvas
+  }
 }
 
 export class PaletWnd extends Wnd {

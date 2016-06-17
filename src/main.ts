@@ -49,7 +49,7 @@ window.addEventListener('load', () => {
         centerX: event.pageX,
         centerY: event.pageY,
       }
-      const app = App.create(wndMgr, root, option)
+      const app = App.create(wndMgr, option)
       app.loadRom(romData)
     })
   }
