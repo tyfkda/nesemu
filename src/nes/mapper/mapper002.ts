@@ -26,5 +26,6 @@ export const mapper002 = mapper002Creator(0)
 
 // INES Mapper 093: Sunsoft-2 IC
 // http://wiki.nesdev.com/w/index.php/INES_Mapper_093
-// This mapper is deprecated for new development. Homebrew projects other than mapper tests should use UxROM (iNES Mapper 002) instead.
+// This mapper is deprecated for new development. Homebrew projects other than mapper tests should
+// use UxROM (iNES Mapper 002) instead.
 export const mapper093 = mapper002Creator(4)

@@ -80,17 +80,6 @@ export class Apu {
   }
 
   public write(adr: number, value: number): void {
-//const ch = 3
-//if (adr < 0x4010 && !(0x4000 + ch * 4 <= adr && adr <= 0x4003 + ch * 4))  // ひとまずオフ
-//  return
-//if (adr === 0x4003 + ch * 4) {
-//  const timer = this.regs[ch * 4 + 2] + ((value /*this.regs[ch * 4 + 3]*/ & 7) << 8)
-//  const length = kLengthTable[value >> 3]
-//  //if ((value & 0x20) !== 0) {
-//    console.log(`APU Channel${ch}, length=${length}`)
-//  //}
-//}
-
     if (adr < 0x4020) {
       this.regs[adr - 0x4000] = value
 

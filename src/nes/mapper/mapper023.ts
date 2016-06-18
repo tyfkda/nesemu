@@ -13,7 +13,8 @@ export function mapper023(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
 console.log(`size=${size}, count=${count}`)
   const kLastBank = size - BANK_SIZE
   let prgBankMode = 0
-  let prgBank0 = 0, prgBank1 = 1 << BANK_BIT, prgBank2 = (count - 2) << BANK_BIT, prgBank3 = (count - 1) << BANK_BIT
+  let prgBank0 = 0, prgBank1 = 1 << BANK_BIT, prgBank2 = (count - 2) << BANK_BIT
+  const prgBank3 = (count - 1) << BANK_BIT
   cpu.setReadMemory(0x8000, 0x9fff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank0])
   cpu.setReadMemory(0xa000, 0xbfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank1])
   cpu.setReadMemory(0xc000, 0xdfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank2])
@@ -44,11 +45,9 @@ console.log(`prgBankMode: ${prgBankMode}`)
       switch (prgBankMode) {
       case 0:
         prgBank2 = (count - 2) << BANK_BIT
-        prgBank3 = (count - 1) << BANK_BIT
         break
       case 1:
         prgBank0 = (count - 2) << BANK_BIT
-        prgBank3 = (count - 1) << BANK_BIT
         break
       }
     }

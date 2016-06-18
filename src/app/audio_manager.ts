@@ -31,7 +31,7 @@ class SoundChannel {
       const imag = new Float32Array(count)
       for (let i = 0; i < count; ++i) {
         real[i] = Math.random() * 2 - 1
-        imag[i] = 0  //Math.random() * 1
+        imag[i] = 0
       }
       const wave = context.createPeriodicWave(real, imag)
       this.oscillator.setPeriodicWave(wave)

@@ -63,7 +63,9 @@ function cloneArray(array) {
   return array.concat()
 }
 
-function getNameTable(baseNameTable: number, bx: number, by: number, mirrorModeBit: number): number {
+function getNameTable(baseNameTable: number, bx: number, by: number,
+                      mirrorModeBit: number): number
+{
   const page = (((bx >> 5) & 1) + (((by / 30) & 1) << 1) + baseNameTable) & 3  // 0~3
   const m = (mirrorModeBit << (10 - (page << 1))) & 0x0c00
   return 0x2000 + m
@@ -403,7 +405,7 @@ export class Ppu {
                      hline0: number, hline1: number, chrBankOffset: number, mirrorModeBit: number,
                      chrStart: number): void
   {
-    const getBgPat = (chridx, py, chrBankOffset) => {
+    const getBgPat = (chridx, py) => {
       const idx = chridx + py
 
       const bank = (idx >> 10) & 7
@@ -451,7 +453,7 @@ export class Ppu {
             continue
           if (yy >= Const.HEIGHT)
             break
-          const pat = getBgPat(chridx, py, chrBankOffset)
+          const pat = getBgPat(chridx, py)
           for (let px = 0; px < W; ++px) {
             const xx = bbx * W + px - (scrollX & 7)
             if (xx < 0)
@@ -631,6 +633,15 @@ export class Ppu {
     }
   }
 
+  public writePpuDirect(addr: number, value: number): void {
+    if (addr >= 0x2000) {
+      this.vram[addr] = value
+    } else {
+      const bankOffset = this.chrBankOffset[(addr >> 10) & 7]
+      this.chrData[(addr & 0x3ff) + bankOffset] = value
+    }
+  }
+
   private checkSprite0Hit(hcount: number): void {
     if ((this.regs[PPUSTATUS] & SPRITE0HIT) !== 0 ||
         (this.regs[PPUMASK] & (SHOW_BG | SHOW_SPRITE)) !== (SHOW_BG | SHOW_SPRITE))
@@ -685,7 +696,6 @@ export class Ppu {
 
   private addHevent(param: any): void {
     let hcount = this.hcount
-//console.log(`addHevent: hcount=${hcount}`)
     if (hcount >= 240)
       hcount = 0
     const hevents = this.hevents
@@ -701,15 +711,6 @@ export class Ppu {
       event[key] = param[key]
     })
     hevents.count = n
-  }
-
-  public writePpuDirect(addr: number, value: number): void {
-    if (addr >= 0x2000) {
-      this.vram[addr] = value
-    } else {
-      const bankOffset = this.chrBankOffset[(addr >> 10) & 7]
-      this.chrData[(addr & 0x3ff) + bankOffset] = value
-    }
   }
 
   private readPpuDirect(addr: number): number {

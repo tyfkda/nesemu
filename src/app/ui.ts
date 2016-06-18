@@ -35,27 +35,26 @@ function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
 }
 
 function tryFullscreen(element: HTMLElement, callback: Function): boolean {
-  const list = [
-    'requestFullscreen',
-    'webkitRequestFullScreen',
-    'mozRequestFullScreen',
-    'msRequestFullscreen'
+  const kList = [
+    { fullscreen: 'requestFullscreen', change: 'fullscreenchange' },
+    { fullscreen: 'webkitRequestFullScreen', change: 'webkitfullscreenchange' },
+    { fullscreen: 'mozRequestFullScreen', change: 'mozfullscreenchange' },
+    { fullscreen: 'msRequestFullscreen', change: 'MSFullscreenChange' },
   ]
-  for (let i = 0; i < list.length; ++i) {
-    if (element[list[i]]) {
-      element[list[i]]()
-
-      const kChangeEvents = ['webkitfullscreenchange', 'mozfullscreenchange', 'fullscreenchange', 'MSFullscreenChange']
-      function exitHandler() {
+  for (let i = 0; i < kList.length; ++i) {
+    if (element[kList[i].fullscreen]) {
+      element[kList[i].fullscreen]()
+      const changeEvent = kList[i].change
+      const exitHandler = () => {
         const isFullscreen = (document.fullScreen || document.mozFullScreen ||
                               document.webkitIsFullScreen)
         if (callback)
           callback(isFullscreen)
         if (!isFullscreen) {  // End
-          kChangeEvents.forEach(eventName => { document.removeEventListener(eventName, exitHandler, false) })
+          document.removeEventListener(changeEvent, exitHandler, false)
         }
       }
-      kChangeEvents.forEach(eventName => { document.addEventListener(eventName, exitHandler, false) })
+      document.addEventListener(changeEvent, exitHandler, false)
       return true
     }
   }
