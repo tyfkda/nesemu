@@ -48,7 +48,7 @@ export class App {
 
     this.audioManager = new AudioManager()
 
-    this.screenWnd = new ScreenWnd(this, this.wndMgr, this.nes)
+    this.screenWnd = new ScreenWnd(this.wndMgr, this, this.nes)
     this.wndMgr.add(this.screenWnd)
     if (option.title)
       this.screenWnd.setTitle(option.title as string)

@@ -62,16 +62,12 @@ function tryFullscreen(element: HTMLElement, callback: Function): boolean {
 }
 
 export class ScreenWnd extends Wnd {
-  private app: App
-  private nes: Nes
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 
-  public constructor(app: App, wndMgr: WindowManager, nes: Nes) {
+  public constructor(wndMgr: WindowManager, private app: App, private nes: Nes) {
     super(wndMgr, WIDTH * 2, HEIGHT * 2, 'NES')
-    this.app = app
-    this.nes = nes
     this.addMenuBar([
       {
         label: 'File',
@@ -241,7 +237,6 @@ export class PaletWnd extends Wnd {
   private static W = 16
   private static H = 2
 
-  private nes: Nes
   private boxes: HTMLCanvasElement[]
   private palet: Uint8Array
   private tmp: Uint8Array
@@ -274,9 +269,8 @@ export class PaletWnd extends Wnd {
       buf[i] = nes.getPalet(i)
   }
 
-  constructor(wndMgr: WindowManager, nes: Nes) {
+  constructor(wndMgr: WindowManager, private nes: Nes) {
     super(wndMgr, 128, 16, 'Palette')
-    this.nes = nes
     this.palet = new Uint8Array(PaletWnd.W * PaletWnd.H)
     this.tmp = new Uint8Array(PaletWnd.W * PaletWnd.H)
 
@@ -301,12 +295,10 @@ export class PaletWnd extends Wnd {
 }
 
 export class NameTableWnd extends Wnd {
-  private nes: Nes
   private canvas: HTMLCanvasElement
 
-  public constructor(wndMgr: WindowManager, nes: Nes) {
+  public constructor(wndMgr: WindowManager, private nes: Nes) {
     super(wndMgr, 512, 240, 'NameTable')
-    this.nes = nes
 
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = 512
@@ -333,7 +325,6 @@ const kPatternColors = [
 ]
 
 export class PatternTableWnd extends Wnd {
-  private nes: Nes
   private canvas: HTMLCanvasElement
 
   private static createCanvas(): HTMLCanvasElement {
@@ -347,9 +338,8 @@ export class PatternTableWnd extends Wnd {
     return canvas
   }
 
-  public constructor(wndMgr: WindowManager, nes: Nes) {
+  public constructor(wndMgr: WindowManager, private nes: Nes) {
     super(wndMgr, 256, 128, 'PatternTable')
-    this.nes = nes
 
     const canvas = PatternTableWnd.createCanvas()
     this.setContent(canvas)
@@ -362,12 +352,10 @@ export class PatternTableWnd extends Wnd {
 }
 
 export class RegisterWnd extends Wnd {
-  private nes: Nes
   private valueElems: HTMLInputElement[]
 
-  public constructor(wndMgr: WindowManager, nes: Nes) {
+  public constructor(wndMgr: WindowManager, private nes: Nes) {
     super(wndMgr, 100, 160, 'Regs')
-    this.nes = nes
 
     const content = this.createContent()
     this.setContent(content)
@@ -432,16 +420,14 @@ const kIllegalInstruction: Instruction = {
 }
 
 export class TraceWnd extends Wnd {
-  private nes: Nes
   private textarea: HTMLTextAreaElement
 
   private mem: Uint8Array
   private bins: string[]
   private lines: string[]
 
-  public constructor(wndMgr: WindowManager, nes: Nes) {
+  public constructor(wndMgr: WindowManager, private nes: Nes) {
     super(wndMgr, 400, 160, 'Trace')
-    this.nes = nes
     this.mem = new Uint8Array(MAX_BYTES)
     this.bins = new Array(MAX_BYTES)
 
@@ -500,20 +486,14 @@ export class TraceWnd extends Wnd {
 }
 
 export class ControlWnd extends Wnd {
-  private nes: Nes
-  private screenWnd: ScreenWnd
-  private audioManager: AudioManager
   private stepBtn: HTMLButtonElement
   private runBtn: HTMLButtonElement
   private pauseBtn: HTMLButtonElement
 
-  public constructor(wndMgr: WindowManager, nes: Nes, screenWnd: ScreenWnd,
-                     audioManager: AudioManager)
+  public constructor(wndMgr: WindowManager, private nes: Nes, private screenWnd: ScreenWnd,
+                     private audioManager: AudioManager)
   {
     super(wndMgr, 384, 32, 'Control')
-    this.nes = nes
-    this.screenWnd = screenWnd
-    this.audioManager = audioManager
 
     const content = this.createElement()
     this.setContent(content)
