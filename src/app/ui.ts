@@ -7,7 +7,10 @@ import {disassemble} from '../nes/disasm.ts'
 import {Util} from '../nes/util.ts'
 
 import {App} from './app.ts'
+import {AppEvent} from './app_event.ts'
 import {AudioManager} from './audio_manager.ts'
+
+import * as Rx from 'rxjs/Rx'
 
 const WIDTH = 256
 const HEIGHT = 240
@@ -65,8 +68,9 @@ export class ScreenWnd extends Wnd {
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private imageData: ImageData
+  private subscription: Rx.Subscription
 
-  public constructor(wndMgr: WindowManager, private app: App, private nes: Nes) {
+  public constructor(wndMgr: WindowManager, private app: App, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, WIDTH * 2, HEIGHT * 2, 'NES')
     this.addMenuBar([
       {
@@ -75,13 +79,16 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Pause',
             click: () => {
-              this.nes.cpu.pause(!this.nes.cpu.paused)
+              if (this.nes.cpu.paused)
+                this.stream.triggerRun()
+              else
+                this.stream.triggerPause()
             },
           },
           {
             label: 'Reset',
             click: () => {
-              this.nes.reset()
+              this.stream.triggerReset()
             },
           },
           {
@@ -194,10 +201,21 @@ export class ScreenWnd extends Wnd {
     this.context = this.canvas.getContext('2d')
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
     this.addResizeBox()
-  }
 
-  public update(): void {
-    this.nes.render(this.context, this.imageData)
+    this.subscription = this.stream
+      .subscribe(event => {
+        switch (event.type) {
+        case AppEvent.Type.RENDER:
+          this.nes.render(this.context, this.imageData)
+          break
+        case AppEvent.Type.SCREEN_SHOT:
+          takeScreenshot(this.wndMgr, this)
+          break
+        case AppEvent.Type.RESET:
+          clearCanvas(this.canvas)
+          break
+        }
+      })
   }
 
   public capture(): string {
@@ -230,6 +248,12 @@ export class ScreenWnd extends Wnd {
         callback(isFullscreen)
     })
   }
+
+  public close(): void {
+    this.subscription.unsubscribe()
+    this.stream.triggerDestroy()
+    super.close()
+  }
 }
 
 export class PaletWnd extends Wnd {
@@ -240,6 +264,7 @@ export class PaletWnd extends Wnd {
   private boxes: HTMLCanvasElement[]
   private palet: Uint8Array
   private tmp: Uint8Array
+  private subscription: Rx.Subscription
 
   private static createDom(): any {
     const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
@@ -269,7 +294,7 @@ export class PaletWnd extends Wnd {
       buf[i] = nes.getPalet(i)
   }
 
-  constructor(wndMgr: WindowManager, private nes: Nes) {
+  constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 128, 16, 'Palette')
     this.palet = new Uint8Array(PaletWnd.W * PaletWnd.H)
     this.tmp = new Uint8Array(PaletWnd.W * PaletWnd.H)
@@ -277,9 +302,22 @@ export class PaletWnd extends Wnd {
     const [content, boxes] = PaletWnd.createDom()
     this.setContent(content)
     this.boxes = boxes
+
+    this.subscription = this.stream
+      .subscribe(event => {
+        switch (event.type) {
+        case AppEvent.Type.DESTROY:
+          this.close()
+          break
+        case AppEvent.Type.RENDER:
+          this.render()
+          break
+        }
+      })
+    this.render()
   }
 
-  public update(): void {
+  private render(): void {
     const tmp = this.tmp
     PaletWnd.getPalet(this.nes, tmp)
 
@@ -292,12 +330,18 @@ export class PaletWnd extends Wnd {
       this.boxes[i].style.backgroundColor = Nes.getPaletColorString(c)
     }
   }
+
+  public close(): void {
+    this.subscription.unsubscribe()
+    super.close()
+  }
 }
 
 export class NameTableWnd extends Wnd {
   private canvas: HTMLCanvasElement
+  private subscription: Rx.Subscription
 
-  public constructor(wndMgr: WindowManager, private nes: Nes) {
+  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 512, 240, 'NameTable')
 
     const canvas = document.createElement('canvas') as HTMLCanvasElement
@@ -310,9 +354,27 @@ export class NameTableWnd extends Wnd {
 
     this.setContent(canvas)
     this.canvas = canvas
+
+    this.subscription = this.stream
+      .subscribe(event => {
+        switch (event.type) {
+        case AppEvent.Type.DESTROY:
+          this.close()
+          break
+        case AppEvent.Type.RENDER:
+          this.render()
+          break
+        }
+      })
+    this.render()
   }
 
-  public update(): void {
+  public close(): void {
+    this.subscription.unsubscribe()
+    super.close()
+  }
+
+  private render(): void {
     this.nes.renderNameTable(this.canvas)
   }
 }
@@ -326,6 +388,7 @@ const kPatternColors = [
 
 export class PatternTableWnd extends Wnd {
   private canvas: HTMLCanvasElement
+  private subscription: Rx.Subscription
 
   private static createCanvas(): HTMLCanvasElement {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
@@ -338,27 +401,61 @@ export class PatternTableWnd extends Wnd {
     return canvas
   }
 
-  public constructor(wndMgr: WindowManager, private nes: Nes) {
+  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 256, 128, 'PatternTable')
 
     const canvas = PatternTableWnd.createCanvas()
     this.setContent(canvas)
     this.canvas = canvas
+
+    this.subscription = this.stream
+      .subscribe(event => {
+        switch (event.type) {
+        case AppEvent.Type.DESTROY:
+          this.close()
+          break
+        case AppEvent.Type.RENDER:
+          this.render()
+          break
+        }
+      })
+    this.render()
   }
 
-  public update(): void {
+  public close(): void {
+    this.subscription.unsubscribe()
+    super.close()
+  }
+
+  private render(): void {
     this.nes.renderPatternTable(this.canvas, kPatternColors)
   }
 }
 
 export class RegisterWnd extends Wnd {
   private valueElems: HTMLInputElement[]
+  private subscription: Rx.Subscription
 
-  public constructor(wndMgr: WindowManager, private nes: Nes) {
+  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 100, 160, 'Regs')
 
     const content = this.createContent()
     this.setContent(content)
+
+    this.subscription = this.stream
+      .subscribe(event => {
+        switch (event.type) {
+        case AppEvent.Type.DESTROY:
+          this.close()
+          break
+        case AppEvent.Type.RESET:
+        case AppEvent.Type.STEP:
+        case AppEvent.Type.PAUSE:
+        case AppEvent.Type.BREAK_POINT:
+          this.updateStatus()
+          break
+        }
+      })
   }
 
   public updateStatus(): void {
@@ -370,6 +467,11 @@ export class RegisterWnd extends Wnd {
     this.valueElems[4].value = Util.hex(cpu.s, 2)
     this.valueElems[5].value = Util.hex(cpu.p, 2)
     this.valueElems[6].value = String(this.nes.cycleCount)
+  }
+
+  public close(): void {
+    this.subscription.unsubscribe()
+    super.close()
   }
 
   private createContent(): HTMLElement {
@@ -425,8 +527,9 @@ export class TraceWnd extends Wnd {
   private mem: Uint8Array
   private bins: string[]
   private lines: string[]
+  private subscription: Rx.Subscription
 
-  public constructor(wndMgr: WindowManager, private nes: Nes) {
+  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 400, 160, 'Trace')
     this.mem = new Uint8Array(MAX_BYTES)
     this.bins = new Array(MAX_BYTES)
@@ -434,6 +537,23 @@ export class TraceWnd extends Wnd {
     const content = this.createContent()
     this.setContent(content)
     this.reset()
+
+    this.subscription = this.stream
+      .subscribe(event => {
+        switch (event.type) {
+        case AppEvent.Type.DESTROY:
+          this.close()
+          break
+        case AppEvent.Type.RESET:
+          this.reset()
+          // Fall through.
+        case AppEvent.Type.STEP:
+        case AppEvent.Type.PAUSE:
+        case AppEvent.Type.BREAK_POINT:
+          this.updateStatus()
+          break
+        }
+      })
   }
 
   public reset(): void {
@@ -457,6 +577,11 @@ export class TraceWnd extends Wnd {
     const binStr = this.bins.join(' ')
     const asmStr = disassemble(inst, this.mem, 1, cpu.pc)
     this.putConsole(`${pcStr}: ${binStr}   ${asmStr}`)
+  }
+
+  public close(): void {
+    this.subscription.unsubscribe()
+    super.close()
   }
 
   private createContent(): HTMLElement {
@@ -489,21 +614,41 @@ export class ControlWnd extends Wnd {
   private stepBtn: HTMLButtonElement
   private runBtn: HTMLButtonElement
   private pauseBtn: HTMLButtonElement
+  private subscription: Rx.Subscription
 
-  public constructor(wndMgr: WindowManager, private nes: Nes, private screenWnd: ScreenWnd,
-                     private audioManager: AudioManager)
-  {
+  public constructor(wndMgr: WindowManager, private stream: AppEvent.Stream) {
     super(wndMgr, 384, 32, 'Control')
 
     const content = this.createElement()
     this.setContent(content)
     this.updateState(true)
+
+    this.subscription = this.stream
+      .subscribe(event => {
+        switch (event.type) {
+        case AppEvent.Type.DESTROY:
+          this.close()
+          break
+        case AppEvent.Type.RUN:
+          this.updateState(false)
+          break
+        case AppEvent.Type.PAUSE:
+        case AppEvent.Type.BREAK_POINT:
+          this.updateState(true)
+          break
+        }
+      })
   }
 
   public updateState(paused: boolean): void {
     this.stepBtn.disabled = !paused
     this.runBtn.disabled = !paused
     this.pauseBtn.disabled = paused
+  }
+
+  public close(): void {
+    this.subscription.unsubscribe()
+    super.close()
   }
 
   private createElement(): HTMLElement {
@@ -514,40 +659,35 @@ export class ControlWnd extends Wnd {
     this.stepBtn = document.createElement('button') as HTMLButtonElement
     this.stepBtn.innerText = 'Step'
     this.stepBtn.addEventListener('click', () => {
-      this.nes.step()
-      this.callback('step')
+      this.stream.triggerStep()
     })
     root.appendChild(this.stepBtn)
 
     this.runBtn = document.createElement('button') as HTMLButtonElement
     this.runBtn.innerText = 'Run'
     this.runBtn.addEventListener('click', () => {
-      this.nes.cpu.pause(false)
-      this.updateState(false)
+      this.stream.triggerRun()
     })
     root.appendChild(this.runBtn)
 
     this.pauseBtn = document.createElement('button') as HTMLButtonElement
     this.pauseBtn.innerText = 'Pause'
     this.pauseBtn.addEventListener('click', () => {
-      this.nes.cpu.pause(true)
-      this.updateState(true)
-      this.callback('paused')
+      this.stream.triggerPause()
     })
     root.appendChild(this.pauseBtn)
 
     const resetBtn = document.createElement('button') as HTMLButtonElement
     resetBtn.innerText = 'Reset'
     resetBtn.addEventListener('click', () => {
-      this.nes.reset()
-      this.callback('reset')
+      this.stream.triggerReset()
     })
     root.appendChild(resetBtn)
 
     const captureBtn = document.createElement('button') as HTMLButtonElement
     captureBtn.innerText = 'Capture'
     captureBtn.addEventListener('click', () => {
-      takeScreenshot(this.wndMgr, this.screenWnd)
+      this.stream.triggerScreenShot()
     })
     root.appendChild(captureBtn)
 
@@ -555,8 +695,7 @@ export class ControlWnd extends Wnd {
     const muteBtn = document.createElement('input') as HTMLInputElement
     muteBtn.type = 'checkbox'
     muteBtn.addEventListener('click', () => {
-      const volume = muteBtn.checked ? 0.0 : 1.0
-      this.audioManager.setMasterVolume(volume)
+      this.stream.triggerMute(muteBtn.checked)
     })
     muteLabel.appendChild(muteBtn)
     muteLabel.appendChild(document.createTextNode('mute'))

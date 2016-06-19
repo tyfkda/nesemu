@@ -1,12 +1,15 @@
 import {Nes} from '../nes/nes.ts'
 import {PadBit} from '../nes/apu.ts'
 
+import {AppEvent} from './app_event.ts'
 import {AudioManager} from './audio_manager.ts'
 import {PadKeyHandler} from './pad_key_handler.ts'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
         RegisterWnd, TraceWnd, ControlWnd} from './ui.ts'
 
 import WindowManager from '../wnd/window_manager.ts'
+
+import * as Rx from 'rxjs/Rx'
 
 const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
@@ -26,15 +29,17 @@ export class App {
   private nes: Nes
   private padKeyHandler: PadKeyHandler
   private audioManager: AudioManager
+  private stream: AppEvent.Stream
+  private subscription: Rx.Subscription
 
   private screenWnd: ScreenWnd
-  private paletWnd: PaletWnd
-  private nameTableWnd: NameTableWnd
-  private patternTableWnd: PatternTableWnd
+  private hasPaletWnd: boolean
+  private hasNameTableWnd: boolean
+  private hasPatternTableWnd: boolean
 
-  private registerWnd: RegisterWnd
-  private traceWnd: TraceWnd
-  private ctrlWnd: ControlWnd
+  private hasRegisterWnd: boolean
+  private hasTraceWnd: boolean
+  private hasCtrlWnd: boolean
 
   public static create(wndMgr: WindowManager, option: any): App {
     return new App(wndMgr, option)
@@ -47,20 +52,41 @@ export class App {
     this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
 
     this.audioManager = new AudioManager()
+    this.stream = new AppEvent.Stream()
 
-    this.screenWnd = new ScreenWnd(this.wndMgr, this, this.nes)
+    this.subscription = this.stream
+      .subscribe(event => {
+        switch (event.type) {
+        case AppEvent.Type.DESTROY:
+          this.cleanUp()
+          break
+        case AppEvent.Type.RENDER:
+          break
+        case AppEvent.Type.RUN:
+          this.nes.cpu.pause(false)
+          break
+        case AppEvent.Type.PAUSE:
+          this.nes.cpu.pause(true)
+          break
+        case AppEvent.Type.STEP:
+          this.nes.step()
+          break
+        case AppEvent.Type.RESET:
+          this.nes.reset()
+          break
+        case AppEvent.Type.MUTE:
+          {
+            const volume = event.value ? 0.0 : 1.0
+            this.audioManager.setMasterVolume(volume)
+          }
+          break
+        }
+      })
+
+    this.screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
     this.wndMgr.add(this.screenWnd)
     if (option.title)
       this.screenWnd.setTitle(option.title as string)
-    this.screenWnd.setCallback((action, ...params) => {
-      switch (action) {
-      case 'close':
-        this.cleanUp()
-        break
-      default:
-        break
-      }
-    })
 
     const size = this.screenWnd.getWindowSize()
     let x = clamp((option.centerX || 0) - size.width / 2, 0, window.innerWidth - size.width - 1)
@@ -69,8 +95,6 @@ export class App {
 
     this.nes.cpu.pause(true)
     this.nes.reset()
-
-    this.dumpCpu()
 
     this.padKeyHandler = new PadKeyHandler()
     this.setUpKeyEvent(this.screenWnd.getCanvas(), this.padKeyHandler)
@@ -85,147 +109,103 @@ export class App {
     }
     this.nes.reset()
     this.nes.cpu.pause(false)
-    if (this.traceWnd != null)
-      this.traceWnd.reset()
-    this.dumpCpu()
-    this.updateButtonState()
     this.screenWnd.setFocus()
+    this.stream.triggerLoadRom()
     return true
   }
 
   public createPaletWnd(): boolean {
-    if (this.paletWnd != null)
+    if (this.hasPaletWnd)
       return false
-    this.paletWnd = new PaletWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(this.paletWnd)
-    this.paletWnd.setPos(520, 0)
-    this.paletWnd.setCallback(action => {
+    const paletWnd = new PaletWnd(this.wndMgr, this.nes, this.stream)
+    this.wndMgr.add(paletWnd)
+    paletWnd.setPos(520, 0)
+    paletWnd.setCallback(action => {
       if (action === 'close') {
-        this.paletWnd = null
+        this.hasPaletWnd = false
       }
     })
-    return true
+    return this.hasPaletWnd = true
   }
 
   public createNameTableWnd(): boolean {
-    if (this.nameTableWnd != null)
+    if (this.hasNameTableWnd)
       return false
-    this.nameTableWnd = new NameTableWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(this.nameTableWnd)
-    this.nameTableWnd.setPos(520, 40)
-    this.nameTableWnd.setCallback(action => {
+    const nameTableWnd = new NameTableWnd(this.wndMgr, this.nes, this.stream)
+    this.wndMgr.add(nameTableWnd)
+    nameTableWnd.setPos(520, 40)
+    nameTableWnd.setCallback(action => {
       if (action === 'close') {
-        this.nameTableWnd = null
+        this.hasNameTableWnd = false
       }
     })
-    return true
+    return this.hasNameTableWnd = true
   }
 
   public createPatternTableWnd(): boolean {
-    if (this.patternTableWnd != null)
+    if (this.hasPatternTableWnd)
       return false
-    this.patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(this.patternTableWnd)
-    this.patternTableWnd.setPos(520, 300)
-    this.patternTableWnd.setCallback(action => {
+    const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes, this.stream)
+    this.wndMgr.add(patternTableWnd)
+    patternTableWnd.setPos(520, 300)
+    patternTableWnd.setCallback(action => {
       if (action === 'close') {
-        this.patternTableWnd = null
+        this.hasPatternTableWnd = false
       }
     })
-    return true
+    return this.hasPatternTableWnd = true
   }
 
   public createTraceWnd(): boolean {
-    if (this.traceWnd != null)
+    if (this.hasTraceWnd)
       return false
-    this.traceWnd = new TraceWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(this.traceWnd)
-    this.traceWnd.setPos(0, 500)
-    this.traceWnd.setCallback(action => {
+    const traceWnd = new TraceWnd(this.wndMgr, this.nes, this.stream)
+    this.wndMgr.add(traceWnd)
+    traceWnd.setPos(0, 500)
+    traceWnd.setCallback(action => {
       if (action === 'close') {
-        this.traceWnd = null
+        this.hasTraceWnd = false
       }
     })
 
-    this.dumpCpu()
-    return true
+    return this.hasTraceWnd = true
   }
 
   public createRegisterWnd(): boolean {
-    if (this.registerWnd != null)
+    if (this.hasRegisterWnd != null)
       return false
-    this.registerWnd = new RegisterWnd(this.wndMgr, this.nes)
-    this.wndMgr.add(this.registerWnd)
-    this.registerWnd.setPos(410, 500)
-    this.registerWnd.setCallback(action => {
+    const registerWnd = new RegisterWnd(this.wndMgr, this.nes, this.stream)
+    this.wndMgr.add(registerWnd)
+    registerWnd.setPos(410, 500)
+    registerWnd.setCallback(action => {
       if (action === 'close') {
-        this.registerWnd = null
+        this.hasRegisterWnd = null
       }
     })
 
-    this.dumpCpu()
-    return true
+    return this.hasRegisterWnd = true
   }
 
   public createControlWnd(): boolean {
-    if (this.ctrlWnd != null)
+    if (this.hasCtrlWnd != null)
       return false
-    this.ctrlWnd = new ControlWnd(this.wndMgr, this.nes, this.screenWnd, this.audioManager)
-    this.ctrlWnd.setCallback((action) => {
-      switch (action) {
-      case 'close':
-        this.ctrlWnd = null
-        break
-      case 'step':
-        this.dumpCpu()
-        this.render()
-        break
-      case 'paused':
-        this.dumpCpu()
-        break
-      case 'reset':
-        this.traceWnd.reset()
-        this.dumpCpu()
-        break
-      default:
-        break
+    const ctrlWnd = new ControlWnd(this.wndMgr, this.stream)
+    this.wndMgr.add(ctrlWnd)
+    ctrlWnd.setPos(520, 500)
+    ctrlWnd.setCallback((action) => {
+      if (action === 'close') {
+        this.hasCtrlWnd = null
       }
     })
-    this.wndMgr.add(this.ctrlWnd)
-    this.ctrlWnd.setPos(520, 500)
 
-    this.updateButtonState()
-    return true
+    return this.hasCtrlWnd = true
   }
 
   private cleanUp() {
     this.destroying = true
     this.audioManager.destroy()
 
-    if (this.paletWnd != null) {
-      this.paletWnd.close()
-      this.paletWnd = null
-    }
-    if (this.nameTableWnd != null) {
-      this.nameTableWnd.close()
-      this.nameTableWnd = null
-    }
-    if (this.patternTableWnd != null) {
-      this.patternTableWnd.close()
-      this.patternTableWnd = null
-    }
-    if (this.registerWnd != null) {
-      this.registerWnd.close()
-      this.registerWnd = null
-    }
-    if (this.traceWnd != null) {
-      this.traceWnd.close()
-      this.traceWnd = null
-    }
-    if (this.ctrlWnd != null) {
-      this.ctrlWnd.close()
-      this.ctrlWnd = null
-    }
+    this.subscription.unsubscribe()
 
     this.wndMgr = null
   }
@@ -241,8 +221,7 @@ export class App {
   }
 
   private onBreakPoint(): void {
-    this.updateButtonState()
-    this.dumpCpu()
+    this.stream.triggerBreakPoint()
   }
 
   private startLoopAnimation(): void {
@@ -279,20 +258,7 @@ export class App {
   }
 
   private render(): void {
-    this.wndMgr.update()
-  }
-
-  private updateButtonState(): void {
-    const paused = this.nes.cpu.isPaused()
-    if (this.ctrlWnd != null)
-      this.ctrlWnd.updateState(paused)
-  }
-
-  private dumpCpu(): void {
-    if (this.registerWnd != null)
-      this.registerWnd.updateStatus()
-    if (this.traceWnd != null)
-      this.traceWnd.updateStatus()
+    this.stream.triggerRender()
   }
 
   private setUpKeyEvent(root: HTMLElement, padKeyHandler: PadKeyHandler): void {

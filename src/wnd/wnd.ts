@@ -114,9 +114,6 @@ export default class Wnd {
     this.root = null
   }
 
-  public update(): void {
-  }
-
   public addResizeBox() {
     this.root.classList.add('resizable')
 

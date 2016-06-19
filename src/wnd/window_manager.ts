@@ -46,12 +46,6 @@ export default class WindowManager {
     return this.windows.length > 0 && this.windows[0] === wnd
   }
 
-  public update(): void {
-    this.windows.forEach(wnd => {
-      wnd.update()
-    })
-  }
-
   private removeWnd(wnd: Wnd): void {
     const index = this.windows.indexOf(wnd)
     if (index < 0)
