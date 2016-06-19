@@ -11,7 +11,6 @@ export function mapper023(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
   const size = romData.length
   const count = size / BANK_SIZE
 console.log(`size=${size}, count=${count}`)
-  const kLastBank = size - BANK_SIZE
   let prgBankMode = 0
   let prgBank0 = 0, prgBank1 = 1 << BANK_BIT, prgBank2 = (count - 2) << BANK_BIT
   const prgBank3 = (count - 1) << BANK_BIT

@@ -8,7 +8,6 @@ import {Util} from '../nes/util.ts'
 
 import {App} from './app.ts'
 import {AppEvent} from './app_event.ts'
-import {AudioManager} from './audio_manager.ts'
 
 import * as Rx from 'rxjs/Rx'
 
@@ -70,7 +69,9 @@ export class ScreenWnd extends Wnd {
   private imageData: ImageData
   private subscription: Rx.Subscription
 
-  public constructor(wndMgr: WindowManager, private app: App, private nes: Nes, private stream: AppEvent.Stream) {
+  public constructor(wndMgr: WindowManager, private app: App, private nes: Nes,
+                     private stream: AppEvent.Stream)
+  {
     super(wndMgr, WIDTH * 2, HEIGHT * 2, 'NES')
     this.addMenuBar([
       {
@@ -226,7 +227,7 @@ export class ScreenWnd extends Wnd {
     return this.canvas
   }
 
-  public setFullscreen(callback: Function): boolean {
+  public setFullscreen(callback?: Function): boolean {
     return tryFullscreen(this.contentHolder, (isFullscreen) => {
       const style = this.contentHolder.style
       if (isFullscreen) {
@@ -322,6 +323,11 @@ export class PaletWnd extends Wnd {
     this.render()
   }
 
+  public close(): void {
+    this.subscription.unsubscribe()
+    super.close()
+  }
+
   private render(): void {
     const tmp = this.tmp
     PaletWnd.getPalet(this.nes, tmp)
@@ -334,11 +340,6 @@ export class PaletWnd extends Wnd {
       this.palet[i] = c
       this.boxes[i].style.backgroundColor = Nes.getPaletColorString(c)
     }
-  }
-
-  public close(): void {
-    this.subscription.unsubscribe()
-    super.close()
   }
 }
 

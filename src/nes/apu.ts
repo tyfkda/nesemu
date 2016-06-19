@@ -1,7 +1,5 @@
 // APU: Audio Processing Unit
 
-import {Util} from './util.ts'
-
 export enum PadBit {
   A = 1 << 0,
   B = 1 << 1,

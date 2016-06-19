@@ -64,6 +64,17 @@ export class AudioManager {
   private channels: SoundChannel[]
   private masterVolume: number = 0
 
+  private static setUp() {
+    if (AudioManager.initialized)
+      return
+    AudioManager.initialized = true
+
+    const contextClass = window.AudioContext || window.webkitAudioContext
+    if (contextClass == null)
+      return
+    AudioManager.context = new contextClass()
+  }
+
   constructor() {
     AudioManager.setUp()
     if (AudioManager.context == null)
@@ -76,17 +87,6 @@ export class AudioManager {
         .start()
       return c
     })
-  }
-
-  private static setUp() {
-    if (AudioManager.initialized)
-      return
-    AudioManager.initialized = true
-
-    const contextClass = window.AudioContext || window.webkitAudioContext
-    if (contextClass == null)
-      return
-    AudioManager.context = new contextClass()
   }
 
   public destroy() {

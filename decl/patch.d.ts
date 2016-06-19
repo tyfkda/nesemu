@@ -17,6 +17,11 @@ interface Window {
   nes: any
 }
 
+interface Document {
+  fullScreen: Function
+  mozFullScreen: Function
+}
+
 interface HTMLElement {
   disabled: any
 }
