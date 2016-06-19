@@ -58,57 +58,60 @@ class SoundChannel {
 export class AudioManager {
   public static CHANNEL = 4
 
-  private context: AudioContext
+  private static initialized: boolean = false
+  private static context: AudioContext = null
+
   private channels: SoundChannel[]
-  private masterVolume: number
+  private masterVolume: number = 0
 
   constructor() {
-    const contextClass = window.AudioContext || window.webkitAudioContext
-    if (contextClass == null) {
-      this.context = null
-      this.masterVolume = 0
+    AudioManager.setUp()
+    if (AudioManager.context == null)
       return
-    }
 
-    this.context = new contextClass()
-    if (this.context.close == null) {  // Patch for MSEdge, which doesn't have close method.
-      this.context.close = () => {}
-    }
     this.masterVolume = 1.0
-
     this.channels = kTypes.map(type => {
       const c = new SoundChannel()
-      c.create(this.context, type)
+      c.create(AudioManager.context, type)
         .start()
       return c
     })
   }
 
-  public destroy() {
-    if (this.context == null)
+  private static setUp() {
+    if (AudioManager.initialized)
       return
+    AudioManager.initialized = true
 
-    for (let channel of this.channels) {
-      channel.destroy()
+    const contextClass = window.AudioContext || window.webkitAudioContext
+    if (contextClass == null)
+      return
+    AudioManager.context = new contextClass()
+  }
+
+  public destroy() {
+    if (this.channels != null) {
+      for (let channel of this.channels) {
+        channel.destroy()
+      }
+      this.channels = null
     }
-    this.context.close()
-    this.context = null
   }
 
   public setChannelFrequency(channel: number, frequency: number): void {
-    if (this.context == null)
+    if (AudioManager.context == null)
       return
     this.channels[channel].setFrequency(frequency)
   }
 
   public setChannelVolume(channel: number, volume: number): void {
-    if (this.context == null)
+    if (AudioManager.context == null)
       return
     this.channels[channel].setVolume(volume * this.masterVolume)
   }
 
   public setMasterVolume(volume: number): void {
-    if (this.context == null)
+    if (AudioManager.context == null)
       return
     this.masterVolume = volume
     if (volume <= 0) {
