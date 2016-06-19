@@ -93,9 +93,6 @@ export class App {
     let y = clamp((option.centerY || 0) - size.height / 2, 0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
 
-    this.nes.cpu.pause(true)
-    this.nes.reset()
-
     this.padKeyHandler = new PadKeyHandler()
     this.setUpKeyEvent(this.screenWnd.getCanvas(), this.padKeyHandler)
 
