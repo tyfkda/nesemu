@@ -78,7 +78,7 @@ export default class Wnd {
     return this
   }
 
-  public isFocused(): boolean {
+  public isTop(): boolean {
     return this.wndMgr.isTop(this)
   }
 

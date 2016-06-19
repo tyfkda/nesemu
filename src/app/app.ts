@@ -244,10 +244,10 @@ export class App {
     if (this.nes.cpu.isPaused())
       return
 
-    const isFocused = this.screenWnd.isFocused()
+    const isTop = this.screenWnd.isTop()
     for (let i = 0; i < 2; ++i) {
       let pad = this.padKeyHandler.getStatus(i)
-      if (isFocused)
+      if (isTop)
         pad |= this.getGamepadStatus(i)
       this.nes.setPadStatus(i, pad)
     }
