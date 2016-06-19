@@ -254,6 +254,11 @@ export class ScreenWnd extends Wnd {
     this.stream.triggerDestroy()
     super.close()
   }
+
+  public setFocus(): Wnd {
+    this.canvas.focus()
+    return this
+  }
 }
 
 export class PaletWnd extends Wnd {
