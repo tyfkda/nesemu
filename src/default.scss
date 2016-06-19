@@ -153,3 +153,33 @@ $RESIZABLE_RADIUS: 8px;
   border: 1px solid #888;
   box-sizing: content-box;
 }
+
+.gamepad-content {
+  position: relative;
+  border: 5px solid #8C001E;
+  background-color: #E0C684;
+  box-sizing: border-box;
+}
+
+$BUTTON_HEIGHT: 6px;
+
+.gamepad-btn {
+  position: absolute;
+  background-color: #222;
+  color: white;
+  outline: none;
+  box-shadow: 0 $BUTTON_HEIGHT 0 #666;
+  border-radius: 5px;
+  text-align: center;
+  cursor: pointer;
+}
+.gamepad-btn.selected {
+  border: 2px solid #0c0;
+  margin-top: -2px;
+  margin-left: -2px;
+}
+.gamepad-btn.pressed {
+  box-shadow: none;
+  margin-top: $BUTTON_HEIGHT;
+  color: cyan;
+}

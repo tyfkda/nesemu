@@ -1,6 +1,7 @@
 ///<reference path="../decl/patch.d.ts" />
 
 import {App} from './app/app.ts'
+import {GamepadManager, GamepadWnd} from './app/gamepad_manager.ts'
 import WindowManager from './wnd/window_manager.ts'
 import './nes/polyfill.ts'
 
@@ -53,4 +54,9 @@ window.addEventListener('load', () => {
       app.loadRom(romData)
     })
   }
+
+  document.getElementById('gamepad').addEventListener('click', () => {
+    const gamepadWnd = new GamepadWnd(wndMgr)
+    wndMgr.add(gamepadWnd)
+  })
 })
