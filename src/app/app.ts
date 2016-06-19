@@ -1,5 +1,5 @@
 import {Nes} from '../nes/nes.ts'
-import {PadBit} from '../nes/apu.ts'
+import {PadValue} from '../nes/apu.ts'
 
 import {AppEvent} from './app_event.ts'
 import {AudioManager} from './audio_manager.ts'
@@ -288,21 +288,21 @@ export class App {
 
     let pad = 0
     if (gamepad.axes[0] < -THRESHOLD)
-      pad |= PadBit.L
+      pad |= PadValue.L
     if (gamepad.axes[0] > THRESHOLD)
-      pad |= PadBit.R
+      pad |= PadValue.R
     if (gamepad.axes[1] < -THRESHOLD)
-      pad |= PadBit.U
+      pad |= PadValue.U
     if (gamepad.axes[1] > THRESHOLD)
-      pad |= PadBit.D
+      pad |= PadValue.D
     if (gamepad.buttons[0].pressed)
-      pad |= PadBit.B
+      pad |= PadValue.B
     if (gamepad.buttons[1].pressed)
-      pad |= PadBit.A
+      pad |= PadValue.A
     if (gamepad.buttons[8].pressed)
-      pad |= PadBit.SELECT
+      pad |= PadValue.SELECT
     if (gamepad.buttons[9].pressed)
-      pad |= PadBit.START
+      pad |= PadValue.START
     return pad
   }
 }

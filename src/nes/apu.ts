@@ -1,14 +1,25 @@
 // APU: Audio Processing Unit
 
 export enum PadBit {
-  A = 1 << 0,
-  B = 1 << 1,
-  SELECT = 1 << 2,
-  START = 1 << 3,
-  U = 1 << 4,
-  D = 1 << 5,
-  L = 1 << 6,
-  R = 1 << 7,
+  A = 0,
+  B = 1,
+  SELECT = 2,
+  START = 3,
+  U = 4,
+  D = 5,
+  L = 6,
+  R = 7,
+}
+
+export enum PadValue {
+  A = 1 << PadBit.A,
+  B = 1 << PadBit.B,
+  SELECT = 1 << PadBit.SELECT,
+  START = 1 << PadBit.START,
+  U = 1 << PadBit.U,
+  D = 1 << PadBit.D,
+  L = 1 << PadBit.L,
+  R = 1 << PadBit.R,
 }
 
 const BASE = 0x4000
