@@ -1,12 +1,12 @@
 import {Nes} from '../nes/nes.ts'
-import {PadValue} from '../nes/apu.ts'
 
 import {AppEvent} from './app_event.ts'
 import {AudioManager} from './audio_manager.ts'
+import {GamepadManager} from './gamepad_manager.ts'
 import {PadKeyHandler} from './pad_key_handler.ts'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
         RegisterWnd, TraceWnd, ControlWnd} from './ui.ts'
-
+import StorageUtil from './storage_util.ts'
 import WindowManager from '../wnd/window_manager.ts'
 
 import * as Rx from 'rxjs/Rx'
@@ -40,6 +40,11 @@ export class App {
   private hasRegisterWnd: boolean
   private hasTraceWnd: boolean
   private hasCtrlWnd: boolean
+
+  public static setUp(): void {
+    StorageUtil.setKeyPrefix('nesemu:')
+    GamepadManager.setUp()
+  }
 
   public static create(wndMgr: WindowManager, option: any): App {
     return new App(wndMgr, option)
@@ -245,7 +250,7 @@ export class App {
     for (let i = 0; i < 2; ++i) {
       let pad = this.padKeyHandler.getStatus(i)
       if (isTop)
-        pad |= this.getGamepadStatus(i)
+        pad |= GamepadManager.getState(i)
       this.nes.setPadStatus(i, pad)
     }
 
@@ -271,38 +276,5 @@ export class App {
       event.preventDefault()
       padKeyHandler.onKeyUp(event.keyCode)
     })
-  }
-
-  private getGamepadStatus(padNo: number): number {
-    const THRESHOLD = 0.5
-
-    if (!window.Gamepad)
-      return 0
-    const gamepads = navigator.getGamepads()
-    if (padNo >= gamepads.length)
-      return 0
-
-    const gamepad = gamepads[padNo]
-    if (!gamepad)
-      return 0
-
-    let pad = 0
-    if (gamepad.axes[0] < -THRESHOLD)
-      pad |= PadValue.L
-    if (gamepad.axes[0] > THRESHOLD)
-      pad |= PadValue.R
-    if (gamepad.axes[1] < -THRESHOLD)
-      pad |= PadValue.U
-    if (gamepad.axes[1] > THRESHOLD)
-      pad |= PadValue.D
-    if (gamepad.buttons[0].pressed)
-      pad |= PadValue.B
-    if (gamepad.buttons[1].pressed)
-      pad |= PadValue.A
-    if (gamepad.buttons[8].pressed)
-      pad |= PadValue.SELECT
-    if (gamepad.buttons[9].pressed)
-      pad |= PadValue.START
-    return pad
   }
 }

@@ -1,6 +1,7 @@
 ///<reference path="../decl/patch.d.ts" />
 
 import {App} from './app/app.ts'
+import {GamepadManager, GamepadWnd} from './app/gamepad_manager.ts'
 import WindowManager from './wnd/window_manager.ts'
 import './nes/polyfill.ts'
 
@@ -38,6 +39,8 @@ function handleFileDrop(dropZone, onDropped) {
 }
 
 window.addEventListener('load', () => {
+  App.setUp()
+
   const root = document.getElementById('nesroot')
   const wndMgr = new WindowManager(root)
 
@@ -52,5 +55,15 @@ window.addEventListener('load', () => {
       const app = App.create(wndMgr, option)
       app.loadRom(romData)
     })
+  }
+
+  const gamepadText = document.getElementById('gamepad')
+  if (GamepadManager.isSupported()) {
+    gamepadText.addEventListener('click', () => {
+      const gamepadWnd = new GamepadWnd(wndMgr)
+      wndMgr.add(gamepadWnd)
+    })
+  } else {
+    gamepadText.style.display = 'none'
   }
 })
