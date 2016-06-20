@@ -6,7 +6,7 @@ import {GamepadManager} from './gamepad_manager.ts'
 import {PadKeyHandler} from './pad_key_handler.ts'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
         RegisterWnd, TraceWnd, ControlWnd} from './ui.ts'
-
+import StorageUtil from './storage_util.ts'
 import WindowManager from '../wnd/window_manager.ts'
 
 import * as Rx from 'rxjs/Rx'
@@ -40,6 +40,11 @@ export class App {
   private hasRegisterWnd: boolean
   private hasTraceWnd: boolean
   private hasCtrlWnd: boolean
+
+  public static setUp(): void {
+    StorageUtil.setKeyPrefix('nesemu:')
+    GamepadManager.setUp()
+  }
 
   public static create(wndMgr: WindowManager, option: any): App {
     return new App(wndMgr, option)

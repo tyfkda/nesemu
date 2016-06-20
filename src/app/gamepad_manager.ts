@@ -1,6 +1,7 @@
 import {PadBit, PadValue} from '../nes/apu.ts'
 import WindowManager from '../wnd/window_manager.ts'
 import Wnd from '../wnd/wnd.ts'
+import StorageUtil from './storage_util.ts'
 
 // Type
 enum Type {
@@ -19,10 +20,19 @@ const kPadSetting = [
   { type: Type.AXIS, index: 0, direction: 1  },  // R
 ]
 
+const kKeyTable = ['A', 'B', 'SELECT', 'START', 'U', 'D', 'L', 'R']
+
+//================================================
+// Manager.
+
 export class GamepadManager {
   public static AXIS_THRESHOLD = 0.5
 
-  public static getState(padNo: number) {
+  public static setUp(): void {
+    GamepadManager.loadSetting()
+  }
+
+  public static getState(padNo: number): number {
     if (!window.Gamepad)
       return 0
     const gamepads = navigator.getGamepads()
@@ -53,14 +63,59 @@ export class GamepadManager {
     kPadSetting[padbit].type = Type.BUTTON
     kPadSetting[padbit].index = buttonIndex
     kPadSetting[padbit].direction = 1
+    GamepadManager.saveSetting()
   }
 
-  public static setAxes(padbit: number, axisIndex: number, direction: number): void {
+  public static setAxis(padbit: number, axisIndex: number, direction: number): void {
     kPadSetting[padbit].type = Type.AXIS
     kPadSetting[padbit].index = axisIndex
     kPadSetting[padbit].direction = direction
+    GamepadManager.saveSetting()
+  }
+
+  private static saveSetting() {
+    const data = {}
+    kPadSetting.forEach((s, i) => {
+      const key = kKeyTable[i]
+      switch (s.type) {
+      default:
+        return null
+      case Type.BUTTON:
+        data[key] = {
+          button: s.index,
+        }
+        break
+      case Type.AXIS:
+        data[key] = {
+          axis: s.index,
+          direction: s.direction,
+        }
+        break
+      }
+    })
+    StorageUtil.putObject('pad0', data)
+  }
+
+  private static loadSetting() {
+    const data = StorageUtil.getObject('pad0', {})
+    if (typeof data === 'object') {
+      Object.keys(data).forEach(key => {
+        const index = kKeyTable.indexOf(key.toUpperCase())
+        if (index < 0)
+          return
+        const d = data[key]
+        if ('button' in d) {
+          GamepadManager.setButton(index, d.button)
+        } else if ('axis' in d && 'direction' in d) {
+          GamepadManager.setAxis(index, d.axis, parseInt(d.direction))
+        }
+      })
+    }
   }
 }
+
+//================================================
+// Config window.
 
 const kGamepadButtons = [
   { x: 40, y: 10, name: '&uarr;', padbit: PadBit.U },
@@ -145,11 +200,11 @@ export class GamepadWnd extends Wnd {
     for (let i = 0; i < gamepad.axes.length; ++i) {
       const v = gamepad.axes[i]
       if (v < -THRESHOLD) {
-        GamepadManager.setAxes(kGamepadButtons[buttonIndex].padbit, i, -1)
+        GamepadManager.setAxis(kGamepadButtons[buttonIndex].padbit, i, -1)
         return true
       }
       if (v > THRESHOLD) {
-        GamepadManager.setAxes(kGamepadButtons[buttonIndex].padbit, i, 1)
+        GamepadManager.setAxis(kGamepadButtons[buttonIndex].padbit, i, 1)
         return true
       }
     }

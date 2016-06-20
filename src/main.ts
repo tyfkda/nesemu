@@ -39,6 +39,8 @@ function handleFileDrop(dropZone, onDropped) {
 }
 
 window.addEventListener('load', () => {
+  App.setUp()
+
   const root = document.getElementById('nesroot')
   const wndMgr = new WindowManager(root)
 
