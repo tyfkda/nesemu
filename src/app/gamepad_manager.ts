@@ -32,6 +32,10 @@ export class GamepadManager {
     GamepadManager.loadSetting()
   }
 
+  public static isSupported(): boolean {
+    return 'Gamepad' in window
+  }
+
   public static getState(padNo: number): number {
     if (!window.Gamepad)
       return 0

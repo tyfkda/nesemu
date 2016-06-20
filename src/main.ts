@@ -57,8 +57,13 @@ window.addEventListener('load', () => {
     })
   }
 
-  document.getElementById('gamepad').addEventListener('click', () => {
-    const gamepadWnd = new GamepadWnd(wndMgr)
-    wndMgr.add(gamepadWnd)
-  })
+  const gamepadText = document.getElementById('gamepad')
+  if (GamepadManager.isSupported()) {
+    gamepadText.addEventListener('click', () => {
+      const gamepadWnd = new GamepadWnd(wndMgr)
+      wndMgr.add(gamepadWnd)
+    })
+  } else {
+    gamepadText.style.display = 'none'
+  }
 })
