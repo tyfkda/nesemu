@@ -66,7 +66,7 @@ function cloneArray(array) {
 function getNameTable(baseNameTable: number, bx: number, by: number,
                       mirrorModeBit: number): number
 {
-  const page = (((bx >> 5) & 1) + (((by / 30) & 1) << 1) + baseNameTable) & 3  // 0~3
+  const page = (((bx >> 5) & 1) + (((by / 30) & 1) << 1)) ^ baseNameTable  // 0~3
   const m = (mirrorModeBit << (10 - (page << 1))) & 0x0c00
   return 0x2000 + m
 }
