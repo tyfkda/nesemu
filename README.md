@@ -3,6 +3,14 @@ NES Emulator
 
 NES emulator written in TypeScript.
 
+## Features
+
+  * Run on a browser
+  * Gamepad support
+  * Fullscreen
+  * Multi-window
+
+
 ## How to play
 
   * Go to https://tyfkda.github.io/nesemu/
@@ -18,6 +26,8 @@ NES emulator written in TypeScript.
 | B button | Z key      |
 | Start    | Enter      |
 | Select   | Space      |
+
+  * You can also use gamepad
 
 
 ## How to build
