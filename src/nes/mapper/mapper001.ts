@@ -4,16 +4,20 @@ import {Cpu6502} from '../cpu.ts'
 import {Ppu, MirrorMode} from '../ppu.ts'
 
 export function mapper001(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
-  const BANK_SIZE = 1 << 14  // 16KB
+  const BANK_BIT = 14  // 16KB
+  const BANK_SIZE = 1 << BANK_BIT
   const size = romData.length
+  const maxPrg = (romData.length >> BANK_BIT) - 1
 
-  let register = 0x10
+  let register = 0
+  let counter = 0
   let prgBankMode = 3, prgBank = [0, size - BANK_SIZE]
   let chrBank4k = true
   let chrBank = [0 << 2, 1 << 2]
 
   const resetRegister = () => {
-    register = 0x10
+    register = 0
+    counter = 0
   }
 
   const setChrBank = (hilo, bank) => {
@@ -31,9 +35,31 @@ export function mapper001(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
     chrBank[hilo] = bank
   }
 
+  const setPrgBank = (register, chrBank0) => {
+    register &= 0x0f
+    let bank = register & maxPrg
+    switch (prgBankMode) {
+    case 0: case 1:
+      bank = (bank | ((chrBank0 >> 2) & 0x10)) & maxPrg
+      prgBank[0] = (bank & ~1) << BANK_BIT
+      prgBank[1] = (bank | 1) << BANK_BIT
+      break
+    case 2:
+      prgBank[0] = 0
+      prgBank[1] = bank << BANK_BIT
+      break
+    case 3:
+      prgBank[0] = bank << BANK_BIT
+      prgBank[1] = size - BANK_SIZE
+      break
+    default:
+      break
+    }
+  }
+
   // PRG ROM
   cpu.setReadMemory(0x8000, 0xffff, (adr) => {
-    const hi = (adr >> 14) & 1
+    const hi = (adr >> BANK_BIT) & 1
     const lo = adr & 0x3fff
     return romData[prgBank[hi] + lo]
   })
@@ -43,9 +69,8 @@ export function mapper001(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
     if ((value & 0x80) !== 0)  // Reset
       return resetRegister()
 
-    const filled = (register & 1) !== 0
-    register = (register >> 1) | ((value & 1) << 4)
-    if (!filled)
+    register |= ((value & 1) << counter)
+    if (++counter < 5)
       return
 
     // Register filled: branch according to bit 13~14.
@@ -94,26 +119,13 @@ export function mapper001(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
         const bank = (register & 0x1f) << 2
         if (chrBank[hilo] !== bank)
           setChrBank(hilo, bank)
+
+        if (hilo === 0 && prgBankMode < 2)
+          setPrgBank(prgBank[0] >> BANK_BIT, chrBank[0])
       }
       break
     case 0xe000:  // PRG bank
-      {
-        const bank = register & 0x0f
-        switch (prgBankMode) {
-        case 0: case 1:
-          prgBank[0] = (bank & ~1) << 14
-          prgBank[1] = (bank | 1) << 14
-          break
-        case 2:
-          prgBank[1] = bank << 14
-          break
-        case 3:
-          prgBank[0] = bank << 14
-          break
-        default:
-          break
-        }
-      }
+      setPrgBank(register, chrBank[0])
       break
     default:
       break
