@@ -6,6 +6,7 @@ import {Mapper003, Mapper185} from './mapper003'
 import {Mapper004, Mapper088, Mapper118} from './mapper004'
 import {Mapper007} from './mapper007'
 import {Mapper010} from './mapper010'
+import {Mapper016} from './mapper016.ts'
 import {Mapper019} from './mapper019'
 import {Mapper023, Mapper025} from './mapper023'
 import {Mapper024, Mapper026} from './mapper024'
@@ -25,6 +26,7 @@ export const kMapperTable: {[key: number]: (options: MapperOptions) => Mapper} =
   4: Mapper004.create,
   7: Mapper007.create,
   10: Mapper010.create,
+  16: Mapper016.create,
   19: Mapper019.create,
   23: Mapper023.create,
   24: Mapper024.create,
