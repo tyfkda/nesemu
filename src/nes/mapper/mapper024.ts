@@ -1,14 +1,14 @@
 // VRC6
 // http://wiki.nesdev.com/w/index.php/VRC6
 
-import {Cpu6502} from '../cpu.ts'
+import {Cpu} from '../cpu.ts'
 import {Ppu, MirrorMode} from '../ppu.ts'
 import {Util} from '../util.ts'
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
 function create(mapping) {
-  return function(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
+  return function(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
     const BANK_BIT = 13
     const BANK_SIZE = 1 << BANK_BIT
     const size = romData.length

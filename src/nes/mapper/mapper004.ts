@@ -1,10 +1,10 @@
 // MMC3
 
-import {Cpu6502} from '../cpu.ts'
+import {Cpu} from '../cpu.ts'
 import {Nes} from '../nes.ts'
 import {Ppu, MirrorMode} from '../ppu.ts'
 
-export function mapper004(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu, nes: Nes) {
+export function mapper004(romData: Uint8Array, cpu: Cpu, ppu: Ppu, nes: Nes) {
   const BANK_BIT = 13  // 0x2000
   const BANK_MASK = (1 << BANK_BIT) - 1
   const regs = new Uint8Array(8)

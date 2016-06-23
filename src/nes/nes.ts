@@ -2,7 +2,7 @@
 
 import {Apu} from './apu.ts'
 import {kColors} from './const.ts'
-import {Cpu6502} from './cpu.ts'
+import {Cpu} from './cpu.ts'
 import {Ppu, MirrorMode} from './ppu.ts'
 import {Util} from './util.ts'
 
@@ -46,7 +46,7 @@ function loadChrRom(romData: Uint8Array): Uint8Array {
 
 export class Nes {
   public apu: Apu
-  public cpu: Cpu6502
+  public cpu: Cpu
   public ram: Uint8Array
   public ppu: Ppu
   public cycleCount: number
@@ -71,7 +71,7 @@ export class Nes {
   }
 
   constructor() {
-    this.cpu = new Cpu6502()
+    this.cpu = new Cpu()
     this.ram = new Uint8Array(RAM_SIZE)
     this.ppu = new Ppu()
     this.apu = new Apu()

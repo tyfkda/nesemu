@@ -1,7 +1,7 @@
-import {Cpu6502} from '../cpu.ts'
+import {Cpu} from '../cpu.ts'
 import {Ppu} from '../ppu.ts'
 
-export function mapper003(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
+export function mapper003(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   // ROM
   cpu.setReadMemory(0x8000, 0xffff, (adr) => romData[adr & (romData.length - 1)])
 
@@ -11,7 +11,7 @@ export function mapper003(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
   })
 }
 
-export function mapper185(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
+export function mapper185(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   ppu.writePpuDirect(0x0000, 1)  // For "Mighty bomb jack(J)"
   return mapper003(romData, cpu, ppu)
 }

@@ -61,7 +61,7 @@ const disasm = (() => {
   const mem = new Uint8Array(3)
   const bins = new Array(3) as string[]
 
-  return function disasm(cpu: Cpu6502, pc: number): string {
+  return function disasm(cpu: Cpu, pc: number): string {
     const op = cpu.read8Raw(pc)
     const inst = kInstTable[op] || kIllegalInstruction
     for (let i = 0; i < inst.bytes; ++i) {
@@ -79,7 +79,7 @@ const disasm = (() => {
   }
 })()
 
-export class Cpu6502 {
+export class Cpu {
   public a: number  // A register
   public x: number  // X register
   public y: number  // Y register

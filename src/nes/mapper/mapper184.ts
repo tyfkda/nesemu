@@ -1,9 +1,9 @@
 // Sunsoft-1 mapper
 
-import {Cpu6502} from '../cpu.ts'
+import {Cpu} from '../cpu.ts'
 import {Ppu} from '../ppu.ts'
 
-export function mapper184(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
+export function mapper184(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   const mask = romData.length - 1
   cpu.setReadMemory(0x8000, 0xffff, (adr) => romData[adr & mask])
 

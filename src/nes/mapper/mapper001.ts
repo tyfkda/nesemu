@@ -1,9 +1,9 @@
 // MMC1
 
-import {Cpu6502} from '../cpu.ts'
+import {Cpu} from '../cpu.ts'
 import {Ppu, MirrorMode} from '../ppu.ts'
 
-export function mapper001(romData: Uint8Array, cpu: Cpu6502, ppu: Ppu) {
+export function mapper001(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   const BANK_BIT = 14  // 16KB
   const BANK_SIZE = 1 << BANK_BIT
   const size = romData.length
