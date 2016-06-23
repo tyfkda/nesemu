@@ -581,7 +581,7 @@ export class Cpu6502 {
         console.error(`Illegal read at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}`)
         this.readErrorReported = true
       }
-      return 0
+      return 0xbf  // Returns dummy value (undefined opcode, non plausible value).
     }
     return reader(adr)
   }
