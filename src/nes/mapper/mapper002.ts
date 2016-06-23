@@ -3,7 +3,7 @@
 import {Cpu6502} from '../cpu.ts'
 import {Ppu} from '../ppu.ts'
 
-export function mapper002Creator(prgBankShift) {
+function mapper002Creator(prgBankShift) {
   return function (romData: Uint8Array, cpu: Cpu6502, _ppu: Ppu) {
     const BANK_BIT = 14
     const BANK_SIZE = 1 << BANK_BIT
