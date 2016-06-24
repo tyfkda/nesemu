@@ -25,6 +25,7 @@ const SHOW_SPRITE = 0x10
 const PPUSTATUS = 0x02
 const VBLANK = 0x80
 const SPRITE0HIT = 0x40
+const SPRITE_OVERFLOW = 0x20
 
 // OAMADDR ($2003)
 const OAMADDR = 0x03
@@ -204,6 +205,10 @@ export class Ppu {
   }
 
   public write(reg: number, value: number): void {
+    if (reg === PPUSTATUS) {
+      value &= ~(VBLANK | SPRITE0HIT | SPRITE_OVERFLOW)
+    }
+
     this.regs[reg] = value
 
     switch (reg) {
