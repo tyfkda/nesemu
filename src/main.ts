@@ -1,4 +1,5 @@
 ///<reference path="../decl/patch.d.ts" />
+///<reference path="../decl/stats.d.ts" />
 
 import {App} from './app/app.ts'
 import {GamepadManager, GamepadWnd} from './app/gamepad_manager.ts'

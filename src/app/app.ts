@@ -244,11 +244,13 @@ export class App {
       if (this.destroying)
         return
 
+      this.stream.triggerStartCalc()
       const curTime = window.performance.now()
       const elapsedTime = curTime - lastTime
       lastTime = curTime
 
       this.loop(elapsedTime)
+      this.stream.triggerEndCalc()
       requestAnimationFrame(loopFn)
     }
     requestAnimationFrame(loopFn)

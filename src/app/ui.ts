@@ -187,6 +187,12 @@ export class ScreenWnd extends Wnd {
               this.app.createControlWnd()
             },
           },
+          {
+            label: 'FPS',
+            click: () => {
+              this.createFpsWnd()
+            },
+          },
         ],
       },
     ])
@@ -261,6 +267,11 @@ export class ScreenWnd extends Wnd {
   public setFocus(): Wnd {
     this.canvas.focus()
     return this
+  }
+
+  private createFpsWnd(): void {
+    const fpsWnd = new FpsWnd(this.wndMgr, this.stream)
+    this.wndMgr.add(fpsWnd)
   }
 }
 
@@ -710,5 +721,42 @@ export class ControlWnd extends Wnd {
     root.appendChild(muteLabel)
 
     return root
+  }
+}
+
+export class FpsWnd extends Wnd {
+  private subscription: IRx.Subscription
+  private stats: Stats
+
+  constructor(wndMgr: WindowManager, private stream: AppEvent.Stream) {
+    super(wndMgr, 80, 48, 'Fps')
+
+    const content = document.createElement('div')
+    content.style.width = '80px'
+    content.style.height = '48px'
+    this.setContent(content)
+
+    this.stats = new Stats()
+    content.appendChild(this.stats.domElement)
+
+    this.subscription = this.stream
+      .subscribe(event => {
+        switch (event.type) {
+        case AppEvent.Type.DESTROY:
+          this.close()
+          break
+        case AppEvent.Type.START_CALC:
+          this.stats.begin()
+          break
+        case AppEvent.Type.END_CALC:
+          this.stats.end()
+          break
+        }
+      })
+  }
+
+  public close(): void {
+    this.subscription.unsubscribe()
+    super.close()
   }
 }
