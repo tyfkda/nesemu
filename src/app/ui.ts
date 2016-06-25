@@ -9,7 +9,9 @@ import {Util} from '../nes/util.ts'
 import {App} from './app.ts'
 import {AppEvent} from './app_event.ts'
 
-import * as Rx from 'rxjs/Rx'
+//import * as Rx from 'rxjs/Rx'
+import * as IRx from 'rxjs/Rx'
+declare const Rx: typeof IRx
 
 const WIDTH = 256
 const HEIGHT = 240
@@ -67,7 +69,7 @@ export class ScreenWnd extends Wnd {
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private imageData: ImageData
-  private subscription: Rx.Subscription
+  private subscription: IRx.Subscription
 
   public constructor(wndMgr: WindowManager, private app: App, private nes: Nes,
                      private stream: AppEvent.Stream)
@@ -270,7 +272,7 @@ export class PaletWnd extends Wnd {
   private boxes: HTMLCanvasElement[]
   private palet: Uint8Array
   private tmp: Uint8Array
-  private subscription: Rx.Subscription
+  private subscription: IRx.Subscription
 
   private static createDom(): any {
     const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
@@ -345,7 +347,7 @@ export class PaletWnd extends Wnd {
 
 export class NameTableWnd extends Wnd {
   private canvas: HTMLCanvasElement
-  private subscription: Rx.Subscription
+  private subscription: IRx.Subscription
 
   public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 512, 240, 'NameTable')
@@ -394,7 +396,7 @@ const kPatternColors = [
 
 export class PatternTableWnd extends Wnd {
   private canvas: HTMLCanvasElement
-  private subscription: Rx.Subscription
+  private subscription: IRx.Subscription
 
   private static createCanvas(): HTMLCanvasElement {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
@@ -440,7 +442,7 @@ export class PatternTableWnd extends Wnd {
 
 export class RegisterWnd extends Wnd {
   private valueElems: HTMLInputElement[]
-  private subscription: Rx.Subscription
+  private subscription: IRx.Subscription
 
   public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 100, 160, 'Regs')
@@ -533,7 +535,7 @@ export class TraceWnd extends Wnd {
   private mem: Uint8Array
   private bins: string[]
   private lines: string[]
-  private subscription: Rx.Subscription
+  private subscription: IRx.Subscription
 
   public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 400, 160, 'Trace')
@@ -620,7 +622,7 @@ export class ControlWnd extends Wnd {
   private stepBtn: HTMLButtonElement
   private runBtn: HTMLButtonElement
   private pauseBtn: HTMLButtonElement
-  private subscription: Rx.Subscription
+  private subscription: IRx.Subscription
 
   public constructor(wndMgr: WindowManager, private stream: AppEvent.Stream) {
     super(wndMgr, 384, 32, 'Control')

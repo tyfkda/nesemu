@@ -14,7 +14,10 @@ interface Window {
 
   Gamepad: any
 
+  Rx: any
+
   nes: any
+  $DEBUG: boolean
 }
 
 interface Document {

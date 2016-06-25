@@ -87,7 +87,8 @@ gulp.task('watch-html', [], () => {
 gulp.task('es6', () => {
   const config = clone(webpackConfig)
   config.devtool = '#cheap-module-source-map'
-  return gulp.src(`${srcEs6Dir}/main.js`)
+  return gulp.src([`${srcEs6Dir}/main.js`,
+                   `${srcEs6Dir}/lib.js`])
     .pipe(plumber())
     .pipe(webpack(config))
     .pipe(gulp.dest(assetsDir))
@@ -97,7 +98,7 @@ gulp.task('watch-es6', [], () => {
   const config = clone(webpackConfig)
   config.watch = true
   config.devtool = '#cheap-module-source-map'
-  gulp.src(srcEs6Files, {base: srcEs6Dir})
+  gulp.src(srcEs6Files)
     .pipe(plumber())
     .pipe(webpack(config))
     .pipe(gulp.dest(assetsDir))

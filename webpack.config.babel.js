@@ -1,6 +1,9 @@
 module.exports = {
   context: __dirname + '/src',
-  entry: './main.ts',
+  entry: {
+    main: './main.ts',
+    lib: './lib.ts',
+  },
   output: {
     path: __dirname + '/public/assets',
     filename: '[name].js',
