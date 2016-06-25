@@ -18,8 +18,10 @@ const BASE_NAMETABLE_ADDRESS = 0x03
 
 // PPUMASK ($2001)
 const PPUMASK = 0x01
-const SHOW_BG = 0x08
 const SHOW_SPRITE = 0x10
+const SHOW_BG = 0x08
+const SHOW_SPRITE_LEFT_8PX = 0x04
+const SHOW_BG_LEFT_8PX = 0x02
 
 // PPUSTATUS ($2002)
 const PPUSTATUS = 0x02
@@ -396,19 +398,22 @@ export class Ppu {
       if (hline0 >= hline1)
         continue
       if ((h.ppuMask & SHOW_BG) === 0) {
-        this.clearBg(imageData, hline0, hline1)
+        this.clearBg(imageData, hline0, hline1, imageData.width)
         continue
       }
       const baseNameTable = h.ppuCtrl & BASE_NAMETABLE_ADDRESS
       const chrStart = (h.ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
-      this.doRenderBg2(imageData, h.scrollX, h.scrollY, baseNameTable, hline0, hline1,
+      let x0 = 0
+      if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0)
+        this.clearBg(imageData, hline0, hline1, x0 = 8)
+      this.doRenderBg2(imageData, h.scrollX, h.scrollY, baseNameTable, hline0, hline1, x0,
                        h.chrBankOffset, h.mirrorModeBit, chrStart)
     }
   }
 
   public doRenderBg2(imageData: ImageData, scrollX: number, scrollY: number, baseNameTable: number,
-                     hline0: number, hline1: number, chrBankOffset: number, mirrorModeBit: number,
-                     chrStart: number): void
+                     hline0: number, hline1: number, x0: number, chrBankOffset: number,
+                     mirrorModeBit: number, chrStart: number): void
   {
     const getBgPat = (chridx, py) => {
       const idx = chridx + py
@@ -461,7 +466,7 @@ export class Ppu {
           const pat = getBgPat(chridx, py)
           for (let px = 0; px < W; ++px) {
             const xx = bbx * W + px - (scrollX & 7)
-            if (xx < 0)
+            if (xx < x0)
               continue
             if (xx >= Const.WIDTH)
               break
@@ -487,15 +492,20 @@ export class Ppu {
     }
   }
 
-  public clearBg(imageData: ImageData, hline0: number, hline1: number): void {
+  public clearBg(imageData: ImageData, hline0: number, hline1: number, x: number): void {
     const LINE_BYTES = imageData.width * 4
     const pixels = imageData.data
+    const paletTable = 0x3f00
+    const clearColor = this.vram[paletTable] & 0x3f  // Universal background color
+    const clearR = kColors[clearColor * 3 + 0]
+    const clearG = kColors[clearColor * 3 + 1]
+    const clearB = kColors[clearColor * 3 + 2]
     for (let i = hline0; i < hline1; ++i) {
       let index = i * LINE_BYTES
-      for (let j = 0; j < imageData.width; ++j) {
-        pixels[index++] = 0
-        pixels[index++] = 0
-        pixels[index++] = 0
+      for (let j = 0; j < x; ++j) {
+        pixels[index++] = clearR
+        pixels[index++] = clearG
+        pixels[index++] = clearB
         pixels[index++] = 255
       }
     }
@@ -519,12 +529,13 @@ export class Ppu {
         continue
       if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
         chrStart = ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
-      this.renderSprite2(imageData, hline0, hline1, h.chrBankOffset, chrStart)
+      const x0 = (h.ppuMask & SHOW_SPRITE_LEFT_8PX) ? 0 : 8
+      this.renderSprite2(imageData, hline0, hline1, x0, h.chrBankOffset, chrStart)
     }
   }
 
-  public renderSprite2(imageData: ImageData, hline0: number, hline1: number, chrBankOffset: number,
-                       chrStart: number): void
+  public renderSprite2(imageData: ImageData, hline0: number, hline1: number, x0: number,
+                       chrBankOffset: number, chrStart: number): void
   {
     const getSpritePat = (chridx, ppy, flipHorz) => {
       const idx = chridx + (ppy & 7) + ((ppy & 8) << 1)
@@ -578,7 +589,10 @@ export class Ppu {
         const ppy = flipVert ? (h - 1) - py : py
         const pat = getSpritePat(chridx, ppy, flipHorz)
         for (let px = 0; px < W; ++px) {
-          if (x + px >= Const.WIDTH)
+          const xx = x + px
+          if (xx < x0)
+            continue
+          if (xx >= Const.WIDTH)
             break
 
           const pal = (pat >> ((W - 1 - px) << 1)) & 3
