@@ -1,4 +1,8 @@
-declare var require  // Supress warning
+declare var global, require  // Supress warning
 
-window.JSZip = require('jszip')
-window.Rx = require('rxjs/Rx')
+((global: any) => {
+
+  global.JSZip = require('jszip')
+  global.Rx = require('rxjs/Rx')
+
+})(Function('return this')())
