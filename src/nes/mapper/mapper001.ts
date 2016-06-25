@@ -2,6 +2,14 @@
 
 import {Cpu} from '../cpu.ts'
 import {Ppu, MirrorMode} from '../ppu.ts'
+import {Util} from '../util.ts'
+
+const kMirrorTable = [
+  MirrorMode.SINGLE0,
+  MirrorMode.SINGLE1,
+  MirrorMode.VERT,
+  MirrorMode.HORZ,
+]
 
 export function mapper001(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   const BANK_BIT = 14  // 16KB
@@ -23,26 +31,22 @@ export function mapper001(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   const setChrBank = (hilo, bank) => {
     if (chrBank4k) {
       const chr = hilo << 2
+      const b = bank << 2
       for (let i = 0; i < 4; ++i)
-        ppu.setChrBankOffset(chr + i, bank + i)
+        ppu.setChrBankOffset(chr + i, b + i)
     } else {
-      if (hilo === 0) {
-        bank = bank & -8
-        for (let i = 0; i < 8; ++i)
-          ppu.setChrBankOffset(i, bank + i)
-      }
+      if (hilo === 0)
+        ppu.setChrBank(bank & 0xfe)
     }
     chrBank[hilo] = bank
   }
 
   const setPrgBank = (register, chrBank0) => {
-    register &= 0x0f
-    let bank = register & maxPrg
+    const bank = ((register & 0x0f) | (chrBank0 & 0x10)) & maxPrg
     switch (prgBankMode) {
     case 0: case 1:
-      bank = (bank | ((chrBank0 >> 2) & 0x10)) & maxPrg
       prgBank[0] = (bank & ~1) << BANK_BIT
-      prgBank[1] = (bank | 1) << BANK_BIT
+      prgBank[1] = prgBank[0] + BANK_SIZE
       break
     case 2:
       prgBank[0] = 0
@@ -60,7 +64,7 @@ export function mapper001(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   // PRG ROM
   cpu.setReadMemory(0x8000, 0xffff, (adr) => {
     const hi = (adr >> BANK_BIT) & 1
-    const lo = adr & 0x3fff
+    const lo = adr & (BANK_SIZE - 1)
     return romData[prgBank[hi] + lo]
   })
 
@@ -69,7 +73,7 @@ export function mapper001(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
     if ((value & 0x80) !== 0)  // Reset
       return resetRegister()
 
-    register |= ((value & 1) << counter)
+    register |= (value & 1) << counter
     if (++counter < 5)
       return
 
@@ -77,21 +81,7 @@ export function mapper001(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
     switch (adr & 0xe000) {
     case 0x8000:  // Controll
       {
-        const mirrorMode = register & 3
-        switch (mirrorMode) {
-        case 0:
-          ppu.setMirrorMode(MirrorMode.SINGLE0)
-          break
-        case 1:
-          ppu.setMirrorMode(MirrorMode.SINGLE1)
-          break
-        case 2:
-          ppu.setMirrorMode(MirrorMode.VERT)
-          break
-        case 3:
-          ppu.setMirrorMode(MirrorMode.HORZ)
-          break
-        }
+        ppu.setMirrorMode(kMirrorTable[register & 3])
 
         prgBankMode = (register >> 2) & 3
         switch (prgBankMode) {
@@ -116,12 +106,12 @@ export function mapper001(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
     case 0xa000: case 0xc000:  // CHR bank
       {
         const hilo = ((adr - 0xa000) >> 13) & 1
-        const bank = (register & 0x1f) << 2
+        const bank = register & 0x1f
         if (chrBank[hilo] !== bank)
           setChrBank(hilo, bank)
 
-        if (hilo === 0 && prgBankMode < 2)
-          setPrgBank(prgBank[0] >> BANK_BIT, chrBank[0])
+        if (hilo === 0)
+          setPrgBank(prgBank[0] >> BANK_BIT, bank)
       }
       break
     case 0xe000:  // PRG bank
@@ -135,7 +125,7 @@ export function mapper001(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
 
   // PRG RAM
   const ram = new Uint8Array(0x2000)
-  ram.fill(0xff)
+  ram.fill(0xbf)
   cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
   cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
 }
