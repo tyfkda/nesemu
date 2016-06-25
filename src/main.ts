@@ -5,11 +5,51 @@ import {GamepadManager, GamepadWnd} from './app/gamepad_manager.ts'
 import WindowManager from './wnd/window_manager.ts'
 import './nes/polyfill.ts'
 
+declare const JSZip: any
+
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
   return (window.requestAnimationFrame || window.mozRequestAnimationFrame ||
           window.webkitRequestAnimationFrame || window.msRequestAnimationFrame)
 })()
+
+function getExt(fileName) {
+  const index = fileName.lastIndexOf('.')
+  if (index >= 0)
+    return fileName.slice(index + 1)
+  return ''
+}
+
+function loadNes(file, onNesFileLoaded) {
+  const reader = new FileReader()
+  reader.onload = function(e) {
+    const binary = new Uint8Array((e.target as any).result)
+    onNesFileLoaded(binary, file.name)
+  }
+  reader.readAsArrayBuffer(file)
+}
+
+function loadZip(file, onNesFileLoaded) {
+  const reader = new FileReader()
+  reader.onload = function(e) {
+    const zipBinary = new Uint8Array((e.target as any).result)
+    const zip = new JSZip()
+    zip.loadAsync(zipBinary)
+      .then((loadedZip) => {
+        Object.keys(loadedZip.files).forEach(fileName => {
+          if (getExt(fileName).toLowerCase() === 'nes') {
+            zip.file(fileName).async('uint8array')
+              .then((rom) => { onNesFileLoaded(rom, fileName) })
+              .catch(error => { console.error(error) })
+          }
+        })
+      })
+    .catch(error => {
+      console.error(error)
+    })
+  }
+  reader.readAsArrayBuffer(file)
+}
 
 function handleFileDrop(dropZone, onDropped) {
   function onDrop(event) {
@@ -17,12 +57,20 @@ function handleFileDrop(dropZone, onDropped) {
     event.preventDefault()
     const files = event.dataTransfer.files
     if (files.length > 0) {
-      const reader = new FileReader()
-      reader.onload = function(e) {
-        const binary = new Uint8Array((e.target as any).result)
-        onDropped(binary, files[0].name, event)
+      for (let i = 0; i < files.length; ++i) {
+        const file = files[i]
+        switch (getExt(file.name).toLowerCase()) {
+        case 'nes':
+          loadNes(file, (rom, fn) => { onDropped(rom, fn, event.pageX, event.pageY) })
+          break
+        case 'zip':
+          loadZip(file, (rom, fn) => { onDropped(rom, fn, event.pageX, event.pageY) })
+          break
+        default:
+          // TODO: Show error message.
+          break
+        }
       }
-      reader.readAsArrayBuffer(files[0])
     }
     return false
   }
@@ -46,11 +94,11 @@ window.addEventListener('load', () => {
 
   // Handle file drop.
   if (window.File && window.FileReader && window.FileList && window.Blob) {
-    handleFileDrop(root, (romData, name, event) => {
+    handleFileDrop(root, (romData, name, x, y) => {
       const option = {
         title: name,
-        centerX: event.pageX,
-        centerY: event.pageY,
+        centerX: x,
+        centerY: y,
       }
       const app = App.create(wndMgr, option)
       app.loadRom(romData)
