@@ -62,8 +62,8 @@ export class App {
     this.stream = new AppEvent.Stream()
 
     this.subscription = this.stream
-      .subscribe(event => {
-        switch (event.type) {
+      .subscribe(type => {
+        switch (type) {
         case AppEvent.Type.DESTROY:
           this.cleanUp()
           break
@@ -80,12 +80,6 @@ export class App {
           break
         case AppEvent.Type.RESET:
           this.nes.reset()
-          break
-        case AppEvent.Type.MUTE:
-          {
-            const volume = event.value ? 0.0 : 1.0
-            this.audioManager.setMasterVolume(volume)
-          }
           break
         }
       })

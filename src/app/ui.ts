@@ -212,8 +212,8 @@ export class ScreenWnd extends Wnd {
     this.addResizeBox()
 
     this.subscription = this.stream
-      .subscribe(event => {
-        switch (event.type) {
+      .subscribe(type => {
+        switch (type) {
         case AppEvent.Type.RENDER:
           this.nes.render(this.context, this.imageData)
           break
@@ -323,8 +323,8 @@ export class PaletWnd extends Wnd {
     this.boxes = boxes
 
     this.subscription = this.stream
-      .subscribe(event => {
-        switch (event.type) {
+      .subscribe(type => {
+        switch (type) {
         case AppEvent.Type.DESTROY:
           this.close()
           break
@@ -375,8 +375,8 @@ export class NameTableWnd extends Wnd {
     this.canvas = canvas
 
     this.subscription = this.stream
-      .subscribe(event => {
-        switch (event.type) {
+      .subscribe(type => {
+        switch (type) {
         case AppEvent.Type.DESTROY:
           this.close()
           break
@@ -428,8 +428,8 @@ export class PatternTableWnd extends Wnd {
     this.canvas = canvas
 
     this.subscription = this.stream
-      .subscribe(event => {
-        switch (event.type) {
+      .subscribe(type => {
+        switch (type) {
         case AppEvent.Type.DESTROY:
           this.close()
           break
@@ -462,8 +462,8 @@ export class RegisterWnd extends Wnd {
     this.setContent(content)
 
     this.subscription = this.stream
-      .subscribe(event => {
-        switch (event.type) {
+      .subscribe(type => {
+        switch (type) {
         case AppEvent.Type.DESTROY:
           this.close()
           break
@@ -558,8 +558,8 @@ export class TraceWnd extends Wnd {
     this.reset()
 
     this.subscription = this.stream
-      .subscribe(event => {
-        switch (event.type) {
+      .subscribe(type => {
+        switch (type) {
         case AppEvent.Type.DESTROY:
           this.close()
           break
@@ -636,15 +636,15 @@ export class ControlWnd extends Wnd {
   private subscription: IRx.Subscription
 
   public constructor(wndMgr: WindowManager, private stream: AppEvent.Stream) {
-    super(wndMgr, 384, 32, 'Control')
+    super(wndMgr, 256, 32, 'Control')
 
     const content = this.createElement()
     this.setContent(content)
     this.updateState(true)
 
     this.subscription = this.stream
-      .subscribe(event => {
-        switch (event.type) {
+      .subscribe(type => {
+        switch (type) {
         case AppEvent.Type.DESTROY:
           this.close()
           break
@@ -672,7 +672,7 @@ export class ControlWnd extends Wnd {
 
   private createElement(): HTMLElement {
     const root = document.createElement('div')
-    root.style.width = '384px'
+    root.style.width = '256px'
     root.style.height = '32px'
 
     this.stepBtn = document.createElement('button') as HTMLButtonElement
@@ -710,16 +710,6 @@ export class ControlWnd extends Wnd {
     })
     root.appendChild(captureBtn)
 
-    const muteLabel = document.createElement('label')
-    const muteBtn = document.createElement('input') as HTMLInputElement
-    muteBtn.type = 'checkbox'
-    muteBtn.addEventListener('click', () => {
-      this.stream.triggerMute(muteBtn.checked)
-    })
-    muteLabel.appendChild(muteBtn)
-    muteLabel.appendChild(document.createTextNode('mute'))
-    root.appendChild(muteLabel)
-
     return root
   }
 }
@@ -740,8 +730,8 @@ export class FpsWnd extends Wnd {
     content.appendChild(this.stats.domElement)
 
     this.subscription = this.stream
-      .subscribe(event => {
-        switch (event.type) {
+      .subscribe(type => {
+        switch (type) {
         case AppEvent.Type.DESTROY:
           this.close()
           break

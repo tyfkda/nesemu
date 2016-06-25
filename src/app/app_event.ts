@@ -12,53 +12,45 @@ export namespace AppEvent {
     LOAD_ROM,
     BREAK_POINT,
     SCREEN_SHOT,
-    MUTE,
     DESTROY,
     START_CALC,
     END_CALC,
   }
 
-  export interface Event {
-    type: Type
-  }
-
-  export class Stream extends Rx.Subject<any> {
+  export class Stream extends Rx.Subject<Type> {
     public triggerRender() {
-      this.next({type: Type.RENDER})
+      this.next(Type.RENDER)
     }
     public triggerRun() {
-      this.next({type: Type.RUN})
+      this.next(Type.RUN)
     }
     public triggerPause() {
-      this.next({type: Type.PAUSE})
+      this.next(Type.PAUSE)
     }
     public triggerStep() {
-      this.next({type: Type.STEP})
+      this.next(Type.STEP)
     }
     public triggerReset() {
-      this.next({type: Type.RESET})
+      this.next(Type.RESET)
     }
     public triggerScreenShot() {
-      this.next({type: Type.SCREEN_SHOT})
-    }
-    public triggerMute(value: boolean) {
-      this.next({type: Type.MUTE, value})
+      this.next(Type.SCREEN_SHOT)
     }
     public triggerLoadRom() {
-      this.next({type: Type.LOAD_ROM})
+      this.next(Type.LOAD_ROM)
     }
     public triggerBreakPoint() {
-      this.next({type: Type.BREAK_POINT})
+      this.next(Type.BREAK_POINT)
     }
     public triggerDestroy() {
-      this.next({type: Type.DESTROY})
+      this.next(Type.DESTROY)
     }
 
     public triggerStartCalc() {
-      this.next({type: Type.START_CALC})
+      this.next(Type.START_CALC)
     }
     public triggerEndCalc() {
-      this.next({type: Type.END_CALC})
+      this.next(Type.END_CALC)
     }
   }
 }
