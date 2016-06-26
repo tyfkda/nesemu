@@ -35,7 +35,7 @@ export function mapper001(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
         ppu.setChrBankOffset(chr + i, b + i)
     } else {
       if (hilo === 0)
-        ppu.setChrBank(bank & 0xfe)
+        ppu.setChrBank(bank >> 1)
     }
     chrBank[hilo] = bank
   }

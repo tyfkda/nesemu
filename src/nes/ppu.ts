@@ -154,8 +154,9 @@ export class Ppu {
   }
 
   public setChrBank(value: number): void {
+    const base = value << 3
     for (let i = 0; i < 8; ++i)
-      this.setChrBankOffset(i, (value << 3) + i)
+      this.setChrBankOffset(i, base + i)
   }
 
   public setChrBankOffset(bank: number, value: number): void {
