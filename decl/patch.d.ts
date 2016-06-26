@@ -14,7 +14,7 @@ interface Window {
 
   Gamepad: any
 
-  JSZip: any
+  JSZip: JSZip
   Rx: any
 
   nes: any

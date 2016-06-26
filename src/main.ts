@@ -6,8 +6,6 @@ import {GamepadManager, GamepadWnd} from './app/gamepad_manager.ts'
 import WindowManager from './wnd/window_manager.ts'
 import './nes/polyfill.ts'
 
-declare const JSZip: any
-
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
   return (window.requestAnimationFrame || window.mozRequestAnimationFrame ||
@@ -36,10 +34,10 @@ function loadZip(file, onNesFileLoaded) {
     const zipBinary = new Uint8Array((e.target as any).result)
     const zip = new JSZip()
     zip.loadAsync(zipBinary)
-      .then((loadedZip) => {
+      .then((loadedZip: JSZip) => {
         Object.keys(loadedZip.files).forEach(fileName => {
           if (getExt(fileName).toLowerCase() === 'nes') {
-            zip.file(fileName).async('uint8array')
+            loadedZip.files[fileName].async('uint8array')
               .then((rom) => { onNesFileLoaded(rom, fileName) })
               .catch(error => { console.error(error) })
           }
