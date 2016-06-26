@@ -157,25 +157,18 @@ export class Nes {
     this.irqHlineCounter = 0
   }
 
-  public render(context: CanvasRenderingContext2D, imageData: ImageData): void {
-    this.ppu.renderBg(imageData)
-    this.ppu.renderSprite(imageData)
-    context.putImageData(imageData, 0, 0)
+  public render(pixels: Uint8ClampedArray): void {
+    this.ppu.renderBg(pixels)
+    this.ppu.renderSprite(pixels)
   }
 
-  public renderNameTable(bgCanvas: HTMLCanvasElement): void {
-    const context = bgCanvas.getContext('2d')
-    const imageData = context.getImageData(0, 0, bgCanvas.width, bgCanvas.height)
-    this.ppu.doRenderBg(imageData, 0, 0, 0, 0, 0)
-    this.ppu.doRenderBg(imageData, 0, 0, 256, 0, 0x0400)
-    context.putImageData(imageData, 0, 0)
+  public renderNameTable(pixels: Uint8ClampedArray, lineWidth: number): void {
+    this.ppu.doRenderBg(pixels, lineWidth, 0, 0, 0, 0, 0)
+    this.ppu.doRenderBg(pixels, lineWidth, 0, 0, 256, 0, 0x0400)
   }
 
-  public renderPatternTable(bgCanvas: HTMLCanvasElement, colors: number[]): void {
-    const context = bgCanvas.getContext('2d')
-    const imageData = context.getImageData(0, 0, bgCanvas.width, bgCanvas.height)
-    this.ppu.renderPattern(imageData, colors)
-    context.putImageData(imageData, 0, 0)
+  public renderPatternTable(pixels: Uint8ClampedArray, lineWidth: number, colors: number[]): void {
+    this.ppu.renderPattern(pixels, lineWidth, colors)
   }
 
   public getPalet(pal: number): number {

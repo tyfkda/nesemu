@@ -214,7 +214,8 @@ export class ScreenWnd extends Wnd {
       .subscribe(type => {
         switch (type) {
         case AppEvent.Type.RENDER:
-          this.nes.render(this.context, this.imageData)
+          this.nes.render(this.imageData.data)
+          this.context.putImageData(this.imageData, 0, 0)
           break
         case AppEvent.Type.SCREEN_SHOT:
           takeScreenshot(this.wndMgr, this)
@@ -357,6 +358,8 @@ export class PaletWnd extends Wnd {
 
 export class NameTableWnd extends Wnd {
   private canvas: HTMLCanvasElement
+  private context: CanvasRenderingContext2D
+  private imageData: ImageData
   private subscription: IRx.Subscription
 
   public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
@@ -372,6 +375,9 @@ export class NameTableWnd extends Wnd {
 
     this.setContent(canvas)
     this.canvas = canvas
+
+    this.context = this.canvas.getContext('2d')
+    this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
 
     this.subscription = this.stream
       .subscribe(type => {
@@ -393,7 +399,8 @@ export class NameTableWnd extends Wnd {
   }
 
   private render(): void {
-    this.nes.renderNameTable(this.canvas)
+    this.nes.renderNameTable(this.imageData.data, this.imageData.width)
+    this.context.putImageData(this.imageData, 0, 0)
   }
 }
 
@@ -406,6 +413,8 @@ const kPatternColors = [
 
 export class PatternTableWnd extends Wnd {
   private canvas: HTMLCanvasElement
+  private context: CanvasRenderingContext2D
+  private imageData: ImageData
   private subscription: IRx.Subscription
 
   private static createCanvas(): HTMLCanvasElement {
@@ -426,6 +435,9 @@ export class PatternTableWnd extends Wnd {
     this.setContent(canvas)
     this.canvas = canvas
 
+    this.context = this.canvas.getContext('2d')
+    this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
+
     this.subscription = this.stream
       .subscribe(type => {
         switch (type) {
@@ -446,7 +458,8 @@ export class PatternTableWnd extends Wnd {
   }
 
   private render(): void {
-    this.nes.renderPatternTable(this.canvas, kPatternColors)
+    this.nes.renderPatternTable(this.imageData.data, this.imageData.width, kPatternColors)
+    this.context.putImageData(this.imageData, 0, 0)
   }
 }
 

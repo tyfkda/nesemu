@@ -304,11 +304,29 @@ export class Ppu {
     return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
   }
 
-  public renderBg(imageData: ImageData): void {
-    this.doRenderBgLine(imageData)
+  public renderBg(pixels: Uint8ClampedArray): void {
+    const n = this.hevents.count
+    for (let i = 0; i < n; ++i) {
+      const h = this.hevents.events[i]
+      const hline0 = h.hcount
+      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240 + 8
+      if (hline0 >= hline1)
+        continue
+      if ((h.ppuMask & SHOW_BG) === 0) {
+        this.clearBg(pixels, hline0, hline1, Const.WIDTH, Const.WIDTH)
+        continue
+      }
+      const baseNameTable = h.ppuCtrl & BASE_NAMETABLE_ADDRESS
+      const chrStart = (h.ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
+      let x0 = 0
+      if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0)
+        this.clearBg(pixels, hline0, hline1, x0 = 8, Const.WIDTH)
+      this.doRenderBg2(pixels, h.scrollX, h.scrollY, baseNameTable, hline0, hline1, x0,
+                       h.chrBankOffset, h.mirrorModeBit, chrStart)
+    }
   }
 
-  public doRenderBg(imageData: ImageData, scrollX: number, scrollY: number,
+  public doRenderBg(pixels: Uint8ClampedArray, lineWidth: number, scrollX: number, scrollY: number,
                     startX: number, startY: number, nameTableOffset: number): void
   {
     const getBgPat = (chridx, py) => {
@@ -323,11 +341,9 @@ export class Ppu {
     }
 
     const W = 8
-    const LINE_WIDTH = imageData.width
     const chrStart = this.getBgPatternTableAddress()
     const vram = this.vram
     const paletTable = 0x3f00
-    const pixels = imageData.data
 
     const clearColor = vram[paletTable] & 0x3f  // Universal background color
     const clearR = kColors[clearColor * 3 + 0]
@@ -376,7 +392,7 @@ export class Ppu {
               b = kColors[c + 2]
             }
 
-            const index = ((yy + startY) * LINE_WIDTH + (xx + startX)) * 4
+            const index = ((yy + startY) * lineWidth + (xx + startX)) * 4
             pixels[index + 0] = r
             pixels[index + 1] = g
             pixels[index + 2] = b
@@ -386,29 +402,7 @@ export class Ppu {
     }
   }
 
-  public doRenderBgLine(imageData: ImageData) {
-    const n = this.hevents.count
-    for (let i = 0; i < n; ++i) {
-      const h = this.hevents.events[i]
-      const hline0 = h.hcount
-      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240 + 8
-      if (hline0 >= hline1)
-        continue
-      if ((h.ppuMask & SHOW_BG) === 0) {
-        this.clearBg(imageData, hline0, hline1, imageData.width)
-        continue
-      }
-      const baseNameTable = h.ppuCtrl & BASE_NAMETABLE_ADDRESS
-      const chrStart = (h.ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
-      let x0 = 0
-      if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0)
-        this.clearBg(imageData, hline0, hline1, x0 = 8)
-      this.doRenderBg2(imageData, h.scrollX, h.scrollY, baseNameTable, hline0, hline1, x0,
-                       h.chrBankOffset, h.mirrorModeBit, chrStart)
-    }
-  }
-
-  public doRenderBg2(imageData: ImageData, scrollX: number, scrollY: number, baseNameTable: number,
+  public doRenderBg2(pixels: Uint8ClampedArray, scrollX: number, scrollY: number, baseNameTable: number,
                      hline0: number, hline1: number, x0: number, chrBankOffset: number,
                      mirrorModeBit: number, chrStart: number): void
   {
@@ -424,10 +418,9 @@ export class Ppu {
     }
 
     const W = 8
-    const LINE_WIDTH = imageData.width
+    const LINE_WIDTH = Const.WIDTH
     const vram = this.vram
     const paletTable = 0x3f00
-    const pixels = imageData.data
 
     const clearColor = vram[paletTable] & 0x3f  // Universal background color
     const clearR = kColors[clearColor * 3 + 0]
@@ -489,9 +482,8 @@ export class Ppu {
     }
   }
 
-  public clearBg(imageData: ImageData, hline0: number, hline1: number, x: number): void {
-    const LINE_BYTES = imageData.width * 4
-    const pixels = imageData.data
+  public clearBg(pixels: Uint8ClampedArray, hline0: number, hline1: number, x: number, lineWidth: number): void {
+    const LINE_BYTES = lineWidth * 4
     const paletTable = 0x3f00
     const clearColor = this.vram[paletTable] & 0x3f  // Universal background color
     const clearR = kColors[clearColor * 3 + 0]
@@ -513,7 +505,7 @@ export class Ppu {
     this.checkSprite0Hit(hcount)
   }
 
-  public renderSprite(imageData: ImageData): void {
+  public renderSprite(pixels: Uint8ClampedArray): void {
     let chrStart = 0
     const n = this.hevents.count
     for (let i = 0; i < n; ++i) {
@@ -527,11 +519,11 @@ export class Ppu {
       if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
         chrStart = ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
       const x0 = (h.ppuMask & SHOW_SPRITE_LEFT_8PX) ? 0 : 8
-      this.renderSprite2(imageData, hline0, hline1, x0, h.chrBankOffset, chrStart)
+      this.renderSprite2(pixels, hline0, hline1, x0, h.chrBankOffset, chrStart)
     }
   }
 
-  public renderSprite2(imageData: ImageData, hline0: number, hline1: number, x0: number,
+  public renderSprite2(pixels: Uint8ClampedArray, hline0: number, hline1: number, x0: number,
                        chrBankOffset: number, chrStart: number): void
   {
     const getSpritePat = (chridx, ppy, flipHorz) => {
@@ -553,13 +545,12 @@ export class Ppu {
     }
 
     const W = 8
-    const LINE_WIDTH = imageData.width
+    const LINE_WIDTH = Const.WIDTH
     const PALET = 0x03
 
     const oam = this.oam
     const vram = this.vram
     const paletTable = 0x3f10
-    const pixels = imageData.data
     const isSprite8x16 = this.isSprite8x16()
     const h = isSprite8x16 ? 16 : 8
 
@@ -619,11 +610,8 @@ export class Ppu {
     }
   }
 
-  public renderPattern(imageData: ImageData, colors: number[]): void {
+  public renderPattern(pixels: Uint8ClampedArray, lineWidth: number, colors: number[]): void {
     const W = 8
-    const LINE_WIDTH = imageData.width
-    const pixels = imageData.data
-
     for (let i = 0; i < 2; ++i) {
       for (let by = 0; by < 16; ++by) {
         for (let bx = 0; bx < 16; ++bx) {
@@ -638,7 +626,7 @@ export class Ppu {
               const col = (pat >> ((W - 1 - px) << 1)) & 3
               const c = col * 3
 
-              const index = (yy * LINE_WIDTH + xx) * 4
+              const index = (yy * lineWidth + xx) * 4
               pixels[index + 0] = colors[c + 0]
               pixels[index + 1] = colors[c + 1]
               pixels[index + 2] = colors[c + 2]
