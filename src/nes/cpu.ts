@@ -209,7 +209,7 @@ export class Cpu {
     this.pc += inst.bytes
     const adr = this.getAdr(pc, inst.addressing)
 
-    //========================================================
+    // ========================================================
     // Dispatch
     switch (inst.opType) {
     default:
@@ -532,7 +532,7 @@ export class Cpu {
       this.p |= IRQBLK_FLAG
       break
     }
-    //========================================================
+    // ========================================================
 
     if (this.breakPoints[this.pc]) {
       this.paused = true

@@ -250,9 +250,6 @@ export class Ppu {
     case PPUDATA:
       {
         const addr = getPpuAddr(this.ppuAddr, this.mirrorModeBit)
-        //if (addr < 0x2000) {
-        //  console.log(`CHR ROM write: ${Util.hex(addr, 4)}, ${Util.hex(value, 2)}`)
-        //}
         this.vram[addr] = value
         this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
       }

@@ -1,4 +1,4 @@
-declare var global, require  // Supress warning
+declare var require  // Supress warning
 
 ((global: any) => {
 

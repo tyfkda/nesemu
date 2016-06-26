@@ -1,4 +1,4 @@
-import {PadBit, PadValue} from '../nes/apu.ts'
+import {PadBit} from '../nes/apu.ts'
 import WindowManager from '../wnd/window_manager.ts'
 import Wnd from '../wnd/wnd.ts'
 import StorageUtil from './storage_util.ts'
@@ -22,7 +22,7 @@ const kPadSetting = [
 
 const kKeyTable = ['A', 'B', 'SELECT', 'START', 'U', 'D', 'L', 'R']
 
-//================================================
+// ================================================
 // Manager.
 
 export class GamepadManager {
@@ -111,17 +111,25 @@ export class GamepadManager {
         if ('button' in d) {
           GamepadManager.setButton(index, d.button)
         } else if ('axis' in d && 'direction' in d) {
-          GamepadManager.setAxis(index, d.axis, parseInt(d.direction))
+          GamepadManager.setAxis(index, d.axis, parseInt(d.direction, 10))
         }
       })
     }
   }
 }
 
-//================================================
+// ================================================
 // Config window.
 
-const kGamepadButtons = [
+interface GamepadButtonDef {
+  x: number
+  y: number
+  name: string
+  padbit: number
+  opt?: any
+}
+
+const kGamepadButtons: GamepadButtonDef[] = [
   { x: 40, y: 10, name: '&uarr;', padbit: PadBit.U },
   { x: 10, y: 40, name: '&larr;', padbit: PadBit.L },
   { x: 70, y: 40, name: '&rarr;', padbit: PadBit.R },
@@ -131,6 +139,22 @@ const kGamepadButtons = [
   { x: 50, y: 110, name: 'Select', opt: {width: 60, height: 20}, padbit: PadBit.SELECT },
   { x: 120, y: 110, name: 'Start', opt: {width: 60, height: 20}, padbit: PadBit.START },
 ]
+
+function createButton(parent: HTMLElement, x: number, y: number, name: string,
+                      opt: any = {}): HTMLElement
+{
+  const btn = document.createElement('div')
+  btn.className = 'gamepad-btn'
+  btn.style.left = `${x}px`
+  btn.style.top = `${y}px`
+  btn.style.width = `${opt.width || 30}px`
+  btn.style.height = `${opt.height || 30}px`
+  btn.innerHTML = name
+  if (opt.type === 'round')
+    btn.style.borderRadius = '15px'
+  parent.appendChild(btn)
+  return btn
+}
 
 export class GamepadWnd extends Wnd {
   private destroying = false
@@ -150,7 +174,7 @@ export class GamepadWnd extends Wnd {
     })
 
     this.buttons = kGamepadButtons.map(d => {
-      const btn = GamepadWnd.createButton(content, d.x, d.y, d.name, d.opt)
+      const btn = createButton(content, d.x, d.y, d.name, d.opt)
       btn.addEventListener('click', (event) => {
         event.stopPropagation()
         this.setSelectedButton(btn)
@@ -240,21 +264,5 @@ export class GamepadWnd extends Wnd {
     if (this.selectedButton != null) {
       this.selectedButton.classList.add('selected')
     }
-  }
-
-  private static createButton(parent: HTMLElement, x: number, y: number, name: string,
-                              opt: any = {}): HTMLElement
-  {
-    const btn = document.createElement('div')
-    btn.className = 'gamepad-btn'
-    btn.style.left = `${x}px`
-    btn.style.top = `${y}px`
-    btn.style.width = `${opt.width || 30}px`
-    btn.style.height = `${opt.height || 30}px`
-    btn.innerHTML = name
-    if (opt.type === 'round')
-      btn.style.borderRadius = '15px'
-    parent.appendChild(btn)
-    return btn
   }
 }

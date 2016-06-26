@@ -9,7 +9,6 @@ import {Util} from '../nes/util.ts'
 import {App} from './app.ts'
 import {AppEvent} from './app_event.ts'
 
-//import * as Rx from 'rxjs/Rx'
 import * as IRx from 'rxjs/Rx'
 declare const Rx: typeof IRx
 

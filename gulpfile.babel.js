@@ -140,7 +140,8 @@ gulp.task('copy-res', () => {
 })
 
 gulp.task('tslint', () => {
-  return gulp.src([`${srcEs6Dir}/**/*.ts`])
+  return gulp.src([`${srcEs6Dir}/**/*.ts`,
+                   `!${srcEs6Dir}/lib.ts`])
     .pipe(tslint({
       configuration: 'tslint.json',
     }))

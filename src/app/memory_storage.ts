@@ -11,7 +11,7 @@ export default class MemoryStorage {
 
   public getItem(key) {
     const value = this.storage[key]
-    if (typeof value == 'undefined')
+    if (typeof value === 'undefined')
       return null
     return value
   }

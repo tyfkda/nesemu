@@ -2,7 +2,6 @@
 
 import {Cpu} from '../cpu.ts'
 import {Ppu, MirrorMode} from '../ppu.ts'
-import {Util} from '../util.ts'
 
 export function mapper010(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   const BANK_BIT = 14

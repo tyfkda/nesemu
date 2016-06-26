@@ -9,7 +9,6 @@ import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
 import StorageUtil from './storage_util.ts'
 import WindowManager from '../wnd/window_manager.ts'
 
-//import * as Rx from 'rxjs/Rx'
 import * as IRx from 'rxjs/Rx'
 declare const Rx: typeof IRx
 

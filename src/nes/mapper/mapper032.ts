@@ -3,14 +3,12 @@
 import {Cpu} from '../cpu.ts'
 import {Nes} from '../nes.ts'
 import {Ppu, MirrorMode} from '../ppu.ts'
-import {Util} from '../util.ts'
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ]
 
 export function mapper032(romData: Uint8Array, cpu: Cpu, ppu: Ppu, nes: Nes) {
   const BANK_BIT = 13  // 0x2000
   const BANK_MASK = (1 << BANK_BIT) - 1
-  const regs = new Uint8Array(8)
   const maxPrg = (romData.length >> BANK_BIT) - 1
   const kLast2Bank = (maxPrg - 1) << BANK_BIT
 
@@ -47,7 +45,7 @@ export function mapper032(romData: Uint8Array, cpu: Cpu, ppu: Ppu, nes: Nes) {
     if (adr <= 0x8fff) {
       prgReg[0] = (value & maxPrg) << BANK_BIT
       setPrgBank()
-    } else {  //if (0x9000 <= adr && adr <= 0x9007) {
+    } else {
       ppu.setMirrorMode(kMirrorTable[value & 1])
       prgMode = (value >> 1) & 1
       setPrgBank()

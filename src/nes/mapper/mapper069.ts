@@ -13,7 +13,7 @@ export function mapper069(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   const size = romData.length
   const count = size / BANK_SIZE
   const kLastBank = size - BANK_SIZE
-  let prgBank0 = 0, prgBank1 = 0, prgBank2 = 0, prgBank3 = 0
+  let prgBank1 = 0, prgBank2 = 0, prgBank3 = 0
   cpu.setReadMemory(0x8000, 0x9fff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank1])
   cpu.setReadMemory(0xa000, 0xbfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank2])
   cpu.setReadMemory(0xc000, 0xdfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank3])

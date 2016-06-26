@@ -2,7 +2,6 @@
 
 import {Cpu} from '../cpu.ts'
 import {Ppu, MirrorMode} from '../ppu.ts'
-import {Util} from '../util.ts'
 
 const kMirrorTable = [
   MirrorMode.SINGLE0,
@@ -41,8 +40,8 @@ export function mapper001(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
     chrBank[hilo] = bank
   }
 
-  const setPrgBank = (register, chrBank0) => {
-    const bank = ((register & 0x0f) | (chrBank0 & 0x10)) & maxPrg
+  const setPrgBank = (reg, chrBank0) => {
+    const bank = ((reg & 0x0f) | (chrBank0 & 0x10)) & maxPrg
     switch (prgBankMode) {
     case 0: case 1:
       prgBank[0] = (bank & ~1) << BANK_BIT
