@@ -91,6 +91,7 @@ export class ScreenWnd extends Wnd {
             label: 'Reset',
             click: () => {
               this.stream.triggerReset()
+              this.stream.triggerRun()
             },
           },
           {
