@@ -8,6 +8,9 @@ module.exports = {
     path: __dirname + '/public/assets',
     filename: '[name].js',
   },
+  resolve: {
+    extensions: ['.ts', '.js', '.tsx', '.jsx', '']
+  },
   module: {
     loaders: [
       { test: /\.js$/, loader: 'babel-loader' },

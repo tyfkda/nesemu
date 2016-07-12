@@ -1,6 +1,8 @@
 // Karma configuration
 // Generated on Thu Dec 10 2015 09:12:34 GMT+0900 (JST)
 
+const webpackConfig = require('./webpack.config.babel')
+
 module.exports = function(config) {
   config.set({
 
@@ -15,7 +17,7 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      'test/**/*.spec.js'
+      'test/**/*.spec.ts'
     ],
 
 
@@ -27,24 +29,14 @@ module.exports = function(config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor
     preprocessors: {
-      'test/**/*.js': ['webpack', 'sourcemap'],
-      'src/**/*.js': ['webpack', 'sourcemap'],
+      'test/**/*.ts': ['webpack', 'sourcemap'],
+      'src/**/*.ts': ['webpack', 'sourcemap'],
     },
 
     webpack: {
       devtool: 'inline-source-map',
-      module: {
-        loaders: [
-          {
-            test: /\.js$/,
-            loader: 'babel',
-            exclude: /node_modules/
-          }
-        ],
-        node: {
-          fs: 'empty'
-        }
-      }
+      module: webpackConfig.module,
+      resolve: webpackConfig.resolve,
     },
     webpackServer: {
       quiet: true,
