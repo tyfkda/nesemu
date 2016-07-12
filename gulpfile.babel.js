@@ -5,7 +5,6 @@ const browserSync = require('browser-sync').create()
 
 // ES6
 import clone from 'clone'
-import eslint from 'gulp-eslint'
 import webpack from 'webpack-stream'
 import webpackConfig from './webpack.config.babel'
 import tslint from 'gulp-tslint'
@@ -56,10 +55,12 @@ function convertHtml(buildTarget, dest) {
 
 function lint(glob) {
   return gulp.src(glob)
-    .pipe(plumber())
-    .pipe(eslint())
-    .pipe(eslint.format())
-    .pipe(eslint.failOnError())
+    .pipe(tslint({
+      configuration: 'tslint.json',
+    }))
+    .pipe(tslint.report('prose', {
+      emitError: false,
+    }))
 }
 
 function buildWhenModified(glob, buildFunc) {
@@ -119,17 +120,13 @@ gulp.task('watch-sass', [], () => {
 })
 
 gulp.task('lint', () => {
-  return lint(['gulpfile.babel.js',
-               srcEs6Files,
-               srcTestFiles,
-               'tools/**/*.js',
-               '!src/es6/patches.js'])
+  return lint([`${srcEs6Dir}/**/*.ts`,
+               `!${srcEs6Dir}/lib.ts`])
 })
 
 gulp.task('watch-lint', [], () => {
-  buildWhenModified([srcEs6Files,
-                     srcTestFiles,
-                     'gulpfile.babel.js'],
+  buildWhenModified([`${srcEs6Dir}/**/*.ts`,
+                     `!${srcEs6Dir}/lib.ts`],
                     lint)
 })
 
@@ -137,17 +134,6 @@ gulp.task('copy-res', () => {
   return gulp.src([`${RES_DIR}/**/*`],
                   {base: RES_DIR})
     .pipe(gulp.dest(destDir))
-})
-
-gulp.task('tslint', () => {
-  return gulp.src([`${srcEs6Dir}/**/*.ts`,
-                   `!${srcEs6Dir}/lib.ts`])
-    .pipe(tslint({
-      configuration: 'tslint.json',
-    }))
-    .pipe(tslint.report('prose', {
-      emitError: false,
-    }))
 })
 
 gulp.task('server', () => {
