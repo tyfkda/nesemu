@@ -23,23 +23,22 @@ import karma from 'gulp-karma'
 import plumber from 'gulp-plumber'
 import del from 'del'
 
-const destDir = './public'
-const assetsDir = `${destDir}/assets`
-const srcEs6Dir = './src'
-const srcEs6Files = `${srcEs6Dir}/**/*.js`
-const srcHtmlDir = './src'
-const srcHtmlFiles = `${srcHtmlDir}/*.html`  // */
-const srcSassFiles = './src/**/*.scss'
-const srcTestFiles = './test/**/*.spec.js'
-const releaseDir = './release'
-const releaseAssetsDir = `${releaseDir}/assets`
-
 const ROOT_DIR = `${__dirname}/.`
 const RES_DIR = `${ROOT_DIR}/res`
+const DEST_DIR = `${ROOT_DIR}/public`
+const ASSETS_DIR = `${DEST_DIR}/assets`
+const SRC_TS_DIR = `${ROOT_DIR}/src`
+const SRC_TS_FILES = `${SRC_TS_DIR}/**/*.js`
+const SRC_HTML_DIR = `${ROOT_DIR}/src`
+const SRC_HTML_FILES = `${SRC_HTML_DIR}/*.html`  // */
+const SRC_SASS_FILES = `${ROOT_DIR}/src/**/*.scss`
+const SRC_TEST_FILES = `${ROOT_DIR}/test/**/*.spec.js`
+const RELEASE_DIR = `${ROOT_DIR}/release`
+const RELEASE_ASSETS_DIR = `${RELEASE_DIR}/assets`
 
 function convertHtml(buildTarget, dest) {
-  return gulp.src([srcHtmlFiles,
-            '!' + srcHtmlDir + '/**/_*.html'])
+  return gulp.src([SRC_HTML_FILES,
+            '!' + SRC_HTML_DIR + '/**/_*.html'])
     .pipe(plumber())
     .pipe(ejs({buildTarget: buildTarget}))
     .pipe(htmlmin({
@@ -78,75 +77,75 @@ gulp.task('watch', ['watch-html', 'watch-es6', 'watch-sass',
 gulp.task('build', ['html', 'es6', 'sass', 'copy-res'])
 
 gulp.task('html', () => {
-  return convertHtml('debug', destDir)
+  return convertHtml('debug', DEST_DIR)
 })
 
 gulp.task('watch-html', [], () => {
-  gulp.watch(srcHtmlFiles, ['html'])
+  gulp.watch(SRC_HTML_FILES, ['html'])
 })
 
 gulp.task('es6', () => {
   const config = clone(webpackConfig)
   config.devtool = '#cheap-module-source-map'
-  return gulp.src([`${srcEs6Dir}/main.js`,
-                   `${srcEs6Dir}/lib.js`])
+  return gulp.src([`${SRC_TS_DIR}/main.js`,
+                   `${SRC_TS_DIR}/lib.js`])
     .pipe(plumber())
     .pipe(webpack(config))
-    .pipe(gulp.dest(assetsDir))
+    .pipe(gulp.dest(ASSETS_DIR))
 })
 
 gulp.task('watch-es6', [], () => {
   const config = clone(webpackConfig)
   config.watch = true
   config.devtool = '#cheap-module-source-map'
-  gulp.src(srcEs6Files)
+  gulp.src(SRC_TS_FILES)
     .pipe(plumber())
     .pipe(webpack(config))
-    .pipe(gulp.dest(assetsDir))
+    .pipe(gulp.dest(ASSETS_DIR))
     .pipe(browserSync.reload({stream: true}))
 })
 
 gulp.task('sass', () => {
-  return gulp.src(srcSassFiles)
+  return gulp.src(SRC_SASS_FILES)
     .pipe(plumber())
     .pipe(sass())
     .pipe(cssnano())
-    .pipe(gulp.dest(assetsDir))
+    .pipe(gulp.dest(ASSETS_DIR))
     .pipe(browserSync.reload({stream: true}))
 })
 
 gulp.task('watch-sass', [], () => {
-  gulp.watch(srcSassFiles, ['sass'])
+  gulp.watch(SRC_SASS_FILES, ['sass'])
 })
 
 gulp.task('lint', () => {
-  return lint([`${srcEs6Dir}/**/*.ts`,
-               `!${srcEs6Dir}/lib.ts`])
+  return lint([`${SRC_TS_DIR}/**/*.ts`,
+               `!${SRC_TS_DIR}/lib.ts`])
 })
 
 gulp.task('watch-lint', [], () => {
-  buildWhenModified([`${srcEs6Dir}/**/*.ts`,
-                     `!${srcEs6Dir}/lib.ts`],
+  buildWhenModified([`${SRC_TS_DIR}/**/*.ts`,
+                     `!${SRC_TS_DIR}/lib.ts`],
                     lint)
 })
 
 gulp.task('copy-res', () => {
   return gulp.src([`${RES_DIR}/**/*`],
                   {base: RES_DIR})
-    .pipe(gulp.dest(destDir))
+    .pipe(gulp.dest(DEST_DIR))
 })
 
 gulp.task('server', () => {
   browserSync.init({
     server: {
-      baseDir: destDir,
+      baseDir: DEST_DIR,
     },
   })
 })
 
 // Unit test.
 const testFiles = [
-  srcTestFiles,
+  SRC_TEST_FILES,
 ]
 gulp.task('test', () => {
   return gulp.src(testFiles)
@@ -164,28 +163,28 @@ gulp.task('watch-test', () => {
 })
 
 gulp.task('clean', del.bind(null, [
-  destDir,
+  DEST_DIR,
 ]))
 
 gulp.task('release', ['build'], () => {
   // Copy resources.
-  gulp.src([`${destDir}/**/*.*`,
-            `!${destDir}/index.html`,
-            `!${destDir}/**/*.map`,
+  gulp.src([`${DEST_DIR}/**/*.*`,
+            `!${DEST_DIR}/index.html`,
+            `!${DEST_DIR}/**/*.map`,
            ],
-           {base: destDir})
-    .pipe(gulp.dest(releaseDir))
+           {base: DEST_DIR})
+    .pipe(gulp.dest(RELEASE_DIR))
 
   // Build HTML for release.
-  convertHtml('release', releaseDir)
+  convertHtml('release', RELEASE_DIR)
 
   // Concatenate es6 into single 'assets/main.js' file.
   const webpackRaw = require('webpack')
   const config = clone(webpackConfig)
   config.plugins = config.plugin || []
   config.plugins.push(new webpackRaw.optimize.UglifyJsPlugin())
-  gulp.src(`${srcEs6Dir}/main.js`)
+  gulp.src(`${SRC_TS_DIR}/main.js`)
     .pipe(plumber())
     .pipe(webpack(config))
-    .pipe(gulp.dest(releaseAssetsDir))
+    .pipe(gulp.dest(RELEASE_ASSETS_DIR))
 })
