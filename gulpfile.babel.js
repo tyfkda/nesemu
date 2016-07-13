@@ -18,7 +18,7 @@ import sass from 'gulp-sass'
 import cssnano from 'gulp-cssnano'
 
 // Unit test
-import karma from 'gulp-karma'
+const karmaServer = require('karma').Server
 
 import plumber from 'gulp-plumber'
 import del from 'del'
@@ -28,11 +28,11 @@ const RES_DIR = `${ROOT_DIR}/res`
 const DEST_DIR = `${ROOT_DIR}/public`
 const ASSETS_DIR = `${DEST_DIR}/assets`
 const SRC_TS_DIR = `${ROOT_DIR}/src`
-const SRC_TS_FILES = `${SRC_TS_DIR}/**/*.js`
+const SRC_TS_FILES = `${SRC_TS_DIR}/**/*.ts`
 const SRC_HTML_DIR = `${ROOT_DIR}/src`
 const SRC_HTML_FILES = `${SRC_HTML_DIR}/*.html`  // */
 const SRC_SASS_FILES = `${ROOT_DIR}/src/**/*.scss`
-const SRC_TEST_FILES = `${ROOT_DIR}/test/**/*.spec.js`
+const SRC_TEST_FILES = `${ROOT_DIR}/test/**/*.spec.ts`
 const RELEASE_DIR = `${ROOT_DIR}/release`
 const RELEASE_ASSETS_DIR = `${RELEASE_DIR}/assets`
 
@@ -147,19 +147,17 @@ gulp.task('server', () => {
 const testFiles = [
   SRC_TEST_FILES,
 ]
-gulp.task('test', () => {
-  return gulp.src(testFiles)
-    .pipe(karma({
-      configFile: 'karma.conf.js',
-    }))
-    .on('error', err => console.log('Error : ' + err.message))
+gulp.task('test', (done) => {
+  new karmaServer({
+    configFile: __dirname + '/karma.conf.js',
+    singleRun: true,
+  }, done).start()
+  //.on('error', err => console.log('Error : ' + err.message))
 })
 gulp.task('watch-test', () => {
-  gulp.src(testFiles)
-    .pipe(karma({
-      configFile: 'karma.conf.js',
-      action: 'watch',
-    }))
+  new karmaServer({
+    configFile: __dirname + '/karma.conf.js',
+  }).start()
 })
 
 gulp.task('clean', del.bind(null, [
