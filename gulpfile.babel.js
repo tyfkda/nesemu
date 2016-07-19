@@ -56,8 +56,9 @@ function lint(glob) {
   return gulp.src(glob)
     .pipe(tslint({
       configuration: 'tslint.json',
+      formatter: 'prose',
     }))
-    .pipe(tslint.report('prose', {
+    .pipe(tslint.report({
       emitError: false,
     }))
 }
