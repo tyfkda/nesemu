@@ -1,5 +1,4 @@
-import * as IRx from 'rxjs/Rx'
-declare const Rx: typeof IRx
+import * as Rx from 'rxjs/Rx'
 
 export namespace AppEvent {
   export enum Type {

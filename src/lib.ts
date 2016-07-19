@@ -1,9 +1,5 @@
 declare var require  // Supress warning
 
-((global: any) => {
-
-  global.JSZip = require('jszip')
-  global.Rx = require('rxjs/Rx')
-  global.Stats = require('stats-js')
-
-})(Function('return this')())
+import 'jszip'
+import 'rxjs/Rx'
+import 'stats-js'

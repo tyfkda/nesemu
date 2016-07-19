@@ -14,9 +14,6 @@ interface Window {
 
   Gamepad: any
 
-  JSZip: JSZip
-  Rx: any
-
   nes: any
   $DEBUG: boolean
 }

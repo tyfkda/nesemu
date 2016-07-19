@@ -9,8 +9,7 @@ import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
 import StorageUtil from './storage_util.ts'
 import WindowManager from '../wnd/window_manager.ts'
 
-import * as IRx from 'rxjs/Rx'
-declare const Rx: typeof IRx
+import * as Rx from 'rxjs/Rx'
 
 const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
@@ -31,7 +30,7 @@ export class App {
   private padKeyHandler: PadKeyHandler
   private audioManager: AudioManager
   private stream: AppEvent.Stream
-  private subscription: IRx.Subscription
+  private subscription: Rx.Subscription
 
   private screenWnd: ScreenWnd
   private hasPaletWnd: boolean

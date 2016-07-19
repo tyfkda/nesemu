@@ -180,7 +180,7 @@ gulp.task('release', ['build'], () => {
   // Concatenate es6 into single 'assets/main.js' file.
   const webpackRaw = require('webpack')
   const config = clone(webpackConfig)
-  config.plugins = config.plugin || []
+  config.plugins = config.plugins || []
   config.plugins.push(new webpackRaw.optimize.UglifyJsPlugin())
   gulp.src(`${SRC_TS_DIR}/main.js`)
     .pipe(plumber())
