@@ -3,7 +3,7 @@
 import gulp from 'gulp'
 const browserSync = require('browser-sync').create()
 
-// ES6
+// TypeScript
 import clone from 'clone'
 import webpack from 'webpack-stream'
 import webpackConfig from './webpack.config.babel'
@@ -72,10 +72,10 @@ function buildWhenModified(glob, buildFunc) {
 
 gulp.task('default', ['build', 'server', 'watch'])
 
-gulp.task('watch', ['watch-html', 'watch-es6', 'watch-sass',
+gulp.task('watch', ['watch-html', 'watch-ts', 'watch-sass',
                     'watch-lint', 'watch-test'])
 
-gulp.task('build', ['html', 'es6', 'sass', 'copy-res'])
+gulp.task('build', ['html', 'ts', 'sass', 'copy-res'])
 
 gulp.task('html', () => {
   return convertHtml('debug', DEST_DIR)
@@ -85,7 +85,7 @@ gulp.task('watch-html', [], () => {
   gulp.watch(SRC_HTML_FILES, ['html'])
 })
 
-gulp.task('es6', () => {
+gulp.task('ts', () => {
   const config = clone(webpackConfig)
   config.devtool = '#cheap-module-source-map'
   return gulp.src([`${SRC_TS_DIR}/main.js`,
@@ -95,7 +95,7 @@ gulp.task('es6', () => {
     .pipe(gulp.dest(ASSETS_DIR))
 })
 
-gulp.task('watch-es6', [], () => {
+gulp.task('watch-ts', [], () => {
   const config = clone(webpackConfig)
   config.watch = true
   config.devtool = '#cheap-module-source-map'
@@ -177,7 +177,7 @@ gulp.task('release', ['build'], () => {
   // Build HTML for release.
   convertHtml('release', RELEASE_DIR)
 
-  // Concatenate es6 into single 'assets/main.js' file.
+  // Concatenate ts into single 'assets/main.js' file.
   const webpackRaw = require('webpack')
   const config = clone(webpackConfig)
   config.plugins = config.plugins || []
