@@ -86,15 +86,24 @@ function handleFileDrop(dropZone, onDropped) {
   dropZone.addEventListener('drop', onDrop, false)
 }
 
-window.addEventListener('load', () => {
-  App.setUp()
+class Main {
+  constructor(root) {
+    this.root = root
+    this.wndMgr = new WindowManager(root)
+  }
 
-  const root = document.getElementById('nesroot')
-  const wndMgr = new WindowManager(root)
+  setUp() {
+    App.setUp()
+    this.setUpFileDrop()
+    this.setUpGamePadLink()
+  }
 
-  // Handle file drop.
-  if (window.File && window.FileReader && window.FileList && window.Blob) {
-    handleFileDrop(root, (romData, name, x, y) => {
+  setUpFileDrop() {
+    // Handle file drop.
+    if (!(window.File && window.FileReader && window.FileList && window.Blob))
+      return
+
+    handleFileDrop(this.root, (romData, name, x, y) => {
       const option = {
         title: name,
         centerX: x,
@@ -104,18 +113,26 @@ window.addEventListener('load', () => {
           console.log(app)
         },
       }
-      const app = App.create(wndMgr, option)
+      const app = App.create(this.wndMgr, option)
       app.loadRom(romData)
     })
   }
 
-  const gamepadText = document.getElementById('gamepad')
-  if (GamepadManager.isSupported()) {
+  setUpGamePadLink() {
+    const gamepadText = document.getElementById('gamepad')
+    if (!GamepadManager.isSupported()) {
+      return gamepadText.style.display = 'none'
+    }
+
     gamepadText.addEventListener('click', () => {
-      const gamepadWnd = new GamepadWnd(wndMgr)
-      wndMgr.add(gamepadWnd)
+      const gamepadWnd = new GamepadWnd(this.wndMgr)
+      this.wndMgr.add(gamepadWnd)
     })
-  } else {
-    gamepadText.style.display = 'none'
   }
+}
+
+window.addEventListener('load', () => {
+  const root = document.getElementById('nesroot')
+  const main = new Main(root)
+  main.setUp()
 })
