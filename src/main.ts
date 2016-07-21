@@ -90,6 +90,7 @@ class Main {
   constructor(root) {
     this.root = root
     this.wndMgr = new WindowManager(root)
+    this.apps = []
   }
 
   setUp() {
@@ -104,18 +105,28 @@ class Main {
       return
 
     handleFileDrop(this.root, (romData, name, x, y) => {
-      const option = {
-        title: name,
-        centerX: x,
-        centerY: y,
-        onClosed: (app) => {
-          console.log('onClosed:')
-          console.log(app)
-        },
-      }
-      const app = App.create(this.wndMgr, option)
-      app.loadRom(romData)
+      this.createApp(romData, name, x, y)
     })
+  }
+
+  createApp(romData, name, x, y) {
+    const option = {
+      title: name,
+      centerX: x,
+      centerY: y,
+      onClosed: (app) => {
+        this.removeApp(app)
+      },
+    }
+    const app = App.create(this.wndMgr, option)
+    app.loadRom(romData)
+    this.apps.push(app)
+  }
+
+  removeApp(app) {
+    const index = this.apps.indexOf(app)
+    if (index >= 0)
+      this.apps.splice(index, 1)
   }
 
   setUpGamePadLink() {
