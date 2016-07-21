@@ -26,6 +26,8 @@ function clamp(x, min, max) {
 
 export class App {
   private destroying = false
+  private paused = false
+  private rafId: number  // requestAnimationFrame
   private nes: Nes
   private padKeyHandler: PadKeyHandler
   private audioManager: AudioManager
@@ -122,6 +124,22 @@ export class App {
     return true
   }
 
+  public onBlur() {
+    if (this.paused)
+      return
+    this.paused = true
+    //this.cancelLoopAnimation()
+    this.audioManager.setMasterVolume(0)
+  }
+
+  public onFocus() {
+    if (!this.paused)
+      return
+    this.paused = false
+    //this.startLoopAnimation()
+    this.audioManager.setMasterVolume(1)
+  }
+
   public createPaletWnd(): boolean {
     if (this.hasPaletWnd)
       return false
@@ -210,6 +228,7 @@ export class App {
   }
 
   private cleanUp() {
+    this.cancelLoopAnimation()
     this.destroying = true
     this.audioManager.destroy()
 
@@ -233,6 +252,9 @@ export class App {
   }
 
   private startLoopAnimation(): void {
+    if (this.rafId != null)
+      return
+
     let lastTime = window.performance.now()
     const loopFn = () => {
       if (this.destroying)
@@ -245,9 +267,16 @@ export class App {
 
       this.loop(elapsedTime)
       this.stream.triggerEndCalc()
-      requestAnimationFrame(loopFn)
+      this.rafId = requestAnimationFrame(loopFn)
     }
-    requestAnimationFrame(loopFn)
+    this.rafId = requestAnimationFrame(loopFn)
+  }
+
+  private cancelLoopAnimation(): void {
+    if (this.rafId == null)
+      return
+    cancelAnimationFrame(this.rafId)
+    this.rafId = null
   }
 
   private loop(elapsedTime: number): void {

@@ -87,8 +87,10 @@ function handleFileDrop(dropZone, onDropped) {
 }
 
 class Main {
-  constructor(root) {
-    this.root = root
+  private wndMgr: WindowManager
+  private apps: App[]
+
+  constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
     this.apps = []
   }
@@ -97,6 +99,7 @@ class Main {
     App.setUp()
     this.setUpFileDrop()
     this.setUpGamePadLink()
+    this.setUpBlur()
   }
 
   setUpFileDrop() {
@@ -138,6 +141,15 @@ class Main {
     gamepadText.addEventListener('click', () => {
       const gamepadWnd = new GamepadWnd(this.wndMgr)
       this.wndMgr.add(gamepadWnd)
+    })
+  }
+
+  setUpBlur() {
+    window.addEventListener('blur', () => {
+      this.apps.forEach(app => { app.onBlur() })
+    })
+    window.addEventListener('focus', () => {
+      this.apps.forEach(app => { app.onFocus() })
     })
   }
 }
