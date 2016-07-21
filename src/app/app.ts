@@ -64,6 +64,8 @@ export class App {
         switch (type) {
         case AppEvent.Type.DESTROY:
           this.cleanUp()
+          if (option.onClosed)
+            option.onClosed(this)
           break
         case AppEvent.Type.RENDER:
           break

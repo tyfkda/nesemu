@@ -99,6 +99,10 @@ window.addEventListener('load', () => {
         title: name,
         centerX: x,
         centerY: y,
+        onClosed: (app) => {
+          console.log('onClosed:')
+          console.log(app)
+        },
       }
       const app = App.create(wndMgr, option)
       app.loadRom(romData)
