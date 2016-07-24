@@ -3,7 +3,6 @@
 
 import {Cpu} from '../cpu.ts'
 import {Ppu, MirrorMode} from '../ppu.ts'
-import {Util} from '../util.ts'
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
@@ -13,7 +12,6 @@ function create(mapping) {
     const BANK_SIZE = 1 << BANK_BIT
     const size = romData.length
     const count = size / BANK_SIZE
-    let prgBankMode = 0
     let prgBank0 = 0, prgBank2 = (count - 2) << BANK_BIT
     const prgBank3 = (count - 1) << BANK_BIT
     cpu.setReadMemory(0x8000, 0xbfff, (adr) => romData[(adr & (BANK_SIZE * 2 - 1)) + prgBank0])

@@ -95,14 +95,14 @@ class Main {
     this.apps = []
   }
 
-  setUp() {
+  public setUp() {
     App.setUp()
     this.setUpFileDrop()
     this.setUpGamePadLink()
     this.setUpBlur()
   }
 
-  setUpFileDrop() {
+  private setUpFileDrop() {
     // Handle file drop.
     if (!(window.File && window.FileReader && window.FileList && window.Blob))
       return
@@ -112,7 +112,7 @@ class Main {
     })
   }
 
-  createApp(romData, name, x, y) {
+  private createApp(romData, name, x, y) {
     const option = {
       title: name,
       centerX: x,
@@ -126,13 +126,13 @@ class Main {
     this.apps.push(app)
   }
 
-  removeApp(app) {
+  private removeApp(app) {
     const index = this.apps.indexOf(app)
     if (index >= 0)
       this.apps.splice(index, 1)
   }
 
-  setUpGamePadLink() {
+  private setUpGamePadLink() {
     const gamepadText = document.getElementById('gamepad')
     if (!GamepadManager.isSupported()) {
       return gamepadText.style.display = 'none'
@@ -144,7 +144,7 @@ class Main {
     })
   }
 
-  setUpBlur() {
+  private setUpBlur() {
     window.addEventListener('blur', () => {
       this.apps.forEach(app => { app.onBlur() })
     })

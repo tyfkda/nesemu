@@ -403,9 +403,9 @@ export class Ppu {
     }
   }
 
-  public doRenderBg2(pixels: Uint8ClampedArray, scrollX: number, scrollY: number, baseNameTable: number,
-                     hline0: number, hline1: number, x0: number, chrBankOffset: number,
-                     mirrorModeBit: number, chrStart: number): void
+  public doRenderBg2(pixels: Uint8ClampedArray, scrollX: number, scrollY: number,
+                     baseNameTable: number, hline0: number, hline1: number, x0: number,
+                     chrBankOffset: number, mirrorModeBit: number, chrStart: number): void
   {
     const getBgPat = (chridx, py) => {
       const idx = chridx + py
@@ -483,7 +483,9 @@ export class Ppu {
     }
   }
 
-  public clearBg(pixels: Uint8ClampedArray, hline0: number, hline1: number, x: number, lineWidth: number): void {
+  public clearBg(pixels: Uint8ClampedArray, hline0: number, hline1: number, x: number,
+                 lineWidth: number): void
+  {
     const LINE_BYTES = lineWidth * 4
     const paletTable = 0x3f00
     const clearColor = this.vram[paletTable] & 0x3f  // Universal background color

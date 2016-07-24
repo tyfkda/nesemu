@@ -3,7 +3,6 @@
 
 import {Cpu} from '../cpu.ts'
 import {Ppu, MirrorMode} from '../ppu.ts'
-import {Util} from '../util.ts'
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
@@ -76,16 +75,19 @@ function create(mapping) {
       if (0xc000 <= adr && adr <= 0xefff) {  // CHR Select 2...7
         const low = adr & 0xff
         let ofs = 0, hi = false
-        if (low === mapping[0])
+        if (low === mapping[0]) {
           ofs = 0
-        else if (low === mapping[2])
-          ofs = 0, hi = true
-        else if (low === mapping[4])
+        } else if (low === mapping[2]) {
+          ofs = 0
+          hi = true
+        } else if (low === mapping[4]) {
           ofs = 1
-        else if (low === mapping[6])
-          ofs = 1, hi = true
-        else
+        } else if (low === mapping[6]) {
+          ofs = 1
+          hi = true
+        } else {
           return
+        }
         const bank = ((adr & 0x3000) >> 11) + 2 + ofs
         if (hi)
           chrBank[bank] = (chrBank[bank] & ~0x1f0) | ((value & 0x1f) << 4)
