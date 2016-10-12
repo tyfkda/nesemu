@@ -18,7 +18,6 @@ module.exports = {
   },
   module: {
     loaders: [
-      { test: /\.js$/, loader: 'babel-loader' },
       { test: /\.ts$/, loader: 'babel-loader!awesome-typescript-loader' },
     ],
   }
