@@ -47,7 +47,8 @@ class SoundChannel {
   }
 
   public setFrequency(frequency: number) {
-    this.oscillator.frequency.setValueAtTime(frequency, 0)
+    const now = this.gainNode.context.currentTime
+    this.oscillator.frequency.setValueAtTime(frequency, now)
   }
 
   public setVolume(volume: number) {
