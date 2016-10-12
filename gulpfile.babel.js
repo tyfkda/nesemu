@@ -145,9 +145,6 @@ gulp.task('server', () => {
 })
 
 // Unit test.
-const testFiles = [
-  SRC_TEST_FILES,
-]
 gulp.task('test', (done) => {
   new karmaServer({
     configFile: __dirname + '/karma.conf.js',
