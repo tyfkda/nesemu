@@ -98,6 +98,10 @@ function incPpuAddr(ppuAddr: number, ppuCtrl: number): number {
   return (ppuAddr + add) & (VRAM_SIZE - 1)
 }
 
+function getBgPatternTableAddress(ppuCtrl: number): number {
+  return (ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
+}
+
 export class Ppu {
   public regs: Uint8Array
   public chrData: Uint8Array
@@ -291,10 +295,6 @@ export class Ppu {
     return (this.regs[PPUCTRL] & VINT_ENABLE) !== 0
   }
 
-  public getBgPatternTableAddress(): number {
-    return ((this.regs[PPUCTRL] & BG_PATTERN_TABLE_ADDRESS) << 8)
-  }
-
   public getSpritePatternTableAddress(): number {
     if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
       return ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
@@ -318,7 +318,7 @@ export class Ppu {
         continue
       }
       const baseNameTable = h.ppuCtrl & BASE_NAMETABLE_ADDRESS
-      const chrStart = (h.ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
+      const chrStart = getBgPatternTableAddress(h.ppuCtrl)
       let x0 = 0
       if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0)
         this.clearBg(pixels, hline0, hline1, x0 = 8, Const.WIDTH)
@@ -342,7 +342,7 @@ export class Ppu {
     }
 
     const W = 8
-    const chrStart = this.getBgPatternTableAddress()
+    const chrStart = getBgPatternTableAddress(this.regs[PPUCTRL])
     const vram = this.vram
     const paletTable = 0x3f00
 
