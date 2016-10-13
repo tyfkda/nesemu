@@ -241,9 +241,11 @@ export class App {
     if (leftCycles < 1)
       this.render()
 
-    for (let i = 0; i < AudioManager.CHANNEL; ++i) {
-      this.audioManager.setChannelFrequency(i, this.nes.apu.getFrequency(i))
-      this.audioManager.setChannelVolume(i, this.nes.apu.getVolume(i))
+    for (let ch = 0; ch < AudioManager.CHANNEL; ++ch) {
+      const volume = this.nes.apu.getVolume(ch)
+      this.audioManager.setChannelVolume(ch, volume)
+      if (volume > 0)
+        this.audioManager.setChannelFrequency(ch, this.nes.apu.getFrequency(ch))
     }
   }
 
