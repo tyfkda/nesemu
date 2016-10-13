@@ -1,7 +1,7 @@
 // UxROM
 
-import {Cpu} from '../cpu.ts'
-import {Ppu} from '../ppu.ts'
+import {Cpu} from '../cpu'
+import {Ppu} from '../ppu'
 
 function mapper002Creator(prgBankShift) {
   return function (romData: Uint8Array, cpu: Cpu, _ppu: Ppu) {

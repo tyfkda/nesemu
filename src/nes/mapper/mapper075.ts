@@ -1,7 +1,7 @@
 // VRC1
 
-import {Cpu} from '../cpu.ts'
-import {Ppu, MirrorMode} from '../ppu.ts'
+import {Cpu} from '../cpu'
+import {Ppu, MirrorMode} from '../ppu'
 
 export function mapper075(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   const BANK_BIT = 13

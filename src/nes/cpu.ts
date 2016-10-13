@@ -1,9 +1,9 @@
 // CPU: MOS 6502
 
-import {Addressing, Instruction, OpType, kInstTable} from './inst.ts'
-import {Util} from './util.ts'
+import {Addressing, Instruction, OpType, kInstTable} from './inst'
+import {Util} from './util'
 
-import {disassemble} from './disasm.ts'
+import {disassemble} from './disasm'
 
 const hex = Util.hex
 

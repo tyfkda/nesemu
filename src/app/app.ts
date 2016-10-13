@@ -1,13 +1,13 @@
-import {Nes} from '../nes/nes.ts'
+import {Nes} from '../nes/nes'
 
-import {AppEvent} from './app_event.ts'
-import {AudioManager} from './audio_manager.ts'
-import {GamepadManager} from './gamepad_manager.ts'
-import {PadKeyHandler} from './pad_key_handler.ts'
+import {AppEvent} from './app_event'
+import {AudioManager} from './audio_manager'
+import {GamepadManager} from './gamepad_manager'
+import {PadKeyHandler} from './pad_key_handler'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
-        RegisterWnd, TraceWnd, ControlWnd} from './ui.ts'
-import StorageUtil from './storage_util.ts'
-import WindowManager from '../wnd/window_manager.ts'
+        RegisterWnd, TraceWnd, ControlWnd} from './ui'
+import StorageUtil from './storage_util'
+import WindowManager from '../wnd/window_manager'
 
 import * as Rx from 'rxjs/Rx'
 

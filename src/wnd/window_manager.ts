@@ -1,4 +1,4 @@
-import Wnd from './wnd.ts'
+import Wnd from './wnd'
 
 const BASE_PRIORITY = 100
 

@@ -1,5 +1,5 @@
-import {Addressing, Instruction, OpType} from './inst.ts'
-import {Util} from './util.ts'
+import {Addressing, Instruction, OpType} from './inst'
+import {Util} from './util'
 
 const kOpcode = {
   [OpType.LDA]: 'LDA',

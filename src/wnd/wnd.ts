@@ -1,4 +1,4 @@
-import WindowManager from './window_manager.ts'
+import WindowManager from './window_manager'
 
 const Z_MENUBAR = 1000
 const Z_MENU_SUBITEM = Z_MENUBAR + 1

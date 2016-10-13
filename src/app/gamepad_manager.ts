@@ -1,7 +1,7 @@
-import {PadBit} from '../nes/apu.ts'
-import WindowManager from '../wnd/window_manager.ts'
-import Wnd from '../wnd/wnd.ts'
-import StorageUtil from './storage_util.ts'
+import {PadBit} from '../nes/apu'
+import WindowManager from '../wnd/window_manager'
+import Wnd from '../wnd/wnd'
+import StorageUtil from './storage_util'
 
 // Type
 enum Type {

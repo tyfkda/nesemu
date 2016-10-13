@@ -1,7 +1,7 @@
 // MMC4 (FxROM)
 
-import {Cpu} from '../cpu.ts'
-import {Ppu, MirrorMode} from '../ppu.ts'
+import {Cpu} from '../cpu'
+import {Ppu, MirrorMode} from '../ppu'
 
 export function mapper010(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   const BANK_BIT = 14

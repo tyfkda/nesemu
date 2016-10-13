@@ -1,7 +1,7 @@
 // Namco 163
 
-import {Cpu} from '../cpu.ts'
-import {Ppu} from '../ppu.ts'
+import {Cpu} from '../cpu'
+import {Ppu} from '../ppu'
 
 export function mapper019(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
   const BANK_BIT = 13

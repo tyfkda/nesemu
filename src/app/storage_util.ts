@@ -1,5 +1,5 @@
 // Local storage
-import MemoryStorage from './memory_storage.ts'
+import MemoryStorage from './memory_storage'
 
 let storage = null
 let keyPrefix = ''

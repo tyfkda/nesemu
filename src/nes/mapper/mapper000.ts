@@ -1,5 +1,5 @@
-import {Cpu} from '../cpu.ts'
-import {Ppu} from '../ppu.ts'
+import {Cpu} from '../cpu'
+import {Ppu} from '../ppu'
 
 export function mapper000(romData: Uint8Array, cpu: Cpu, _ppu: Ppu) {
   // ROM

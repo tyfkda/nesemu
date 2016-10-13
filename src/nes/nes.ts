@@ -1,12 +1,12 @@
 // NES: Nintendo Entertainment System
 
-import {Apu} from './apu.ts'
-import {kColors} from './const.ts'
-import {Cpu} from './cpu.ts'
-import {Ppu, MirrorMode} from './ppu.ts'
-import {Util} from './util.ts'
+import {Apu} from './apu'
+import {kColors} from './const'
+import {Cpu} from './cpu'
+import {Ppu, MirrorMode} from './ppu'
+import {Util} from './util'
 
-import {kMapperTable} from './mapper/mapper_table.ts'
+import {kMapperTable} from './mapper/mapper_table'
 
 const RAM_SIZE = 0x0800
 

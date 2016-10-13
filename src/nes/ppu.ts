@@ -1,7 +1,7 @@
 // PPU: Picutre Processing Unit
 
-import {Const, kColors, kStaggered, kFlipBits} from './const.ts'
-import {Util} from './util.ts'
+import {Const, kColors, kStaggered, kFlipBits} from './const'
+import {Util} from './util'
 
 const REGISTER_COUNT = 8
 const VRAM_SIZE = 0x4000

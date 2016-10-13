@@ -1,8 +1,8 @@
 // VRC3
 // http://wiki.nesdev.com/w/index.php/VRC3
 
-import {Cpu} from '../cpu.ts'
-import {Ppu} from '../ppu.ts'
+import {Cpu} from '../cpu'
+import {Ppu} from '../ppu'
 
 export function mapper073(romData: Uint8Array, cpu: Cpu, _ppu: Ppu) {
   const BANK_BIT = 14

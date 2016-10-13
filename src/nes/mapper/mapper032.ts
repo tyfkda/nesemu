@@ -1,8 +1,8 @@
 // Irem's G-101
 
-import {Cpu} from '../cpu.ts'
-import {Nes} from '../nes.ts'
-import {Ppu, MirrorMode} from '../ppu.ts'
+import {Cpu} from '../cpu'
+import {Nes} from '../nes'
+import {Ppu, MirrorMode} from '../ppu'
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ]
 

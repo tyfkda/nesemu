@@ -1,13 +1,13 @@
-import WindowManager from '../wnd/window_manager.ts'
-import Wnd from '../wnd/wnd.ts'
+import WindowManager from '../wnd/window_manager'
+import Wnd from '../wnd/wnd'
 
-import {Nes} from '../nes/nes.ts'
-import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst.ts'
-import {disassemble} from '../nes/disasm.ts'
-import {Util} from '../nes/util.ts'
+import {Nes} from '../nes/nes'
+import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst'
+import {disassemble} from '../nes/disasm'
+import {Util} from '../nes/util'
 
-import {App} from './app.ts'
-import {AppEvent} from './app_event.ts'
+import {App} from './app'
+import {AppEvent} from './app_event'
 
 import * as Rx from 'rxjs/Rx'
 import * as Stats from 'stats-js'

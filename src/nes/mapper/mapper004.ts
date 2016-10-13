@@ -1,8 +1,8 @@
 // MMC3
 
-import {Cpu} from '../cpu.ts'
-import {Nes} from '../nes.ts'
-import {Ppu, MirrorMode} from '../ppu.ts'
+import {Cpu} from '../cpu'
+import {Nes} from '../nes'
+import {Ppu, MirrorMode} from '../ppu'
 
 export function mapper004(romData: Uint8Array, cpu: Cpu, ppu: Ppu, nes: Nes) {
   const BANK_BIT = 13  // 0x2000

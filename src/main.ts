@@ -1,9 +1,9 @@
 ///<reference path="../decl/patch.d.ts" />
 
-import {App} from './app/app.ts'
-import {GamepadManager, GamepadWnd} from './app/gamepad_manager.ts'
-import WindowManager from './wnd/window_manager.ts'
-import './nes/polyfill.ts'
+import {App} from './app/app'
+import {GamepadManager, GamepadWnd} from './app/gamepad_manager'
+import WindowManager from './wnd/window_manager'
+import './nes/polyfill'
 
 import * as JSZip from 'jszip'
 

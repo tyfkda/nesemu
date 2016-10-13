@@ -1,8 +1,8 @@
 // VRC6
 // http://wiki.nesdev.com/w/index.php/VRC6
 
-import {Cpu} from '../cpu.ts'
-import {Ppu, MirrorMode} from '../ppu.ts'
+import {Cpu} from '../cpu'
+import {Ppu, MirrorMode} from '../ppu'
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
