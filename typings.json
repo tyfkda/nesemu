@@ -1,5 +1,6 @@
 {
   "globalDependencies": {
-    "jszip": "registry:dt/jszip#0.0.0+20160709055933"
+    "jszip": "registry:dt/jszip#0.0.0+20160709055933",
+    "stats-js": "github:JeffJankowski/stats.ts/stats.d.ts#4184d1801509c02d589c84db6b50f5de1391567f"
   }
 }

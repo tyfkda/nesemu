@@ -18,7 +18,7 @@ module.exports = {
   },
   module: {
     loaders: [
-      { test: /\.ts$/, loader: 'babel-loader!awesome-typescript-loader' },
+      { test: /\.ts$/, exclude: /node_modules/, loader: 'babel-loader!awesome-typescript-loader' },
     ],
   }
 }
