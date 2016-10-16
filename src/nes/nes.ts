@@ -162,9 +162,10 @@ export class Nes {
     this.ppu.renderSprite(pixels)
   }
 
-  public renderNameTable(pixels: Uint8ClampedArray, lineWidth: number): void {
-    this.ppu.doRenderBg(pixels, lineWidth, 0, 0, 0, 0, 0)
-    this.ppu.doRenderBg(pixels, lineWidth, 0, 0, 256, 0, 0x0400)
+  public renderNameTable1(pixels: Uint8ClampedArray, lineWidth: number,
+                          startX: number, startY: number, page: number): void
+  {
+    this.ppu.doRenderBg(pixels, lineWidth, 0, 0, startX, startY, page << 10)
   }
 
   public renderPatternTable(pixels: Uint8ClampedArray, lineWidth: number, colors: number[]): void {

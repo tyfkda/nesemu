@@ -110,6 +110,7 @@ export class Ppu {
   public hcount: number
   public scrollX: number
   public scrollY: number
+  public mirrorMode: MirrorMode
   public mirrorModeBit: number  // 2bit x 4page
   private latch: number
   private ppuAddr: number
@@ -173,6 +174,7 @@ export class Ppu {
   }
 
   public setMirrorMode(mode: MirrorMode): void {
+    this.mirrorMode = mode
     this.mirrorModeBit = kMirrorModeBitTable[mode]
 
     this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],

@@ -1,4 +1,5 @@
 import {Nes} from '../nes/nes'
+import {MirrorMode} from '../nes/ppu'
 
 import {AppEvent} from './app_event'
 import {AudioManager} from './audio_manager'
@@ -157,7 +158,8 @@ export class App {
   public createNameTableWnd(): boolean {
     if (this.hasNameTableWnd)
       return false
-    const nameTableWnd = new NameTableWnd(this.wndMgr, this.nes, this.stream)
+    const nameTableWnd = new NameTableWnd(this.wndMgr, this.nes, this.stream,
+                                          this.nes.ppu.mirrorMode === MirrorMode.HORZ)
     this.wndMgr.add(nameTableWnd)
     nameTableWnd.setPos(520, 40)
     nameTableWnd.setCallback(action => {

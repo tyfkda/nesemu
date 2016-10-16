@@ -358,19 +358,28 @@ export class PaletWnd extends Wnd {
 }
 
 export class NameTableWnd extends Wnd {
+  private nes: Nes
+  private stream: AppEvent.Stream
+  private vert: boolean
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private imageData: ImageData
   private subscription: Rx.Subscription
 
-  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
-    super(wndMgr, 512, 240, 'NameTable')
+  public constructor(wndMgr: WindowManager, nes: Nes, stream: AppEvent.Stream,
+                     vert: boolean) {
+    const width = 256 * (vert ? 1 : 2)
+    const height = 240 * (vert ? 2 : 1)
+    super(wndMgr, width, height, 'NameTable')
+    this.nes = nes
+    this.stream = stream
+    this.vert = vert
 
     const canvas = document.createElement('canvas') as HTMLCanvasElement
-    canvas.width = 512
-    canvas.height = 240
-    canvas.style.width = '512px'
-    canvas.style.height = '240px'
+    canvas.width = width
+    canvas.height = height
+    canvas.style.width = `${width}px`
+    canvas.style.height = `${height}px`
     canvas.className = 'pixelated'
     clearCanvas(canvas)
 
@@ -400,7 +409,10 @@ export class NameTableWnd extends Wnd {
   }
 
   private render(): void {
-    this.nes.renderNameTable(this.imageData.data, this.imageData.width)
+    const page1X = this.vert ? 0 : 256
+    const page1Y = this.vert ? 240 : 0
+    this.nes.renderNameTable1(this.imageData.data, this.imageData.width, 0, 0, 0)
+    this.nes.renderNameTable1(this.imageData.data, this.imageData.width, page1X, page1Y, 1)
     this.context.putImageData(this.imageData, 0, 0)
   }
 }
