@@ -49,7 +49,7 @@ $ npm install
 $ npm start
 ```
 
-* You can see the page in http://localhost:3000/
+* You can see the page in <http://localhost:3000/>
 * Files are generated in `public`
 
 ### Release
