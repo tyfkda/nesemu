@@ -433,11 +433,10 @@ export class Ppu {
     if (scrollY >= 240)
       scrollY = (scrollY - 256)
 
-    const bby0 = (hline0 / 8) | 0 , bby1 = ((hline1 + 7) / 8) | 0
-    let py0 = 0  // hline0 & 7
-    for (let bby = bby0; bby < bby1; ++bby) {
-      const by = ((bby + (scrollY >> 3)) + 60) % 60
+    for (let yy = hline0; yy < hline1; ++yy) {
+      const by = (((yy + scrollY) >> 3) + 60) % 60
       const ay = by % 30
+
       for (let bbx = 0; bbx < Const.WIDTH / W + 1; ++bbx) {
         const bx = (bbx + (scrollX >> 3)) & 63
         const ax = bx & 31
@@ -450,37 +449,30 @@ export class Ppu {
         const attributeTable = nameTable + 0x3c0
         const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
 
-        for (let py = py0; py < W; ++py) {
-          const yy = bby * W + py - (scrollY & 7)
-          if (yy < 0)
-            continue
-          if (yy >= Const.HEIGHT)
-            break
-          const pat = getBgPat(chridx, py)
-          for (let px = 0; px < W; ++px) {
-            const xx = bbx * W + px - (scrollX & 7)
-            if (xx < x0)
-              continue
-            if (xx >= Const.WIDTH)
-              break
-            const pal = (pat >> ((W - 1 - px) << 1)) & 3
-            let r = clearR, g = clearG, b = clearB
-            if (pal !== 0) {
-              const palet = paletHigh + pal
-              const col = vram[paletTable + palet] & 0x3f
-              const c = col * 3
-              r = kColors[c]
-              g = kColors[c + 1]
-              b = kColors[c + 2]
-            }
+        const pat = getBgPat(chridx, (yy + scrollY) & 7)
 
-            const index = (yy * LINE_WIDTH + xx) * 4
-            pixels[index + 0] = r
-            pixels[index + 1] = g
-            pixels[index + 2] = b
+        for (let px = 0; px < W; ++px) {
+          const xx = bbx * W + px - (scrollX & 7)
+          if (xx < x0)
+            continue
+          if (xx >= Const.WIDTH)
+            break
+          const pal = (pat >> ((W - 1 - px) << 1)) & 3
+          let r = clearR, g = clearG, b = clearB
+          if (pal !== 0) {
+            const palet = paletHigh + pal
+            const col = vram[paletTable + palet] & 0x3f
+            const c = col * 3
+            r = kColors[c]
+            g = kColors[c + 1]
+            b = kColors[c + 2]
           }
+
+          const index = (yy * LINE_WIDTH + xx) * 4
+          pixels[index + 0] = r
+          pixels[index + 1] = g
+          pixels[index + 2] = b
         }
-        py0 = 0
       }
     }
   }
