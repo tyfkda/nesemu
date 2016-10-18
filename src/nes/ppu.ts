@@ -339,33 +339,61 @@ export class Ppu {
     return 0
   }
 
-  public isSprite8x16(): boolean {
-    return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
+  public setHcount(hcount: number) {
+    this.hcount = hcount
+    this.checkSprite0Hit(hcount)
   }
 
-  public renderBg(pixels: Uint8ClampedArray): void {
-    const n = this.hevents.count
-    for (let i = 0; i < n; ++i) {
-      const h = this.hevents.events[i]
-      const hline0 = h.hcount
-      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240 + 8
-      if (hline0 >= hline1)
-        continue
-      if ((h.ppuMask & SHOW_BG) === 0) {
-        this.clearBg(pixels, hline0, hline1, Const.WIDTH, Const.WIDTH)
-        continue
+  public render(pixels: Uint8ClampedArray): void {
+    this.renderBg(pixels)
+    this.renderSprite(pixels)
+  }
+
+  public renderPattern(pixels: Uint8ClampedArray, lineWidth: number, colors: number[]): void {
+    const W = 8
+    for (let i = 0; i < 2; ++i) {
+      for (let by = 0; by < 16; ++by) {
+        for (let bx = 0; bx < 16; ++bx) {
+          const chridx = (bx + by * 16 + i * 256) * 16
+          for (let py = 0; py < W; ++py) {
+            const yy = by * W + py
+            const idx = chridx + py
+            const pat = ((kStaggered[this.readPpuDirect(idx + 8)] << 1) |
+                         kStaggered[this.readPpuDirect(idx)])
+            for (let px = 0; px < W; ++px) {
+              const xx = bx * W + px + i * (W * 16)
+              const col = (pat >> ((W - 1 - px) << 1)) & 3
+              const c = col * 3
+
+              const index = (yy * lineWidth + xx) * 4
+              pixels[index + 0] = colors[c + 0]
+              pixels[index + 1] = colors[c + 1]
+              pixels[index + 2] = colors[c + 2]
+            }
+          }
+        }
       }
-      const baseNameTable = (h.scrollCurr & 0x0c00) >> 10
-      const chrStart = getBgPatternTableAddress(h.ppuCtrl)
-      let x0 = 0
-      if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0)
-        this.clearBg(pixels, hline0, hline1, x0 = 8, Const.WIDTH)
+    }
+  }
 
-      const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
-      const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
+  public writePpuDirect(addr: number, value: number): void {
+    if (addr >= 0x2000) {
+      this.vram[addr] = value
+    } else {
+      const bankOffset = this.chrBankOffset[(addr >> 10) & 7]
+      this.chrData[(addr & 0x3ff) + bankOffset] = value
+    }
+  }
 
-      this.doRenderBg2(pixels, scrollX, scrollY, baseNameTable, hline0, hline1, x0,
-                       h.chrBankOffset, h.mirrorModeBit, chrStart)
+  public dumpVram(start: number, count: number): void {
+    const mem = []
+    for (let i = 0; i < count; ++i) {
+      mem.push(this.vram[getPpuAddr(start + i, this.mirrorModeBit)])
+    }
+
+    for (let i = 0; i < count; i += 16) {
+      const line = mem.splice(0, 16).map(x => Util.hex(x, 2)).join(' ')
+      console.log(`${Util.hex(start + i, 4)}: ${line}`)
     }
   }
 
@@ -445,9 +473,35 @@ export class Ppu {
     }
   }
 
-  public doRenderBg2(pixels: Uint8ClampedArray, scrollX: number, scrollY: number,
-                     baseNameTable: number, hline0: number, hline1: number, x0: number,
-                     chrBankOffset: number, mirrorModeBit: number, chrStart: number): void
+  private renderBg(pixels: Uint8ClampedArray): void {
+    const n = this.hevents.count
+    for (let i = 0; i < n; ++i) {
+      const h = this.hevents.events[i]
+      const hline0 = h.hcount
+      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240 + 8
+      if (hline0 >= hline1)
+        continue
+      if ((h.ppuMask & SHOW_BG) === 0) {
+        this.clearBg(pixels, hline0, hline1, Const.WIDTH, Const.WIDTH)
+        continue
+      }
+      const baseNameTable = (h.scrollCurr & 0x0c00) >> 10
+      const chrStart = getBgPatternTableAddress(h.ppuCtrl)
+      let x0 = 0
+      if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0)
+        this.clearBg(pixels, hline0, hline1, x0 = 8, Const.WIDTH)
+
+      const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
+      const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
+
+      this.doRenderBg2(pixels, scrollX, scrollY, baseNameTable, hline0, hline1, x0,
+                       h.chrBankOffset, h.mirrorModeBit, chrStart)
+    }
+  }
+
+  private doRenderBg2(pixels: Uint8ClampedArray, scrollX: number, scrollY: number,
+                      baseNameTable: number, hline0: number, hline1: number, x0: number,
+                      chrBankOffset: number, mirrorModeBit: number, chrStart: number): void
   {
     const getBgPat = (chridx, py) => {
       const idx = chridx + py
@@ -518,8 +572,8 @@ export class Ppu {
     }
   }
 
-  public clearBg(pixels: Uint8ClampedArray, hline0: number, hline1: number, x: number,
-                 lineWidth: number): void
+  private clearBg(pixels: Uint8ClampedArray, hline0: number, hline1: number, x: number,
+                  lineWidth: number): void
   {
     const LINE_BYTES = lineWidth * 4
     const paletTable = 0x3f00
@@ -538,12 +592,11 @@ export class Ppu {
     }
   }
 
-  public setHcount(hcount: number) {
-    this.hcount = hcount
-    this.checkSprite0Hit(hcount)
+  private isSprite8x16(): boolean {
+    return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
   }
 
-  public renderSprite(pixels: Uint8ClampedArray): void {
+  private renderSprite(pixels: Uint8ClampedArray): void {
     let chrStart = 0
     const n = this.hevents.count
     for (let i = 0; i < n; ++i) {
@@ -561,8 +614,8 @@ export class Ppu {
     }
   }
 
-  public renderSprite2(pixels: Uint8ClampedArray, hline0: number, hline1: number, x0: number,
-                       chrBankOffset: number, chrStart: number): void
+  private renderSprite2(pixels: Uint8ClampedArray, hline0: number, hline1: number, x0: number,
+                        chrBankOffset: number, chrStart: number): void
   {
     const getSpritePat = (chridx, ppy, flipHorz) => {
       const idx = chridx + (ppy & 7) + ((ppy & 8) << 1)
@@ -633,54 +686,6 @@ export class Ppu {
           pixels[index + 2] = kColors[c + 2]
         }
       }
-    }
-  }
-
-  public dumpVram(start: number, count: number): void {
-    const mem = []
-    for (let i = 0; i < count; ++i) {
-      mem.push(this.vram[getPpuAddr(start + i, this.mirrorModeBit)])
-    }
-
-    for (let i = 0; i < count; i += 16) {
-      const line = mem.splice(0, 16).map(x => Util.hex(x, 2)).join(' ')
-      console.log(`${Util.hex(start + i, 4)}: ${line}`)
-    }
-  }
-
-  public renderPattern(pixels: Uint8ClampedArray, lineWidth: number, colors: number[]): void {
-    const W = 8
-    for (let i = 0; i < 2; ++i) {
-      for (let by = 0; by < 16; ++by) {
-        for (let bx = 0; bx < 16; ++bx) {
-          const chridx = (bx + by * 16 + i * 256) * 16
-          for (let py = 0; py < W; ++py) {
-            const yy = by * W + py
-            const idx = chridx + py
-            const pat = ((kStaggered[this.readPpuDirect(idx + 8)] << 1) |
-                         kStaggered[this.readPpuDirect(idx)])
-            for (let px = 0; px < W; ++px) {
-              const xx = bx * W + px + i * (W * 16)
-              const col = (pat >> ((W - 1 - px) << 1)) & 3
-              const c = col * 3
-
-              const index = (yy * lineWidth + xx) * 4
-              pixels[index + 0] = colors[c + 0]
-              pixels[index + 1] = colors[c + 1]
-              pixels[index + 2] = colors[c + 2]
-            }
-          }
-        }
-      }
-    }
-  }
-
-  public writePpuDirect(addr: number, value: number): void {
-    if (addr >= 0x2000) {
-      this.vram[addr] = value
-    } else {
-      const bankOffset = this.chrBankOffset[(addr >> 10) & 7]
-      this.chrData[(addr & 0x3ff) + bankOffset] = value
     }
   }
 

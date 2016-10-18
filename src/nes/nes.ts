@@ -158,8 +158,7 @@ export class Nes {
   }
 
   public render(pixels: Uint8ClampedArray): void {
-    this.ppu.renderBg(pixels)
-    this.ppu.renderSprite(pixels)
+    this.ppu.render(pixels)
   }
 
   public renderNameTable1(pixels: Uint8ClampedArray, lineWidth: number,
