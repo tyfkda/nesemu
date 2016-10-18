@@ -764,23 +764,17 @@ export class Ppu {
     if (dy <= 0)
       return
 
-    const t = this.scrollTemp
-    let y = (((t & 0x03e0) >> (5 - 3)) | ((t & 0x7000) >> 12)) + (((t & 0x0800) >> 11) * 240) + dy
-    let p = 0
-    while (y >= 240) {
-      p = 1 - p
-      y -= 240
+    const inc = (t) => {
+      let pageY = (t & 0x0800) * (240 / 2048)
+      const y = ((t & 0x03e0) >> (5 - 3)) | ((t >> 12) & 7)
+      const ny = pageY + y + dy
+      const p = (ny / 240) & 1
+      const sy = ny % 240
+      return (t & ~0x7be0) | ((sy & 0xf8) << (5 - 3)) | ((sy & 0x07) << 12) | (p << 11)
     }
-    this.scrollTemp = (t & ~0x7be0) | ((y & 0xf8) << (5 - 3)) | ((y & 0x07) << 12) | (p << 11)
 
-    const t2 = this.scrollCurr
-    let y2 = (((t2 & 0x03e0) >> (5 - 3)) | ((t2 & 0x7000) >> 12)) + (((t2 & 0x0800) >> 11) * 240) + dy
-    let p2 = 0
-    while (y2 >= 240) {
-      p2 = 1 - p2
-      y2 -= 240
-    }
-    this.scrollCurr = (t2 & ~0x7be0) | ((y2 & 0xf8) << (5 - 3)) | ((y2 & 0x07) << 12) | (p2 << 11)
+    this.scrollTemp = inc(this.scrollTemp)
+    this.scrollCurr = inc(this.scrollCurr)
   }
 
   private readPpuDirect(addr: number): number {
