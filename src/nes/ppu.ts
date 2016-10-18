@@ -1,5 +1,8 @@
 // PPU: Picutre Processing Unit
 
+// PPU scrolling
+// https://wiki.nesdev.com/w/index.php/PPU_scrolling
+
 import {Const, kColors, kStaggered, kFlipBits} from './const'
 import {Util} from './util'
 
@@ -75,6 +78,7 @@ function getNameTable(baseNameTable: number, bx: number, by: number,
 }
 
 function getPpuAddr(adr: number, mirrorModeBit: number): number {
+  adr &= 0x3fff
   if (0x3000 <= adr && adr < 0x3f00)
     adr -= 0x1000  // Map 0x3000~3eff to 0x2000~
   if (0x2000 <= adr && adr < 0x3000) {
@@ -108,8 +112,6 @@ export class Ppu {
   public vram: Uint8Array
   public oam: Uint8Array  // Object Attribute Memory
   public hcount: number
-  public scrollX: number
-  public scrollY: number
   public mirrorMode: MirrorMode
   public mirrorModeBit: number  // 2bit x 4page
   private latch: number
@@ -118,6 +120,10 @@ export class Ppu {
   private chrBankOffset: number[]
   private hevents: HEvents
   private hevents2: HEvents
+
+  private scrollCurr: number = 0
+  private scrollTemp: number = 0
+  private scrollFineX: number = 0
 
   constructor() {
     this.regs = new Uint8Array(REGISTER_COUNT)
@@ -137,7 +143,6 @@ export class Ppu {
     this.vram.fill(0)
     this.oam.fill(0)
     this.hcount = 0
-    this.scrollX = this.scrollY = 0
     this.ppuAddr = 0
     this.latch = 0
     this.bufferedValue = 0
@@ -168,18 +173,22 @@ export class Ppu {
     const max = this.chrData.length
     this.chrBankOffset[bank] = (value << 10) & (max - 1)  // 0x0400
 
-    this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                    ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset),
-                    mirrorModeBit: this.mirrorModeBit})
+    this.incScrollCounter()
+    this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
+                    chrBankOffset: cloneArray(this.chrBankOffset),
+                    mirrorModeBit: this.mirrorModeBit, scrollCurr: this.scrollCurr,
+                    scrollFineX: this.scrollFineX})
   }
 
   public setMirrorMode(mode: MirrorMode): void {
     this.mirrorMode = mode
     this.mirrorModeBit = kMirrorModeBitTable[mode]
 
-    this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                    ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset),
-                    mirrorModeBit: this.mirrorModeBit})
+    this.incScrollCounter()
+    this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
+                    chrBankOffset: cloneArray(this.chrBankOffset),
+                    mirrorModeBit: this.mirrorModeBit, scrollCurr: this.scrollCurr,
+                    scrollFineX: this.scrollFineX})
   }
 
   public read(reg: number): number {
@@ -222,10 +231,25 @@ export class Ppu {
 
     switch (reg) {
     case PPUCTRL:
+      this.incScrollCounter()
+      this.scrollTemp = (this.scrollTemp & ~0x0c00) | ((value & BASE_NAMETABLE_ADDRESS) << 10)
+      // At dot 257 of each scanline:
+      this.scrollCurr = (this.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
+      //if (this.hcount >= 280 && this.hcount < 304) {
+      //  this.scrollCurr = (this.scrollCurr & ~0x7be0) | (this.scrollTemp & 0x7be0)
+      //}
+
+      this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
+                      chrBankOffset: cloneArray(this.chrBankOffset),
+                      mirrorModeBit: this.mirrorModeBit, scrollCurr: this.scrollCurr,
+                      scrollFineX: this.scrollFineX})
+      break
     case PPUMASK:
-      this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                      ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset),
-                      mirrorModeBit: this.mirrorModeBit})
+      this.incScrollCounter()
+      this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
+                      chrBankOffset: cloneArray(this.chrBankOffset),
+                      mirrorModeBit: this.mirrorModeBit, scrollCurr: this.scrollCurr,
+                      scrollFineX: this.scrollFineX})
       break
     case OAMDATA:
       {
@@ -235,23 +259,36 @@ export class Ppu {
       }
       break
     case PPUSCROLL:
+      this.incScrollCounter()
       if (this.latch === 0) {
-        this.scrollX = value
+        this.scrollTemp = (this.scrollTemp & ~0x001f) | (value >> 3)
+        this.scrollFineX = value & 0x07
+        // At dot 257 of each scanline:
+        this.scrollCurr = (this.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
       } else {
-        //this.scrollY = value
-        if (this.hcount >= 240)
-          this.scrollY = value
-        this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                        ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset),
-                        mirrorModeBit: this.mirrorModeBit})
+        this.scrollTemp = ((this.scrollTemp & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
+                           ((value & 0x07) << 12))
       }
+      this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
+                      chrBankOffset: cloneArray(this.chrBankOffset),
+                      mirrorModeBit: this.mirrorModeBit, scrollCurr: this.scrollCurr,
+                      scrollFineX: this.scrollFineX})
       this.latch = 1 - this.latch
       break
     case PPUADDR:
-      if (this.latch === 0)
+      if (this.latch === 0) {
+        this.scrollTemp = (this.scrollTemp & ~0x7f00) | ((value & 0x3f) << 8)
         this.ppuAddr = value
-      else
-        this.ppuAddr = ((this.ppuAddr << 8) | value) & (VRAM_SIZE - 1)
+      } else {
+        this.scrollTemp = (this.scrollTemp & ~0x00ff) | value
+        this.scrollCurr = this.scrollTemp
+        this.ppuAddr = this.scrollCurr
+
+        this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
+                        chrBankOffset: cloneArray(this.chrBankOffset),
+                        mirrorModeBit: this.mirrorModeBit, scrollCurr: this.scrollCurr,
+                        scrollFineX: this.scrollFineX})
+      }
       this.latch = 1 - this.latch
       break
     case PPUDATA:
@@ -285,12 +322,19 @@ export class Ppu {
     this.hevents2 = tmp
     this.hevents.count = 0
 
-    this.addHevent({scrollX: this.scrollX, scrollY: this.scrollY, ppuCtrl: this.regs[PPUCTRL],
-                    ppuMask: this.regs[PPUMASK], chrBankOffset: cloneArray(this.chrBankOffset),
-                    mirrorModeBit: this.mirrorModeBit})
+    this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
+                    chrBankOffset: cloneArray(this.chrBankOffset),
+                    mirrorModeBit: this.mirrorModeBit, scrollCurr: this.scrollCurr,
+                    scrollFineX: this.scrollFineX})
   }
   public clearVBlank(): void {
     this.regs[PPUSTATUS] &= ~(VBLANK | SPRITE0HIT)
+
+    this.scrollCurr = this.scrollTemp
+    this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
+                    chrBankOffset: cloneArray(this.chrBankOffset),
+                    mirrorModeBit: this.mirrorModeBit, scrollCurr: this.scrollCurr,
+                    scrollFineX: this.scrollFineX})
   }
 
   public interruptEnable(): boolean {
@@ -319,12 +363,16 @@ export class Ppu {
         this.clearBg(pixels, hline0, hline1, Const.WIDTH, Const.WIDTH)
         continue
       }
-      const baseNameTable = h.ppuCtrl & BASE_NAMETABLE_ADDRESS
+      const baseNameTable = (h.scrollCurr & 0x0c00) >> 10
       const chrStart = getBgPatternTableAddress(h.ppuCtrl)
       let x0 = 0
       if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0)
         this.clearBg(pixels, hline0, hline1, x0 = 8, Const.WIDTH)
-      this.doRenderBg2(pixels, h.scrollX, h.scrollY, baseNameTable, hline0, hline1, x0,
+
+      const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
+      const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
+
+      this.doRenderBg2(pixels, scrollX, scrollY, baseNameTable, hline0, hline1, x0,
                        h.chrBankOffset, h.mirrorModeBit, chrStart)
     }
   }
@@ -434,7 +482,8 @@ export class Ppu {
       scrollY = (scrollY - 256)
 
     for (let yy = hline0; yy < hline1; ++yy) {
-      const by = (((yy + scrollY) >> 3) + 60) % 60
+      const yyy = yy - hline0 + scrollY
+      const by = ((yyy >> 3) + 60) % 60
       const ay = by % 30
 
       for (let bbx = 0; bbx < Const.WIDTH / W + 1; ++bbx) {
@@ -449,7 +498,7 @@ export class Ppu {
         const attributeTable = nameTable + 0x3c0
         const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
 
-        const pat = getBgPat(chridx, (yy + scrollY) & 7)
+        const pat = getBgPat(chridx, yyy & 7)
 
         for (let px = 0; px < W; ++px) {
           const xx = bbx * W + px - (scrollX & 7)
@@ -712,6 +761,34 @@ export class Ppu {
       event[key] = param[key]
     })
     hevents.count = n
+  }
+
+  private incScrollCounter() {
+    if (this.hevents.count <= 0)
+      return
+    const h = this.hevents.events[this.hevents.count - 1]
+    const hcount = this.hcount < 240 ? this.hcount : 0
+    const dy = hcount - h.hcount
+    if (dy <= 0)
+      return
+
+    const t = this.scrollTemp
+    let y = (((t & 0x03e0) >> (5 - 3)) | ((t & 0x7000) >> 12)) + (((t & 0x0800) >> 11) * 240) + dy
+    let p = 0
+    while (y >= 240) {
+      p = 1 - p
+      y -= 240
+    }
+    this.scrollTemp = (t & ~0x7be0) | ((y & 0xf8) << (5 - 3)) | ((y & 0x07) << 12) | (p << 11)
+
+    const t2 = this.scrollCurr
+    let y2 = (((t2 & 0x03e0) >> (5 - 3)) | ((t2 & 0x7000) >> 12)) + (((t2 & 0x0800) >> 11) * 240) + dy
+    let p2 = 0
+    while (y2 >= 240) {
+      p2 = 1 - p2
+      y2 -= 240
+    }
+    this.scrollCurr = (t2 & ~0x7be0) | ((y2 & 0xf8) << (5 - 3)) | ((y2 & 0x07) << 12) | (p2 << 11)
   }
 
   private readPpuDirect(addr: number): number {
