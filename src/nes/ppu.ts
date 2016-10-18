@@ -204,7 +204,7 @@ export class Ppu {
           result = this.bufferedValue
           this.bufferedValue = this.readPpuDirect(addr)
         }
-        this.ppuAddr = incPpuAddr(ppuAddr, this.regs[PPUCTRL])
+        this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
       }
       break
     default:
