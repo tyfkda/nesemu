@@ -107,33 +107,25 @@ function getBgPatternTableAddress(ppuCtrl: number): number {
 }
 
 export class Ppu {
-  public regs: Uint8Array
   public chrData: Uint8Array
-  public vram: Uint8Array
-  public oam: Uint8Array  // Object Attribute Memory
+  public regs = new Uint8Array(REGISTER_COUNT)
+  public vram = new Uint8Array(VRAM_SIZE)
+  public oam = new Uint8Array(OAM_SIZE)  // Object Attribute Memory
+  public mirrorMode = MirrorMode.VERT
+  public mirrorModeBit = 0x44  // 2bit x 4screen
   public hcount: number
-  public mirrorMode: MirrorMode
-  public mirrorModeBit: number  // 2bit x 4page
   private latch: number
   private ppuAddr: number
   private bufferedValue: number
-  private chrBankOffset: number[]
-  private hevents: HEvents
-  private hevents2: HEvents
+  private chrBankOffset = new Array<number>(8)
+  private hevents: HEvents = {count: 0, events: []}
+  private hevents2: HEvents = {count: 0, events: []}
 
   private scrollCurr: number = 0
   private scrollTemp: number = 0
   private scrollFineX: number = 0
 
   constructor() {
-    this.regs = new Uint8Array(REGISTER_COUNT)
-    this.vram = new Uint8Array(VRAM_SIZE)
-    this.oam = new Uint8Array(OAM_SIZE)
-    this.mirrorModeBit = 0x44
-    this.hevents = {count: 0, events: []}
-    this.hevents2 = {count: 0, events: []}
-
-    this.chrBankOffset = new Array(8)
     for (let i = 0; i < 8; ++i)
       this.chrBankOffset[i] = i << 10
   }
