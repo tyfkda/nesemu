@@ -519,13 +519,13 @@ export class Ppu {
       const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
 
       this.doRenderBg(scrollX, scrollY, baseNameTable, hline0, hline1, x0,
-                       h.chrBankOffset, h.mirrorModeBit, chrStart)
+                      h.chrBankOffset, h.mirrorModeBit, chrStart)
     }
   }
 
   private doRenderBg(scrollX: number, scrollY: number,
                      baseNameTable: number, hline0: number, hline1: number, x0: number,
-                     chrBankOffset: number, mirrorModeBit: number, chrStart: number): void
+                     chrBankOffset: number[], mirrorModeBit: number, chrStart: number): void
   {
     const getBgPat = (chridx, py) => {
       const idx = chridx + py
@@ -614,7 +614,7 @@ export class Ppu {
   }
 
   private renderSprite2(hline0: number, hline1: number, x0: number,
-                        chrBankOffset: number, chrStart: number): void
+                        chrBankOffset: number[], chrStart: number): void
   {
     const getSpritePat = (chridx, ppy, flipHorz) => {
       const idx = chridx + (ppy & 7) + ((ppy & 8) << 1)
