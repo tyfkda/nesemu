@@ -65,6 +65,8 @@ const kInitialPalette = [
   0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 0x08, 0x3a, 0x00, 0x02, 0x00, 0x20, 0x2c, 0x08,
 ]
 
+const kSpritePriorityMask = [0, 0xff]
+
 function cloneArray(array) {
   return array.concat()
 }
@@ -662,6 +664,7 @@ export class Ppu {
       const flipVert = (attr & FLIP_VERT) !== 0
       const flipHorz = (attr & FLIP_HORZ) !== 0
       const x = oam[i * 4 + 3]
+      const priorityMask = kSpritePriorityMask[(attr >> 5) & 1]
 
       const chridx = (isSprite8x16
                       ? (index & 0xfe) * 16 + ((index & 1) << 12)
@@ -684,9 +687,10 @@ export class Ppu {
           const pal = (pat >> ((W - 1 - px) << 1)) & 3
           if (pal === 0)
             continue
-          const palet = paletHigh + pal
           const index = (y + py) * LINE_WIDTH + (x + px)
-          offscreen[index] = palet
+          if ((offscreen[index] & priorityMask) !== 0)
+            continue
+          offscreen[index] = paletHigh + pal
         }
       }
     }
