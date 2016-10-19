@@ -430,8 +430,8 @@ export class Ppu {
     }
   }
 
-  public doRenderBg(pixels: Uint8ClampedArray, lineWidth: number, scrollX: number, scrollY: number,
-                    startX: number, startY: number, nameTableOffset: number): void
+  public renderNameTable1(pixels: Uint8ClampedArray, lineWidth: number,
+                          startX: number, startY: number, nameTableOffset: number): void
   {
     const getBgPat = (chridx, py) => {
       const idx = chridx + py
@@ -454,14 +454,11 @@ export class Ppu {
     const clearG = kColors[clearColor * 3 + 1]
     const clearB = kColors[clearColor * 3 + 2]
 
-    if (scrollY >= 240)
-      scrollY = (scrollY - 256)
-
-    for (let bby = 0; bby < Const.HEIGHT / W + 1; ++bby) {
-      const by = ((bby + (scrollY >> 3)) + 60) % 60
+    for (let bby = 0; bby < Const.HEIGHT / W; ++bby) {
+      const by = (bby + 60) % 60
       const ay = by % 30
-      for (let bbx = 0; bbx < Const.WIDTH / W + 1; ++bbx) {
-        const bx = (bbx + (scrollX >> 3)) & 63
+      for (let bbx = 0; bbx < Const.WIDTH / W; ++bbx) {
+        const bx = bbx & 63
         const ax = bx & 31
 
         const nameTable = getNameTable(0, bx, by, this.mirrorModeBit) + nameTableOffset
@@ -473,18 +470,10 @@ export class Ppu {
         const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
 
         for (let py = 0; py < W; ++py) {
-          const yy = bby * W + py - (scrollY & 7)
-          if (yy < 0)
-            continue
-          if (yy >= Const.HEIGHT)
-            break
+          const yy = bby * W + py
           const pat = getBgPat(chridx, py)
           for (let px = 0; px < W; ++px) {
-            const xx = bbx * W + px - (scrollX & 7)
-            if (xx < 0)
-              continue
-            if (xx >= Const.WIDTH)
-              break
+            const xx = bbx * W + px
             const pal = (pat >> ((W - 1 - px) << 1)) & 3
             let r = clearR, g = clearG, b = clearB
             if (pal !== 0) {
@@ -529,14 +518,14 @@ export class Ppu {
       const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
       const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
 
-      this.doRenderBg2(scrollX, scrollY, baseNameTable, hline0, hline1, x0,
+      this.doRenderBg(scrollX, scrollY, baseNameTable, hline0, hline1, x0,
                        h.chrBankOffset, h.mirrorModeBit, chrStart)
     }
   }
 
-  private doRenderBg2(scrollX: number, scrollY: number,
-                      baseNameTable: number, hline0: number, hline1: number, x0: number,
-                      chrBankOffset: number, mirrorModeBit: number, chrStart: number): void
+  private doRenderBg(scrollX: number, scrollY: number,
+                     baseNameTable: number, hline0: number, hline1: number, x0: number,
+                     chrBankOffset: number, mirrorModeBit: number, chrStart: number): void
   {
     const getBgPat = (chridx, py) => {
       const idx = chridx + py

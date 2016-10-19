@@ -164,7 +164,7 @@ export class Nes {
   public renderNameTable1(pixels: Uint8ClampedArray, lineWidth: number,
                           startX: number, startY: number, page: number): void
   {
-    this.ppu.doRenderBg(pixels, lineWidth, 0, 0, startX, startY, page << 10)
+    this.ppu.renderNameTable1(pixels, lineWidth, startX, startY, page << 10)
   }
 
   public renderPatternTable(pixels: Uint8ClampedArray, lineWidth: number, colors: number[]): void {
