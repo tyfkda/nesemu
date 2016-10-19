@@ -94,31 +94,22 @@ export class Cpu {
                     //   Z: zero
                     //   C: carry
   public pc: number  // Program counter
-  public breakPoints: any
-  public watchRead: {}
-  public watchWrite: {}
-  public paused: boolean
-  private readerFuncTable: Function[]
-  private writerFuncTable: Function[]
+  public breakPoints: any = {}
+  public watchRead: any = {}
+  public watchWrite: any = {}
+  public paused = false
+  private readerFuncTable = new Array<Function>(0x10000 / BLOCK_SIZE)
+  private writerFuncTable = new Array<Function>(0x10000 / BLOCK_SIZE)
   private readErrorReported: boolean
   private writeErrorReported: boolean
 
   private $DEBUG: boolean
-  private stepLogs: string[]
+  private stepLogs: string[] = []
 
   constructor() {
     this.$DEBUG = !!window.$DEBUG  // Accessing global variable!!!
 
-    this.readerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
-    this.writerFuncTable = new Array(0x10000 / BLOCK_SIZE) as Function[]
-
     this.a = this.x = this.y = this.s = 0
-    this.breakPoints = {}
-    this.watchRead = {}
-    this.watchWrite = {}
-    this.paused = false
-
-    this.stepLogs = []
   }
 
   public resetMemoryMap(): void {
