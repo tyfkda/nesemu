@@ -14,8 +14,31 @@ function getOffsetRect(parent, target) {
   }
 }
 
+function createHorizontalSplitter(parent, upperHeight) {
+  const upper = document.createElement('div')
+  upper.className = 'upper'
+  upper.style.position = 'absolute'
+  upper.style.overflow = 'hidden'
+  upper.style.left = upper.style.top = upper.style.right = '0'
+  upper.style.height = `${upperHeight}px`
+
+  const lower = document.createElement('div')
+  lower.className = 'lower'
+  lower.style.position = 'absolute'
+  lower.style.overflow = 'hidden'
+  lower.style.left = lower.style.bottom = lower.style.right = '0'
+  lower.style.top = `${upperHeight}px`
+
+  parent.appendChild(upper)
+  parent.appendChild(lower)
+
+  return [upper, lower]
+}
+
+
 export default class Wnd {
   public static TITLEBAR_HEIGHT = 12
+  public static MENUBAR_HEIGHT = 12
 
   protected callback: Function
   protected contentHolder: HTMLElement
@@ -23,6 +46,8 @@ export default class Wnd {
   private titleBar: HTMLElement
   private titleElem: HTMLElement
   private menuBar: HTMLElement
+  private clientMarginWidth: number = 0
+  private clientMarginHeight: number = 0
 
   public constructor(protected wndMgr: WindowManager, width: number, height: number,
                      title: string)
@@ -31,13 +56,16 @@ export default class Wnd {
     this.root = this.createRoot()
     this.root.className = 'wnd'
     this.root.style.position = 'absolute'
-    this.setClientSize(width, height)
+
+    const [upper, lower] = createHorizontalSplitter(this.root, Wnd.TITLEBAR_HEIGHT)
+    this.clientMarginHeight += Wnd.TITLEBAR_HEIGHT
 
     this.createTitleBar(title)
+    upper.appendChild(this.titleBar)
 
-    this.contentHolder = document.createElement('div')
-    this.contentHolder.className = 'content-holder'
-    this.root.appendChild(this.contentHolder)
+    this.contentHolder = lower
+
+    this.setClientSize(width, height)
   }
 
   public setContent(content: HTMLElement): Wnd {
@@ -57,8 +85,8 @@ export default class Wnd {
   }
 
   public setClientSize(width: number, height: number): Wnd {
-    this.root.style.width = `${width}px`
-    this.root.style.height = `${height + Wnd.TITLEBAR_HEIGHT}px`
+    this.root.style.width = `${width + this.clientMarginWidth}px`
+    this.root.style.height = `${height + this.clientMarginHeight}px`
     return this
   }
 
@@ -83,6 +111,11 @@ export default class Wnd {
   }
 
   public addMenuBar(menu: any): Wnd {
+    const [upper, lower] = createHorizontalSplitter(this.root, Wnd.MENUBAR_HEIGHT)
+    this.clientMarginHeight += Wnd.TITLEBAR_HEIGHT
+    this.contentHolder.appendChild(upper)
+    this.contentHolder.appendChild(lower)
+
     this.menuBar = document.createElement('div')
     this.menuBar.className = 'menu-bar'
     this.menuBar.style.zIndex = String(Z_MENUBAR)
@@ -97,8 +130,10 @@ export default class Wnd {
         }
       })
       this.menuBar.appendChild(itemElem)
-      this.root.appendChild(this.menuBar)
     })
+    upper.appendChild(this.menuBar)
+
+    this.contentHolder = lower
 
     return this
   }
@@ -244,8 +279,6 @@ export default class Wnd {
       document.addEventListener('mouseup', dragFinish)
       return true
     })
-
-    this.root.appendChild(this.titleBar)
   }
 
   private addTitleButton(parent: HTMLElement, className: string,

@@ -73,7 +73,7 @@ export class ScreenWnd extends Wnd {
   public constructor(wndMgr: WindowManager, private app: App, private nes: Nes,
                      private stream: AppEvent.Stream)
   {
-    super(wndMgr, WIDTH * 2, HEIGHT * 2, 'NES')
+    super(wndMgr, WIDTH * 2, HEIGHT * 2 + Wnd.MENUBAR_HEIGHT, 'NES')
     this.addMenuBar([
       {
         label: 'File',
@@ -126,18 +126,18 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Adjust aspect ratio',
             click: () => {
-              const root = this.getRootNode()
-              const width = parseInt(root.style.width, 10)
-              const height = (width * (HEIGHT / WIDTH)) | 0
-              this.setClientSize(width, height)
+              const rect = this.canvas.getBoundingClientRect()
+              const height = Math.round(rect.width * (HEIGHT / WIDTH))
+              this.setClientSize(rect.width, height)
             },
           },
           {
             label: 'Max',
             click: () => {
-              this.setClientSize(window.innerWidth - 2,
-                                 window.innerHeight - Wnd.HEADER_HEIGHT - 2)  // -2 for border size
               this.setPos(0, 0)
+              const width = window.innerWidth - 2  // -2 for border size
+              const height = window.innerHeight - Wnd.TITLEBAR_HEIGHT - Wnd.MENUBAR_HEIGHT - 2
+              this.setClientSize(width, height)
             },
           },
           {
@@ -200,6 +200,7 @@ export class ScreenWnd extends Wnd {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = WIDTH
     canvas.height = HEIGHT
+    canvas.style.display = 'block'
     canvas.style.width = '100%'
     canvas.style.height = '100%'
     canvas.className = 'pixelated'
