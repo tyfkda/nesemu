@@ -65,6 +65,8 @@ const kInitialPalette = [
   0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 0x08, 0x3a, 0x00, 0x02, 0x00, 0x20, 0x2c, 0x08,
 ]
 
+const kSpritePriorityMask = [0, 0xff]
+
 function cloneArray(array) {
   return array.concat()
 }
@@ -106,6 +108,33 @@ function getBgPatternTableAddress(ppuCtrl: number): number {
   return (ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
 }
 
+function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8ClampedArray,
+                               vram: Uint8Array): void {
+  const paletTable = 0x3f00
+  const clearColor = vram[paletTable] & 0x3f  // Universal background color
+  const clearR = kColors[clearColor * 3 + 0]
+  const clearG = kColors[clearColor * 3 + 1]
+  const clearB = kColors[clearColor * 3 + 2]
+
+  const n = Const.WIDTH * Const.HEIGHT
+  let index = 0
+  for (let i = 0; i < n; ++i) {
+    const pal = offscreen[i]
+    if (pal === 0) {
+      pixels[index + 0] = clearR
+      pixels[index + 1] = clearG
+      pixels[index + 2] = clearB
+    } else {
+      const col = vram[paletTable + pal] & 0x3f
+      const c = col * 3
+      pixels[index + 0] = kColors[c]
+      pixels[index + 1] = kColors[c + 1]
+      pixels[index + 2] = kColors[c + 2]
+    }
+    index += 4
+  }
+}
+
 export class Ppu {
   public chrData: Uint8Array
   public regs = new Uint8Array(REGISTER_COUNT)
@@ -125,6 +154,8 @@ export class Ppu {
   private scrollTemp: number = 0
   private scrollFineX: number = 0
 
+  private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
+
   constructor() {
     for (let i = 0; i < 8; ++i)
       this.chrBankOffset[i] = i << 10
@@ -140,6 +171,7 @@ export class Ppu {
     this.bufferedValue = 0
     this.hevents = {count: 0, events: []}
     this.hevents2 = {count: 0, events: []}
+    this.offscreen.fill(0)
 
     for (let i = 0; i < 8; ++i)
       this.chrBankOffset[i] = i << 10
@@ -345,8 +377,9 @@ export class Ppu {
   }
 
   public render(pixels: Uint8ClampedArray): void {
-    this.renderBg(pixels)
-    this.renderSprite(pixels)
+    this.renderBg()
+    this.renderSprite()
+    copyOffscreenToPixels(this.offscreen, pixels, this.vram)
   }
 
   public renderPattern(pixels: Uint8ClampedArray, lineWidth: number, colors: number[]): void {
@@ -473,7 +506,7 @@ export class Ppu {
     }
   }
 
-  private renderBg(pixels: Uint8ClampedArray): void {
+  private renderBg(): void {
     const n = this.hevents.count
     for (let i = 0; i < n; ++i) {
       const h = this.hevents.events[i]
@@ -482,24 +515,26 @@ export class Ppu {
       if (hline0 >= hline1)
         continue
       if ((h.ppuMask & SHOW_BG) === 0) {
-        this.clearBg(pixels, hline0, hline1, Const.WIDTH, Const.WIDTH)
+        this.clearBg(this.offscreen, hline0, hline1, Const.WIDTH)
         continue
       }
       const baseNameTable = (h.scrollCurr & 0x0c00) >> 10
       const chrStart = getBgPatternTableAddress(h.ppuCtrl)
       let x0 = 0
-      if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0)
-        this.clearBg(pixels, hline0, hline1, x0 = 8, Const.WIDTH)
+      if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0) {
+        x0 = 8
+        this.clearBg(this.offscreen, hline0, hline1, x0)
+      }
 
       const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
       const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
 
-      this.doRenderBg2(pixels, scrollX, scrollY, baseNameTable, hline0, hline1, x0,
+      this.doRenderBg2(scrollX, scrollY, baseNameTable, hline0, hline1, x0,
                        h.chrBankOffset, h.mirrorModeBit, chrStart)
     }
   }
 
-  private doRenderBg2(pixels: Uint8ClampedArray, scrollX: number, scrollY: number,
+  private doRenderBg2(scrollX: number, scrollY: number,
                       baseNameTable: number, hline0: number, hline1: number, x0: number,
                       chrBankOffset: number, mirrorModeBit: number, chrStart: number): void
   {
@@ -517,12 +552,7 @@ export class Ppu {
     const W = 8
     const LINE_WIDTH = Const.WIDTH
     const vram = this.vram
-    const paletTable = 0x3f00
-
-    const clearColor = vram[paletTable] & 0x3f  // Universal background color
-    const clearR = kColors[clearColor * 3 + 0]
-    const clearG = kColors[clearColor * 3 + 1]
-    const clearB = kColors[clearColor * 3 + 2]
+    const offscreen = this.offscreen
 
     if (scrollY >= 240)
       scrollY = (scrollY - 256)
@@ -552,43 +582,23 @@ export class Ppu {
             continue
           if (xx >= Const.WIDTH)
             break
-          const pal = (pat >> ((W - 1 - px) << 1)) & 3
-          let r = clearR, g = clearG, b = clearB
-          if (pal !== 0) {
-            const palet = paletHigh + pal
-            const col = vram[paletTable + palet] & 0x3f
-            const c = col * 3
-            r = kColors[c]
-            g = kColors[c + 1]
-            b = kColors[c + 2]
-          }
+          let pal = (pat >> ((W - 1 - px) << 1)) & 3
+          if (pal !== 0)
+            pal |= paletHigh
 
-          const index = (yy * LINE_WIDTH + xx) * 4
-          pixels[index + 0] = r
-          pixels[index + 1] = g
-          pixels[index + 2] = b
+          const index = yy * LINE_WIDTH + xx
+          offscreen[index] = pal
         }
       }
     }
   }
 
-  private clearBg(pixels: Uint8ClampedArray, hline0: number, hline1: number, x: number,
-                  lineWidth: number): void
-  {
-    const LINE_BYTES = lineWidth * 4
-    const paletTable = 0x3f00
-    const clearColor = this.vram[paletTable] & 0x3f  // Universal background color
-    const clearR = kColors[clearColor * 3 + 0]
-    const clearG = kColors[clearColor * 3 + 1]
-    const clearB = kColors[clearColor * 3 + 2]
+  private clearBg(offscreen: Uint8Array, hline0: number, hline1: number, x: number): void {
+    const LINE_BYTES = Const.WIDTH
     for (let i = hline0; i < hline1; ++i) {
       let index = i * LINE_BYTES
-      for (let j = 0; j < x; ++j) {
-        pixels[index++] = clearR
-        pixels[index++] = clearG
-        pixels[index++] = clearB
-        pixels[index++] = 255
-      }
+      for (let j = 0; j < x; ++j)
+        offscreen[index + j] = 0
     }
   }
 
@@ -596,7 +606,7 @@ export class Ppu {
     return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
   }
 
-  private renderSprite(pixels: Uint8ClampedArray): void {
+  private renderSprite(): void {
     let chrStart = 0
     const n = this.hevents.count
     for (let i = 0; i < n; ++i) {
@@ -610,11 +620,11 @@ export class Ppu {
       if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
         chrStart = ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
       const x0 = (h.ppuMask & SHOW_SPRITE_LEFT_8PX) ? 0 : 8
-      this.renderSprite2(pixels, hline0, hline1, x0, h.chrBankOffset, chrStart)
+      this.renderSprite2(hline0, hline1, x0, h.chrBankOffset, chrStart)
     }
   }
 
-  private renderSprite2(pixels: Uint8ClampedArray, hline0: number, hline1: number, x0: number,
+  private renderSprite2(hline0: number, hline1: number, x0: number,
                         chrBankOffset: number, chrStart: number): void
   {
     const getSpritePat = (chridx, ppy, flipHorz) => {
@@ -639,9 +649,8 @@ export class Ppu {
     const LINE_WIDTH = Const.WIDTH
     const PALET = 0x03
 
+    const offscreen = this.offscreen
     const oam = this.oam
-    const vram = this.vram
-    const paletTable = 0x3f10
     const isSprite8x16 = this.isSprite8x16()
     const h = isSprite8x16 ? 16 : 8
 
@@ -655,11 +664,12 @@ export class Ppu {
       const flipVert = (attr & FLIP_VERT) !== 0
       const flipHorz = (attr & FLIP_HORZ) !== 0
       const x = oam[i * 4 + 3]
+      const priorityMask = kSpritePriorityMask[(attr >> 5) & 1]
 
       const chridx = (isSprite8x16
                       ? (index & 0xfe) * 16 + ((index & 1) << 12)
                       : index * 16 + chrStart)
-      const paletHigh = (attr & PALET) << 2
+      const paletHigh = ((attr & PALET) << 2) + 0x10
 
       for (let py = 0; py < h; ++py) {
         if (y + py >= Const.HEIGHT)
@@ -677,13 +687,10 @@ export class Ppu {
           const pal = (pat >> ((W - 1 - px) << 1)) & 3
           if (pal === 0)
             continue
-          const palet = paletHigh + pal
-          const col = vram[paletTable + palet] & 0x3f
-          const c = col * 3
-          const index = ((y + py) * LINE_WIDTH + (x + px)) * 4
-          pixels[index + 0] = kColors[c]
-          pixels[index + 1] = kColors[c + 1]
-          pixels[index + 2] = kColors[c + 2]
+          const index = (y + py) * LINE_WIDTH + (x + px)
+          if ((offscreen[index] & priorityMask) !== 0)
+            continue
+          offscreen[index] = paletHigh + pal
         }
       }
     }
