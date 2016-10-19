@@ -4,6 +4,7 @@ import {MirrorMode} from '../nes/ppu'
 import {AppEvent} from './app_event'
 import {AudioManager} from './audio_manager'
 import {GamepadManager} from './gamepad_manager'
+import {KeyCode} from './key_code'
 import {PadKeyHandler} from './pad_key_handler'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
         RegisterWnd, TraceWnd, ControlWnd} from './ui'
@@ -308,6 +309,13 @@ export class App {
     root.setAttribute('tabindex', '1')  // To accept key event.
     root.style.outline = 'none'
     root.addEventListener('keydown', (event) => {
+      if (event.ctrlKey) {  // Ctrl+W: Quit
+        if (event.keyCode === KeyCode.W) {
+          this.screenWnd.close()
+          return
+        }
+      }
+
       if (event.ctrlKey || event.altKey || event.metaKey)
         return
       event.preventDefault()
