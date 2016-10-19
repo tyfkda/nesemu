@@ -15,7 +15,7 @@ function getOffsetRect(parent, target) {
 }
 
 export default class Wnd {
-  public static HEADER_HEIGHT = 12
+  public static TITLEBAR_HEIGHT = 12
 
   protected callback: Function
   protected contentHolder: HTMLElement
@@ -58,7 +58,7 @@ export default class Wnd {
 
   public setClientSize(width: number, height: number): Wnd {
     this.root.style.width = `${width}px`
-    this.root.style.height = `${height + Wnd.HEADER_HEIGHT}px`
+    this.root.style.height = `${height + Wnd.TITLEBAR_HEIGHT}px`
     return this
   }
 
@@ -143,7 +143,7 @@ export default class Wnd {
     ]
 
     const MIN_WIDTH = 64
-    const MIN_HEIGHT = 24 + Wnd.HEADER_HEIGHT
+    const MIN_HEIGHT = 24 + Wnd.TITLEBAR_HEIGHT
 
     table.forEach(param => {
       const resizeBox = document.createElement('div')
@@ -180,7 +180,7 @@ export default class Wnd {
         this.root.style.height = `${box.bottom - box.top - 2}px`
         this.root.style.left = `${box.left}px`
         this.root.style.top = `${box.top}px`
-        this.callback('resize', width, height - Wnd.HEADER_HEIGHT)
+        this.callback('resize', width, height - Wnd.TITLEBAR_HEIGHT)
       }
       const dragFinish = (event) => {
         document.removeEventListener('mousemove', dragMove)
