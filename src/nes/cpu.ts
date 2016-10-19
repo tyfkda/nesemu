@@ -33,6 +33,23 @@ const BLOCK_SIZE = 0x2000
 
 const MAX_STEP_LOG = 200
 
+const _NZ_MASK = ~(NEGATIVE_FLAG | ZERO_FLAG)
+const _NZC_MASK = ~(NEGATIVE_FLAG | ZERO_FLAG | CARRY_FLAG)
+
+const kNZTable: Uint8Array = (() => {
+  const table = new Uint8Array(256)
+  for (let i = 0; i < 256; ++i) {
+    let value = 0
+    if (i === 0)
+      value |= ZERO_FLAG
+    if ((i & 0x80) !== 0)
+      value |= NEGATIVE_FLAG
+    table[i] = value
+  }
+  return table
+})()
+
+
 function setReset(p, flag, mask): number {
   if (flag)
     return p | mask
@@ -263,8 +280,7 @@ export class Cpu {
         const result = this.a + operand + carry
         const overflow = ((this.a ^ result) & (operand ^ result) & 0x80) !== 0
         this.a = result & 0xff
-        this.setNZFlag(this.a)
-        this.setCarry(result >= 0x0100)
+        this.setNZCFlag(this.a, result >= 0x0100)
         this.setOverFlow(overflow)
       }
       break
@@ -277,8 +293,7 @@ export class Cpu {
         const result = this.a + operand + carry
         const overflow = ((this.a ^ result) & (operand ^ result) & 0x80) !== 0
         this.a = result & 0xff
-        this.setNZFlag(this.a)
-        this.setCarry(result >= 0x0100)
+        this.setNZCFlag(this.a, result >= 0x0100)
         this.setOverFlow(overflow)
       }
       break
@@ -346,8 +361,7 @@ export class Cpu {
           this.a = newValue
         else
           this.write8(adr, newValue)
-        this.setNZFlag(newValue)
-        this.setCarry(newCarry)
+        this.setNZCFlag(newValue, newCarry)
       }
       break
     case 26:  // ROR
@@ -360,8 +374,7 @@ export class Cpu {
           this.a = newValue
         else
           this.write8(adr, newValue)
-        this.setNZFlag(newValue)
-        this.setCarry(newCarry)
+        this.setNZCFlag(newValue, newCarry)
       }
       break
     case 27:  // ASL
@@ -373,8 +386,7 @@ export class Cpu {
           this.a = newValue
         else
           this.write8(adr, newValue)
-        this.setNZFlag(newValue)
-        this.setCarry(newCarry)
+        this.setNZCFlag(newValue, newCarry)
       }
       break
     case 28:  // LSR
@@ -386,8 +398,7 @@ export class Cpu {
           this.a = newValue
         else
           this.write8(adr, newValue)
-        this.setNZFlag(newValue)
-        this.setCarry(newCarry)
+        this.setNZCFlag(newValue, newCarry)
       }
       break
     case 29:  // BIT
@@ -404,24 +415,21 @@ export class Cpu {
       {
         const value = this.read8(adr)
         const result = this.a - value
-        this.setNZFlag(result)
-        this.setCarry(result >= 0)
+        this.setNZCFlag(result & 255, result >= 0)
       }
       break
     case 31:  // CPX
       {
         const value = this.read8(adr)
         const result = this.x - value
-        this.setNZFlag(result)
-        this.setCarry(result >= 0)
+        this.setNZCFlag(result & 255, result >= 0)
       }
       break
     case 32:  // CPY
       {
         const value = this.read8(adr)
         const result = this.y - value
-        this.setNZFlag(result)
-        this.setCarry(result >= 0)
+        this.setNZCFlag(result & 255, result >= 0)
       }
       break
 
@@ -533,28 +541,6 @@ export class Cpu {
     return inst.cycle
   }
 
-  // Set N and Z flag for the given value.
-  public setNZFlag(value: number): void {
-    this.setZero(value === 0)
-    this.setNegative((value & 0x80) !== 0)
-  }
-
-  public setCarry(value: boolean): void {
-    this.p = setReset(this.p, value, CARRY_FLAG)
-  }
-
-  public setZero(value: boolean): void {
-    this.p = setReset(this.p, value, ZERO_FLAG)
-  }
-
-  public setOverFlow(value: boolean): void {
-    this.p = setReset(this.p, value, OVERFLOW_FLAG)
-  }
-
-  public setNegative(value: boolean): void {
-    this.p = setReset(this.p, value, NEGATIVE_FLAG)
-  }
-
   public read8(adr: number): number {
     const value = this.read8Raw(adr)
     if (this.watchRead[adr]) {
@@ -646,6 +632,24 @@ export class Cpu {
     const h = this.read8(0x0100 + s)
     this.s = s
     return (h << 8) | l
+  }
+
+  // Set N and Z flag for the given value.
+  private setNZFlag(nz: number): void {
+    this.p = (this.p & _NZ_MASK) | kNZTable[nz]
+  }
+
+  // Set N, Z and C flag for the given value.
+  private setNZCFlag(nz: number, carry: boolean): void {
+    this.p = (this.p & _NZC_MASK) | kNZTable[nz] | (carry ? CARRY_FLAG : 0)
+  }
+
+  private setZero(value: boolean): void {
+    this.p = setReset(this.p, value, ZERO_FLAG)
+  }
+
+  private setOverFlow(value: boolean): void {
+    this.p = setReset(this.p, value, OVERFLOW_FLAG)
   }
 
   private addStepLog(line: string): void {
