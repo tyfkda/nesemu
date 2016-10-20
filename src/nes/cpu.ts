@@ -5,8 +5,6 @@ import {Util} from './util'
 
 import {disassemble} from './disasm'
 
-const hex = Util.hex
-
 const CARRY_BIT = 0
 const ZERO_BIT = 1
 const IRQBLK_BIT = 2
@@ -209,7 +207,7 @@ export class Cpu {
     const op = this.read8(pc++)
     const inst = kInstTable[op]
     if (inst == null) {
-      console.error(`Unhandled OPCODE, ${hex(this.pc - 1, 4)}: ${hex(op, 2)}`)
+      console.error(`Unhandled OPCODE, ${Util.hex(this.pc - 1, 4)}: ${Util.hex(op, 2)}`)
       this.paused = true
       return 0
     }
@@ -556,7 +554,7 @@ export class Cpu {
     const reader = this.readerFuncTable[block]
     if (!reader) {
       if (!this.readErrorReported) {
-        console.error(`Illegal read at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}`)
+        console.error(`Illegal read at ${Util.hex(adr, 4)}, pc=${Util.hex(this.pc, 4)}`)
         this.readErrorReported = true
       }
       return 0xbf  // Returns dummy value (undefined opcode, non plausible value).
@@ -581,7 +579,8 @@ export class Cpu {
     const writer = this.writerFuncTable[block]
     if (!writer) {
       if (!this.writeErrorReported) {
-        console.error(`Illegal write at ${hex(adr, 4)}, pc=${hex(this.pc, 4)}, ${hex(value, 2)}`)
+        const sadr = Util.hex(adr, 4), spc = Util.hex(this.pc, 4), sv = Util.hex(value, 2)
+        console.error(`Illegal write at ${sadr}, pc=${spc}, ${sv}`)
         this.writeErrorReported = true
       }
       return
