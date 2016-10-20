@@ -8,7 +8,7 @@ import {disassemble} from './disasm'
 const CARRY_BIT = 0
 const ZERO_BIT = 1
 const IRQBLK_BIT = 2
-// const DECIMAL_BIT = 3
+const DECIMAL_BIT = 3
 const BREAK_BIT = 4
 const RESERVED_BIT = 5
 const OVERFLOW_BIT = 6
@@ -17,7 +17,7 @@ const NEGATIVE_BIT = 7
 const CARRY_FLAG = 1 << CARRY_BIT
 const ZERO_FLAG = 1 << ZERO_BIT
 const IRQBLK_FLAG = 1 << IRQBLK_BIT
-// const DECIMAL_FLAG = 1 << DECIMAL_BIT
+const DECIMAL_FLAG = 1 << DECIMAL_BIT
 const BREAK_FLAG = 1 << BREAK_BIT
 const RESERVED_FLAG = 1 << RESERVED_BIT
 const OVERFLOW_FLAG = 1 << OVERFLOW_BIT
@@ -512,10 +512,12 @@ export class Cpu {
     case 54:  // SED
       // SED: normal to BCD mode
       // not implemented on NES
+      this.p |= DECIMAL_FLAG
       break
     case 55:  // CLD
       // CLD: BCD to normal mode
       // not implemented on NES
+      this.p &= ~DECIMAL_FLAG
       break
 
     case 56:  // BRK
