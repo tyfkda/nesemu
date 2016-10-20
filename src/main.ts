@@ -51,6 +51,20 @@ function loadZip(file, onNesFileLoaded) {
   reader.readAsArrayBuffer(file)
 }
 
+function handleFile(file, callback) {
+  switch (getExt(file.name).toLowerCase()) {
+  case 'nes':
+    loadNes(file, callback)
+    break
+  case 'zip':
+    loadZip(file, callback)
+    break
+  default:
+    // TODO: Show error message.
+    break
+  }
+}
+
 function handleFileDrop(dropZone, onDropped) {
   function onDrop(event) {
     event.stopPropagation()
@@ -59,17 +73,7 @@ function handleFileDrop(dropZone, onDropped) {
     if (files.length > 0) {
       for (let i = 0; i < files.length; ++i) {
         const file = files[i]
-        switch (getExt(file.name).toLowerCase()) {
-        case 'nes':
-          loadNes(file, (rom, fn) => { onDropped(rom, fn, event.pageX, event.pageY) })
-          break
-        case 'zip':
-          loadZip(file, (rom, fn) => { onDropped(rom, fn, event.pageX, event.pageY) })
-          break
-        default:
-          // TODO: Show error message.
-          break
-        }
+        handleFile(file, (rom, fn) => { onDropped(rom, fn, event.pageX, event.pageY) })
       }
     }
     return false
@@ -99,6 +103,7 @@ class Main {
     App.setUp()
     this.setUpFileDrop()
     this.setUpGamePadLink()
+    this.setUpOpenRomLink()
     this.setUpBlur()
   }
 
@@ -141,6 +146,27 @@ class Main {
     gamepadText.addEventListener('click', () => {
       const gamepadWnd = new GamepadWnd(this.wndMgr)
       this.wndMgr.add(gamepadWnd)
+    })
+  }
+
+  private setUpOpenRomLink() {
+    const romFile = document.getElementById('rom-file')
+    romFile.addEventListener('change', () => {
+      if (!romFile.value)
+        return
+      const fileList = romFile.files
+      if (!fileList)
+        return
+      for (let i = 0; i < fileList.length; ++i) {
+        console.log(fileList[i])
+
+        handleFile(fileList[i], (romData, name) => {
+          this.createApp(romData, name, 0, 0)
+        })
+      }
+
+      // Clear.
+      romFile.value = ''
     })
   }
 
