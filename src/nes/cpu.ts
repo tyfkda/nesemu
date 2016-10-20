@@ -214,6 +214,7 @@ export class Cpu {
 
     this.pc += inst.bytes
     const adr = this.getAdr(pc, inst.addressing)
+    let cycle = inst.cycle
 
     // ========================================================
     // Dispatch
@@ -447,36 +448,28 @@ export class Cpu {
       break
 
     case 37:  // BCC
-      if ((this.p & CARRY_FLAG) === 0)
-        this.pc += toSigned(this.read8(adr))
+      cycle += this.branch(adr, (this.p & CARRY_FLAG) === 0)
       break
     case 38:  // BCS
-      if ((this.p & CARRY_FLAG) !== 0)
-        this.pc += toSigned(this.read8(adr))
+      cycle += this.branch(adr, (this.p & CARRY_FLAG) !== 0)
       break
     case 39:  // BPL
-      if ((this.p & NEGATIVE_FLAG) === 0)
-        this.pc += toSigned(this.read8(adr))
+      cycle += this.branch(adr, (this.p & NEGATIVE_FLAG) === 0)
       break
     case 40:  // BMI
-      if ((this.p & NEGATIVE_FLAG) !== 0)
-        this.pc += toSigned(this.read8(adr))
+      cycle += this.branch(adr, (this.p & NEGATIVE_FLAG) !== 0)
       break
     case 41:  // BNE
-      if ((this.p & ZERO_FLAG) === 0)
-        this.pc += toSigned(this.read8(adr))
+      cycle += this.branch(adr, (this.p & ZERO_FLAG) === 0)
       break
     case 42:  // BEQ
-      if ((this.p & ZERO_FLAG) !== 0)
-        this.pc += toSigned(this.read8(adr))
+      cycle += this.branch(adr, (this.p & ZERO_FLAG) !== 0)
       break
     case 43:  // BVC
-      if ((this.p & OVERFLOW_FLAG) === 0)
-        this.pc += toSigned(this.read8(adr))
+      cycle += this.branch(adr, (this.p & OVERFLOW_FLAG) === 0)
       break
     case 44:  // BVS
-      if ((this.p & OVERFLOW_FLAG) !== 0)
-        this.pc += toSigned(this.read8(adr))
+      cycle += this.branch(adr, (this.p & OVERFLOW_FLAG) !== 0)
       break
 
     case 45:  // PHA
@@ -538,7 +531,7 @@ export class Cpu {
       console.warn(`paused because PC matched break point: ${Util.hex(this.pc, 4)}`)
     }
 
-    return inst.cycle
+    return cycle
   }
 
   public read8(adr: number): number {
@@ -704,5 +697,14 @@ export class Cpu {
       this.paused = true
       return null
     }
+  }
+
+  private branch(adr: number, cond: boolean): number {
+    if (!cond)
+      return 0
+    const pc = this.pc
+    const newPc = (pc + toSigned(this.read8(adr))) & 0xffff
+    this.pc = newPc
+    return ((pc ^ newPc) & 0x0100) > 0 ? 2 : 1
   }
 }
