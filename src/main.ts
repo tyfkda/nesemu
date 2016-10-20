@@ -150,7 +150,7 @@ class Main {
   }
 
   private setUpOpenRomLink() {
-    const romFile = document.getElementById('rom-file')
+    const romFile = document.getElementById('rom-file') as HTMLInputElement
     romFile.addEventListener('change', () => {
       if (!romFile.value)
         return
