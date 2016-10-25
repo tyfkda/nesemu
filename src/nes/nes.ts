@@ -153,6 +153,7 @@ export class Nes {
 
   public setIrqHlineValue(line: number): void {
     this.irqHlineValue = line
+    this.irqHlineCounter = this.irqHlineValue
   }
 
   public resetIrqHlineCounter(): void {

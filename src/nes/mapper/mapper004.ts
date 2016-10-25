@@ -89,12 +89,13 @@ export class Mapper004 extends Mapper {
     })
 
     // IRQ
+    let irqLatch = 0
     cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if ((adr & 1) === 0) {
-        nes.setIrqHlineValue(value)
+        irqLatch = value
+        nes.setIrqHlineValue(irqLatch)
       } else {
-        // TODO: IRQ relaod
-        nes.resetIrqHlineCounter()
+        nes.setIrqHlineValue(irqLatch)
       }
     })
     cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
