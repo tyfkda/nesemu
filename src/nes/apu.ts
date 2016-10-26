@@ -71,11 +71,11 @@ class GamePad {
 export class Apu {
   public static CHANNEL = 4
 
-  private regs: Uint8Array = new Uint8Array(0x20)
-  private frameInterrupt: number  // 0=not occurred, 0x40=occurred
-  private dmcInterrupt: number  // 0=not occurred, 0x80=occurred
-  private lengthCounter: number[] = new Array(Apu.CHANNEL)
-  private channelStopped: boolean[] = new Array(Apu.CHANNEL)
+  private regs = new Uint8Array(0x20)
+  private frameInterrupt = 0  // 0=not occurred, 0x40=occurred
+  private dmcInterrupt = 0x80  // 0=not occurred, 0x80=occurred
+  private lengthCounter = new Array<number>(Apu.CHANNEL)
+  private channelStopped = new Array<boolean>(Apu.CHANNEL)
   private gamePad = new GamePad()
 
   constructor(private triggerIrq: () => void) {
@@ -87,10 +87,8 @@ export class Apu {
     this.frameInterrupt = 0
     this.dmcInterrupt = 0x80  // TODO: Implement
 
-    for (let i = 0; i < Apu.CHANNEL; ++i) {
-      this.lengthCounter[i] = 0
-      this.channelStopped[i] = true
-    }
+    this.lengthCounter.fill(0)
+    this.channelStopped.fill(true)
   }
 
   public read(adr: number): number {
