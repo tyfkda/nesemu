@@ -33,6 +33,11 @@ const SEQUENCER_MODE = 1 << 7
 const CONSTANT_VOLUME = 0x10
 const LENGTH_COUNTER_HALT = 0x20
 
+const CH_SQUARE1 = 0
+const CH_SQUARE2 = 1
+const CH_TRIANGLE = 2
+const CH_NOISE = 3
+
 const kLengthTable = [
   0x0a, 0xfe, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06, 0xa0, 0x08, 0x3c, 0x0a, 0x0e, 0x0c, 0x1a, 0x0e,
   0x0c, 0x10, 0x18, 0x12, 0x30, 0x14, 0x60, 0x16, 0xc0, 0x18, 0x48, 0x1a, 0x10, 0x1c, 0x20, 0x1e,
@@ -147,18 +152,18 @@ export class Apu {
 
   public getFrequency(channel: number): number {
     switch (channel) {
-    case 0:
-    case 1:
+    case CH_SQUARE1:
+    case CH_SQUARE2:
       {
         const value = this.regs[channel * 4 + 2] + ((this.regs[channel * 4 + 3] & 7) << 8)
         return ((1790000 / 16) / (value + 1)) | 0
       }
-    case 2:
+    case CH_TRIANGLE:
       {
         const value = this.regs[channel * 4 + 2] + ((this.regs[channel * 4 + 3] & 7) << 8)
         return ((1790000 / 32) / (value + 1)) | 0
       }
-    case 3:
+    case CH_NOISE:
       {
         const period = this.regs[channel * 4 + 2] & 15
         return kNoiseFrequencies[period]
@@ -176,15 +181,15 @@ export class Apu {
     let v = this.regs[channel * 4]
 
     switch (channel) {
-    case 0:
-    case 1:
-    case 3:
+    case CH_SQUARE1:
+    case CH_SQUARE2:
+    case CH_NOISE:
       {
         if ((v & CONSTANT_VOLUME) !== 0)
           return (v & 15) / 15.0
         return 1
       }
-    case 2:
+    case CH_TRIANGLE:
       return 1.0
     default:
       break
