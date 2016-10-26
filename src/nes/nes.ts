@@ -6,6 +6,7 @@ import {Cpu} from './cpu'
 import {Ppu, MirrorMode} from './ppu'
 import {Util} from './util'
 
+import {Mapper} from './mapper/mapper'
 import {kMapperTable} from './mapper/mapper_table'
 
 const RAM_SIZE = 0x0800
@@ -53,6 +54,7 @@ export class Nes {
 
   private romData: Uint8Array
   private mapperNo: number
+  private mapper: Mapper
   private vblankCallback: (leftCycles: number) => void
   private breakPointCallback: () => void
   private irqHlineEnable: boolean
@@ -219,13 +221,12 @@ export class Nes {
 
   private setMemoryMapForMapper(mapperNo: number): void {
     console.log(`Mapper ${mapperNo}`)
-    if (mapperNo in kMapperTable) {
-      kMapperTable[mapperNo](this.romData, this.cpu, this.ppu, this)
-    } else {
+    if (!(mapperNo in kMapperTable)) {
       console.error(`  not supported`)
-      // Use mapper 0
-      kMapperTable[0](this.romData, this.cpu, this.ppu, this)
+      mapperNo = 0
     }
+    const mapperClass = kMapperTable[mapperNo]
+    this.mapper = new (mapperClass as any)(this.romData, this.cpu, this.ppu, this)
   }
 
   private tryHblankEvent(cycleCount: number, cycle: number, leftCycles: number): number {

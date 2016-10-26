@@ -1,13 +1,16 @@
 // VRC6
 // http://wiki.nesdev.com/w/index.php/VRC6
 
+import {Mapper} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
-function create(mapping) {
-  return function(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
+class Mapper024Base extends Mapper {
+  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu, mapping: {[key: number]: number}) {
+    super()
+
     const BANK_BIT = 13
     const BANK_SIZE = 1 << BANK_BIT
     const size = romData.length
@@ -95,9 +98,13 @@ function create(mapping) {
   }
 }
 
-export const mapper024 = create({
-  0: 0,
-  1: 1,
-  2: 2,
-  3: 3,
-})
+export class Mapper024 extends Mapper024Base {
+  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
+    super(romData, cpu, ppu, {
+      0: 0,
+      1: 1,
+      2: 2,
+      3: 3,
+    })
+  }
+}

@@ -1,40 +1,41 @@
-import {mapper000} from './mapper000'
-import {mapper001} from './mapper001'
-import {mapper002, mapper093} from './mapper002'
-import {mapper003, mapper185} from './mapper003'
-import {mapper004} from './mapper004'
-import {mapper007} from './mapper007'
-import {mapper010} from './mapper010'
-import {mapper019} from './mapper019'
-import {mapper023, mapper025} from './mapper023'
-import {mapper024} from './mapper024'
-import {mapper032} from './mapper032'
-import {mapper069} from './mapper069'
-import {mapper073} from './mapper073'
-import {mapper075} from './mapper075'
-import {mapper184} from './mapper184'
+import {Mapper} from './mapper'
+import {Mapper000} from './mapper000'
+import {Mapper001} from './mapper001'
+import {Mapper002, Mapper093} from './mapper002'
+import {Mapper003, Mapper185} from './mapper003'
+import {Mapper004} from './mapper004'
+import {Mapper007} from './mapper007'
+import {Mapper010} from './mapper010'
+import {Mapper019} from './mapper019'
+import {Mapper023, Mapper025} from './mapper023'
+import {Mapper024} from './mapper024'
+import {Mapper032} from './mapper032'
+import {Mapper069} from './mapper069'
+import {Mapper073} from './mapper073'
+import {Mapper075} from './mapper075'
+import {Mapper184} from './mapper184'
 
-export const kMapperTable: {[key: number]: Function} = {
-  0: mapper000,
-  1: mapper001,
-  2: mapper002,
-  3: mapper003,
-  4: mapper004,
-  7: mapper007,
-  10: mapper010,
-  19: mapper019,
-  23: mapper023,
-  24: mapper024,
-  25: mapper025,
-  32: mapper032,
-  69: mapper069,
-  73: mapper073,  // INES Mapper 073: Konami VRC3
-  75: mapper075,
-  88: mapper004,
-  93: mapper093,  // INES Mapper 093: Sunsoft-2 IC
-  95: mapper004,
-  118: mapper004,
-  184: mapper184,
-  185: mapper185,
-  206: mapper004,
+export const kMapperTable: {[key: number]: Mapper} = {
+  0: Mapper000,
+  1: Mapper001,
+  2: Mapper002,
+  3: Mapper003,
+  4: Mapper004,
+  7: Mapper007,
+  10: Mapper010,
+  19: Mapper019,
+  23: Mapper023,
+  24: Mapper024,
+  25: Mapper025,
+  32: Mapper032,
+  69: Mapper069,
+  73: Mapper073,  // INES Mapper 073: Konami VRC3
+  75: Mapper075,
+  88: Mapper004,
+  93: Mapper093,  // INES Mapper 093: Sunsoft-2 IC
+  95: Mapper004,
+  118: Mapper004,
+  184: Mapper184,
+  185: Mapper185,
+  206: Mapper004,
 }
