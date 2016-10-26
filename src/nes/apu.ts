@@ -23,10 +23,10 @@ export enum PadValue {
 }
 
 const BASE = 0x4000
-const STATUS_REG = 0x4015
-const PAD1_REG = 0x4016
-const PAD2_REG = 0x4017
-const FRAME_COUNTER = 0x4017
+const STATUS_REG = 0x15
+const PAD1_REG = 0x16
+const PAD2_REG = 0x17
+const FRAME_COUNTER = 0x17
 const IRQ_INHIBIT = 1 << 6
 const SEQUENCER_MODE = 1 << 7
 
@@ -83,7 +83,7 @@ export class Apu {
 
   public reset() {
     this.regs.fill(0)
-    this.regs[FRAME_COUNTER - BASE] = IRQ_INHIBIT
+    this.regs[FRAME_COUNTER] = IRQ_INHIBIT
     this.frameInterrupt = 0
     this.dmcInterrupt = 0x80  // TODO: Implement
 
@@ -92,7 +92,8 @@ export class Apu {
   }
 
   public read(adr: number): number {
-    switch (adr) {
+    const reg = adr - BASE
+    switch (reg) {
     case STATUS_REG:
       {
         // TODO: Implement.
@@ -108,19 +109,20 @@ export class Apu {
       }
     case PAD1_REG:
     case PAD2_REG:
-      return this.gamePad.shift(adr - PAD1_REG)
+      return this.gamePad.shift(reg - PAD1_REG)
     default:
       return 0
     }
   }
 
   public write(adr: number, value: number): void {
-    if (adr < 0x4020) {
-      this.regs[adr - 0x4000] = value
+    const reg = adr - BASE
+    if (reg < 0x20) {
+      this.regs[reg] = value
 
-      if (adr < 0x4010) {  // Sound
-        const ch = (adr - 0x4000) >> 2
-        if ((adr & 3) === 3) {  // Set length.
+      if (reg < 0x10) {  // Sound
+        const ch = reg >> 2
+        if ((reg & 3) === 3) {  // Set length.
           const length = kLengthTable[value >> 3]
           this.lengthCounter[ch] = length
           this.channelStopped[ch] = false
@@ -128,7 +130,7 @@ export class Apu {
       }
     }
 
-    switch (adr) {
+    switch (reg) {
     case STATUS_REG:
       this.dmcInterrupt = 0  // Writing to this register clears the DMC interrupt flag.
       break
@@ -166,7 +168,7 @@ export class Apu {
   }
 
   public getVolume(channel: number): number {
-    if ((this.regs[0x15] & (1 << channel)) === 0 ||
+    if ((this.regs[STATUS_REG] & (1 << channel)) === 0 ||
        this.channelStopped[channel])
       return 0
 
@@ -209,7 +211,7 @@ export class Apu {
 
   private updateVolumes(): void {
     for (let ch = 0; ch < Apu.CHANNEL; ++ch) {
-      if ((this.regs[0x15] & (1 << ch)) === 0 ||
+      if ((this.regs[STATUS_REG] & (1 << ch)) === 0 ||
           this.channelStopped[ch])
         continue
 
@@ -229,6 +231,6 @@ export class Apu {
   private isIrqEnabled(): boolean {
     // http://wiki.nesdev.com/w/index.php/IRQ
     // Enable: $4017 write with bits 7-6 = 00
-    return (this.regs[FRAME_COUNTER - BASE] & (IRQ_INHIBIT | SEQUENCER_MODE)) === 0
+    return (this.regs[FRAME_COUNTER] & (IRQ_INHIBIT | SEQUENCER_MODE)) === 0
   }
 }
