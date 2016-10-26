@@ -42,6 +42,8 @@ const kNoiseFrequencies = (
   [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068]
     .map(v => v * 1))
 
+const VBLANK_START = 241
+
 export class Apu {
   public static CHANNEL = 4
 
@@ -52,6 +54,9 @@ export class Apu {
   private dmcInterrupt: number  // 0=not occurred, 0x80=occurred
   private lengthCounter: number[] = new Array(Apu.CHANNEL)
   private channelStopped: boolean[] = new Array(Apu.CHANNEL)
+
+  constructor(private triggerIrq: () => void) {
+  }
 
   public reset() {
     this.regs.fill(0)
@@ -177,14 +182,23 @@ export class Apu {
     this.padStatus[no] = status
   }
 
-  public isIrqEnabled(): boolean {
+  public onHblank(hcount: number): void {
+    switch (hcount) {
+    case VBLANK_START:
+      if (this.isIrqEnabled()) {
+        this.frameInterrupt = 0x40
+        this.triggerIrq()
+      }
+      break
+    default:
+      break
+    }
+  }
+
+  private isIrqEnabled(): boolean {
     // http://wiki.nesdev.com/w/index.php/IRQ
     // Enable: $4017 write with bits 7-6 = 00
     return (this.regs[FRAME_COUNTER - BASE] & (IRQ_INHIBIT | SEQUENCER_MODE)) === 0
-  }
-
-  public setFrameInterrupt(): void {
-    this.frameInterrupt = 0x40
   }
 
   private latchPad(): void {

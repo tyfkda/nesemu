@@ -73,7 +73,7 @@ export class Nes {
     this.cpu = new Cpu()
     this.ram = new Uint8Array(RAM_SIZE)
     this.ppu = new Ppu()
-    this.apu = new Apu()
+    this.apu = new Apu(() => { this.cpu.requestIrq() })
     this.mapperNo = 0
     this.cycleCount = 0
     this.vblankCallback = (_leftCycles) => {}
@@ -219,13 +219,10 @@ export class Nes {
     let hcount = getHblankCount(cycleCount2)
     if (hcount > beforeHcount) {
       this.ppu.setHcount(hcount)
+      this.apu.onHblank(hcount)
 
       switch (hcount) {
       case VBLANK_START:
-        if (this.apu.isIrqEnabled()) {
-          this.apu.setFrameInterrupt()
-          this.cpu.requestIrq()
-        }
         this.vblankCallback(leftCycles / VCYCLE)
         this.ppu.setVBlank()
         break
