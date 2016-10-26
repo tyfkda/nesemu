@@ -117,16 +117,17 @@ export class Apu {
 
   public write(adr: number, value: number): void {
     const reg = adr - BASE
-    if (reg < 0x20) {
-      this.regs[reg] = value
+    if (reg >= 0x20)
+      return
 
-      if (reg < 0x10) {  // Sound
-        const ch = reg >> 2
-        if ((reg & 3) === 3) {  // Set length.
-          const length = kLengthTable[value >> 3]
-          this.lengthCounter[ch] = length
-          this.channelStopped[ch] = false
-        }
+    this.regs[reg] = value
+
+    if (reg < 0x10) {  // Sound
+      const ch = reg >> 2
+      if ((reg & 3) === 3) {  // Set length.
+        const length = kLengthTable[value >> 3]
+        this.lengthCounter[ch] = length
+        this.channelStopped[ch] = false
       }
     }
 
