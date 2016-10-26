@@ -1,11 +1,8 @@
 const kTypes = ['square', 'square', 'triangle', 'noise']
 
 class SoundChannel {
-  public gainNode
-  public oscillator
-
-  constructor() {
-  }
+  private gainNode: GainNode
+  private oscillator: OscillatorNode
 
   public destroy() {
     if (this.gainNode != null) {
@@ -18,7 +15,7 @@ class SoundChannel {
     }
   }
 
-  public create(context: AudioContext, type: string): SoundChannel {
+  public create(context: AudioContext, type: string): void {
     this.gainNode = context.createGain()
     this.gainNode.gain.value = 0
 
@@ -38,12 +35,10 @@ class SoundChannel {
     }
     this.oscillator.connect(this.gainNode)
     this.gainNode.connect(context.destination)
-    return this
   }
 
-  public start(): SoundChannel {
+  public start(): void {
     this.oscillator.start()
-    return this
   }
 
   public setFrequency(frequency: number) {
@@ -83,10 +78,10 @@ export class AudioManager {
 
     this.masterVolume = 1.0
     this.channels = kTypes.map(type => {
-      const c = new SoundChannel()
-      c.create(AudioManager.context, type)
-        .start()
-      return c
+      const sc = new SoundChannel()
+      sc.create(AudioManager.context, type)
+      sc.start()
+      return sc
     })
   }
 
