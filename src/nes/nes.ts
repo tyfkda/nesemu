@@ -210,7 +210,7 @@ export class Nes {
       mapperNo = 0
     }
     const mapperClass = kMapperTable[mapperNo]
-    return new (mapperClass as any)(this.romData, this.cpu, this.ppu, this)
+    return new (mapperClass as any)(this.romData, this.cpu, this.ppu)
   }
 
   private tryHblankEvent(cycleCount: number, cycle: number, leftCycles: number): number {

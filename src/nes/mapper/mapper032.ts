@@ -8,7 +8,7 @@ import {Ppu, MirrorMode} from '../ppu'
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ]
 
 export class Mapper032 extends Mapper {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu, nes: Nes) {
+  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
     super()
 
     const BANK_BIT = 13  // 0x2000

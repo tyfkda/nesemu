@@ -2,7 +2,6 @@
 
 import {Mapper} from './mapper'
 import {Cpu} from '../cpu'
-import {Nes} from '../nes'
 import {Ppu, MirrorMode} from '../ppu'
 
 const VRETURN = 262
@@ -12,7 +11,7 @@ export class Mapper004 extends Mapper {
   private irqHlineValue: number
   private irqHlineCounter: number
 
-  constructor(romData: Uint8Array, private cpu: Cpu, private ppu: Ppu, nes: Nes) {
+  constructor(romData: Uint8Array, private cpu: Cpu, private ppu: Ppu) {
     super()
 
     this.irqHlineEnable = false
