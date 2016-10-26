@@ -219,7 +219,7 @@ export class Apu {
       let l = this.lengthCounter[ch]
       let v = this.regs[ch * 4]
       if ((v & LENGTH_COUNTER_HALT) === 0) {
-        this.lengthCounter[ch] = l -= 2
+        this.lengthCounter[ch] = l -= 2 * 4
         if (l <= 0) {
           this.regs[ch * 4] = v = (v & 0xf0)  // Set volume = 0
           this.lengthCounter[ch] = 0
