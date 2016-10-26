@@ -149,17 +149,7 @@ export class Apu {
        this.channelStopped[channel])
       return 0
 
-    let l = this.lengthCounter[channel]
     let v = this.regs[channel * 4]
-    if ((v & LENGTH_COUNTER_HALT) === 0) {
-      this.lengthCounter[channel] = l -= 2
-      if (l <= 0) {
-        this.regs[channel * 4] = v = (v & 0xf0)  // Set volume = 0
-        this.lengthCounter[channel] = 0
-        this.channelStopped[channel] = true
-        return 0
-      }
-    }
 
     switch (channel) {
     case 0:
@@ -185,6 +175,7 @@ export class Apu {
   public onHblank(hcount: number): void {
     switch (hcount) {
     case VBLANK_START:
+      this.updateVolumes()
       if (this.isIrqEnabled()) {
         this.frameInterrupt = 0x40
         this.triggerIrq()
@@ -192,6 +183,25 @@ export class Apu {
       break
     default:
       break
+    }
+  }
+
+  private updateVolumes(): void {
+    for (let ch = 0; ch < Apu.CHANNEL; ++ch) {
+      if ((this.regs[0x15] & (1 << ch)) === 0 ||
+          this.channelStopped[ch])
+        continue
+
+      let l = this.lengthCounter[ch]
+      let v = this.regs[ch * 4]
+      if ((v & LENGTH_COUNTER_HALT) === 0) {
+        this.lengthCounter[ch] = l -= 2
+        if (l <= 0) {
+          this.regs[ch * 4] = v = (v & 0xf0)  // Set volume = 0
+          this.lengthCounter[ch] = 0
+          this.channelStopped[ch] = true
+        }
+      }
     }
   }
 
