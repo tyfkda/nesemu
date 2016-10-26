@@ -44,16 +44,39 @@ const kNoiseFrequencies = (
 
 const VBLANK_START = 241
 
+// ================================================================
+// GamePad
+class GamePad {
+  private status = new Array<number>(2)
+  private tmp = new Array<number>(2)
+
+  public setStatus(no: number, status: number): void {
+    this.status[no] = status
+  }
+
+  public latch(): void {
+    this.tmp[0] = this.status[0]
+    this.tmp[1] = this.status[1]
+  }
+
+  public shift(no: number): number {
+    const result = this.tmp[no]
+    this.tmp[no] = result >> 1
+    return result & 1
+  }
+}
+
+// ================================================================
+// Apu
 export class Apu {
   public static CHANNEL = 4
 
-  private padStatus: number[] = new Array(2)
-  private padTmp: number[] = new Array(2)
   private regs: Uint8Array = new Uint8Array(0x20)
   private frameInterrupt: number  // 0=not occurred, 0x40=occurred
   private dmcInterrupt: number  // 0=not occurred, 0x80=occurred
   private lengthCounter: number[] = new Array(Apu.CHANNEL)
   private channelStopped: boolean[] = new Array(Apu.CHANNEL)
+  private gamePad = new GamePad()
 
   constructor(private triggerIrq: () => void) {
   }
@@ -87,7 +110,7 @@ export class Apu {
       }
     case PAD1_REG:
     case PAD2_REG:
-      return this.shiftPad(adr - PAD1_REG)
+      return this.gamePad.shift(adr - PAD1_REG)
     default:
       return 0
     }
@@ -113,7 +136,7 @@ export class Apu {
       break
     case PAD1_REG:  // Pad status. bit0 = Controller shift register strobe
       if ((value & 1) === 0) {
-        this.latchPad()
+        this.gamePad.latch()
       }
       break
     default:
@@ -169,7 +192,7 @@ export class Apu {
   }
 
   public setPadStatus(no: number, status: number): void {
-    this.padStatus[no] = status
+    this.gamePad.setStatus(no, status)
   }
 
   public onHblank(hcount: number): void {
@@ -209,16 +232,5 @@ export class Apu {
     // http://wiki.nesdev.com/w/index.php/IRQ
     // Enable: $4017 write with bits 7-6 = 00
     return (this.regs[FRAME_COUNTER - BASE] & (IRQ_INHIBIT | SEQUENCER_MODE)) === 0
-  }
-
-  private latchPad(): void {
-    this.padTmp[0] = this.padStatus[0]
-    this.padTmp[1] = this.padStatus[1]
-  }
-
-  private shiftPad(no: number): number {
-    const result = this.padTmp[no]
-    this.padTmp[no] = result >> 1
-    return result & 1
   }
 }
