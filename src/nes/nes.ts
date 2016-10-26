@@ -54,12 +54,9 @@ export class Nes {
 
   private romData: Uint8Array
   private mapperNo: number
-  private mapper: Mapper
+  private mapper: Mapper = null
   private vblankCallback: (leftCycles: number) => void
   private breakPointCallback: () => void
-  private irqHlineEnable: boolean
-  private irqHlineValue: number
-  private irqHlineCounter: number
 
   public static create(): Nes {
     return new Nes()
@@ -81,8 +78,6 @@ export class Nes {
     this.cycleCount = 0
     this.vblankCallback = (_leftCycles) => {}
     this.breakPointCallback = () => {}
-    this.irqHlineEnable = false
-    this.irqHlineValue = this.irqHlineCounter = -1
 
     this.romData = new Uint8Array(0)
   }
@@ -115,8 +110,9 @@ export class Nes {
     this.ppu.reset()
     this.apu.reset()
     this.cycleCount = 0
-    this.irqHlineEnable = false
-    this.irqHlineValue = this.irqHlineCounter = -1
+
+    if (this.mapper != null)
+      this.mapper.reset()
   }
 
   public setPadStatus(no: number, status: number): void {
@@ -145,19 +141,6 @@ export class Nes {
     const cycle = this.cpu.step()
     this.cycleCount = this.tryHblankEvent(this.cycleCount, cycle, leftCycles)
     return cycle
-  }
-
-  public enableIrqHline(value: boolean): void {
-    this.irqHlineEnable = value
-  }
-
-  public setIrqHlineValue(line: number): void {
-    this.irqHlineValue = line
-    this.irqHlineCounter = this.irqHlineValue
-  }
-
-  public resetIrqHlineCounter(): void {
-    this.irqHlineCounter = 0
   }
 
   public render(pixels: Uint8ClampedArray): void {
@@ -217,17 +200,17 @@ export class Nes {
     cpu.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])
     cpu.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
 
-    this.setMemoryMapForMapper(mapperNo)
+    this.mapper = this.createMapper(mapperNo)
   }
 
-  private setMemoryMapForMapper(mapperNo: number): void {
+  private createMapper(mapperNo: number): Mapper {
     console.log(`Mapper ${mapperNo}`)
     if (!(mapperNo in kMapperTable)) {
       console.error(`  not supported`)
       mapperNo = 0
     }
     const mapperClass = kMapperTable[mapperNo]
-    this.mapper = new (mapperClass as any)(this.romData, this.cpu, this.ppu, this)
+    return new (mapperClass as any)(this.romData, this.cpu, this.ppu, this)
   }
 
   private tryHblankEvent(cycleCount: number, cycle: number, leftCycles: number): number {
@@ -255,20 +238,12 @@ export class Nes {
       case VRETURN:
         cycleCount2 -= (VRETURN * 341 / 3) | 0
         this.ppu.hcount = 0
-        this.irqHlineCounter = this.irqHlineValue
         break
       default:
         break
       }
 
-      // http://bobrost.com/nes/files/mmc3irqs.txt
-      // Note: BGs OR sprites MUST be enabled in $2001 (bits 3 and 4)
-      // in order for the countdown to occur.
-      if ((this.ppu.regs[1] & 0x18) !== 0) {
-        if (--this.irqHlineCounter === 0 && this.irqHlineEnable) {
-          this.cpu.requestIrq()
-        }
-      }
+      this.mapper.onHblank(hcount)
     }
     return cycleCount2
   }

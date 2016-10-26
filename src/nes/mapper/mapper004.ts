@@ -5,9 +5,18 @@ import {Cpu} from '../cpu'
 import {Nes} from '../nes'
 import {Ppu, MirrorMode} from '../ppu'
 
+const VRETURN = 262
+
 export class Mapper004 extends Mapper {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu, nes: Nes) {
+  private irqHlineEnable: boolean
+  private irqHlineValue: number
+  private irqHlineCounter: number
+
+  constructor(romData: Uint8Array, private cpu: Cpu, private ppu: Ppu, nes: Nes) {
     super()
+
+    this.irqHlineEnable = false
+    this.irqHlineValue = this.irqHlineCounter = -1
 
     const BANK_BIT = 13  // 0x2000
     const BANK_MASK = (1 << BANK_BIT) - 1
@@ -93,17 +102,17 @@ export class Mapper004 extends Mapper {
     cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if ((adr & 1) === 0) {
         irqLatch = value
-        nes.setIrqHlineValue(irqLatch)
+        this.setIrqHlineValue(irqLatch)
       } else {
-        nes.setIrqHlineValue(irqLatch)
+        this.setIrqHlineValue(irqLatch)
       }
     })
     cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
       if ((adr & 1) === 0) {
-        nes.enableIrqHline(false)
-        nes.resetIrqHlineCounter()
+        this.enableIrqHline(false)
+        this.resetIrqHlineCounter()
       } else {
-        nes.enableIrqHline(true)
+        this.enableIrqHline(true)
       }
     })
 
@@ -114,5 +123,42 @@ export class Mapper004 extends Mapper {
     // > Some mappers, such as MMC1, MMC3, and AxROM, can control nametable mirroring.
     // > They ignore bit 0
     ppu.setMirrorMode(MirrorMode.VERT)  // Default vertical mirroring?
+  }
+
+  public reset() {
+    this.irqHlineEnable = false
+    this.irqHlineValue = this.irqHlineCounter = -1
+  }
+
+  public onHblank(hcount: number): void {
+    // http://bobrost.com/nes/files/mmc3irqs.txt
+    // Note: BGs OR sprites MUST be enabled in $2001 (bits 3 and 4)
+    // in order for the countdown to occur.
+    if ((this.ppu.regs[1] & 0x18) !== 0) {
+      if (--this.irqHlineCounter === 0 && this.irqHlineEnable) {
+        this.cpu.requestIrq()
+      }
+    }
+
+    switch (hcount) {
+    case VRETURN:
+      this.irqHlineCounter = this.irqHlineValue
+      break
+    default:
+      break
+    }
+  }
+
+  private setIrqHlineValue(line: number): void {
+    this.irqHlineValue = line
+    this.irqHlineCounter = this.irqHlineValue
+  }
+
+  private enableIrqHline(value: boolean): void {
+    this.irqHlineEnable = value
+  }
+
+  private resetIrqHlineCounter(): void {
+    this.irqHlineCounter = 0
   }
 }
