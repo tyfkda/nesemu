@@ -156,7 +156,7 @@ export class Apu {
     case 2:
       {
         const value = this.regs[channel * 4 + 2] + ((this.regs[channel * 4 + 3] & 7) << 8)
-        return ((1790000 / 8) / (value + 1)) | 0
+        return ((1790000 / 32) / (value + 1)) | 0
       }
     case 3:
       {
