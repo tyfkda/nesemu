@@ -704,7 +704,7 @@ export class Ppu {
       return
 
     const dy = this.getNonEmptySprite0Line()
-    if (dy < 0 || hcount !== sprite0y + dy)
+    if (dy < 0 || hcount !== sprite0y + dy + 1)
       return
 
     this.regs[PPUSTATUS] |= SPRITE0HIT
