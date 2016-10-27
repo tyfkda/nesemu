@@ -603,7 +603,7 @@ export class Ppu {
       if ((h.ppuMask & SHOW_SPRITE) === 0)
         continue
       const hline0 = h.hcount
-      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240 + 8
+      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : Const.HEIGHT
       if (hline0 >= hline1)
         continue
       if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
@@ -645,7 +645,7 @@ export class Ppu {
 
     for (let i = 64; --i >= 0; ) {
       const y = oam[i * 4] + 1
-      if (y < hline0 || y >= hline1)
+      if (y + h < hline0 || y >= hline1)
         continue
 
       const index = oam[i * 4 + 1]
@@ -660,7 +660,9 @@ export class Ppu {
                       : index * 16 + chrStart)
       const paletHigh = ((attr & PALET) << 2) + 0x10
 
-      for (let py = 0; py < h; ++py) {
+      const py0 = Math.max(0, hline0 - y)
+      const py1 = Math.min(h, hline1 - y)
+      for (let py = py0; py < py1; ++py) {
         if (y + py >= Const.HEIGHT)
           break
 
