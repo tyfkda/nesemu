@@ -5,10 +5,18 @@ import {Mapper} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
 
+const IRQ_ENABLE_AFTER = 1 << 0
+const IRQ_ENABLE = 1 << 1
+const IRQ_MODE = 1 << 2
+
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
 class Mapper023Base extends Mapper {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu, mapping: {[key: number]: number}) {
+  private irqControl: number = 0
+  private irqLatch: number = 0
+  private irqCounter: number = 0
+
+  constructor(romData: Uint8Array, private cpu: Cpu, private ppu: Ppu, mapping: {[key: number]: number}) {
     super()
 
     const BANK_BIT = 13
@@ -98,7 +106,21 @@ class Mapper023Base extends Mapper {
           chrBank[bank] = (chrBank[bank] & ~0x0f) | (value & 0x0f)
         ppu.setChrBankOffset(bank, chrBank[bank])
       } else {  // IRQ
-        // TODO: Implement.
+        const low = adr & 0xff
+        if (low === mapping[0]) {  // IRQ Latch: low 4 bits
+          this.irqLatch = (this.irqLatch & ~0x0f) | (value & 0x0f)
+        } else if (low === mapping[2]) {  // IRQ Latch: high 4 bits
+          this.irqLatch = (this.irqLatch & ~0xf0) | ((value & 0x0f) << 4)
+        } else if (low === mapping[4]) {  // IRQ Control
+          this.irqControl = value
+          if ((this.irqControl & IRQ_ENABLE) !== 0) {
+            this.irqCounter = this.irqLatch
+          }
+        } else if (low === mapping[6]) {  // IRQ Acknowledge
+          // Copy to enable
+          const ea = this.irqControl & IRQ_ENABLE_AFTER
+          this.irqControl = (this.irqControl & ~IRQ_ENABLE) | (ea << 1)
+        }
       }
     })
 
@@ -107,6 +129,27 @@ class Mapper023Base extends Mapper {
     ram.fill(0xff)
     cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
     cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+  }
+
+  public reset() {
+    this.irqControl = 0
+    this.irqLatch = this.irqCounter = 0
+  }
+
+  public onHblank(hcount: number): void {
+    if ((this.irqControl & IRQ_ENABLE) !== 0) {
+      let c = this.irqCounter
+      if ((this.irqControl & IRQ_MODE) === 0) {  // scanline mode
+        c += 1
+      } else {  // cycle mode
+        c += 185  // TODO: Calculate.
+      }
+      if (c > 255) {
+        c = this.irqLatch
+        this.cpu.requestIrq()
+      }
+      this.irqCounter = c
+    }
   }
 }
 

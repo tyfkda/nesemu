@@ -5,10 +5,27 @@ import {Mapper} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
 
+const IRQ_ENABLE_AFTER = 1 << 0
+const IRQ_ENABLE = 1 << 1
+const IRQ_MODE = 1 << 2
+
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
+const kChrBankTable = [
+  [0, 1, 2, 3, 4, 5, 6, 7],
+  [0, 0, 1, 1, 2, 2, 3, 3],
+  [0, 1, 2, 3, 4, 4, 5, 5],
+  [0, 1, 2, 3, 4, 4, 5, 5],
+]
+
 class Mapper024Base extends Mapper {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu, mapping: {[key: number]: number}) {
+  private irqControl: number = 0
+  private irqLatch: number = 0
+  private irqCounter: number = 0
+
+  constructor(romData: Uint8Array, private cpu: Cpu, private ppu: Ppu,
+              mapping: {[key: number]: number})
+  {
     super()
 
     const BANK_BIT = 13
@@ -37,55 +54,49 @@ class Mapper024Base extends Mapper {
     let mirrorMode = 0
     let chrRegs = new Uint8Array(8)
     const setChrBank = () => {
-      switch (ppuBankMode) {
-      case 0:
-        ppu.setChrBankOffset(0, chrRegs[0])
-        ppu.setChrBankOffset(1, chrRegs[1])
-        ppu.setChrBankOffset(2, chrRegs[2])
-        ppu.setChrBankOffset(3, chrRegs[3])
-        ppu.setChrBankOffset(4, chrRegs[4])
-        ppu.setChrBankOffset(5, chrRegs[5])
-        ppu.setChrBankOffset(6, chrRegs[6])
-        ppu.setChrBankOffset(7, chrRegs[7])
-        break
-      case 1:
-        ppu.setChrBankOffset(0, chrRegs[0])
-        ppu.setChrBankOffset(1, chrRegs[0])
-        ppu.setChrBankOffset(2, chrRegs[1])
-        ppu.setChrBankOffset(3, chrRegs[1])
-        ppu.setChrBankOffset(4, chrRegs[2])
-        ppu.setChrBankOffset(5, chrRegs[2])
-        ppu.setChrBankOffset(6, chrRegs[3])
-        ppu.setChrBankOffset(7, chrRegs[3])
-        break
-      case 2:
-      case 3:
-        ppu.setChrBankOffset(0, chrRegs[0])
-        ppu.setChrBankOffset(1, chrRegs[1])
-        ppu.setChrBankOffset(2, chrRegs[2])
-        ppu.setChrBankOffset(3, chrRegs[3])
-        ppu.setChrBankOffset(4, chrRegs[4])
-        ppu.setChrBankOffset(5, chrRegs[4])
-        ppu.setChrBankOffset(6, chrRegs[5])
-        ppu.setChrBankOffset(7, chrRegs[5])
-        break
-      }
+      const table = kChrBankTable[ppuBankMode]
+      for (let i = 0; i < 8; ++i)
+        ppu.setChrBankOffset(i, chrRegs[table[i]])
     }
     // CHR ROM bank
+    const b003 = 0xb000 | mapping[3]
     cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
-      if ((adr & 0xf000) === 0xb000 && (adr & 0xff) === mapping[3]) {
-        // PPU Banking Style
+      if ((adr & 0xf0ff) === b003) {
         ppuBankMode = value & 3
+        setChrBank()
+
         mirrorMode = (value >> 2) & 3
         ppu.setMirrorMode(kMirrorTable[mirrorMode])
       }
     })
     cpu.setWriteMemory(0xd000, 0xffff, (adr, value) => {
       if (0xd000 <= adr && adr <= 0xefff) {
+        const high = ((adr - 0xd000) >> 10) & 4
         const low = adr & 0x0f
         if (low < 4) {
-          chrRegs[mapping[low]] = value
+          const reg = mapping[low] + high
+          chrRegs[reg] = value
           setChrBank()
+        }
+      } else {
+        const low = adr & 0xff
+        switch (low) {
+        case 0:  // IRQ Latch: low 4 bits
+          this.irqLatch = value
+          break
+        case 1:  // IRQ Control
+          this.irqControl = value
+          if ((this.irqControl & IRQ_ENABLE) !== 0) {
+            this.irqCounter = this.irqLatch
+          }
+          break
+        case 2:  // IRQ Acknowledge
+          // Copy to enable
+          const ea = this.irqControl & IRQ_ENABLE_AFTER
+          this.irqControl = (this.irqControl & ~IRQ_ENABLE) | (ea << 1)
+          break
+        default:
+          break
         }
       }
     })
@@ -95,6 +106,27 @@ class Mapper024Base extends Mapper {
     ram.fill(0xff)
     cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
     cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+  }
+
+  public reset() {
+    this.irqControl = 0
+    this.irqLatch = this.irqCounter = 0
+  }
+
+  public onHblank(hcount: number): void {
+    if ((this.irqControl & IRQ_ENABLE) !== 0) {
+      let c = this.irqCounter
+      if ((this.irqControl & IRQ_MODE) === 0) {  // scanline mode
+        c += 1
+      } else {  // cycle mode
+        c += 185  // TODO: Calculate.
+      }
+      if (c >= 255) {
+        c = this.irqLatch
+        this.cpu.requestIrq()
+      }
+      this.irqCounter = c
+    }
   }
 }
 
