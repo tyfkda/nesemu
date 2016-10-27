@@ -37,6 +37,7 @@ const OAMADDR = 0x03
 
 // OAMDATA ($2004)
 const OAMDATA = 0x04
+const MAX_SPRITE = 64
 
 const PPUSCROLL = 0x05  // $2005
 const PPUADDR = 0x06  // $2006
@@ -65,7 +66,8 @@ const kInitialPalette = [
   0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 0x08, 0x3a, 0x00, 0x02, 0x00, 0x20, 0x2c, 0x08,
 ]
 
-const kSpritePriorityMask = [0, 0xff]
+const SPRITE_MASK = 0x80
+const kSpritePriorityMask = [SPRITE_MASK, 0xff]
 
 function cloneArray(array) {
   return array.concat()
@@ -119,7 +121,7 @@ function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8ClampedArray,
   const n = Const.WIDTH * Const.HEIGHT
   let index = 0
   for (let i = 0; i < n; ++i) {
-    const pal = offscreen[i]
+    const pal = offscreen[i] & 0x1f
     if (pal === 0) {
       pixels[index + 0] = clearR
       pixels[index + 1] = clearG
@@ -643,7 +645,7 @@ export class Ppu {
     const isSprite8x16 = this.isSprite8x16()
     const h = isSprite8x16 ? 16 : 8
 
-    for (let i = 64; --i >= 0; ) {
+    for (let i = 0; i < MAX_SPRITE; ++i) {
       const y = oam[i * 4] + 1
       if (y + h < hline0 || y >= hline1)
         continue
@@ -658,7 +660,7 @@ export class Ppu {
       const chridx = (isSprite8x16
                       ? (index & 0xfe) * 16 + ((index & 1) << 12)
                       : index * 16 + chrStart)
-      const paletHigh = ((attr & PALET) << 2) + 0x10
+      const paletHigh = (((attr & PALET) << 2) | (0x10 | SPRITE_MASK))
 
       const py0 = Math.max(0, hline0 - y)
       const py1 = Math.min(h, hline1 - y)
@@ -679,8 +681,10 @@ export class Ppu {
           if (pal === 0)
             continue
           const index = (y + py) * LINE_WIDTH + (x + px)
-          if ((offscreen[index] & priorityMask) !== 0)
+          if ((offscreen[index] & priorityMask) !== 0) {
+            offscreen[index] |= SPRITE_MASK
             continue
+          }
           offscreen[index] = paletHigh + pal
         }
       }
