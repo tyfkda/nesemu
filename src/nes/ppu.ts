@@ -772,8 +772,10 @@ export class Ppu {
       return
 
     const inc = (t) => {
-      let pageY = (t & 0x0800) * (240 / 2048)
-      const y = ((t & 0x03e0) >> (5 - 3)) | ((t >> 12) & 7)
+      let pageY = ((t >> 11) & 1) * 240
+      let y = ((t & 0x03e0) >> (5 - 3)) | ((t >> 12) & 7)
+      if (y >= 240)
+        y -= 256
       const ny = pageY + y + dy
       const p = (ny / 240) & 1
       const sy = ny % 240
