@@ -3,6 +3,8 @@ NES Emulator
 
 NES emulator written in TypeScript.
 
+![nesemu-ss.png](doc/nesemu-ss.png)
+
 ## Features
 
   * Run on a browser
