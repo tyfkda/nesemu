@@ -16,7 +16,7 @@ NES emulator written in TypeScript.
 ## How to play
 
   * Go to https://tyfkda.github.io/nesemu/
-  * Drag and drop .nes (or .zip) file onto the page, the game will be started.
+  * Drag and drop a rom file (.nes or .zip) onto the page, the game will be started.
 
 
 ## Control
@@ -29,10 +29,10 @@ NES emulator written in TypeScript.
 | Start    | Enter      |
 | Select   | Space      |
 
-  * You can also use gamepad
+  * You can also use a gamepad
 
 
-## How to build
+## Development
 
 ### Requirement
 
