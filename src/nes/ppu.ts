@@ -704,7 +704,7 @@ export class Ppu {
       return
 
     const dy = this.getNonEmptySprite0Line()
-    if (dy < 0 || hcount !== sprite0y + dy + 1)
+    if (dy < 0 || hcount !== sprite0y + dy)
       return
 
     this.regs[PPUSTATUS] |= SPRITE0HIT
@@ -744,8 +744,8 @@ export class Ppu {
   }
 
   private addHevent(param: any): void {
-    let hcount = this.hcount
-    if (hcount >= 240)
+    let hcount = this.hcount + 1
+    if (hcount >= Const.HEIGHT)
       hcount = 0
     const hevents = this.hevents
     let n = hevents.count
@@ -766,7 +766,7 @@ export class Ppu {
     if (this.hevents.count <= 0)
       return
     const h = this.hevents.events[this.hevents.count - 1]
-    const hcount = this.hcount < 240 ? this.hcount : 0
+    const hcount = this.hcount < Const.HEIGHT - 1 ? this.hcount + 1 : 0
     const dy = hcount - h.hcount
     if (dy <= 0)
       return
