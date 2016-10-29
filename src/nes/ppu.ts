@@ -502,7 +502,7 @@ export class Ppu {
     for (let i = 0; i < n; ++i) {
       const h = this.hevents.events[i]
       const hline0 = h.hcount
-      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : 240 + 8
+      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : Const.HEIGHT
       if (hline0 >= hline1)
         continue
       if ((h.ppuMask & SHOW_BG) === 0) {
