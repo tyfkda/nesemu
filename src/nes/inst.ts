@@ -1,7 +1,5 @@
 // Instruction definitions
 
-import './polyfill'
-
 export enum Addressing {
   UNKNOWN,
   IMPLIED,
