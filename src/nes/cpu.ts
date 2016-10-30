@@ -514,10 +514,6 @@ export class Cpu {
       break
 
     case 56:  // BRK
-      if (this.$DEBUG) {
-        this.addStepLog('BRK occurred')
-      }
-
       this.push16(this.pc + 1)
       this.push(this.p | BREAK_FLAG)
       this.pc = this.read16(VEC_IRQ)
