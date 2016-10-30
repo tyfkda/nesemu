@@ -23,6 +23,7 @@ export class Mapper001 extends Mapper {
     let register = 0
     let counter = 0
     let prgBankMode = 3, prgBank = [0, size - BANK_SIZE]
+    let prgReg = 0
     let chrBank4k = true
     let chrBank = [0 << 2, 1 << 2]
 
@@ -45,7 +46,8 @@ export class Mapper001 extends Mapper {
     }
 
     const setPrgBank = (reg, chrBank0) => {
-      const bank = ((reg & 0x0f) | (chrBank0 & 0x10)) & maxPrg
+      const highBit = chrBank0 & (0x10 & maxPrg)
+      const bank = ((reg & 0x0f) | highBit) & maxPrg
       switch (prgBankMode) {
       case 0: case 1:
         prgBank[0] = (bank & ~1) << BANK_BIT
@@ -57,11 +59,12 @@ export class Mapper001 extends Mapper {
         break
       case 3:
         prgBank[0] = bank << BANK_BIT
-        prgBank[1] = size - BANK_SIZE
+        prgBank[1] = ((maxPrg & 0x0f) | highBit) << BANK_BIT
         break
       default:
         break
       }
+      prgReg = reg
     }
 
     // PRG ROM
@@ -87,16 +90,7 @@ export class Mapper001 extends Mapper {
           ppu.setMirrorMode(kMirrorTable[register & 3])
 
           prgBankMode = (register >> 2) & 3
-          switch (prgBankMode) {
-          case 2:
-            prgBank[0] = 0
-            break
-          case 3:
-            prgBank[1] = size - BANK_SIZE
-            break
-          default:
-            break
-          }
+          setPrgBank(prgReg, chrBank[0])
 
           const newChrBank4k = (register & 0x10) !== 0
           if (chrBank4k !== newChrBank4k) {
@@ -114,7 +108,7 @@ export class Mapper001 extends Mapper {
             setChrBank(hilo, bank)
 
           if (hilo === 0)
-            setPrgBank(prgBank[0] >> BANK_BIT, bank)
+            setPrgBank(prgReg, bank)
         }
         break
       case 0xe000:  // PRG bank
