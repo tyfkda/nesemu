@@ -2,6 +2,7 @@
 
 import {Addressing, Instruction, OpType, kInstTable} from './inst'
 import {Util} from './util'
+import {Address, Byte, Word} from './types'
 
 import {disassemble} from './disasm'
 
@@ -14,25 +15,25 @@ const RESERVED_BIT = 5
 const OVERFLOW_BIT = 6
 const NEGATIVE_BIT = 7
 
-const CARRY_FLAG = 1 << CARRY_BIT
-const ZERO_FLAG = 1 << ZERO_BIT
-const IRQBLK_FLAG = 1 << IRQBLK_BIT
-const DECIMAL_FLAG = 1 << DECIMAL_BIT
-const BREAK_FLAG = 1 << BREAK_BIT
-const RESERVED_FLAG = 1 << RESERVED_BIT
-const OVERFLOW_FLAG = 1 << OVERFLOW_BIT
-const NEGATIVE_FLAG = 1 << NEGATIVE_BIT
+const CARRY_FLAG: Byte = 1 << CARRY_BIT
+const ZERO_FLAG: Byte = 1 << ZERO_BIT
+const IRQBLK_FLAG: Byte = 1 << IRQBLK_BIT
+const DECIMAL_FLAG: Byte = 1 << DECIMAL_BIT
+const BREAK_FLAG: Byte = 1 << BREAK_BIT
+const RESERVED_FLAG: Byte = 1 << RESERVED_BIT
+const OVERFLOW_FLAG: Byte = 1 << OVERFLOW_BIT
+const NEGATIVE_FLAG: Byte = 1 << NEGATIVE_BIT
 
-const VEC_NMI = 0xfffa
-const VEC_RESET = 0xfffc
-const VEC_IRQ = 0xfffe
+const VEC_NMI: Address = 0xfffa
+const VEC_RESET: Address = 0xfffc
+const VEC_IRQ: Address = 0xfffe
 
 const BLOCK_SIZE = 0x2000
 
 const MAX_STEP_LOG = 200
 
-const _NZ_MASK = ~(NEGATIVE_FLAG | ZERO_FLAG)
-const _NZC_MASK = ~(NEGATIVE_FLAG | ZERO_FLAG | CARRY_FLAG)
+const _NZ_MASK: Byte = ~(NEGATIVE_FLAG | ZERO_FLAG)
+const _NZC_MASK: Byte = ~(NEGATIVE_FLAG | ZERO_FLAG | CARRY_FLAG)
 
 const kNZTable: Uint8Array = (() => {
   const table = new Uint8Array(256)
@@ -47,22 +48,21 @@ const kNZTable: Uint8Array = (() => {
   return table
 })()
 
-
 function setReset(p, flag, mask): number {
   if (flag)
     return p | mask
   return p & ~mask
 }
 
-function inc8(value): number {
+function inc8(value: Byte): Byte {
   return (value + 1) & 0xff
 }
 
-function dec8(value): number {
+function dec8(value: Byte): Byte {
   return (value - 1) & 0xff
 }
 
-function toSigned(value: number): number {
+function toSigned(value: Byte): number {
   return value < 0x80 ? value : value - 0x0100
 }
 
@@ -95,26 +95,26 @@ const disasm = (() => {
 })()
 
 export class Cpu {
-  public a: number  // A register
-  public x: number  // X register
-  public y: number  // Y register
-  public s: number  // Stack pointer
-  public p: number  // Status register [NVRBDIZC],
-                    //   N: negative
-                    //   V: overflow
-                    //   R: reserved
-                    //   B: breakmode
-                    //   D: decimal mode
-                    //   I: irq blocked
-                    //   Z: zero
-                    //   C: carry
-  public pc: number  // Program counter
+  public a: Byte  // A register
+  public x: Byte  // X register
+  public y: Byte  // Y register
+  public s: Byte  // Stack pointer
+  public p: Byte  // Status register [NVRBDIZC],
+                  //   N: negative
+                  //   V: overflow
+                  //   R: reserved
+                  //   B: breakmode
+                  //   D: decimal mode
+                  //   I: irq blocked
+                  //   Z: zero
+                  //   C: carry
+  public pc: Address  // Program counter
   public breakPoints: any = {}
   public watchRead: any = {}
   public watchWrite: any = {}
   public paused = false
-  private readerFuncTable = new Array<Function>(0x10000 / BLOCK_SIZE)
-  private writerFuncTable = new Array<Function>(0x10000 / BLOCK_SIZE)
+  private readerFuncTable = new Array<(adr: Address) => Byte>(0x10000 / BLOCK_SIZE)
+  private writerFuncTable = new Array<(adr: Address, value: Byte) => void>(0x10000 / BLOCK_SIZE)
   private readErrorReported: boolean
   private writeErrorReported: boolean
 
@@ -132,14 +132,15 @@ export class Cpu {
     this.writerFuncTable.fill(null)
   }
 
-  public setReadMemory(start, end, func: (adr: number) => number): void {
+  public setReadMemory(start: Address, end: Address, func: (adr: Address) => Byte): void {
     const startBlock = (start / BLOCK_SIZE) | 0
     const endBlock = (end / BLOCK_SIZE) | 0
     for (let i = startBlock; i <= endBlock; ++i)
       this.readerFuncTable[i] = func
   }
 
-  public setWriteMemory(start, end, func: (adr: number, value: number) => void): void {
+  public setWriteMemory(start: Address, end: Address,
+                        func: (adr: Address, value: Byte) => void): void {
     const startBlock = (start / BLOCK_SIZE) | 0
     const endBlock = (end / BLOCK_SIZE) | 0
     for (let i = startBlock; i <= endBlock; ++i)
@@ -530,7 +531,7 @@ export class Cpu {
     return cycle
   }
 
-  public read8(adr: number): number {
+  public read8(adr: Address): Byte {
     const value = this.read8Raw(adr)
     if (this.watchRead[adr]) {
       this.paused = true
@@ -540,7 +541,7 @@ export class Cpu {
     return value
   }
 
-  public read8Raw(adr: number): number {
+  public read8Raw(adr: Address): Byte {
     const block = (adr / BLOCK_SIZE) | 0
     const reader = this.readerFuncTable[block]
     if (!reader) {
@@ -553,19 +554,19 @@ export class Cpu {
     return reader(adr)
   }
 
-  public read16(adr: number): number {
+  public read16(adr: Address): Word {
     const lo = this.read8(adr)
     const hi = this.read8(adr + 1)
     return (hi << 8) | lo
   }
 
-  public read16Indirect(adr: number): number {
+  public read16Indirect(adr: Address): Word {
     const lo = this.read8(adr)
     const hi = this.read8((adr & 0xff00) + ((adr + 1) & 0xff))
     return (hi << 8) | lo
   }
 
-  public write8(adr: number, value: number): void {
+  public write8(adr: Address, value: Byte): void {
     const block = (adr / BLOCK_SIZE) | 0
     const writer = this.writerFuncTable[block]
     if (!writer) {
@@ -584,7 +585,7 @@ export class Cpu {
     return writer(adr, value)
   }
 
-  public dump(start: number, count: number): void {
+  public dump(start: Address, count: number): void {
     const mem = []
     for (let i = 0; i < count; ++i) {
       mem.push(this.read8(i + start))
@@ -596,12 +597,12 @@ export class Cpu {
     }
   }
 
-  private push(value: number): void {
+  private push(value: Word): void {
     this.write8(0x0100 + this.s, value)
     this.s = dec8(this.s)
   }
 
-  private push16(value: number): void {
+  private push16(value: Word): void {
     let s = this.s
     this.write8(0x0100 + s, value >> 8)
     s = dec8(s)
@@ -609,12 +610,12 @@ export class Cpu {
     this.s = dec8(s)
   }
 
-  private pop(): number {
+  private pop(): Byte {
     this.s = inc8(this.s)
     return this.read8(0x0100 + this.s)
   }
 
-  private pop16(): number {
+  private pop16(): Word {
     let s = this.s
     s = inc8(s)
     const l = this.read8(0x0100 + s)
@@ -625,12 +626,12 @@ export class Cpu {
   }
 
   // Set N and Z flag for the given value.
-  private setNZFlag(nz: number): void {
+  private setNZFlag(nz: Byte): void {
     this.p = (this.p & _NZ_MASK) | kNZTable[nz]
   }
 
   // Set N, Z and C flag for the given value.
-  private setNZCFlag(nz: number, carry: boolean): void {
+  private setNZCFlag(nz: Byte, carry: boolean): void {
     this.p = (this.p & _NZC_MASK) | kNZTable[nz] | (carry ? CARRY_FLAG : 0)
   }
 
@@ -652,7 +653,7 @@ export class Cpu {
     }
   }
 
-  private getAdr(pc: number, addressing: Addressing): number {
+  private getAdr(pc: Address, addressing: Addressing): Address {
     switch (addressing) {
     case Addressing.ACCUMULATOR:
     case Addressing.IMPLIED:
@@ -695,7 +696,7 @@ export class Cpu {
     }
   }
 
-  private branch(adr: number, cond: boolean): number {
+  private branch(adr: Address, cond: boolean): number {
     if (!cond)
       return 0
     const pc = this.pc

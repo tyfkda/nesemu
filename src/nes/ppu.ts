@@ -4,6 +4,7 @@
 // https://wiki.nesdev.com/w/index.php/PPU_scrolling
 
 import {Const, kColors, kStaggered, kFlipBits} from './const'
+import {Address, Byte, Word} from './types'
 import {Util} from './util'
 
 const REGISTER_COUNT = 8
@@ -73,15 +74,15 @@ function cloneArray(array) {
   return array.concat()
 }
 
-function getNameTable(baseNameTable: number, bx: number, by: number,
-                      mirrorModeBit: number): number
+function getNameTable(baseNameTable: Address, bx: number, by: number,
+                      mirrorModeBit: number): Address
 {
   const page = (((bx >> 5) & 1) + (((by / 30) & 1) << 1)) ^ baseNameTable  // 0~3
   const m = (mirrorModeBit << (10 - (page << 1))) & 0x0c00
   return 0x2000 + m
 }
 
-function getPpuAddr(adr: number, mirrorModeBit: number): number {
+function getPpuAddr(adr: Address, mirrorModeBit: number): Address {
   adr &= 0x3fff
   if (0x3000 <= adr && adr < 0x3f00)
     adr -= 0x1000  // Map 0x3000~3eff to 0x2000~
@@ -101,18 +102,19 @@ function getPpuAddr(adr: number, mirrorModeBit: number): number {
   return adr
 }
 
-function incPpuAddr(ppuAddr: number, ppuCtrl: number): number {
+function incPpuAddr(ppuAddr: Address, ppuCtrl: Byte): Address {
   const add = ((ppuCtrl & INCREMENT_MODE) !== 0) ? 32 : 1
   return (ppuAddr + add) & (VRAM_SIZE - 1)
 }
 
-function getBgPatternTableAddress(ppuCtrl: number): number {
+function getBgPatternTableAddress(ppuCtrl: Byte): Address {
   return (ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
 }
 
 function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8ClampedArray,
-                               vram: Uint8Array): void {
-  const paletTable = 0x3f00
+                               vram: Uint8Array): void
+{
+  const paletTable: Address = 0x3f00
   const clearColor = vram[paletTable] & 0x3f  // Universal background color
   const clearR = kColors[clearColor * 3 + 0]
   const clearG = kColors[clearColor * 3 + 1]
@@ -146,14 +148,14 @@ export class Ppu {
   public mirrorModeBit = 0x44  // 2bit x 4screen
   public hcount: number
   private latch: number
-  private ppuAddr: number
-  private bufferedValue: number
+  private ppuAddr: Address
+  private bufferedValue: Byte
   private chrBankOffset = new Array<number>(8)
   private hevents: HEvents = {count: 0, events: []}
   private hevents2: HEvents = {count: 0, events: []}
 
-  private scrollCurr: number = 0
-  private scrollTemp: number = 0
+  private scrollCurr: Word = 0
+  private scrollTemp: Word = 0
   private scrollFineX: number = 0
 
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
@@ -217,7 +219,7 @@ export class Ppu {
                     scrollFineX: this.scrollFineX})
   }
 
-  public read(reg: number): number {
+  public read(reg: number): Byte {
     let result = this.regs[reg]
     switch (reg) {
     case PPUSTATUS:
@@ -248,7 +250,7 @@ export class Ppu {
     return result
   }
 
-  public write(reg: number, value: number): void {
+  public write(reg: number, value: Byte): void {
     if (reg === PPUSTATUS) {
       value &= ~(VBLANK | SPRITE0HIT | SPRITE_OVERFLOW)
     }
@@ -329,7 +331,7 @@ export class Ppu {
     }
   }
 
-  public copyWithDma(array: Uint8Array, start: number): void {
+  public copyWithDma(array: Uint8Array, start: Address): void {
     const dst = this.oam
     let j = this.regs[OAMADDR]
     for (let i = 0; i < 256; ++i) {
@@ -353,6 +355,7 @@ export class Ppu {
                     mirrorModeBit: this.mirrorModeBit, scrollCurr: this.scrollCurr,
                     scrollFineX: this.scrollFineX})
   }
+
   public clearVBlank(): void {
     this.regs[PPUSTATUS] &= ~(VBLANK | SPRITE0HIT)
 
@@ -367,7 +370,7 @@ export class Ppu {
     return (this.regs[PPUCTRL] & VINT_ENABLE) !== 0
   }
 
-  public getSpritePatternTableAddress(): number {
+  public getSpritePatternTableAddress(): Address {
     if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
       return ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
     return 0
@@ -411,7 +414,7 @@ export class Ppu {
     }
   }
 
-  public writePpuDirect(addr: number, value: number): void {
+  public writePpuDirect(addr: Address, value: Byte): void {
     if (addr >= 0x2000) {
       this.vram[addr] = value
     } else {
@@ -420,7 +423,7 @@ export class Ppu {
     }
   }
 
-  public dumpVram(start: number, count: number): void {
+  public dumpVram(start: Address, count: number): void {
     const mem = []
     for (let i = 0; i < count; ++i) {
       mem.push(this.vram[getPpuAddr(start + i, this.mirrorModeBit)])
@@ -526,8 +529,8 @@ export class Ppu {
   }
 
   private doRenderBg(scrollX: number, scrollY: number,
-                     baseNameTable: number, hline0: number, hline1: number, x0: number,
-                     chrBankOffset: number[], mirrorModeBit: number, chrStart: number): void
+                     baseNameTable: Address, hline0: number, hline1: number, x0: number,
+                     chrBankOffset: number[], mirrorModeBit: number, chrStart: Address): void
   {
     const getBgPat = (chridx, py) => {
       const idx = chridx + py
@@ -616,7 +619,7 @@ export class Ppu {
   }
 
   private renderSprite2(hline0: number, hline1: number, x0: number,
-                        chrBankOffset: number[], chrStart: number): void
+                        chrBankOffset: number[], chrStart: Address): void
   {
     const getSpritePat = (chridx, ppy, flipHorz) => {
       const idx = chridx + (ppy & 7) + ((ppy & 8) << 1)
@@ -786,7 +789,7 @@ export class Ppu {
     this.scrollCurr = inc(this.scrollCurr)
   }
 
-  private readPpuDirect(addr: number): number {
+  private readPpuDirect(addr: Address): Byte {
     if (addr >= 0x2000) {
       return this.vram[addr]
     } else {

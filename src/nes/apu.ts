@@ -1,5 +1,7 @@
 // APU: Audio Processing Unit
 
+import {Address, Byte} from './types'
+
 export enum PadBit {
   A = 0,
   B = 1,
@@ -52,10 +54,10 @@ const VBLANK_START = 241
 // ================================================================
 // GamePad
 class GamePad {
-  private status = new Array<number>(2)
-  private tmp = new Array<number>(2)
+  private status = new Array<Byte>(2)
+  private tmp = new Array<Byte>(2)
 
-  public setStatus(no: number, status: number): void {
+  public setStatus(no: number, status: Byte): void {
     this.status[no] = status
   }
 
@@ -96,7 +98,7 @@ export class Apu {
     this.channelStopped.fill(true)
   }
 
-  public read(adr: number): number {
+  public read(adr: Address): Byte {
     const reg = adr - BASE
     switch (reg) {
     case STATUS_REG:
@@ -120,7 +122,7 @@ export class Apu {
     }
   }
 
-  public write(adr: number, value: number): void {
+  public write(adr: Address, value: Byte): void {
     const reg = adr - BASE
     if (reg >= 0x20)
       return
@@ -197,7 +199,7 @@ export class Apu {
     return 0.0
   }
 
-  public setPadStatus(no: number, status: number): void {
+  public setPadStatus(no: number, status: Byte): void {
     this.gamePad.setStatus(no, status)
   }
 
