@@ -2,7 +2,6 @@
 
 import {Mapper} from './mapper'
 import {Cpu} from '../cpu'
-import {Nes} from '../nes'
 import {Ppu, MirrorMode} from '../ppu'
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ]
