@@ -140,3 +140,14 @@ export class Mapper024 extends Mapper024Base {
     })
   }
 }
+
+export class Mapper026 extends Mapper024Base {
+  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
+    super(romData, cpu, ppu, {
+      0: 0,
+      1: 2,
+      2: 1,
+      3: 3,
+    })
+  }
+}
