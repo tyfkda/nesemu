@@ -83,6 +83,7 @@ export class Apu {
   private dmcInterrupt = 0x80  // 0=not occurred, 0x80=occurred
   private lengthCounter = new Array<number>(Apu.CHANNEL)
   private channelStopped = new Array<boolean>(Apu.CHANNEL)
+  private sweepCounter = new Array<number>(2)
   private gamePad = new GamePad()
 
   constructor(private triggerIrq: () => void) {
@@ -96,6 +97,7 @@ export class Apu {
 
     this.lengthCounter.fill(0)
     this.channelStopped.fill(true)
+    this.sweepCounter.fill(0)
   }
 
   public read(adr: Address): Byte {
@@ -131,10 +133,20 @@ export class Apu {
 
     if (reg < 0x10) {  // Sound
       const ch = reg >> 2
-      if ((reg & 3) === 3) {  // Set length.
+      const r = reg & 3
+      switch (r) {
+      case 1:
+        if (ch === CH_PULSE1 || ch === CH_PULSE2) {  // Set sweep for square wave.
+          this.sweepCounter[ch] = value >> 4
+        }
+        break
+      case 3:  // Set length.
         const length = kLengthTable[value >> 3]
         this.lengthCounter[ch] = length
         this.channelStopped[ch] = false
+        break
+      default:
+        break
       }
     }
 
@@ -152,22 +164,22 @@ export class Apu {
     }
   }
 
-  public getFrequency(channel: number): number {
-    switch (channel) {
+  public getFrequency(ch: number): number {
+    switch (ch) {
     case CH_PULSE1:
     case CH_PULSE2:
       {
-        const value = this.regs[channel * 4 + 2] + ((this.regs[channel * 4 + 3] & 7) << 8)
+        const value = this.regs[ch * 4 + 2] + ((this.regs[ch * 4 + 3] & 7) << 8)
         return ((1790000 / 16) / (value + 1)) | 0
       }
     case CH_TRIANGLE:
       {
-        const value = this.regs[channel * 4 + 2] + ((this.regs[channel * 4 + 3] & 7) << 8)
+        const value = this.regs[ch * 4 + 2] + ((this.regs[ch * 4 + 3] & 7) << 8)
         return ((1790000 / 32) / (value + 1)) | 0
       }
     case CH_NOISE:
       {
-        const period = this.regs[channel * 4 + 2] & 15
+        const period = this.regs[ch * 4 + 2] & 15
         return kNoiseFrequencies[period]
       }
     default:
@@ -175,14 +187,14 @@ export class Apu {
     }
   }
 
-  public getVolume(channel: number): number {
-    if ((this.regs[STATUS_REG] & (1 << channel)) === 0 ||
-       this.channelStopped[channel])
+  public getVolume(ch: number): number {
+    if ((this.regs[STATUS_REG] & (1 << ch)) === 0 ||
+       this.channelStopped[ch])
       return 0
 
-    let v = this.regs[channel * 4]
+    let v = this.regs[ch * 4]
 
-    switch (channel) {
+    switch (ch) {
     case CH_PULSE1:
     case CH_PULSE2:
     case CH_NOISE:
@@ -207,6 +219,7 @@ export class Apu {
     switch (hcount) {
     case VBLANK_START:
       this.updateVolumes()
+      this.sweep()
       if (this.isIrqEnabled()) {
         this.frameInterrupt = 0x40
         this.triggerIrq()
@@ -233,6 +246,46 @@ export class Apu {
           this.channelStopped[ch] = true
         }
       }
+    }
+  }
+
+  // APU Sweep: http://wiki.nesdev.com/w/index.php/APU_Sweep
+  private sweep(): void {
+    for (let ch = 0; ch < 2; ++ch) {
+      if ((this.regs[STATUS_REG] & (1 << ch)) === 0 ||
+          this.channelStopped[ch])
+        continue
+      const sweep = this.regs[ch * 4 + 1]
+      if ((sweep & 0x80) == 0)  // Not enabled.
+        continue
+
+      let c = this.sweepCounter[ch]
+      c += 2  // 2 sequences per frame.
+      const count = (sweep >> 4) & 7
+      if (c >= count) {
+        c -= count
+
+        let freq = this.regs[ch * 4 + 2] + ((this.regs[ch * 4 + 3] & 7) << 8)
+        const shift = sweep & 7
+        const add = freq >> shift
+        if ((sweep & 0x08) === 0) {
+          freq += add
+          if (freq > 0x07ff)
+            this.channelStopped[ch] = true
+        } else {
+          freq -= add
+          if (freq < 8)
+            this.channelStopped[ch] = true
+        }
+        this.regs[ch * 4 + 2] = freq & 0xff
+        this.regs[ch * 4 + 3] = (this.regs[ch * 4 + 3] & ~7) | ((freq & 0x0700) >> 8)
+
+        c -= 2  // 2 sequences per frame
+        if (c <= 0) {
+          this.sweepCounter[ch] = ((sweep >> 4) & 7) + c
+        }
+      }
+      this.sweepCounter[ch] = c
     }
   }
 
