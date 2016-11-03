@@ -35,8 +35,8 @@ const SEQUENCER_MODE = 1 << 7
 const CONSTANT_VOLUME = 0x10
 const LENGTH_COUNTER_HALT = 0x20
 
-const CH_SQUARE1 = 0
-const CH_SQUARE2 = 1
+const CH_PULSE1 = 0
+const CH_PULSE2 = 1
 const CH_TRIANGLE = 2
 const CH_NOISE = 3
 
@@ -154,8 +154,8 @@ export class Apu {
 
   public getFrequency(channel: number): number {
     switch (channel) {
-    case CH_SQUARE1:
-    case CH_SQUARE2:
+    case CH_PULSE1:
+    case CH_PULSE2:
       {
         const value = this.regs[channel * 4 + 2] + ((this.regs[channel * 4 + 3] & 7) << 8)
         return ((1790000 / 16) / (value + 1)) | 0
@@ -183,8 +183,8 @@ export class Apu {
     let v = this.regs[channel * 4]
 
     switch (channel) {
-    case CH_SQUARE1:
-    case CH_SQUARE2:
+    case CH_PULSE1:
+    case CH_PULSE2:
     case CH_NOISE:
       {
         if ((v & CONSTANT_VOLUME) !== 0)
