@@ -267,18 +267,20 @@ export class Apu {
 
         let freq = this.regs[ch * 4 + 2] + ((this.regs[ch * 4 + 3] & 7) << 8)
         const shift = sweep & 7
-        const add = freq >> shift
-        if ((sweep & 0x08) === 0) {
-          freq += add
-          if (freq > 0x07ff)
-            this.channelStopped[ch] = true
-        } else {
-          freq -= add
-          if (freq < 8)
-            this.channelStopped[ch] = true
+        if (shift > 0) {
+          const add = freq >> shift
+          if ((sweep & 0x08) === 0) {
+            freq += add
+            if (freq > 0x07ff)
+              this.channelStopped[ch] = true
+          } else {
+            freq -= add
+            if (freq < 8)
+              this.channelStopped[ch] = true
+          }
+          this.regs[ch * 4 + 2] = freq & 0xff
+          this.regs[ch * 4 + 3] = (this.regs[ch * 4 + 3] & ~7) | ((freq & 0x0700) >> 8)
         }
-        this.regs[ch * 4 + 2] = freq & 0xff
-        this.regs[ch * 4 + 3] = (this.regs[ch * 4 + 3] & ~7) | ((freq & 0x0700) >> 8)
 
         c -= 2  // 2 sequences per frame
         if (c <= 0) {
