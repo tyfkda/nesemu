@@ -45,11 +45,11 @@ class Mapper023Base extends Mapper {
           break
         }
       } else if ((adr & 0xff00) === 0x9000) {
-        const low = adr & 0xff
-        if (low === mapping[0] || low === mapping[2]) {  // Mirroring Control.
+        const reg = mapping[adr & 0xff]
+        if (reg === 0 || reg === 2) {  // Mirroring Control.
           const mirrorMode = value & 3
           ppu.setMirrorMode(kMirrorTable[mirrorMode])
-        } else if (low === mapping[4] || low === mapping[6]) {  // PRG Swap Mode control.
+        } else if (reg === 4 || reg === 6) {  // PRG Swap Mode control.
           prgBankMode = (value >> 1) & 1
           switch (prgBankMode) {
           case 0:
@@ -66,17 +66,17 @@ class Mapper023Base extends Mapper {
       if (0xa000 <= adr && adr <= 0xa006) {
         prgBank1 = (value & (count - 1)) << BANK_BIT
       } else if ((adr & 0xff00) === 0xb000) {
-        const low = adr & 0xff
-        if (low === mapping[0]) {  // CHR Select 0
+        const reg = mapping[adr & 0xff]
+        if (reg === 0) {  // CHR Select 0
           chrBank[0] = (chrBank[0] & ~0x0f) | (value & 0x0f)
           ppu.setChrBankOffset(0, chrBank[0])
-        } else if (low === mapping[2]) {
+        } else if (reg === 2) {
           chrBank[0] = (chrBank[0] & ~0x1f0) | ((value & 0x1f) << 4)
           ppu.setChrBankOffset(0, chrBank[0])
-        } else if (low === mapping[4]) {  // CHR Select 1
+        } else if (reg === 4) {  // CHR Select 1
           chrBank[1] = (chrBank[1] & ~0x0f) | (value & 0x0f)
           ppu.setChrBankOffset(1, chrBank[1])
-        } else if (low === mapping[6]) {
+        } else if (reg === 6) {
           chrBank[1] = (chrBank[1] & ~0x1f0) | ((value & 0x1f) << 4)
           ppu.setChrBankOffset(1, chrBank[1])
         }
@@ -84,16 +84,16 @@ class Mapper023Base extends Mapper {
     })
     cpu.setWriteMemory(0xc000, 0xffff, (adr, value) => {
       if (0xc000 <= adr && adr <= 0xefff) {  // CHR Select 2...7
-        const low = adr & 0xff
+        const reg = mapping[adr & 0xff]
         let ofs = 0, hi = false
-        if (low === mapping[0]) {
+        if (reg === 0) {
           ofs = 0
-        } else if (low === mapping[2]) {
+        } else if (reg === 2) {
           ofs = 0
           hi = true
-        } else if (low === mapping[4]) {
+        } else if (reg === 4) {
           ofs = 1
-        } else if (low === mapping[6]) {
+        } else if (reg === 6) {
           ofs = 1
           hi = true
         } else {
@@ -106,17 +106,17 @@ class Mapper023Base extends Mapper {
           chrBank[bank] = (chrBank[bank] & ~0x0f) | (value & 0x0f)
         ppu.setChrBankOffset(bank, chrBank[bank])
       } else {  // IRQ
-        const low = adr & 0xff
-        if (low === mapping[0]) {  // IRQ Latch: low 4 bits
+        const reg = mapping[adr & 0xff]
+        if (reg === 0) {  // IRQ Latch: low 4 bits
           this.irqLatch = (this.irqLatch & ~0x0f) | (value & 0x0f)
-        } else if (low === mapping[2]) {  // IRQ Latch: high 4 bits
+        } else if (reg === 2) {  // IRQ Latch: high 4 bits
           this.irqLatch = (this.irqLatch & ~0xf0) | ((value & 0x0f) << 4)
-        } else if (low === mapping[4]) {  // IRQ Control
+        } else if (reg === 4) {  // IRQ Control
           this.irqControl = value
           if ((this.irqControl & IRQ_ENABLE) !== 0) {
             this.irqCounter = this.irqLatch
           }
-        } else if (low === mapping[6]) {  // IRQ Acknowledge
+        } else if (reg === 6) {  // IRQ Acknowledge
           // Copy to enable
           const ea = this.irqControl & IRQ_ENABLE_AFTER
           this.irqControl = (this.irqControl & ~IRQ_ENABLE) | (ea << 1)
@@ -157,9 +157,13 @@ export class Mapper023 extends Mapper023Base {
   constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
     super(romData, cpu, ppu, {
       0: 0,
+      4: 2,
+      8: 4,
+      0x0c: 6,
+
+      1: 2,
       2: 4,
-      4: 8,
-      6: 0xc,
+      3: 6,
     })
   }
 }
@@ -168,9 +172,9 @@ export class Mapper025 extends Mapper023Base {
   constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
     super(romData, cpu, ppu, {
       0: 0,
+      1: 4,
       2: 2,
-      4: 1,
-      6: 3,
+      3: 6,
     })
   }
 }
