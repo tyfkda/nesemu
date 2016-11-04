@@ -7,20 +7,20 @@ import Util from '../../util/util'
 const VRETURN = 262
 
 export class Mapper004 extends Mapper {
-  private regs = new Uint8Array(8)
-  private ram = new Uint8Array(0x2000)  // PRG RAM
-  private maxPrg = 0
-  private bankSelect = 0
-  private irqHlineEnable = false
-  private irqHlineValue = -1
-  private irqHlineCounter = -1
-  private irqLatch = 0
+  protected regs = new Uint8Array(8)
+  protected ram = new Uint8Array(0x2000)  // PRG RAM
+  protected maxPrg = 0
+  protected bankSelect = 0
+  protected irqHlineEnable = false
+  protected irqHlineValue = -1
+  protected irqHlineCounter = -1
+  protected irqLatch = 0
 
   public static create(options: MapperOptions): Mapper {
     return new Mapper004(options)
   }
 
-  constructor(private options: MapperOptions) {
+  constructor(protected options: MapperOptions) {
     super()
 
     const BANK_BIT = 13  // 0x2000
@@ -135,7 +135,7 @@ export class Mapper004 extends Mapper {
     }
   }
 
-  private setPrgBank(swap) {
+  protected setPrgBank(swap) {
     if ((swap & 0x40) === 0) {
       this.options.prgBankCtrl.setPrgBank(0, this.regs[6])
       this.options.prgBankCtrl.setPrgBank(1, this.regs[7])
@@ -147,7 +147,7 @@ export class Mapper004 extends Mapper {
     }
   }
 
-  private setChrBank(swap) {
+  protected setChrBank(swap) {
     if ((swap & 0x80) === 0) {
       this.options.ppu.setChrBankOffset(0, this.regs[0] & 0xfe)
       this.options.ppu.setChrBankOffset(1, this.regs[0] | 1)
@@ -169,16 +169,48 @@ export class Mapper004 extends Mapper {
     }
   }
 
-  private setIrqHlineValue(line: number): void {
+  protected setIrqHlineValue(line: number): void {
     this.irqHlineValue = line
     this.irqHlineCounter = this.irqHlineValue
   }
 
-  private enableIrqHline(value: boolean): void {
+  protected enableIrqHline(value: boolean): void {
     this.irqHlineEnable = value
   }
 
-  private resetIrqHlineCounter(): void {
+  protected resetIrqHlineCounter(): void {
     this.irqHlineCounter = 0
+  }
+}
+
+export class Mapper118 extends Mapper004 {
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper118(options)
+  }
+
+  constructor(options: MapperOptions) {
+    super(options)
+
+    // Select
+    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+      if ((adr & 1) === 0) {
+        this.bankSelect = value
+        this.setPrgBank(this.bankSelect)
+        this.setChrBank(this.bankSelect)
+      } else {
+        const reg = this.bankSelect & 0x07
+        this.regs[reg] = value & 0x7f
+        if (reg < 6) {  // CHR
+          this.setChrBank(this.bankSelect)
+        } else {  // PRG
+          this.setPrgBank(this.bankSelect)
+        }
+
+        const chrA12 = this.regs[0] & 0x80
+        const bank = this.regs[0] & 7
+        if ((chrA12 === 0 && bank < 2) || (chrA12 !== 0 && bank >= 2 && bank < 6))
+          this.options.ppu.setMirrorMode((value & 0x80) === 0 ? MirrorMode.SINGLE0 : MirrorMode.SINGLE1)
+      }
+    })
   }
 }
