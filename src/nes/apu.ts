@@ -74,19 +74,285 @@ class GamePad {
 }
 
 // ================================================================
+// Sound channel
+
+class Channel {
+  protected regs = new Uint8Array(4)
+
+  public reset() {
+    this.regs.fill(0)
+  }
+
+  public write(reg: number, value: Byte) {
+    this.regs[reg] = value
+  }
+
+  public getVolume(): number { return 0 }
+  public getFrequency(): number { return 0 }
+  public stop() {}
+  public update() {}
+
+  public isPlaying(): boolean {
+    return false
+  }
+}
+
+class PulseChannel extends Channel {
+  private stopped = false
+  private lengthCounter = 0
+  private sweepCounter = 0
+
+  public reset() {
+    super.reset()
+    this.stopped = true
+    this.sweepCounter = 0
+  }
+
+  public stop() {
+    this.stopped = true
+  }
+
+  public write(reg: number, value: Byte) {
+    super.write(reg, value)
+
+    switch (reg) {
+    case 1:
+      this.sweepCounter = value >> 4
+      break
+    case 3:  // Set length.
+      const length = kLengthTable[value >> 3]
+      this.lengthCounter = length
+      this.stopped = false
+      break
+    default:
+      break
+    }
+  }
+
+  public isPlaying(): boolean {
+    return !this.stop
+  }
+
+  public getVolume(): number {
+    if (this.stopped)
+      return 0
+
+    let v = this.regs[0]
+    if ((v & CONSTANT_VOLUME) !== 0)
+      return (v & 15) / 15.0
+    return 1
+  }
+
+  public getFrequency(): number {
+    const value = this.regs[2] + ((this.regs[3] & 7) << 8)
+    return ((1790000 / 16) / (value + 1)) | 0
+  }
+
+  public update() {
+    if (this.stopped)
+      return 0
+
+    this.updateVolumes()
+    this.sweep()
+  }
+
+  private updateVolumes(): void {
+    let l = this.lengthCounter
+    let v = this.regs[0]
+    if ((v & LENGTH_COUNTER_HALT) === 0) {
+      this.lengthCounter = l -= 2 * 4
+      if (l <= 0) {
+        this.regs[0] = v = (v & 0xf0)  // Set volume = 0
+        this.lengthCounter = 0
+        this.stopped = true
+      }
+    }
+  }
+
+  // APU Sweep: http://wiki.nesdev.com/w/index.php/APU_Sweep
+  private sweep(): void {
+    const sweep = this.regs[1]
+    if ((sweep & 0x80) === 0)  // Not enabled.
+      return
+
+    let c = this.sweepCounter
+    c += 2  // 2 sequences per frame.
+    const count = (sweep >> 4) & 7
+    if (c >= count) {
+      c -= count
+
+      let freq = this.regs[2] + ((this.regs[3] & 7) << 8)
+      const shift = sweep & 7
+      if (shift > 0) {
+        const add = freq >> shift
+        if ((sweep & 0x08) === 0) {
+          freq += add
+          if (freq > 0x07ff)
+            this.stopped = true
+        } else {
+          freq -= add
+          if (freq < 8)
+            this.stopped = true
+        }
+        this.regs[2] = freq & 0xff
+        this.regs[3] = (this.regs[3] & ~7) | ((freq & 0x0700) >> 8)
+      }
+
+      c -= 2  // 2 sequences per frame
+      if (c <= 0) {
+        this.sweepCounter = ((sweep >> 4) & 7) + c
+      }
+    }
+    this.sweepCounter = c
+  }
+}
+
+class TriangleChannel extends Channel {
+  private stopped = false
+  private lengthCounter = 0
+
+  public reset() {
+    super.reset()
+    this.stopped = true
+  }
+
+  public stop() {
+    this.stopped = true
+  }
+
+  public write(reg: number, value: Byte) {
+    super.write(reg, value)
+
+    switch (reg) {
+    case 3:  // Set length.
+      const length = kLengthTable[value >> 3]
+      this.lengthCounter = length
+      this.stopped = false
+      break
+    default:
+      break
+    }
+  }
+
+  public isPlaying(): boolean {
+    return !this.stop
+  }
+
+  public getVolume(): number {
+    if (this.stopped)
+      return 0
+    return 1
+  }
+
+  public getFrequency(): number {
+    const value = this.regs[2] + ((this.regs[3] & 7) << 8)
+    return ((1790000 / 32) / (value + 1)) | 0
+  }
+
+  public update() {
+    if (this.stopped)
+      return
+
+    this.updateVolumes()
+  }
+
+  private updateVolumes(): void {
+    let l = this.lengthCounter
+    let v = this.regs[0]
+    if ((v & LENGTH_COUNTER_HALT) === 0) {
+      this.lengthCounter = l -= 2 * 4
+      if (l <= 0) {
+        this.regs[0] = v = (v & 0xf0)  // Set volume = 0
+        this.lengthCounter = 0
+        this.stopped = true
+      }
+    }
+  }
+}
+
+class NoiseChannel extends Channel {
+  private stopped = false
+  private lengthCounter = 0
+
+  public reset() {
+    super.reset()
+    this.stopped = true
+  }
+
+  public stop() {
+    this.stopped = true
+  }
+
+  public write(reg: number, value: Byte) {
+    super.write(reg, value)
+
+    switch (reg) {
+    case 3:  // Set length.
+      const length = kLengthTable[value >> 3]
+      this.lengthCounter = length
+      this.stopped = false
+      break
+    default:
+      break
+    }
+  }
+
+  public isPlaying(): boolean {
+    return !this.stop
+  }
+
+  public getVolume(): number {
+    if (this.stopped)
+      return 0
+
+    let v = this.regs[0]
+    if ((v & CONSTANT_VOLUME) !== 0)
+      return (v & 15) / 15.0
+    return 1
+  }
+
+  public getFrequency(): number {
+    const period = this.regs[2] & 15
+    return kNoiseFrequencies[period]
+  }
+
+  public update() {
+    if (this.stopped)
+      return
+
+    this.updateVolumes()
+  }
+
+  private updateVolumes(): void {
+    let l = this.lengthCounter
+    let v = this.regs[0]
+    if ((v & LENGTH_COUNTER_HALT) === 0) {
+      this.lengthCounter = l -= 2 * 4
+      if (l <= 0) {
+        this.regs[0] = v = (v & 0xf0)  // Set volume = 0
+        this.lengthCounter = 0
+        this.stopped = true
+      }
+    }
+  }
+}
+
+// ================================================================
 // Apu
 export class Apu {
   public static CHANNEL = 4
 
   private regs = new Uint8Array(0x20)
+  private channels = new Array<Channel>(Apu.CHANNEL)
   private frameInterrupt = 0  // 0=not occurred, 0x40=occurred
   private dmcInterrupt = 0x80  // 0=not occurred, 0x80=occurred
-  private lengthCounter = new Array<number>(Apu.CHANNEL)
-  private channelStopped = new Array<boolean>(Apu.CHANNEL)
-  private sweepCounter = new Array<number>(2)
   private gamePad = new GamePad()
 
   constructor(private triggerIrq: () => void) {
+    this.channels[CH_PULSE1] = new PulseChannel()
+    this.channels[CH_PULSE2] = new PulseChannel()
+    this.channels[CH_TRIANGLE] = new TriangleChannel()
+    this.channels[CH_NOISE] = new NoiseChannel()
   }
 
   public reset() {
@@ -94,10 +360,7 @@ export class Apu {
     this.regs[FRAME_COUNTER] = IRQ_INHIBIT
     this.frameInterrupt = 0
     this.dmcInterrupt = 0x80  // TODO: Implement
-
-    this.lengthCounter.fill(0)
-    this.channelStopped.fill(true)
-    this.sweepCounter.fill(0)
+    this.channels.forEach(channel => { channel.reset() })
   }
 
   public read(adr: Address): Byte {
@@ -108,7 +371,7 @@ export class Apu {
         // TODO: Implement.
         let result = this.dmcInterrupt | this.frameInterrupt
         for (let ch = 0; ch < Apu.CHANNEL; ++ch) {
-          if (this.lengthCounter[ch] > 0)
+          if (this.channels[ch].isPlaying())
             result |= 1 << ch
         }
 
@@ -134,25 +397,16 @@ export class Apu {
     if (reg < 0x10) {  // Sound
       const ch = reg >> 2
       const r = reg & 3
-      switch (r) {
-      case 1:
-        if (ch === CH_PULSE1 || ch === CH_PULSE2) {  // Set sweep for square wave.
-          this.sweepCounter[ch] = value >> 4
-        }
-        break
-      case 3:  // Set length.
-        const length = kLengthTable[value >> 3]
-        this.lengthCounter[ch] = length
-        this.channelStopped[ch] = false
-        break
-      default:
-        break
-      }
+      this.channels[ch].write(r, value)
     }
 
     switch (reg) {
     case STATUS_REG:
       this.dmcInterrupt = 0  // Writing to this register clears the DMC interrupt flag.
+      for (let ch = 0; ch < Apu.CHANNEL; ++ch) {
+        if ((this.regs[STATUS_REG] & (1 << ch)) === 0)
+          this.channels[ch].stop()
+      }
       break
     case PAD1_REG:  // Pad status. bit0 = Controller shift register strobe
       if ((value & 1) === 0) {
@@ -164,51 +418,12 @@ export class Apu {
     }
   }
 
-  public getFrequency(ch: number): number {
-    switch (ch) {
-    case CH_PULSE1:
-    case CH_PULSE2:
-      {
-        const value = this.regs[ch * 4 + 2] + ((this.regs[ch * 4 + 3] & 7) << 8)
-        return ((1790000 / 16) / (value + 1)) | 0
-      }
-    case CH_TRIANGLE:
-      {
-        const value = this.regs[ch * 4 + 2] + ((this.regs[ch * 4 + 3] & 7) << 8)
-        return ((1790000 / 32) / (value + 1)) | 0
-      }
-    case CH_NOISE:
-      {
-        const period = this.regs[ch * 4 + 2] & 15
-        return kNoiseFrequencies[period]
-      }
-    default:
-      break
-    }
+  public getVolume(ch: number): number {
+    return this.channels[ch].getVolume()
   }
 
-  public getVolume(ch: number): number {
-    if ((this.regs[STATUS_REG] & (1 << ch)) === 0 ||
-       this.channelStopped[ch])
-      return 0
-
-    let v = this.regs[ch * 4]
-
-    switch (ch) {
-    case CH_PULSE1:
-    case CH_PULSE2:
-    case CH_NOISE:
-      {
-        if ((v & CONSTANT_VOLUME) !== 0)
-          return (v & 15) / 15.0
-        return 1
-      }
-    case CH_TRIANGLE:
-      return 1.0
-    default:
-      break
-    }
-    return 0.0
+  public getFrequency(ch: number): number {
+    return this.channels[ch].getFrequency()
   }
 
   public setPadStatus(no: number, status: Byte): void {
@@ -218,8 +433,7 @@ export class Apu {
   public onHblank(hcount: number): void {
     switch (hcount) {
     case VBLANK_START:
-      this.updateVolumes()
-      this.sweep()
+      this.channels.forEach(channel => { channel.update() })
       if (this.isIrqEnabled()) {
         this.frameInterrupt = 0x40
         this.triggerIrq()
@@ -227,67 +441,6 @@ export class Apu {
       break
     default:
       break
-    }
-  }
-
-  private updateVolumes(): void {
-    for (let ch = 0; ch < Apu.CHANNEL; ++ch) {
-      if ((this.regs[STATUS_REG] & (1 << ch)) === 0 ||
-          this.channelStopped[ch])
-        continue
-
-      let l = this.lengthCounter[ch]
-      let v = this.regs[ch * 4]
-      if ((v & LENGTH_COUNTER_HALT) === 0) {
-        this.lengthCounter[ch] = l -= 2 * 4
-        if (l <= 0) {
-          this.regs[ch * 4] = v = (v & 0xf0)  // Set volume = 0
-          this.lengthCounter[ch] = 0
-          this.channelStopped[ch] = true
-        }
-      }
-    }
-  }
-
-  // APU Sweep: http://wiki.nesdev.com/w/index.php/APU_Sweep
-  private sweep(): void {
-    for (let ch = 0; ch < 2; ++ch) {
-      if ((this.regs[STATUS_REG] & (1 << ch)) === 0 ||
-          this.channelStopped[ch])
-        continue
-      const sweep = this.regs[ch * 4 + 1]
-      if ((sweep & 0x80) == 0)  // Not enabled.
-        continue
-
-      let c = this.sweepCounter[ch]
-      c += 2  // 2 sequences per frame.
-      const count = (sweep >> 4) & 7
-      if (c >= count) {
-        c -= count
-
-        let freq = this.regs[ch * 4 + 2] + ((this.regs[ch * 4 + 3] & 7) << 8)
-        const shift = sweep & 7
-        if (shift > 0) {
-          const add = freq >> shift
-          if ((sweep & 0x08) === 0) {
-            freq += add
-            if (freq > 0x07ff)
-              this.channelStopped[ch] = true
-          } else {
-            freq -= add
-            if (freq < 8)
-              this.channelStopped[ch] = true
-          }
-          this.regs[ch * 4 + 2] = freq & 0xff
-          this.regs[ch * 4 + 3] = (this.regs[ch * 4 + 3] & ~7) | ((freq & 0x0700) >> 8)
-        }
-
-        c -= 2  // 2 sequences per frame
-        if (c <= 0) {
-          this.sweepCounter[ch] = ((sweep >> 4) & 7) + c
-        }
-      }
-      this.sweepCounter[ch] = c
     }
   }
 
