@@ -17,6 +17,8 @@ const VBLANK_END = 261
 const VRETURN = 262
 const VCYCLE = (VRETURN * 341 / 3) | 0
 
+const OAMDMA = 0x4014
+
 function getHblankCount(cpuCycle: number): number {
   return (cpuCycle * (3 / 341)) | 0
 }
@@ -164,8 +166,6 @@ export class Nes {
   }
 
   private setMemoryMap(mapperNo: number): void {
-    const OAMDMA = 0x4014
-
     const cpu = this.cpu
     cpu.resetMemoryMap()
 
@@ -186,6 +186,7 @@ export class Nes {
       case OAMDMA:
         if (0 <= value && value <= 0x1f) {  // RAM
           this.ppu.copyWithDma(this.ram, value << 8)
+          // TODO: Consume CPU or GPU cycles.
         } else {
           console.error(`OAMDMA not implemented except for RAM: ${Util.hex(value, 2)}`)
         }
