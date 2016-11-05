@@ -1,19 +1,17 @@
 // VRC1
 
-import {Mapper} from './mapper'
+import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
 
 export class Mapper075 extends Mapper {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super()
 
     const BANK_BIT = 13
-    const BANK_SIZE = 1 << BANK_BIT
-    const size = romData.length
-    const count = size / BANK_SIZE
-    const kLastBank = size - BANK_SIZE
-    const prgBank = [kLastBank, kLastBank, kLastBank, kLastBank]
+    const count = prgSize >> BANK_BIT
+    for (let i = 0; i < 4; ++i)
+      prgBankCtrl.setPrgBank(i, count - 1)
 
     const chrBank = [0, 0]
     const setChrBank = (bank, value) => {
@@ -24,16 +22,10 @@ export class Mapper075 extends Mapper {
         ppu.setChrBankOffset(b + i, ofs + i)
     }
 
-    cpu.setReadMemory(0x8000, 0xffff,
-                      (adr) => {
-                        const bank = (adr >> 13) & 3
-                        return romData[(adr & (BANK_SIZE - 1)) + prgBank[bank]]
-                      })
-
     // PRG ROM bank
     cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (adr < 0x9000)
-        prgBank[0] = (value & (count - 1)) << BANK_BIT
+        prgBankCtrl.setPrgBank(0, value)
       else {
         ppu.setMirrorMode((value & 1) === 0 ? MirrorMode.VERT : MirrorMode.HORZ)
         setChrBank(0, (chrBank[0] & 0x0f) | ((value & 2) << 3))
@@ -42,11 +34,11 @@ export class Mapper075 extends Mapper {
     })
     cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if (adr < 0xb000)
-        prgBank[1] = (value & (count - 1)) << BANK_BIT
+        prgBankCtrl.setPrgBank(1, value)
     })
     cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if (adr < 0xd000)
-        prgBank[2] = (value & (count - 1)) << BANK_BIT
+        prgBankCtrl.setPrgBank(2, value)
     })
 
     // CHR ROM bank

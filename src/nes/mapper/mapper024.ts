@@ -1,7 +1,7 @@
 // VRC6
 // http://wiki.nesdev.com/w/index.php/VRC6
 
-import {Mapper} from './mapper'
+import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
 
@@ -23,30 +23,29 @@ class Mapper024Base extends Mapper {
   private irqLatch: number = 0
   private irqCounter: number = 0
 
-  constructor(romData: Uint8Array, private cpu: Cpu, private ppu: Ppu,
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, private ppu: Ppu,
               mapping: {[key: number]: number})
   {
     super()
 
     const BANK_BIT = 13
-    const BANK_SIZE = 1 << BANK_BIT
-    const size = romData.length
-    const count = size / BANK_SIZE
-    let prgBank0 = 0, prgBank2 = (count - 2) << BANK_BIT
-    const prgBank3 = (count - 1) << BANK_BIT
-    cpu.setReadMemory(0x8000, 0xbfff, (adr) => romData[(adr & (BANK_SIZE * 2 - 1)) + prgBank0])
-    cpu.setReadMemory(0xc000, 0xdfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank2])
-    cpu.setReadMemory(0xe000, 0xffff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank3])
+    const count = prgSize >> BANK_BIT
+    prgBankCtrl.setPrgBank(0, 0)
+    prgBankCtrl.setPrgBank(1, 1)
+    prgBankCtrl.setPrgBank(2, count - 2)
+    prgBankCtrl.setPrgBank(3, count - 1)
 
     // PRG ROM bank
     cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (0x8000 <= adr && adr <= 0x8003) {
-        prgBank0 = (value & (count / 2 - 1)) << (BANK_BIT + 1)
+        const bank = (value & (count / 2 - 1)) << 1
+        prgBankCtrl.setPrgBank(0, bank)
+        prgBankCtrl.setPrgBank(1, bank + 1)
       }
     })
     cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if (0xc000 <= adr && adr <= 0xc003) {
-        prgBank2 = (value & (count - 1)) << BANK_BIT
+        prgBankCtrl.setPrgBank(2, value)
       }
     })
 
@@ -131,8 +130,8 @@ class Mapper024Base extends Mapper {
 }
 
 export class Mapper024 extends Mapper024Base {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
-    super(romData, cpu, ppu, {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
+    super(prgBankCtrl, prgSize, cpu, ppu, {
       0: 0,
       1: 1,
       2: 2,
@@ -142,8 +141,8 @@ export class Mapper024 extends Mapper024Base {
 }
 
 export class Mapper026 extends Mapper024Base {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
-    super(romData, cpu, ppu, {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
+    super(prgBankCtrl, prgSize, cpu, ppu, {
       0: 0,
       1: 2,
       2: 1,

@@ -1,6 +1,6 @@
 // Sunsoft FME-7
 
-import {Mapper} from './mapper'
+import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
 
@@ -9,19 +9,11 @@ const kMirrorTable = [
 ]
 
 export class Mapper069 extends Mapper {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super()
 
     const BANK_BIT = 13
-    const BANK_SIZE = 1 << BANK_BIT
-    const size = romData.length
-    const count = size / BANK_SIZE
-    const kLastBank = size - BANK_SIZE
-    let prgBank1 = 0, prgBank2 = 0, prgBank3 = 0
-    cpu.setReadMemory(0x8000, 0x9fff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank1])
-    cpu.setReadMemory(0xa000, 0xbfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank2])
-    cpu.setReadMemory(0xc000, 0xdfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank3])
-    cpu.setReadMemory(0xe000, 0xffff, (adr) => romData[(adr & (BANK_SIZE - 1)) + kLastBank])
+    const count = prgSize >> BANK_BIT
 
     // CHR ROM bank
     let command = 0
@@ -35,13 +27,9 @@ export class Mapper069 extends Mapper {
         ppu.setChrBankOffset(command, value)
         break
       case 0x09:
-        prgBank1 = (value & (count - 1)) << BANK_BIT
-        break
       case 0x0a:
-        prgBank2 = (value & (count - 1)) << BANK_BIT
-        break
       case 0x0b:
-        prgBank3 = (value & (count - 1)) << BANK_BIT
+        prgBankCtrl.setPrgBank(command - 9, value)
         break
       case 0x0c:
         {

@@ -1,6 +1,6 @@
 // MMC1
 
-import {Mapper} from './mapper'
+import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
 
@@ -12,17 +12,15 @@ const kMirrorTable = [
 ]
 
 export class Mapper001 extends Mapper {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, private ppu: Ppu) {
     super()
 
     const BANK_BIT = 14  // 16KB
-    const BANK_SIZE = 1 << BANK_BIT
-    const size = romData.length
-    const maxPrg = (romData.length >> BANK_BIT) - 1
+    const maxPrg = (prgSize >> BANK_BIT) - 1
 
     let register = 0
     let counter = 0
-    let prgBankMode = 3, prgBank = [0, size - BANK_SIZE]
+    let prgBankMode = 3
     let prgReg = 0
     let chrBank4k = true
     let chrBank = [0 << 2, 1 << 2]
@@ -46,33 +44,31 @@ export class Mapper001 extends Mapper {
     }
 
     const setPrgBank = (reg, chrBank0) => {
+      prgReg = reg
       const highBit = chrBank0 & (0x10 & maxPrg)
       const bank = ((reg & 0x0f) | highBit) & maxPrg
+      let p0, p1
       switch (prgBankMode) {
       case 0: case 1:
-        prgBank[0] = (bank & ~1) << BANK_BIT
-        prgBank[1] = prgBank[0] + BANK_SIZE
+        p0 = bank & ~1
+        p1 = bank | 1
         break
       case 2:
-        prgBank[0] = 0
-        prgBank[1] = bank << BANK_BIT
+        p0 = 0
+        p1 = bank
         break
       case 3:
-        prgBank[0] = bank << BANK_BIT
-        prgBank[1] = ((maxPrg & 0x0f) | highBit) << BANK_BIT
+        p0 = bank
+        p1 = (maxPrg & 0x0f) | highBit
         break
       default:
-        break
+        return
       }
-      prgReg = reg
+      prgBankCtrl.setPrgBank(0, p0 << 1)
+      prgBankCtrl.setPrgBank(1, (p0 << 1) + 1)
+      prgBankCtrl.setPrgBank(2, p1 << 1)
+      prgBankCtrl.setPrgBank(3, (p1 << 1) + 1)
     }
-
-    // PRG ROM
-    cpu.setReadMemory(0x8000, 0xffff, (adr) => {
-      const hi = (adr >> BANK_BIT) & 1
-      const lo = adr & (BANK_SIZE - 1)
-      return romData[prgBank[hi] + lo]
-    })
 
     // Serial: 5bits.
     cpu.setWriteMemory(0x8000, 0xffff, (adr, value) => {
@@ -125,5 +121,7 @@ export class Mapper001 extends Mapper {
     ram.fill(0xbf)
     cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
     cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+
+    setPrgBank(0, 0xff)
   }
 }

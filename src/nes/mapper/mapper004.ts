@@ -1,6 +1,6 @@
 // MMC3
 
-import {Mapper} from './mapper'
+import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
 
@@ -11,29 +11,29 @@ export class Mapper004 extends Mapper {
   private irqHlineValue: number
   private irqHlineCounter: number
 
-  constructor(romData: Uint8Array, private cpu: Cpu, private ppu: Ppu) {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, private ppu: Ppu) {
     super()
 
     this.irqHlineEnable = false
     this.irqHlineValue = this.irqHlineCounter = -1
 
     const BANK_BIT = 13  // 0x2000
-    const BANK_MASK = (1 << BANK_BIT) - 1
     const regs = new Uint8Array(8)
-    const maxPrg = (romData.length >> BANK_BIT) - 1
+    const maxPrg = (prgSize >> BANK_BIT) - 1
 
     let bankSelect = 0
-    let p0 = 0, p1 = 1 << BANK_BIT, p2 = 2 << BANK_BIT, p3 = maxPrg << BANK_BIT
+
+    prgBankCtrl.setPrgBank(3, maxPrg)
 
     const setPrgBank = (swap) => {
       if ((swap & 0x40) === 0) {
-        p0 = (regs[6] & maxPrg) << BANK_BIT
-        p1 = (regs[7] & maxPrg) << BANK_BIT
-        p2 = (maxPrg - 1) << BANK_BIT
+        prgBankCtrl.setPrgBank(0, regs[6])
+        prgBankCtrl.setPrgBank(1, regs[7])
+        prgBankCtrl.setPrgBank(2, maxPrg - 1)
       } else {
-        p2 = (regs[6] & maxPrg) << BANK_BIT
-        p1 = (regs[7] & maxPrg) << BANK_BIT
-        p0 = (maxPrg - 1) << BANK_BIT
+        prgBankCtrl.setPrgBank(2, regs[6])
+        prgBankCtrl.setPrgBank(1, regs[7])
+        prgBankCtrl.setPrgBank(0, maxPrg - 1)
       }
     }
     const setChrBank = (swap) => {
@@ -57,12 +57,6 @@ export class Mapper004 extends Mapper {
         ppu.setChrBankOffset(3, regs[5])
       }
     }
-
-    // PRG ROM
-    cpu.setReadMemory(0x8000, 0x9fff, (adr) => romData[(adr & BANK_MASK) + p0])
-    cpu.setReadMemory(0xa000, 0xbfff, (adr) => romData[(adr & BANK_MASK) + p1])
-    cpu.setReadMemory(0xc000, 0xdfff, (adr) => romData[(adr & BANK_MASK) + p2])
-    cpu.setReadMemory(0xe000, 0xffff, (adr) => romData[(adr & BANK_MASK) + p3])
 
     // PRG RAM
     const ram = new Uint8Array(0x2000)

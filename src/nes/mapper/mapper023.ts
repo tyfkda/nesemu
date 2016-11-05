@@ -1,7 +1,7 @@
 // VRC4e
 // http://wiki.nesdev.com/w/index.php/INES_Mapper_023
 
-import {Mapper} from './mapper'
+import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
 
@@ -16,32 +16,30 @@ class Mapper023Base extends Mapper {
   private irqLatch: number = 0
   private irqCounter: number = 0
 
-  constructor(romData: Uint8Array, private cpu: Cpu, private ppu: Ppu, mapping: {[key: number]: number}) {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, private ppu: Ppu,
+              mapping: {[key: number]: number})
+  {
     super()
 
     const BANK_BIT = 13
-    const BANK_SIZE = 1 << BANK_BIT
-    const size = romData.length
-    const count = size / BANK_SIZE
+    const count = prgSize >> BANK_BIT
     let prgBankMode = 0
-    let prgBank0 = 0, prgBank1 = 1 << BANK_BIT, prgBank2 = (count - 2) << BANK_BIT
-    const prgBank3 = (count - 1) << BANK_BIT
     const chrBank = new Array(8)
 
-    cpu.setReadMemory(0x8000, 0x9fff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank0])
-    cpu.setReadMemory(0xa000, 0xbfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank1])
-    cpu.setReadMemory(0xc000, 0xdfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank2])
-    cpu.setReadMemory(0xe000, 0xffff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank3])
+    prgBankCtrl.setPrgBank(0, 0)
+    prgBankCtrl.setPrgBank(1, 1)
+    prgBankCtrl.setPrgBank(2, count - 2)
+    prgBankCtrl.setPrgBank(3, count - 1)
 
     // PRG ROM bank
     cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (0x8000 <= adr && adr <= 0x8006) {
         switch (prgBankMode) {
         case 0:
-          prgBank0 = (value & (count - 1)) << BANK_BIT
+          prgBankCtrl.setPrgBank(0, value)
           break
         case 1:
-          prgBank2 = (value & (count - 1)) << BANK_BIT
+          prgBankCtrl.setPrgBank(2, value)
           break
         }
       } else if ((adr & 0xff00) === 0x9000) {
@@ -53,10 +51,10 @@ class Mapper023Base extends Mapper {
           prgBankMode = (value >> 1) & 1
           switch (prgBankMode) {
           case 0:
-            prgBank2 = (count - 2) << BANK_BIT
+            prgBankCtrl.setPrgBank(2, count - 2)
             break
           case 1:
-            prgBank0 = (count - 2) << BANK_BIT
+            prgBankCtrl.setPrgBank(0, count - 2)
             break
           }
         }
@@ -64,7 +62,7 @@ class Mapper023Base extends Mapper {
     })
     cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if (0xa000 <= adr && adr <= 0xa006) {
-        prgBank1 = (value & (count - 1)) << BANK_BIT
+        prgBankCtrl.setPrgBank(1, value & (count - 1))
       } else if ((adr & 0xff00) === 0xb000) {
         const reg = mapping[adr & 0xff]
         if (reg === 0) {  // CHR Select 0
@@ -154,8 +152,8 @@ class Mapper023Base extends Mapper {
 }
 
 export class Mapper023 extends Mapper023Base {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
-    super(romData, cpu, ppu, {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
+    super(prgBankCtrl, prgSize, cpu, ppu, {
       0: 0,
       4: 2,
       8: 4,
@@ -169,8 +167,8 @@ export class Mapper023 extends Mapper023Base {
 }
 
 export class Mapper025 extends Mapper023Base {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
-    super(romData, cpu, ppu, {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
+    super(prgBankCtrl, prgSize, cpu, ppu, {
       0: 0,
       1: 4,
       2: 2,

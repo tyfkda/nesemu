@@ -6,7 +6,7 @@ import {Cpu} from './cpu'
 import {Ppu, MirrorMode} from './ppu'
 import {Util} from './util'
 
-import {Mapper} from './mapper/mapper'
+import {Mapper, PrgBankController} from './mapper/mapper'
 import {kMapperTable} from './mapper/mapper_table'
 
 const RAM_SIZE = 0x0800
@@ -47,7 +47,7 @@ function loadChrRom(romData: Uint8Array): Uint8Array {
   return new Uint8Array(chr)
 }
 
-export class Nes {
+export class Nes implements PrgBankController {
   public apu: Apu
   public cpu: Cpu
   public ram: Uint8Array
@@ -59,6 +59,7 @@ export class Nes {
   private mapper: Mapper = null
   private vblankCallback: (leftCycles: number) => void
   private breakPointCallback: () => void
+  private prgBank: [number]
 
   public static create(): Nes {
     return new Nes()
@@ -197,11 +198,28 @@ export class Nes {
       }
     })
 
+    // PRG ROM
+    const prgMask = this.romData.length - 1
+    this.prgBank = [0x0000,  // 0x8000~
+                    0x2000,  // 0xa000~
+                    -0x4000 & prgMask,  // 0xc000~
+                    -0x2000 & prgMask]  // 0xe000~
+    cpu.setReadMemory(0x8000, 0xffff, (adr) => {
+      const bank = (adr - 0x8000) >> 13
+      const offset = adr & ((1 << 13) - 1)
+      const prgSize = this.romData.length
+      return this.romData[(this.prgBank[bank] + offset) & (prgSize - 1)]
+    })
+
     // RAM
     cpu.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])
     cpu.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
 
     this.mapper = this.createMapper(mapperNo)
+  }
+
+  setPrgBank(bank: number, page: number): void {
+    this.prgBank[bank] = page << 13
   }
 
   private createMapper(mapperNo: number): Mapper {
@@ -211,7 +229,7 @@ export class Nes {
       mapperNo = 0
     }
     const mapperClass = kMapperTable[mapperNo]
-    return new (mapperClass as any)(this.romData, this.cpu, this.ppu)
+    return new (mapperClass as any)(this, this.romData.length, this.cpu, this.ppu)
   }
 
   private tryHblankEvent(cycleCount: number, cycle: number, leftCycles: number): number {

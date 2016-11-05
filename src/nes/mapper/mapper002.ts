@@ -1,33 +1,34 @@
 // UxROM
 
-import {Mapper} from './mapper'
+import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu} from '../ppu'
 
 class Mapper002Base extends Mapper {
-  constructor(prgBankShift: number, romData: Uint8Array, cpu: Cpu, _ppu: Ppu) {
+  constructor(prgBankShift: number, prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu,
+              _ppu: Ppu)
+  {
     super()
 
     const BANK_BIT = 14
-    const BANK_SIZE = 1 << BANK_BIT
-    const size = romData.length
-    const count = size / BANK_SIZE
-    const kLastBank = size - BANK_SIZE
-    let prgBank = 0
-    cpu.setReadMemory(0x8000, 0xbfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank])
-    cpu.setReadMemory(0xc000, 0xffff,
-                      (adr) => romData[(adr & (BANK_SIZE - 1)) + kLastBank])
+    const count = prgSize >> BANK_BIT
+    prgBankCtrl.setPrgBank(0, 0)
+    prgBankCtrl.setPrgBank(1, 1)
+    prgBankCtrl.setPrgBank(2, count * 2 - 2)
+    prgBankCtrl.setPrgBank(3, count * 2 - 1)
 
     // PRG ROM bank
     cpu.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
-      prgBank = ((value >> prgBankShift) & (count - 1)) << BANK_BIT
+      const bank = (value >> prgBankShift) << 1
+      prgBankCtrl.setPrgBank(0, bank)
+      prgBankCtrl.setPrgBank(1, bank + 1)
     })
   }
 }
 
 export class Mapper002 extends Mapper002Base {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
-    super(0, romData, cpu, ppu)
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
+    super(0, prgBankCtrl, prgSize, cpu, ppu)
   }
 }
 
@@ -36,7 +37,7 @@ export class Mapper002 extends Mapper002Base {
 // This mapper is deprecated for new development. Homebrew projects other than mapper tests should
 // use UxROM (iNES Mapper 002) instead.
 export class Mapper093 extends Mapper002Base {
-  constructor(romData: Uint8Array, cpu: Cpu, ppu: Ppu) {
-    super(4, romData, cpu, ppu)
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
+    super(4, prgBankCtrl, prgSize, cpu, ppu)
   }
 }

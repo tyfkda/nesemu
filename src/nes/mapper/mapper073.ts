@@ -1,7 +1,7 @@
 // VRC3
 // http://wiki.nesdev.com/w/index.php/VRC3
 
-import {Mapper} from './mapper'
+import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu} from '../ppu'
 
@@ -10,25 +10,24 @@ export class Mapper073 extends Mapper {
   private irqValue: number
   private irqCounter: number
 
-  constructor(romData: Uint8Array, private cpu: Cpu, private ppu: Ppu) {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, private ppu: Ppu) {
     super()
 
     this.irqEnable = false
     this.irqValue = this.irqCounter = -1
 
     const BANK_BIT = 14
-    const BANK_SIZE = 1 << BANK_BIT
-    const size = romData.length
-    const count = size / BANK_SIZE
-    const kLastBank = size - BANK_SIZE
-    let prgBank = 0
-    cpu.setReadMemory(0x8000, 0xbfff, (adr) => romData[(adr & (BANK_SIZE - 1)) + prgBank])
-    cpu.setReadMemory(0xc000, 0xffff,
-                      (adr) => romData[(adr & (BANK_SIZE - 1)) + kLastBank])
+    const count = prgSize >> BANK_BIT
+    prgBankCtrl.setPrgBank(0, 0)
+    prgBankCtrl.setPrgBank(1, 1)
+    prgBankCtrl.setPrgBank(2, count * 2 - 2)
+    prgBankCtrl.setPrgBank(3, count * 2 - 1)
 
     // PRG ROM bank
     cpu.setWriteMemory(0xf000, 0xffff, (_adr, value) => {
-      prgBank = (value & (count - 1)) << BANK_BIT
+      const bank = value << 1
+      prgBankCtrl.setPrgBank(0, bank)
+      prgBankCtrl.setPrgBank(1, bank + 1)
     })
 
     // IRQ Latch 0, 1

@@ -1,3 +1,7 @@
+export interface PrgBankController {
+  setPrgBank(bank: number, page: number): void
+}
+
 export class Mapper {
   public reset() {
   }
