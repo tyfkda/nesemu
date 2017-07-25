@@ -91,7 +91,7 @@ gulp.task('ts', () => {
   return gulp.src([`${SRC_TS_DIR}/main.js`,
                    `${SRC_TS_DIR}/lib.js`])
     .pipe(plumber())
-    .pipe(webpack(config))
+    .pipe(webpack(config, require('webpack')))
     .pipe(gulp.dest(ASSETS_DIR))
 })
 
@@ -101,7 +101,7 @@ gulp.task('watch-ts', [], () => {
   config.devtool = '#cheap-module-source-map'
   gulp.src(SRC_TS_FILES)
     .pipe(plumber())
-    .pipe(webpack(config))
+    .pipe(webpack(config, require('webpack')))
     .pipe(gulp.dest(ASSETS_DIR))
     .pipe(browserSync.reload({stream: true}))
 })

@@ -14,7 +14,7 @@ module.exports = {
     new webpack.optimize.CommonsChunkPlugin({ name: ['main', 'lib'], minChunks: Infinity }),
   ],
   resolve: {
-    extensions: ['.ts', '.js', '.tsx', '.jsx', '']
+    extensions: ['.ts', '.js', '.tsx', '.jsx']
   },
   module: {
     loaders: [
