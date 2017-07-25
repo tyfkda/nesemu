@@ -270,7 +270,7 @@ export default class Wnd {
     this.titleBar.addEventListener('mousedown', (event) => {
       dragOfsX = dragOfsY = null
       if (event.button !== 0)
-        return
+        return false
       event.preventDefault()
       const [x, y] = this.getMousePosIn(event, this.root)
       dragOfsX = -x

@@ -16,7 +16,7 @@ import {Mapper087} from './mapper087'
 import {Mapper075} from './mapper075'
 import {Mapper184} from './mapper184'
 
-export const kMapperTable: {[key: number]: Mapper} = {
+export const kMapperTable: {[key: number]: Any} = {
   0: Mapper000,
   1: Mapper001,
   2: Mapper002,

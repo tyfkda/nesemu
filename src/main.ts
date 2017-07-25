@@ -140,7 +140,8 @@ class Main {
   private setUpGamePadLink() {
     const gamepadText = document.getElementById('gamepad')
     if (!GamepadManager.isSupported()) {
-      return gamepadText.style.display = 'none'
+      gamepadText.style.display = 'none'
+      return
     }
 
     gamepadText.addEventListener('click', () => {

@@ -218,7 +218,7 @@ export class Nes implements PrgBankController {
     this.mapper = this.createMapper(mapperNo)
   }
 
-  setPrgBank(bank: number, page: number): void {
+  public setPrgBank(bank: number, page: number): void {
     this.prgBank[bank] = page << 13
   }
 

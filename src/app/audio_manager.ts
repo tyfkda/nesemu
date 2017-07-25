@@ -1,4 +1,4 @@
-const kTypes = ['square', 'square', 'triangle', 'noise']
+const kTypes: (OscillatorType | 'noise')[] = ['square', 'square', 'triangle', 'noise']
 
 class SoundChannel {
   private gainNode: GainNode
@@ -15,7 +15,7 @@ class SoundChannel {
     }
   }
 
-  public create(context: AudioContext, type: string): void {
+  public create(context: AudioContext, type: (OscillatorType | 'noise')): void {
     this.gainNode = context.createGain()
     this.gainNode.gain.value = 0
 

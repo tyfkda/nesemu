@@ -72,8 +72,10 @@ export class Mapper001 extends Mapper {
 
     // Serial: 5bits.
     cpu.setWriteMemory(0x8000, 0xffff, (adr, value) => {
-      if ((value & 0x80) !== 0)  // Reset
-        return resetRegister()
+      if ((value & 0x80) !== 0) {  // Reset
+        resetRegister()
+        return
+      }
 
       register |= (value & 1) << counter
       if (++counter < 5)

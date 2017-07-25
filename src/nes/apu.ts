@@ -90,7 +90,7 @@ class Channel {
   public getVolume(): number { return 0 }
   public getFrequency(): number { return 0 }
   public stop() {}
-  public update() {}
+  public update(): void {}
 
   public isPlaying(): boolean {
     return false
@@ -148,9 +148,9 @@ class PulseChannel extends Channel {
     return ((1790000 / 16) / (value + 1)) | 0
   }
 
-  public update() {
+  public update(): void {
     if (this.stopped)
-      return 0
+      return
 
     this.updateVolumes()
     this.sweep()
@@ -249,7 +249,7 @@ class TriangleChannel extends Channel {
     return ((1790000 / 32) / (value + 1)) | 0
   }
 
-  public update() {
+  public update(): void {
     if (this.stopped)
       return
 

@@ -1,4 +1,4 @@
-import {Util} from '../../src/nes/util.ts'
+import {Util} from '../../src/nes/util'
 
 describe('util', () => {
   it('hex', () => {
