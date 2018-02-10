@@ -12,7 +12,7 @@ const kMirrorTable = [
 ]
 
 export class Mapper001 extends Mapper {
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, private ppu: Ppu) {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super()
 
     const BANK_BIT = 14  // 16KB

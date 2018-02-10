@@ -1,3 +1,5 @@
+///<reference path="../decl/patch.d.ts" />
+
 import {Util} from '../../src/nes/util'
 
 describe('util', () => {

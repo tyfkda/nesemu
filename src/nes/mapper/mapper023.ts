@@ -16,7 +16,7 @@ class Mapper023Base extends Mapper {
   private irqLatch: number = 0
   private irqCounter: number = 0
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, private ppu: Ppu,
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, ppu: Ppu,
               mapping: {[key: number]: number})
   {
     super()

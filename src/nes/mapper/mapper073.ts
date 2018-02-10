@@ -10,7 +10,7 @@ export class Mapper073 extends Mapper {
   private irqValue: number
   private irqCounter: number
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, private ppu: Ppu) {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, ppu: Ppu) {
     super()
 
     this.irqEnable = false

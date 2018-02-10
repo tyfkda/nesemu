@@ -59,7 +59,7 @@ export class Nes implements PrgBankController {
   private mapper: Mapper = null
   private vblankCallback: (leftCycles: number) => void
   private breakPointCallback: () => void
-  private prgBank: [number]
+  private prgBank: number[]
 
   public static create(): Nes {
     return new Nes()
