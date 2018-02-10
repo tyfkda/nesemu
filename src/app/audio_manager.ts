@@ -17,7 +17,7 @@ class SoundChannel {
 
   public create(context: AudioContext, type: (OscillatorType | 'noise')): void {
     this.gainNode = context.createGain()
-    this.gainNode.gain.value = 0
+    this.gainNode.gain.setTargetAtTime(0, context.currentTime, 0)
 
     this.oscillator = context.createOscillator()
     if (type !== 'noise') {
@@ -46,8 +46,8 @@ class SoundChannel {
     this.oscillator.frequency.setValueAtTime(frequency, now)
   }
 
-  public setVolume(volume: number) {
-    this.gainNode.gain.value = volume
+  public setVolume(volume: number, context: AudioContext) {
+    this.gainNode.gain.setTargetAtTime(volume, context.currentTime, 0)
   }
 }
 
@@ -103,7 +103,7 @@ export class AudioManager {
   public setChannelVolume(channel: number, volume: number): void {
     if (AudioManager.context == null)
       return
-    this.channels[channel].setVolume(volume * this.masterVolume)
+    this.channels[channel].setVolume(volume * this.masterVolume, AudioManager.context)
   }
 
   public setMasterVolume(volume: number): void {
@@ -112,7 +112,7 @@ export class AudioManager {
     this.masterVolume = volume
     if (volume <= 0) {
       this.channels.forEach(channel => {
-        channel.setVolume(0)
+        channel.setVolume(0, AudioManager.context)
       })
     }
   }
