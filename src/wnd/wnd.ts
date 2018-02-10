@@ -35,7 +35,6 @@ function createHorizontalSplitter(parent, upperHeight) {
   return [upper, lower]
 }
 
-
 export default class Wnd {
   public static TITLEBAR_HEIGHT = 12
   public static MENUBAR_HEIGHT = 12
@@ -48,6 +47,7 @@ export default class Wnd {
   private menuBar: HTMLElement
   private clientMarginWidth: number = 0
   private clientMarginHeight: number = 0
+  private bTop: boolean = false
 
   public constructor(protected wndMgr: WindowManager, width: number, height: number,
                      title: string)
@@ -107,7 +107,15 @@ export default class Wnd {
   }
 
   public isTop(): boolean {
-    return this.wndMgr.isTop(this)
+    return this.bTop
+  }
+
+  public setTop(value: boolean): void {
+    this.bTop = value
+    if (value)
+      this.root.classList.add('top')
+    else
+      this.root.classList.remove('top')
   }
 
   public addMenuBar(menu: any): Wnd {

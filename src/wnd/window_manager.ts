@@ -2,7 +2,7 @@ import Wnd from './wnd'
 
 const BASE_PRIORITY = 100
 
-function setWindowZIndex(wnd, i, n) {
+function setWindowZIndex(wnd: Wnd, i: number, n: number) {
   wnd.getRootNode().style.zIndex = String(BASE_PRIORITY + (n - 1 - i))
 }
 
@@ -15,7 +15,7 @@ export default class WindowManager {
   public add(wnd: Wnd): void {
     this.windows.unshift(wnd)
     this.root.appendChild(wnd.getRootNode())
-    setWindowZIndex(wnd, 0, this.windows.length)
+    this.updateWindowPriorities()
   }
 
   public remove(wnd: Wnd): void {
@@ -35,15 +35,12 @@ export default class WindowManager {
     for (let i = 0; i < n; ++i) {
       const tmp = this.windows[i]
       this.windows[i] = prev
-      setWindowZIndex(prev, i, n)
       if (tmp === wnd)
         break
       prev = tmp
     }
-  }
 
-  public isTop(wnd: Wnd): boolean {
-    return this.windows.length > 0 && this.windows[0] === wnd
+    this.updateWindowPriorities()
   }
 
   private removeWnd(wnd: Wnd): void {
@@ -51,8 +48,15 @@ export default class WindowManager {
     if (index < 0)
       return
     this.windows.splice(index, 1)
+    this.updateWindowPriorities()
+  }
 
-    for (let i = 0; i < index; ++i)
-      setWindowZIndex(this.windows[i], i, this.windows.length)
+  private updateWindowPriorities(): void {
+    const n = this.windows.length
+    for (let i = 0; i < n; ++i) {
+      let wnd = this.windows[i]
+      wnd.setTop(i == 0)
+      setWindowZIndex(wnd, i, n)
+    }
   }
 }
