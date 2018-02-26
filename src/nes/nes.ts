@@ -166,6 +166,10 @@ export class Nes implements PrgBankController {
     return vram[paletTable + (pal & 31)] & 0x3f
   }
 
+  public setPrgBank(bank: number, page: number): void {
+    this.prgBank[bank] = page << 13
+  }
+
   private setMemoryMap(mapperNo: number): void {
     const cpu = this.cpu
     cpu.resetMemoryMap()
@@ -216,10 +220,6 @@ export class Nes implements PrgBankController {
     cpu.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
 
     this.mapper = this.createMapper(mapperNo)
-  }
-
-  public setPrgBank(bank: number, page: number): void {
-    this.prgBank[bank] = page << 13
   }
 
   private createMapper(mapperNo: number): Mapper {

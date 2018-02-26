@@ -6,7 +6,7 @@ interface Window {
   FileReader: any
 
   mozRequestAnimationFrame: any
-  //webkitRequestAnimationFrame: any
+  // webkitRequestAnimationFrame: any
   msRequestAnimationFrame: any
 
   AudioContext: any

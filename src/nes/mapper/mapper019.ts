@@ -8,8 +8,8 @@ export class Mapper019 extends Mapper {
   constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super()
 
-    //const BANK_BIT = 13
-    //const count = prgSize >> BANK_BIT
+    // const BANK_BIT = 13
+    // const count = prgSize >> BANK_BIT
 
     // CHR ROM bank
     cpu.setWriteMemory(0x8000, 0xbfff, (adr, value) => {

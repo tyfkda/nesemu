@@ -263,9 +263,9 @@ export class Ppu {
       this.scrollTemp = (this.scrollTemp & ~0x0c00) | ((value & BASE_NAMETABLE_ADDRESS) << 10)
       // At dot 257 of each scanline:
       this.scrollCurr = (this.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
-      //if (this.hcount >= 280 && this.hcount < 304) {
-      //  this.scrollCurr = (this.scrollCurr & ~0x7be0) | (this.scrollTemp & 0x7be0)
-      //}
+      // if (this.hcount >= 280 && this.hcount < 304) {
+      //   this.scrollCurr = (this.scrollCurr & ~0x7be0) | (this.scrollTemp & 0x7be0)
+      // }
 
       this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
                       chrBankOffset: cloneArray(this.chrBankOffset),
@@ -653,7 +653,7 @@ export class Ppu {
       if (y + h < hline0 || y >= hline1)
         continue
 
-      const index = oam[i * 4 + 1]
+      const oamIndex = oam[i * 4 + 1]
       const attr = oam[i * 4 + 2]
       const flipVert = (attr & FLIP_VERT) !== 0
       const flipHorz = (attr & FLIP_HORZ) !== 0
@@ -661,8 +661,8 @@ export class Ppu {
       const priorityMask = kSpritePriorityMask[(attr >> 5) & 1]
 
       const chridx = (isSprite8x16
-                      ? (index & 0xfe) * 16 + ((index & 1) << 12)
-                      : index * 16 + chrStart)
+                      ? (oamIndex & 0xfe) * 16 + ((oamIndex & 1) << 12)
+                      : oamIndex * 16 + chrStart)
       const paletHigh = (((attr & PALET) << 2) | (0x10 | SPRITE_MASK))
 
       const py0 = Math.max(0, hline0 - y)
@@ -683,12 +683,12 @@ export class Ppu {
           const pal = (pat >> ((W - 1 - px) << 1)) & 3
           if (pal === 0)
             continue
-          const index = (y + py) * LINE_WIDTH + (x + px)
-          if ((offscreen[index] & priorityMask) !== 0) {
-            offscreen[index] |= SPRITE_MASK
+          const pixelIndex = (y + py) * LINE_WIDTH + (x + px)
+          if ((offscreen[pixelIndex] & priorityMask) !== 0) {
+            offscreen[pixelIndex] |= SPRITE_MASK
             continue
           }
-          offscreen[index] = paletHigh + pal
+          offscreen[pixelIndex] = paletHigh + pal
         }
       }
     }

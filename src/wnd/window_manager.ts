@@ -55,7 +55,7 @@ export default class WindowManager {
     const n = this.windows.length
     for (let i = 0; i < n; ++i) {
       let wnd = this.windows[i]
-      wnd.setTop(i == 0)
+      wnd.setTop(i === 0)
       setWindowZIndex(wnd, i, n)
     }
   }

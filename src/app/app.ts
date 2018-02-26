@@ -130,7 +130,7 @@ export class App {
     if (this.paused)
       return
     this.paused = true
-    //this.cancelLoopAnimation()
+    // this.cancelLoopAnimation()
     this.audioManager.setMasterVolume(0)
   }
 
@@ -138,7 +138,7 @@ export class App {
     if (!this.paused)
       return
     this.paused = false
-    //this.startLoopAnimation()
+    // this.startLoopAnimation()
     this.audioManager.setMasterVolume(1)
   }
 
