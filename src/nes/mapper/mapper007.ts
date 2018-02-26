@@ -7,6 +7,10 @@ import {Ppu, MirrorMode} from '../ppu'
 const kMirrorTable = [MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
 export class Mapper007 extends Mapper {
+  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
+    return new Mapper007(pbc, size, cpu, ppu)
+  }
+
   constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super()
     // 32KB switchable PRG ROM bank

@@ -5,6 +5,10 @@ import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
 
 export class Mapper010 extends Mapper {
+  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
+    return new Mapper010(pbc, size, cpu, ppu)
+  }
+
   constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super()
 

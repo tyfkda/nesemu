@@ -5,6 +5,10 @@ import {Cpu} from '../cpu'
 import {Ppu} from '../ppu'
 
 export class Mapper019 extends Mapper {
+  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
+    return new Mapper019(pbc, size, cpu, ppu)
+  }
+
   constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super()
 

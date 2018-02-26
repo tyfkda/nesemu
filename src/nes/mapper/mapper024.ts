@@ -130,6 +130,10 @@ class Mapper024Base extends Mapper {
 }
 
 export class Mapper024 extends Mapper024Base {
+  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
+    return new Mapper024(pbc, size, cpu, ppu)
+  }
+
   constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super(prgBankCtrl, prgSize, cpu, ppu, {
       0: 0,
@@ -141,6 +145,10 @@ export class Mapper024 extends Mapper024Base {
 }
 
 export class Mapper026 extends Mapper024Base {
+  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
+    return new Mapper026(pbc, size, cpu, ppu)
+  }
+
   constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super(prgBankCtrl, prgSize, cpu, ppu, {
       0: 0,

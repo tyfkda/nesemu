@@ -7,6 +7,10 @@ import {Ppu, MirrorMode} from '../ppu'
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ]
 
 export class Mapper032 extends Mapper {
+  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
+    return new Mapper032(pbc, size, cpu, ppu)
+  }
+
   constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super()
 

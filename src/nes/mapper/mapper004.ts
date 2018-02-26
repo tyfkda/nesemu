@@ -11,6 +11,10 @@ export class Mapper004 extends Mapper {
   private irqHlineValue: number
   private irqHlineCounter: number
 
+  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
+    return new Mapper004(pbc, size, cpu, ppu)
+  }
+
   constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, private ppu: Ppu) {
     super()
 

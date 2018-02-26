@@ -228,8 +228,8 @@ export class Nes implements PrgBankController {
       console.error(`  not supported`)
       mapperNo = 0
     }
-    const mapperClass = kMapperTable[mapperNo]
-    return new (mapperClass as any)(this, this.romData.length, this.cpu, this.ppu)
+    const mapperFunc = kMapperTable[mapperNo]
+    return mapperFunc(this, this.romData.length, this.cpu, this.ppu)
   }
 
   private tryHblankEvent(cycleCount: number, cycle: number, leftCycles: number): number {

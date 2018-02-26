@@ -27,8 +27,12 @@ class Mapper002Base extends Mapper {
 }
 
 export class Mapper002 extends Mapper002Base {
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
-    super(0, prgBankCtrl, prgSize, cpu, ppu)
+  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
+    return new Mapper002(pbc, size, cpu, ppu)
+  }
+
+  constructor(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu) {
+    super(0, pbc, size, cpu, ppu)
   }
 }
 
@@ -37,6 +41,10 @@ export class Mapper002 extends Mapper002Base {
 // This mapper is deprecated for new development. Homebrew projects other than mapper tests should
 // use UxROM (iNES Mapper 002) instead.
 export class Mapper093 extends Mapper002Base {
+  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
+    return new Mapper093(pbc, size, cpu, ppu)
+  }
+
   constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
     super(4, prgBankCtrl, prgSize, cpu, ppu)
   }

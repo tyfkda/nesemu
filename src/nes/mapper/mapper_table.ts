@@ -1,4 +1,4 @@
-// import {Mapper} from './mapper'
+import {Mapper, PrgBankController} from './mapper'
 import {Mapper000} from './mapper000'
 import {Mapper001} from './mapper001'
 import {Mapper002, Mapper093} from './mapper002'
@@ -15,30 +15,34 @@ import {Mapper073} from './mapper073'
 import {Mapper087} from './mapper087'
 import {Mapper075} from './mapper075'
 import {Mapper184} from './mapper184'
+import {Cpu} from '../cpu'
+import {Ppu} from '../ppu'
 
-export const kMapperTable: {[key: number]: any} = {  // Mapper
-  0: Mapper000,
-  1: Mapper001,
-  2: Mapper002,
-  3: Mapper003,
-  4: Mapper004,
-  7: Mapper007,
-  10: Mapper010,
-  19: Mapper019,
-  23: Mapper023,
-  24: Mapper024,
-  25: Mapper025,
-  26: Mapper026,
-  32: Mapper032,
-  69: Mapper069,
-  73: Mapper073,  // INES Mapper 073: Konami VRC3
-  75: Mapper075,
-  87: Mapper087,
-  88: Mapper004,
-  93: Mapper093,  // INES Mapper 093: Sunsoft-2 IC
-  95: Mapper004,
-  118: Mapper004,
-  184: Mapper184,
-  185: Mapper185,
-  206: Mapper004,
+export const kMapperTable: {[key: number]: (prgBankCtrl: PrgBankController, prgSize: number,
+                                            cpu: Cpu, ppu: Ppu) => Mapper} =
+{  // Mapper
+  0: Mapper000.create,
+  1: Mapper001.create,
+  2: Mapper002.create,
+  3: Mapper003.create,
+  4: Mapper004.create,
+  7: Mapper007.create,
+  10: Mapper010.create,
+  19: Mapper019.create,
+  23: Mapper023.create,
+  24: Mapper024.create,
+  25: Mapper025.create,
+  26: Mapper026.create,
+  32: Mapper032.create,
+  69: Mapper069.create,
+  73: Mapper073.create,  // INES Mapper 073: Konami VRC3
+  75: Mapper075.create,
+  87: Mapper087.create,
+  88: Mapper004.create,
+  93: Mapper093.create,  // INES Mapper 093: Sunsoft-2 IC
+  95: Mapper004.create,
+  118: Mapper004.create,
+  184: Mapper184.create,
+  185: Mapper185.create,
+  206: Mapper004.create,
 }
