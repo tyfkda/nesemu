@@ -282,12 +282,12 @@ export class PaletWnd extends Wnd {
   private static W = 16
   private static H = 2
 
-  private boxes: HTMLCanvasElement[]
+  private boxes: HTMLElement[]
   private palet: Uint8Array
   private tmp: Uint8Array
   private subscription: Rx.Subscription
 
-  private static createDom(): any {
+  private static createDom(): {root: HTMLElement, boxes: HTMLElement[]} {
     const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
     const root = document.createElement('div')
     root.className = 'clearfix'
@@ -306,7 +306,7 @@ export class PaletWnd extends Wnd {
         root.appendChild(box)
       }
     }
-    return [root, boxes]
+    return {root, boxes}
   }
 
   private static getPalet(nes: Nes, buf: Uint8Array): void {
@@ -320,8 +320,8 @@ export class PaletWnd extends Wnd {
     this.palet = new Uint8Array(PaletWnd.W * PaletWnd.H)
     this.tmp = new Uint8Array(PaletWnd.W * PaletWnd.H)
 
-    const [content, boxes] = PaletWnd.createDom()
-    this.setContent(content)
+    const {root, boxes} = PaletWnd.createDom()
+    this.setContent(root)
     this.boxes = boxes
 
     this.subscription = this.stream

@@ -90,7 +90,7 @@ export default class Wnd {
     return this
   }
 
-  public getWindowSize(): any {
+  public getWindowSize(): {width: number, height: number} {
     const width = parseInt(this.root.style.width, 10)
     const height = parseInt(this.root.style.height, 10)
     return { width, height }
