@@ -228,6 +228,7 @@ export default class Wnd {
       const dragFinish = (event) => {
         document.removeEventListener('mousemove', dragMove)
         document.removeEventListener('mouseup', dragFinish)
+        this.root.style['transition-property'] = null
       }
 
       resizeBox.addEventListener('mousedown', (event) => {
@@ -240,6 +241,8 @@ export default class Wnd {
         document.addEventListener('mousemove', dragMove)
         document.addEventListener('mouseup', dragFinish)
         this.wndMgr.moveToTop(this)
+
+        this.root.style['transition-property'] = 'none'  // To change size immediately.
       })
       this.root.appendChild(resizeBox)
     })

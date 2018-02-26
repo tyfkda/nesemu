@@ -59,6 +59,7 @@ body {
   box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
   overflow: hidden;
   transition-duration: 0.1s;
+  transition-property: box-shadow, width, height;
 
   .title-bar {
     position: absolute;
