@@ -155,6 +155,26 @@ export class Cpu {
     this.stepLogs.length = 0
   }
 
+  public save(): object {
+    return {
+      a: this.a,
+      x: this.x,
+      y: this.y,
+      s: this.s,
+      p: this.p,
+      pc: this.pc,
+    }
+  }
+
+  public load(saveData: any): void {
+    this.a = saveData.a
+    this.x = saveData.x
+    this.y = saveData.y
+    this.s = saveData.s
+    this.p = saveData.p
+    this.pc = saveData.pc
+  }
+
   public deleteAllBreakPoints(): void {
     this.breakPoints = {}
     this.watchRead = {}

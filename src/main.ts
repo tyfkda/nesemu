@@ -67,7 +67,8 @@ class Main {
     }
   }
 
-  private createAppFromRom(romData: Uint8Array, title: string, x: number, y: number): void {
+  private createAppFromRom(romData: Uint8Array, name: string, x: number, y: number): void {
+    const title = name
     const option = {
       title,
       centerX: x,

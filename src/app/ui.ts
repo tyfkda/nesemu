@@ -154,6 +154,18 @@ export class ScreenWnd extends Wnd {
             },
           },
           {
+            label: 'Save',
+            click: () => {
+              this.app.saveData()
+            },
+          },
+          {
+            label: 'Load',
+            click: () => {
+              this.app.loadData()
+            },
+          },
+          {
             label: 'Quit',
             click: () => {
               this.close()

@@ -173,6 +173,24 @@ export class Ppu {
       this.vram[0x3f00 + i] = kInitialPalette[i]
   }
 
+  public save(): object {
+    return {
+      regs: Util.convertUint8ArrayToBase64String(this.regs),
+      vram: Util.convertUint8ArrayToBase64String(this.vram),
+      oam: Util.convertUint8ArrayToBase64String(this.oam),
+      mirrorMode: this.mirrorMode,
+      mirrorModeBit: this.mirrorModeBit,
+    }
+  }
+
+  public load(saveData: any): void {
+    this.regs = Util.convertBase64StringToUint8Array(saveData.regs)
+    this.vram = Util.convertBase64StringToUint8Array(saveData.vram)
+    this.oam = Util.convertBase64StringToUint8Array(saveData.oam)
+    this.mirrorMode = saveData.mirrorMode
+    this.mirrorModeBit = saveData.mirrorModeBit
+  }
+
   public setChrData(chrData: Uint8Array): void {
     if (chrData && chrData.length > 0)
       this.chrData = chrData
