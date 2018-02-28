@@ -106,6 +106,7 @@ export class Nes implements PrgBankController {
     return {
       cpu: this.cpu.save(),
       ppu: this.ppu.save(),
+      mapper: this.mapper.save(),
       ram: Util.convertUint8ArrayToBase64String(this.ram),
     }
   }
@@ -114,6 +115,7 @@ export class Nes implements PrgBankController {
     this.reset()
     this.cpu.load(saveData.cpu)
     this.ppu.load(saveData.ppu)
+    this.mapper.load(saveData.mapper)
     this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
   }
 
