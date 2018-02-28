@@ -200,10 +200,12 @@ export default class Wnd {
       })
       resizeBox.style.width = resizeBox.style.height = `${W}px`
       resizeBox.style.zIndex = '100'
-
-      let dragOfsX, dragOfsY
-      const dragMove = (event) => {
-        const [x, y] = this.getMousePosIn(event, this.root.parentNode as HTMLElement)
+      resizeBox.addEventListener('mousedown', (event) => {
+        event.stopPropagation()
+        event.preventDefault()
+        const [mx, my] = this.getMousePosIn(event, resizeBox)
+        const dragOfsX = param.horz === 'left' ? -mx : W - mx
+        const dragOfsY = param.vert === 'top' ? -my : W - my
         const rect = this.root.getBoundingClientRect()
         const prect = (this.root.parentNode as HTMLElement).getBoundingClientRect()
         const box = {
@@ -212,35 +214,33 @@ export default class Wnd {
           right: rect.right - prect.left,
           bottom: rect.bottom - prect.top,
         }
-        box[param.horz] = x + dragOfsX
-        box[param.vert] = y + dragOfsY
 
-        let width = box.right - box.left - 2  // For border width.
-        let height = box.bottom - box.top - 2
-        if (width < MIN_WIDTH) {
-          box[param.horz] -= (MIN_WIDTH - width) * (param.horz === 'left' ? 1 : -1)
-        }
-        if (height < MIN_HEIGHT) {
-          box[param.vert] -= (MIN_HEIGHT - height) * (param.vert === 'top' ? 1 : -1)
-        }
-        this.root.style.width = `${box.right - box.left -  2}px`
-        this.root.style.height = `${box.bottom - box.top - 2}px`
-        this.root.style.left = `${box.left}px`
-        this.root.style.top = `${box.top}px`
-        this.callback('resize', width, height - Wnd.TITLEBAR_HEIGHT)
-      }
-      const dragFinish = (event) => {
-        document.removeEventListener('mousemove', dragMove)
-        document.removeEventListener('mouseup', dragFinish)
-        this.root.style['transition-property'] = null
-      }
+        const dragMove = (event) => {
+          let [x, y] = this.getMousePosIn(event, this.root.parentNode as HTMLElement)
+          x = clamp(x, -dragOfsX, window.innerWidth - dragOfsX)
+          y = clamp(y, -dragOfsY, window.innerHeight - dragOfsY)
+          box[param.horz] = x + dragOfsX
+          box[param.vert] = y + dragOfsY
 
-      resizeBox.addEventListener('mousedown', (event) => {
-        event.stopPropagation()
-        event.preventDefault()
-        const [x, y] = this.getMousePosIn(event, resizeBox)
-        dragOfsX = param.horz === 'left' ? -x : W - x
-        dragOfsY = param.vert === 'top' ? -y : W - y
+          let width = box.right - box.left - 2  // For border width.
+          let height = box.bottom - box.top - 2
+          if (width < MIN_WIDTH) {
+            box[param.horz] -= (MIN_WIDTH - width) * (param.horz === 'left' ? 1 : -1)
+          }
+          if (height < MIN_HEIGHT) {
+            box[param.vert] -= (MIN_HEIGHT - height) * (param.vert === 'top' ? 1 : -1)
+          }
+          this.root.style.width = `${box.right - box.left -  2}px`
+          this.root.style.height = `${box.bottom - box.top - 2}px`
+          this.root.style.left = `${box.left}px`
+          this.root.style.top = `${box.top}px`
+          this.callback('resize', width, height - Wnd.TITLEBAR_HEIGHT)
+        }
+        const dragFinish = (event) => {
+          document.removeEventListener('mousemove', dragMove)
+          document.removeEventListener('mouseup', dragFinish)
+          this.root.style['transition-property'] = null
+        }
 
         document.addEventListener('mousemove', dragMove)
         document.addEventListener('mouseup', dragFinish)
