@@ -4,7 +4,7 @@ import Wnd from '../wnd/wnd'
 import {Nes} from '../nes/nes'
 import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst'
 import {disassemble} from '../nes/disasm'
-import {Util} from '../nes/util'
+import Util from '../util/util'
 
 import {App} from './app'
 import {AppEvent} from './app_event'

@@ -9,22 +9,13 @@ import {PadKeyHandler} from './pad_key_handler'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
         RegisterWnd, TraceWnd, ControlWnd} from './ui'
 import StorageUtil from './storage_util'
+import Util from '../util/util'
 import WindowManager from '../wnd/window_manager'
 
 import * as Rx from 'rxjs/Rx'
 
 const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
-
-function clamp(x, min, max) {
-  if (x < min)
-    return min
-  if (max < min)
-    max = min
-  if (x > max)
-    return max
-  return x
-}
 
 export class App {
   private destroying = false
@@ -94,8 +85,8 @@ export class App {
       this.screenWnd.setTitle(option.title as string)
 
     const size = this.screenWnd.getWindowSize()
-    let x = clamp((option.centerX || 0) - size.width / 2, 0, window.innerWidth - size.width - 1)
-    let y = clamp((option.centerY || 0) - size.height / 2, 0, window.innerHeight - size.height - 1)
+    let x = Util.clamp((option.centerX || 0) - size.width / 2, 0, window.innerWidth - size.width - 1)
+    let y = Util.clamp((option.centerY || 0) - size.height / 2, 0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
 
     this.padKeyHandler = new PadKeyHandler()

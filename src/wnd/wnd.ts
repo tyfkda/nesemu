@@ -1,3 +1,4 @@
+import Util from '../util/util'
 import WindowManager from './window_manager'
 
 const Z_MENUBAR = 1000
@@ -12,10 +13,6 @@ function getOffsetRect(parent, target) {
     right: trect.right - prect.left,
     bottom: trect.bottom - prect.top,
   }
-}
-
-function clamp(x, min, max) {
-  return x < min ? min : x > max ? max : x
 }
 
 function createHorizontalSplitter(parent, upperHeight) {
@@ -217,8 +214,8 @@ export default class Wnd {
 
         const dragMove = (event) => {
           let [x, y] = this.getMousePosIn(event, this.root.parentNode as HTMLElement)
-          x = clamp(x, -dragOfsX, window.innerWidth - dragOfsX)
-          y = clamp(y, -dragOfsY, window.innerHeight - dragOfsY)
+          x = Util.clamp(x, -dragOfsX, window.innerWidth - dragOfsX)
+          y = Util.clamp(y, -dragOfsY, window.innerHeight - dragOfsY)
           box[param.horz] = x + dragOfsX
           box[param.vert] = y + dragOfsY
 
@@ -283,8 +280,8 @@ export default class Wnd {
       const winSize = this.getWindowSize()
       const dragMove = (event) => {
         let [x, y] = this.getMousePosIn(event, this.root.parentNode as HTMLElement)
-        x = clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
-        y = clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
+        x = Util.clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
+        y = Util.clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
 
         this.root.style.left = `${x + dragOfsX}px`
         this.root.style.top = `${y + dragOfsY}px`

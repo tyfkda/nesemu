@@ -4,7 +4,7 @@ import {Apu} from './apu'
 import {kColors} from './const'
 import {Cpu} from './cpu'
 import {Ppu, MirrorMode} from './ppu'
-import {Util} from './util'
+import Util from '../util/util'
 
 import {Mapper, PrgBankController} from './mapper/mapper'
 import {kMapperTable} from './mapper/mapper_table'

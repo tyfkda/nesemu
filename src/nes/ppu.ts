@@ -5,7 +5,7 @@
 
 import {Const, kColors, kStaggered, kFlipBits} from './const'
 import {Address, Byte, Word} from './types'
-import {Util} from './util'
+import Util from '../util/util'
 
 const REGISTER_COUNT = 8
 const VRAM_SIZE = 0x4000

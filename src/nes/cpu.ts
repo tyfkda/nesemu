@@ -1,7 +1,7 @@
 // CPU: MOS 6502
 
 import {Addressing, Instruction, OpType, kInstTable} from './inst'
-import {Util} from './util'
+import Util from '../util/util'
 import {Address, Byte, Word} from './types'
 
 import {disassemble} from './disasm'

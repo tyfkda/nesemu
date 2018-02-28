@@ -1,5 +1,5 @@
 import {Addressing, Instruction, OpType} from './inst'
-import {Util} from './util'
+import Util from '../util/util'
 
 const kOpcode = {
   [OpType.LDA]: 'LDA',
