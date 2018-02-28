@@ -28,7 +28,7 @@ function clamp(x, min, max) {
 
 export class App {
   private destroying = false
-  private paused = false
+  private isBlur = false
   private rafId: number  // requestAnimationFrame
   private nes: Nes
   private padKeyHandler: PadKeyHandler
@@ -127,17 +127,17 @@ export class App {
   }
 
   public onBlur() {
-    if (this.paused)
+    if (this.isBlur)
       return
-    this.paused = true
+    this.isBlur = true
     // this.cancelLoopAnimation()
     this.audioManager.setMasterVolume(0)
   }
 
   public onFocus() {
-    if (!this.paused)
+    if (!this.isBlur)
       return
-    this.paused = false
+    this.isBlur = false
     // this.startLoopAnimation()
     this.audioManager.setMasterVolume(1)
   }
