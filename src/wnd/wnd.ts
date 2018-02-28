@@ -14,6 +14,10 @@ function getOffsetRect(parent, target) {
   }
 }
 
+function clamp(x, min, max) {
+  return x < min ? min : x > max ? max : x
+}
+
 function createHorizontalSplitter(parent, upperHeight) {
   const upper = document.createElement('div')
   upper.className = 'upper'
@@ -267,25 +271,29 @@ export default class Wnd {
     })
     this.titleElem = this.addTitle(this.titleBar, title)
 
-    // Move window position with dragging.
-    let dragOfsX, dragOfsY
-    const dragMove = (event) => {
-      const [x, y] = this.getMousePosIn(event, this.root.parentNode as HTMLElement)
-      this.root.style.left = `${x + dragOfsX}px`
-      this.root.style.top = `${y + dragOfsY}px`
-    }
-    const dragFinish = (event) => {
-      document.removeEventListener('mousemove', dragMove)
-      document.removeEventListener('mouseup', dragFinish)
-    }
     this.titleBar.addEventListener('mousedown', (event) => {
-      dragOfsX = dragOfsY = null
       if (event.button !== 0)
         return false
+
+      // Move window position with dragging.
       event.preventDefault()
-      const [x, y] = this.getMousePosIn(event, this.root)
-      dragOfsX = -x
-      dragOfsY = -y
+      let [mx, my] = this.getMousePosIn(event, this.root)
+      const dragOfsX = -mx
+      const dragOfsY = -my
+      const winSize = this.getWindowSize()
+      const dragMove = (event) => {
+        let [x, y] = this.getMousePosIn(event, this.root.parentNode as HTMLElement)
+        x = clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
+        y = clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
+
+        this.root.style.left = `${x + dragOfsX}px`
+        this.root.style.top = `${y + dragOfsY}px`
+      }
+      const dragFinish = (event) => {
+        document.removeEventListener('mousemove', dragMove)
+        document.removeEventListener('mouseup', dragFinish)
+      }
+
       document.addEventListener('mousemove', dragMove)
       document.addEventListener('mouseup', dragFinish)
       return true
