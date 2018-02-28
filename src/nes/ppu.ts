@@ -570,12 +570,11 @@ export class Ppu {
 
         const pat = getBgPat(chridx, yyy & 7)
 
-        for (let px = 0; px < W; ++px) {
-          const xx = bbx * W + px - (scrollX & 7)
-          if (xx < x0)
-            continue
-          if (xx >= Const.WIDTH)
-            break
+        const px0 = bbx * W - (scrollX & 7)
+        const pxStart = Math.max(x0 - px0, 0)
+        const pxEnd = Math.min(Const.WIDTH - px0, W)
+        for (let px = pxStart; px < pxEnd; ++px) {
+          const xx = px + px0
           let pal = (pat >> ((W - 1 - px) << 1)) & 3
           if (pal !== 0)
             pal |= paletHigh
@@ -666,20 +665,13 @@ export class Ppu {
       const paletHigh = (((attr & PALET) << 2) | (0x10 | SPRITE_MASK))
 
       const py0 = Math.max(0, hline0 - y)
-      const py1 = Math.min(h, hline1 - y)
+      const py1 = Math.min(h, Math.min(hline1 - y, Const.HEIGHT - y))
+      const px0 = Math.max(-x, 0)
+      const px1 = Math.min(Const.WIDTH - x, W)
       for (let py = py0; py < py1; ++py) {
-        if (y + py >= Const.HEIGHT)
-          break
-
         const ppy = flipVert ? (h - 1) - py : py
         const pat = getSpritePat(chridx, ppy, flipHorz)
-        for (let px = 0; px < W; ++px) {
-          const xx = x + px
-          if (xx < x0)
-            continue
-          if (xx >= Const.WIDTH)
-            break
-
+        for (let px = px0; px < px1; ++px) {
           const pal = (pat >> ((W - 1 - px) << 1)) & 3
           if (pal === 0)
             continue
