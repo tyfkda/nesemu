@@ -5,24 +5,41 @@ import {Cpu} from '../cpu'
 import {Ppu} from '../ppu'
 
 class Mapper002Base extends Mapper {
-  constructor(prgBankShift: number, prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu,
-              _ppu: Ppu)
+  private bank = 0
+
+  constructor(prgBankShift: number, private prgBankCtrl: PrgBankController, prgSize: number,
+              cpu: Cpu, ppu: Ppu)
   {
     super()
 
     const BANK_BIT = 14
     const count = prgSize >> BANK_BIT
-    prgBankCtrl.setPrgBank(0, 0)
-    prgBankCtrl.setPrgBank(1, 1)
-    prgBankCtrl.setPrgBank(2, count * 2 - 2)
-    prgBankCtrl.setPrgBank(3, count * 2 - 1)
+    this.prgBankCtrl.setPrgBank(0, 0)
+    this.prgBankCtrl.setPrgBank(1, 1)
+    this.prgBankCtrl.setPrgBank(2, count * 2 - 2)
+    this.prgBankCtrl.setPrgBank(3, count * 2 - 1)
 
     // PRG ROM bank
     cpu.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
       const bank = (value >> prgBankShift) << 1
-      prgBankCtrl.setPrgBank(0, bank)
-      prgBankCtrl.setPrgBank(1, bank + 1)
+      this.setBank(bank)
     })
+  }
+
+  public save(): object {
+    return {
+      bank: this.bank,
+    }
+  }
+
+  public load(saveData: any): void {
+    this.setBank(saveData.bank)
+  }
+
+  private setBank(bank) {
+    this.bank = bank
+    this.prgBankCtrl.setPrgBank(0, bank)
+    this.prgBankCtrl.setPrgBank(1, bank + 1)
   }
 }
 

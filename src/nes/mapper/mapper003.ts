@@ -3,17 +3,31 @@ import {Cpu} from '../cpu'
 import {Ppu} from '../ppu'
 
 export class Mapper003 extends Mapper {
+  private chrBank = 0
+
   public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
     return new Mapper003(pbc, size, cpu, ppu)
   }
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
+  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, private ppu: Ppu) {
     super()
 
     // Chr ROM bank
     cpu.setWriteMemory(0x8000, 0xffff, (adr, value) => {
-      ppu.setChrBank(value)
+      this.chrBank = value
+      this.ppu.setChrBank(this.chrBank)
     })
+  }
+
+  public save(): object {
+    return {
+      chrBank: this.chrBank,
+    }
+  }
+
+  public load(saveData: any): void {
+    this.chrBank = saveData.chrBank
+    this.ppu.setChrBank(this.chrBank)
   }
 }
 

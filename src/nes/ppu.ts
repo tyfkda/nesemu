@@ -143,6 +143,7 @@ export class Ppu {
   private hevents: HEvents = {count: 0, events: []}
   private hevents2: HEvents = {count: 0, events: []}
 
+  private isChrRam = false
   private scrollCurr: Word = 0
   private scrollTemp: Word = 0
   private scrollFineX: number = 0
@@ -180,6 +181,7 @@ export class Ppu {
       oam: Util.convertUint8ArrayToBase64String(this.oam),
       mirrorMode: this.mirrorMode,
       mirrorModeBit: this.mirrorModeBit,
+      isChrRam: this.isChrRam,
     }
   }
 
@@ -189,13 +191,18 @@ export class Ppu {
     this.oam = Util.convertBase64StringToUint8Array(saveData.oam)
     this.mirrorMode = saveData.mirrorMode
     this.mirrorModeBit = saveData.mirrorModeBit
+    this.isChrRam = saveData.isChrRam
+
+    if (this.isChrRam)
+      this.chrData = this.vram
   }
 
   public setChrData(chrData: Uint8Array): void {
-    if (chrData && chrData.length > 0)
-      this.chrData = chrData
-    else  // CHR RAM
+    this.isChrRam = !(chrData && chrData.length > 0)
+    if (this.isChrRam)
       this.chrData = this.vram
+    else
+      this.chrData = chrData
   }
 
   public setChrBank(value: number): void {
