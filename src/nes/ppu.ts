@@ -666,7 +666,7 @@ export class Ppu {
 
       const py0 = Math.max(0, hline0 - y)
       const py1 = Math.min(h, Math.min(hline1 - y, Const.HEIGHT - y))
-      const px0 = Math.max(-x, 0)
+      const px0 = Math.max(x0 - x, 0)
       const px1 = Math.min(Const.WIDTH - x, W)
       for (let py = py0; py < py1; ++py) {
         const ppy = flipVert ? (h - 1) - py : py
