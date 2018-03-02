@@ -427,17 +427,6 @@ export class Ppu {
   public renderNameTable1(pixels: Uint8ClampedArray, lineWidth: number,
                           startX: number, startY: number, nameTableOffset: number): void
   {
-    const getBgPat = (chridx, py) => {
-      const idx = chridx + py
-
-      const bank = (idx >> 10) & 7
-      const bankOfs = this.chrBankOffset[bank]
-      const ofs = idx & 0x03ff
-      const p = bankOfs + ofs
-
-      return (kStaggered[this.chrData[p + 8]] << 1) | kStaggered[this.chrData[p]]
-    }
-
     const W = 8
     const chrStart = getBgPatternTableAddress(this.regs[PPUCTRL])
     const vram = this.vram
@@ -465,10 +454,11 @@ export class Ppu {
 
         for (let py = 0; py < W; ++py) {
           const yy = bby * W + py
-          const pat = getBgPat(chridx, py)
+          let pat = this.getBgPat(chridx, py, this.chrBankOffset)
           for (let px = 0; px < W; ++px) {
             const xx = bbx * W + px
-            const pal = (pat >> ((W - 1 - px) << 1)) & 3
+            const pal = pat >> 14  // & 3
+            pat = (pat << 2) & 0xffff
             let r = clearR, g = clearG, b = clearB
             if (pal !== 0) {
               const palet = paletHigh + pal
@@ -521,17 +511,6 @@ export class Ppu {
                      baseNameTable: Address, hline0: number, hline1: number, x0: number,
                      chrBankOffset: number[], mirrorModeBit: number, chrStart: Address): void
   {
-    const getBgPat = (chridx, py) => {
-      const idx = chridx + py
-
-      const bank = (idx >> 10) & 7
-      const bankOfs = chrBankOffset[bank]
-      const ofs = idx & 0x03ff
-      const p = bankOfs + ofs
-
-      return (kStaggered[this.chrData[p + 8]] << 1) | kStaggered[this.chrData[p]]
-    }
-
     const W = 8
     const LINE_WIDTH = Const.WIDTH
     const vram = this.vram
@@ -557,14 +536,15 @@ export class Ppu {
         const attributeTable = nameTable + 0x3c0
         const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
 
-        const pat = getBgPat(chridx, yyy & 7)
-
         const px0 = bbx * W - (scrollX & 7)
         const pxStart = Math.max(x0 - px0, 0)
         const pxEnd = Math.min(Const.WIDTH - px0, W)
+        let pat = this.getBgPat(chridx, yyy & 7, chrBankOffset)
+        pat = (pat << (pxStart * 2)) & 0xffff
         for (let px = pxStart; px < pxEnd; ++px) {
           const xx = px + px0
-          let pal = (pat >> ((W - 1 - px) << 1)) & 3
+          let pal = pat >> 14  // & 3
+          pat = (pat << 2) & 0xffff
           if (pal !== 0)
             pal |= paletHigh
 
@@ -609,24 +589,6 @@ export class Ppu {
   private renderSprite2(hline0: number, hline1: number, x0: number,
                         chrBankOffset: number[], chrStart: Address): void
   {
-    const getSpritePat = (chridx, ppy, flipHorz) => {
-      const idx = chridx + (ppy & 7) + ((ppy & 8) << 1)
-
-      const bank = (idx >> 10) & 7
-      const bankOfs = chrBankOffset[bank]
-      const ofs = idx & 0x03ff
-      const p = bankOfs + ofs
-
-      let patHi = this.chrData[p + 8]
-      let patLo = this.chrData[p]
-      if (flipHorz) {
-        patHi = kFlipBits[patHi]
-        patLo = kFlipBits[patLo]
-      }
-
-      return (kStaggered[patHi] << 1) | kStaggered[patLo]
-    }
-
     const W = 8
     const LINE_WIDTH = Const.WIDTH
     const PALET = 0x03
@@ -659,7 +621,7 @@ export class Ppu {
       const px1 = Math.min(Const.WIDTH - x, W)
       for (let py = py0; py < py1; ++py) {
         const ppy = flipVert ? (h - 1) - py : py
-        const pat = getSpritePat(chridx, ppy, flipHorz)
+        const pat = this.getSpritePat(chridx, ppy, flipHorz, chrBankOffset)
         for (let px = px0; px < px1; ++px) {
           const pal = (pat >> ((W - 1 - px) << 1)) & 3
           if (pal === 0)
@@ -673,6 +635,28 @@ export class Ppu {
         }
       }
     }
+  }
+
+  private getBgPat(chridx: number, py: number, chrBankOffset: number[]): number {
+    const idx = chridx + py
+    const bank = (idx >> 10) & 7
+    const p = chrBankOffset[bank] + (idx & 0x03ff)
+    return kStaggered[this.chrData[p]] | (kStaggered[this.chrData[p + 8]] << 1)
+  }
+
+  private getSpritePat(chridx: number, ppy: number, flipHorz: boolean,
+                       chrBankOffset: number[]): number
+  {
+    const idx = chridx + (ppy & 7) + ((ppy & 8) << 1)
+    const bank = (idx >> 10) & 7
+    const p = chrBankOffset[bank] + (idx & 0x03ff)
+    let patHi = this.chrData[p + 8]
+    let patLo = this.chrData[p]
+    if (flipHorz) {
+      patHi = kFlipBits[patHi]
+      patLo = kFlipBits[patLo]
+    }
+    return kStaggered[patLo] | (kStaggered[patHi] << 1)
   }
 
   private checkSprite0Hit(hcount: number): void {
@@ -694,18 +678,7 @@ export class Ppu {
     this.regs[PPUSTATUS] |= SPRITE0HIT
   }
 
-  private getNonEmptySprite0Line() {
-    const getSpritePat = (chridx, ppy) => {
-      const idx = chridx + (ppy & 7) + ((ppy & 8) << 1)
-      const bank = (idx >> 10) & 7
-      const bankOfs = this.chrBankOffset[bank]
-      const ofs = idx & 0x03ff
-      const p = bankOfs + ofs
-      let patHi = this.chrData[p + 8]
-      let patLo = this.chrData[p]
-      return (kStaggered[patHi] << 1) | kStaggered[patLo]
-    }
-
+  private getNonEmptySprite0Line(): number {
     const oam = this.oam
     const chrStart = this.getSpritePatternTableAddress()
     const isSprite8x16 = this.isSprite8x16()
@@ -720,7 +693,7 @@ export class Ppu {
 
     for (let py = 0; py < h; ++py) {
       const ppy = flipVert ? (h - 1) - py : py
-      const pat = getSpritePat(chridx, ppy)
+      const pat = this.getSpritePat(chridx, ppy, false, this.chrBankOffset)
       if (pat !== 0)
         return py
     }
@@ -746,7 +719,7 @@ export class Ppu {
     hevents.count = n
   }
 
-  private incScrollCounter() {
+  private incScrollCounter(): void {
     if (this.hevents.count <= 0)
       return
     const h = this.hevents.events[this.hevents.count - 1]
