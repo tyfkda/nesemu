@@ -1,7 +1,7 @@
 import {PadBit} from '../nes/apu'
 import WindowManager from '../wnd/window_manager'
 import Wnd from '../wnd/wnd'
-import StorageUtil from './storage_util'
+import StorageUtil from '../util/storage_util'
 
 // Type
 enum Type {

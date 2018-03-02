@@ -2,13 +2,12 @@ import {Nes} from '../nes/nes'
 import {MirrorMode} from '../nes/ppu'
 
 import {AppEvent} from './app_event'
-import {AudioManager} from './audio_manager'
-import {GamepadManager} from './gamepad_manager'
-import {KeyCode} from './key_code'
-import {PadKeyHandler} from './pad_key_handler'
+import {AudioManager} from '../util/audio_manager'
+import {GamepadManager} from '../util/gamepad_manager'
+import {KeyCode} from '../util/key_code'
+import {PadKeyHandler} from '../util/pad_key_handler'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
         RegisterWnd, TraceWnd, ControlWnd} from './ui'
-import StorageUtil from './storage_util'
 import Util from '../util/util'
 import WindowManager from '../wnd/window_manager'
 
@@ -37,7 +36,6 @@ export class App {
   private hasCtrlWnd: boolean
 
   public static setUp(): void {
-    StorageUtil.setKeyPrefix('nesemu:')
     GamepadManager.setUp()
   }
 

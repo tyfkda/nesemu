@@ -1,7 +1,8 @@
 ///<reference path="./decl/patch.d.ts" />
 
 import {App} from './app/app'
-import {GamepadManager, GamepadWnd} from './app/gamepad_manager'
+import {GamepadManager, GamepadWnd} from './util/gamepad_manager'
+import StorageUtil from './util/storage_util'
 import WindowManager from './wnd/window_manager'
 import './nes/polyfill'
 
@@ -182,6 +183,7 @@ class Main {
 }
 
 window.addEventListener('load', () => {
+  StorageUtil.setKeyPrefix('nesemu:')
   const root = document.getElementById('nesroot')
   const main = new Main(root)
   main.setUp()
