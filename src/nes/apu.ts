@@ -35,6 +35,7 @@ const SEQUENCER_MODE = 1 << 7
 const CONSTANT_VOLUME = 0x10
 const LENGTH_COUNTER_HALT = 0x20
 
+const CHANNEL_COUNT = 4
 const CH_PULSE1 = 0
 const CH_PULSE2 = 1
 const CH_TRIANGLE = 2
@@ -54,8 +55,8 @@ const VBLANK_START = 241
 // ================================================================
 // GamePad
 class GamePad {
-  private status = new Array<Byte>(2)
-  private tmp = new Array<Byte>(2)
+  private status = new Uint8Array(2)
+  private tmp = new Uint8Array(2)
 
   public setStatus(no: number, status: Byte): void {
     this.status[no] = status
@@ -67,15 +68,14 @@ class GamePad {
   }
 
   public shift(no: number): number {
-    const result = this.tmp[no]
-    this.tmp[no] = result >> 1
-    return result & 1
+    const value = this.tmp[no]
+    this.tmp[no] = value >> 1
+    return value & 1
   }
 }
 
 // ================================================================
 // Sound channel
-
 class Channel {
   protected regs = new Uint8Array(4)
 
@@ -160,7 +160,8 @@ class PulseChannel extends Channel {
     let l = this.lengthCounter
     let v = this.regs[0]
     if ((v & LENGTH_COUNTER_HALT) === 0) {
-      this.lengthCounter = l -= 2 * 4
+      l -= 2 * 4
+      this.lengthCounter = l
       if (l <= 0) {
         this.regs[0] = v = (v & 0xf0)  // Set volume = 0
         this.lengthCounter = 0
@@ -260,7 +261,8 @@ class TriangleChannel extends Channel {
     let l = this.lengthCounter
     let v = this.regs[0]
     if ((v & LENGTH_COUNTER_HALT) === 0) {
-      this.lengthCounter = l -= 2 * 4
+      l -= 2 * 4
+      this.lengthCounter = l
       if (l <= 0) {
         this.regs[0] = v = (v & 0xf0)  // Set volume = 0
         this.lengthCounter = 0
@@ -327,7 +329,8 @@ class NoiseChannel extends Channel {
     let l = this.lengthCounter
     let v = this.regs[0]
     if ((v & LENGTH_COUNTER_HALT) === 0) {
-      this.lengthCounter = l -= 2 * 4
+      l -= 2 * 4
+      this.lengthCounter = l
       if (l <= 0) {
         this.regs[0] = v = (v & 0xf0)  // Set volume = 0
         this.lengthCounter = 0
@@ -340,10 +343,8 @@ class NoiseChannel extends Channel {
 // ================================================================
 // Apu
 export class Apu {
-  public static CHANNEL = 4
-
   private regs = new Uint8Array(0x20)
-  private channels = new Array<Channel>(Apu.CHANNEL)
+  private channels = new Array<Channel>(CHANNEL_COUNT)
   private frameInterrupt = 0  // 0=not occurred, 0x40=occurred
   private dmcInterrupt = 0x80  // 0=not occurred, 0x80=occurred
   private gamePad = new GamePad()
@@ -370,7 +371,7 @@ export class Apu {
       {
         // TODO: Implement.
         let result = this.dmcInterrupt | this.frameInterrupt
-        for (let ch = 0; ch < Apu.CHANNEL; ++ch) {
+        for (let ch = 0; ch < CHANNEL_COUNT; ++ch) {
           if (this.channels[ch].isPlaying())
             result |= 1 << ch
         }
@@ -403,7 +404,7 @@ export class Apu {
     switch (reg) {
     case STATUS_REG:
       this.dmcInterrupt = 0  // Writing to this register clears the DMC interrupt flag.
-      for (let ch = 0; ch < Apu.CHANNEL; ++ch) {
+      for (let ch = 0; ch < CHANNEL_COUNT; ++ch) {
         if ((this.regs[STATUS_REG] & (1 << ch)) === 0)
           this.channels[ch].stop()
       }
