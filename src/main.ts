@@ -93,15 +93,11 @@ function handleFileDrop(dropZone, onDropped) {
 
 class Main {
   private wndMgr: WindowManager
-  private apps: App[]
+  private apps: App[] = []
 
   constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
-    this.apps = []
-  }
 
-  public setUp() {
-    App.setUp()
     this.setUpFileDrop()
     this.setUpGamePadLink()
     this.setUpOpenRomLink()
@@ -184,7 +180,8 @@ class Main {
 
 window.addEventListener('load', () => {
   StorageUtil.setKeyPrefix('nesemu:')
+  GamepadManager.setUp()
+
   const root = document.getElementById('nesroot')
   const main = new Main(root)
-  main.setUp()
 })

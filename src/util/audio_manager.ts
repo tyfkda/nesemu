@@ -1,4 +1,4 @@
-const kTypes: (OscillatorType | 'noise')[] = ['square', 'square', 'triangle', 'noise']
+const kChannelTypes: (OscillatorType | 'noise')[] = ['square', 'square', 'triangle', 'noise']
 
 class SoundChannel {
   private gainNode: GainNode
@@ -52,7 +52,7 @@ class SoundChannel {
 }
 
 export class AudioManager {
-  public static CHANNEL = 4
+  public static CHANNEL_COUNT = kChannelTypes.length
 
   private static initialized: boolean = false
   private static context: AudioContext = null
@@ -77,7 +77,7 @@ export class AudioManager {
       return
 
     this.masterVolume = 1.0
-    this.channels = kTypes.map(type => {
+    this.channels = kChannelTypes.map(type => {
       const sc = new SoundChannel()
       sc.create(AudioManager.context, type)
       sc.start()

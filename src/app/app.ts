@@ -22,8 +22,8 @@ export class App {
   private rafId: number  // requestAnimationFrame
   private nes: Nes
   private padKeyHandler: PadKeyHandler
-  private audioManager: AudioManager
-  private stream: AppEvent.Stream
+  private audioManager = new AudioManager()
+  private stream = new AppEvent.Stream()
   private subscription: Rx.Subscription
 
   private screenWnd: ScreenWnd
@@ -35,10 +35,6 @@ export class App {
   private hasTraceWnd: boolean
   private hasCtrlWnd: boolean
 
-  public static setUp(): void {
-    GamepadManager.setUp()
-  }
-
   public static create(wndMgr: WindowManager, option: any): App {
     return new App(wndMgr, option)
   }
@@ -46,11 +42,8 @@ export class App {
   constructor(private wndMgr: WindowManager, option: any) {
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
-    this.nes.setVblankCallback((leftCycles) => { this.onVblank(leftCycles) })
+    this.nes.setVblankCallback((leftV) => { this.onVblank(leftV) })
     this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
-
-    this.audioManager = new AudioManager()
-    this.stream = new AppEvent.Stream()
 
     this.subscription = this.stream
       .subscribe(type => {
@@ -83,8 +76,10 @@ export class App {
       this.screenWnd.setTitle(option.title as string)
 
     const size = this.screenWnd.getWindowSize()
-    let x = Util.clamp((option.centerX || 0) - size.width / 2, 0, window.innerWidth - size.width - 1)
-    let y = Util.clamp((option.centerY || 0) - size.height / 2, 0, window.innerHeight - size.height - 1)
+    let x = Util.clamp((option.centerX || 0) - size.width / 2,
+                       0, window.innerWidth - size.width - 1)
+    let y = Util.clamp((option.centerY || 0) - size.height / 2,
+                       0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
 
     this.padKeyHandler = new PadKeyHandler()
@@ -229,16 +224,10 @@ export class App {
     this.wndMgr = null
   }
 
-  private onVblank(leftCycles: number): void {
-    if (leftCycles < 1)
+  private onVblank(leftV: number): void {
+    if (leftV < 1)
       this.render()
-
-    for (let ch = 0; ch < AudioManager.CHANNEL; ++ch) {
-      const volume = this.nes.apu.getVolume(ch)
-      this.audioManager.setChannelVolume(ch, volume)
-      if (volume > 0)
-        this.audioManager.setChannelFrequency(ch, this.nes.apu.getFrequency(ch))
-    }
+    this.updateAudio()
   }
 
   private onBreakPoint(): void {
@@ -277,11 +266,11 @@ export class App {
     if (this.nes.cpu.isPaused())
       return
 
-    const isTop = this.screenWnd.isTop()
+    const isActive = this.screenWnd.isTop()
     for (let i = 0; i < 2; ++i) {
-      let pad = this.padKeyHandler.getStatus(i)
-      if (isTop)
-        pad |= GamepadManager.getState(i)
+      let pad = 0
+      if (isActive)
+        pad = this.padKeyHandler.getStatus(i) | GamepadManager.getState(i)
       this.nes.setPadStatus(i, pad)
     }
 
@@ -292,6 +281,16 @@ export class App {
 
   private render(): void {
     this.stream.triggerRender()
+  }
+
+  private updateAudio(): void {
+    const apu = this.nes.apu
+    for (let ch = 0; ch < AudioManager.CHANNEL_COUNT; ++ch) {
+      const volume = apu.getVolume(ch)
+      this.audioManager.setChannelVolume(ch, volume)
+      if (volume > 0)
+        this.audioManager.setChannelFrequency(ch, apu.getFrequency(ch))
+    }
   }
 
   private setUpKeyEvent(root: HTMLElement, padKeyHandler: PadKeyHandler): void {

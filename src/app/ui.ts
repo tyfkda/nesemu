@@ -74,6 +74,83 @@ export class ScreenWnd extends Wnd {
                      private stream: AppEvent.Stream)
   {
     super(wndMgr, WIDTH * 2, HEIGHT * 2 + Wnd.MENUBAR_HEIGHT, 'NES')
+    this.setUpMenuBar()
+
+    const canvas = document.createElement('canvas') as HTMLCanvasElement
+    canvas.width = WIDTH
+    canvas.height = HEIGHT
+    canvas.style.display = 'block'
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
+    canvas.className = 'pixelated'
+    clearCanvas(canvas)
+
+    this.setContent(canvas)
+    this.canvas = canvas
+    this.context = this.canvas.getContext('2d')
+    this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
+    this.addResizeBox()
+
+    this.subscription = this.stream
+      .subscribe(type => {
+        switch (type) {
+        case AppEvent.Type.RENDER:
+          this.nes.render(this.imageData.data)
+          this.context.putImageData(this.imageData, 0, 0)
+          break
+        case AppEvent.Type.SCREEN_SHOT:
+          takeScreenshot(this.wndMgr, this)
+          break
+        case AppEvent.Type.RESET:
+          clearCanvas(this.canvas)
+          break
+        }
+      })
+  }
+
+  public capture(): string {
+    return this.canvas.toDataURL()
+  }
+
+  public getCanvas(): HTMLCanvasElement {
+    return this.canvas
+  }
+
+  public setFullscreen(callback?: Function): boolean {
+    return tryFullscreen(this.contentHolder, (isFullscreen) => {
+      const style = this.contentHolder.style
+      if (isFullscreen) {
+        let width = window.parent.screen.width
+        let height = window.parent.screen.height
+        if (width / height >= WIDTH / HEIGHT) {
+          width = (height * (WIDTH / HEIGHT)) | 0
+        } else {
+          height = (width * (HEIGHT / WIDTH)) | 0
+        }
+        style.width = `${width}px`
+        style.height = `${height}px`
+        style.margin = 'auto'
+        style.backgroundColor = 'black'
+      } else {
+        style.width = style.height = style.margin = style.backgroundColor = ''
+      }
+      if (callback)
+        callback(isFullscreen)
+    })
+  }
+
+  public close(): void {
+    this.subscription.unsubscribe()
+    this.stream.triggerDestroy()
+    super.close()
+  }
+
+  public setFocus(): Wnd {
+    this.canvas.focus()
+    return this
+  }
+
+  private setUpMenuBar(): void {
     this.addMenuBar([
       {
         label: 'File',
@@ -196,79 +273,6 @@ export class ScreenWnd extends Wnd {
         ],
       },
     ])
-
-    const canvas = document.createElement('canvas') as HTMLCanvasElement
-    canvas.width = WIDTH
-    canvas.height = HEIGHT
-    canvas.style.display = 'block'
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
-    canvas.className = 'pixelated'
-    clearCanvas(canvas)
-
-    this.setContent(canvas)
-    this.canvas = canvas
-    this.context = this.canvas.getContext('2d')
-    this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
-    this.addResizeBox()
-
-    this.subscription = this.stream
-      .subscribe(type => {
-        switch (type) {
-        case AppEvent.Type.RENDER:
-          this.nes.render(this.imageData.data)
-          this.context.putImageData(this.imageData, 0, 0)
-          break
-        case AppEvent.Type.SCREEN_SHOT:
-          takeScreenshot(this.wndMgr, this)
-          break
-        case AppEvent.Type.RESET:
-          clearCanvas(this.canvas)
-          break
-        }
-      })
-  }
-
-  public capture(): string {
-    return this.canvas.toDataURL()
-  }
-
-  public getCanvas(): HTMLCanvasElement {
-    return this.canvas
-  }
-
-  public setFullscreen(callback?: Function): boolean {
-    return tryFullscreen(this.contentHolder, (isFullscreen) => {
-      const style = this.contentHolder.style
-      if (isFullscreen) {
-        let width = window.parent.screen.width
-        let height = window.parent.screen.height
-        if (width / height >= WIDTH / HEIGHT) {
-          width = (height * (WIDTH / HEIGHT)) | 0
-        } else {
-          height = (width * (HEIGHT / WIDTH)) | 0
-        }
-        style.width = `${width}px`
-        style.height = `${height}px`
-        style.margin = 'auto'
-        style.backgroundColor = 'black'
-      } else {
-        style.width = style.height = style.margin = style.backgroundColor = ''
-      }
-      if (callback)
-        callback(isFullscreen)
-    })
-  }
-
-  public close(): void {
-    this.subscription.unsubscribe()
-    this.stream.triggerDestroy()
-    super.close()
-  }
-
-  public setFocus(): Wnd {
-    this.canvas.focus()
-    return this
   }
 
   private createFpsWnd(): void {
@@ -283,8 +287,8 @@ export class PaletWnd extends Wnd {
   private static H = 2
 
   private boxes: HTMLElement[]
-  private palet: Uint8Array
-  private tmp: Uint8Array
+  private palet = new Uint8Array(PaletWnd.W * PaletWnd.H)
+  private tmp = new Uint8Array(PaletWnd.W * PaletWnd.H)
   private subscription: Rx.Subscription
 
   private static createDom(): {root: HTMLElement, boxes: HTMLElement[]} {
@@ -317,8 +321,6 @@ export class PaletWnd extends Wnd {
 
   constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 128, 16, 'Palette')
-    this.palet = new Uint8Array(PaletWnd.W * PaletWnd.H)
-    this.tmp = new Uint8Array(PaletWnd.W * PaletWnd.H)
 
     const {root, boxes} = PaletWnd.createDom()
     this.setContent(root)

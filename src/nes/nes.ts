@@ -50,14 +50,14 @@ function loadChrRom(romData: Uint8Array): Uint8Array {
 export class Nes implements PrgBankController {
   public apu: Apu
   public cpu: Cpu
-  public ram: Uint8Array
+  public ram = new Uint8Array(RAM_SIZE)
   public ppu: Ppu
-  public cycleCount: number
+  public cycleCount = 0
 
-  private romData: Uint8Array
-  private mapperNo: number
+  private romData = new Uint8Array(0)
+  private mapperNo = 0
   private mapper: Mapper = null
-  private vblankCallback: (leftCycles: number) => void
+  private vblankCallback: (leftV: number) => void
   private breakPointCallback: () => void
   private prgBank: number[]
 
@@ -74,18 +74,13 @@ export class Nes implements PrgBankController {
 
   constructor() {
     this.cpu = new Cpu()
-    this.ram = new Uint8Array(RAM_SIZE)
     this.ppu = new Ppu()
     this.apu = new Apu(() => { this.cpu.requestIrq() })
-    this.mapperNo = 0
-    this.cycleCount = 0
-    this.vblankCallback = (_leftCycles) => {}
+    this.vblankCallback = (_leftV) => {}
     this.breakPointCallback = () => {}
-
-    this.romData = new Uint8Array(0)
   }
 
-  public setVblankCallback(callback: (leftCycles: number) => void): void {
+  public setVblankCallback(callback: (leftV: number) => void): void {
     this.vblankCallback = callback
   }
 
@@ -242,7 +237,7 @@ export class Nes implements PrgBankController {
 
       switch (hcount) {
       case VBLANK_START:
-        this.vblankCallback(leftCycles / VCYCLE)
+        this.vblankCallback((leftCycles / VCYCLE) | 0)
         this.ppu.setVBlank()
         break
       case VBLANK_NMI:

@@ -9,17 +9,6 @@ enum Type {
   BUTTON,
 }
 
-const kPadSetting = [
-  { type: Type.BUTTON, index: 0, direction: 1 },  // A
-  { type: Type.BUTTON, index: 1, direction: 1 },  // B
-  { type: Type.BUTTON, index: 2, direction: 1 },  // SELECT
-  { type: Type.BUTTON, index: 3, direction: 1 },  // START
-  { type: Type.AXIS, index: 1, direction: -1  },  // U
-  { type: Type.AXIS, index: 1, direction: 1  },  // D
-  { type: Type.AXIS, index: 0, direction: -1  },  // L
-  { type: Type.AXIS, index: 0, direction: 1  },  // R
-]
-
 const kKeyTable = ['A', 'B', 'SELECT', 'START', 'U', 'D', 'L', 'R']
 
 // ================================================
@@ -28,8 +17,23 @@ const kKeyTable = ['A', 'B', 'SELECT', 'START', 'U', 'D', 'L', 'R']
 export class GamepadManager {
   public static AXIS_THRESHOLD = 0.5
 
+  private static initialized = false
+  private static padSettings: {type: Type, index: number, direction: number}[] = [
+    { type: Type.BUTTON, index: 0, direction: 1 },  // A
+    { type: Type.BUTTON, index: 1, direction: 1 },  // B
+    { type: Type.BUTTON, index: 2, direction: 1 },  // SELECT
+    { type: Type.BUTTON, index: 3, direction: 1 },  // START
+    { type: Type.AXIS, index: 1, direction: -1  },  // U
+    { type: Type.AXIS, index: 1, direction: 1  },  // D
+    { type: Type.AXIS, index: 0, direction: -1  },  // L
+    { type: Type.AXIS, index: 0, direction: 1  },  // R
+  ]
+
   public static setUp(): void {
+    if (GamepadManager.initialized)
+      return
     GamepadManager.loadSetting()
+    GamepadManager.initialized = true
   }
 
   public static isSupported(): boolean {
@@ -37,7 +41,7 @@ export class GamepadManager {
   }
 
   public static getState(padNo: number): number {
-    if (!window.Gamepad)
+    if (GamepadManager.isSupported())
       return 0
     const gamepads = navigator.getGamepads()
     if (padNo >= gamepads.length)
@@ -49,37 +53,40 @@ export class GamepadManager {
 
     const THRESHOLD = GamepadManager.AXIS_THRESHOLD
     let pad = 0
-    kPadSetting.forEach((s, i) => {
-      if (s.type === Type.AXIS) {
+    GamepadManager.padSettings.forEach((s, i) => {
+      switch (s.type) {
+      case Type.AXIS:
         const axis = gamepad.axes[s.index] || 0
         if (axis * s.direction >= THRESHOLD)
           pad |= 1 << i
-      } else {
+        break
+      case Type.BUTTON:
         const button = gamepad.buttons[s.index]
         if (button && button.pressed)
           pad |= 1 << i
+        break
       }
     })
     return pad
   }
 
   public static setButton(padbit: number, buttonIndex: number): void {
-    kPadSetting[padbit].type = Type.BUTTON
-    kPadSetting[padbit].index = buttonIndex
-    kPadSetting[padbit].direction = 1
+    GamepadManager.padSettings[padbit].type = Type.BUTTON
+    GamepadManager.padSettings[padbit].index = buttonIndex
+    GamepadManager.padSettings[padbit].direction = 1
     GamepadManager.saveSetting()
   }
 
   public static setAxis(padbit: number, axisIndex: number, direction: number): void {
-    kPadSetting[padbit].type = Type.AXIS
-    kPadSetting[padbit].index = axisIndex
-    kPadSetting[padbit].direction = direction
+    GamepadManager.padSettings[padbit].type = Type.AXIS
+    GamepadManager.padSettings[padbit].index = axisIndex
+    GamepadManager.padSettings[padbit].direction = direction
     GamepadManager.saveSetting()
   }
 
   private static saveSetting() {
     const data = {}
-    kPadSetting.forEach((s, i) => {
+    GamepadManager.padSettings.forEach((s, i) => {
       const key = kKeyTable[i]
       switch (s.type) {
       default:
