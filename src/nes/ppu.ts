@@ -115,26 +115,15 @@ function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8ClampedArray,
                                vram: Uint8Array): void
 {
   const paletTable: Address = 0x3f00
-  const clearColor = vram[paletTable] & 0x3f  // Universal background color
-  const clearR = kColors[clearColor * 3 + 0]
-  const clearG = kColors[clearColor * 3 + 1]
-  const clearB = kColors[clearColor * 3 + 2]
-
   const n = Const.WIDTH * Const.HEIGHT
   let index = 0
   for (let i = 0; i < n; ++i) {
     const pal = offscreen[i] & 0x1f
-    if (pal === 0) {
-      pixels[index + 0] = clearR
-      pixels[index + 1] = clearG
-      pixels[index + 2] = clearB
-    } else {
-      const col = vram[paletTable + pal] & 0x3f
-      const c = col * 3
-      pixels[index + 0] = kColors[c]
-      pixels[index + 1] = kColors[c + 1]
-      pixels[index + 2] = kColors[c + 2]
-    }
+    const col = vram[paletTable + pal] & 0x3f
+    const c = col * 3
+    pixels[index + 0] = kColors[c]
+    pixels[index + 1] = kColors[c + 1]
+    pixels[index + 2] = kColors[c + 2]
     index += 4
   }
 }
