@@ -70,6 +70,7 @@ export default class Wnd {
   }
 
   public setContent(content: HTMLElement): Wnd {
+    Util.removeAllChildren(this.contentHolder)
     this.contentHolder.appendChild(content)
     return this
   }

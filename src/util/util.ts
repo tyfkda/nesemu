@@ -20,4 +20,9 @@ export default class Util {
     context.fillStyle = `rgb(64,64,64)`
     context.fillRect(0, 0, canvas.width, canvas.height)
   }
+
+  public static removeAllChildren(element: HTMLElement): void {
+    for (let child of element.childNodes)
+      element.removeChild(child)
+  }
 }

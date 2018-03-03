@@ -4,7 +4,7 @@ import Wnd from '../wnd/wnd'
 import {Nes} from '../nes/nes'
 import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst'
 import {disassemble} from '../nes/disasm'
-import {Scaler, ScanlineScaler} from '../util/scaler'
+import {Scaler, IdentityScaler, ScanlineScaler} from '../util/scaler'
 import Util from '../util/util'
 
 import {App} from './app'
@@ -68,9 +68,7 @@ export class ScreenWnd extends Wnd {
     super(wndMgr, WIDTH * 2, HEIGHT * 2 + Wnd.MENUBAR_HEIGHT, 'NES')
     this.setUpMenuBar()
 
-    // this.scaler = new NoScaler()
-    this.scaler = new ScanlineScaler()
-    this.setContent(this.scaler.getCanvas())
+    this.setScaler(new IdentityScaler())
     this.addResizeBox()
 
     this.subscription = this.stream
@@ -198,6 +196,23 @@ export class ScreenWnd extends Wnd {
         ],
       },
       {
+        label: 'Scaler',
+        submenu: [
+          {
+            label: 'Normal',
+            click: () => {
+              this.setScaler(new IdentityScaler())
+            },
+          },
+          {
+            label: 'Scanline',
+            click: () => {
+              this.setScaler(new ScanlineScaler())
+            },
+          },
+        ],
+      },
+      {
         label: 'Debug',
         submenu: [
           {
@@ -245,6 +260,11 @@ export class ScreenWnd extends Wnd {
         ],
       },
     ])
+  }
+
+  private setScaler(scaler: Scaler): void {
+    this.scaler = scaler
+    this.setContent(this.scaler.getCanvas())
   }
 
   private createFpsWnd(): void {
