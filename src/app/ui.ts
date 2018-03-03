@@ -93,10 +93,6 @@ export class ScreenWnd extends Wnd {
     return this.scaler.getCanvas().toDataURL()
   }
 
-  public getCanvas(): HTMLCanvasElement {
-    return this.scaler.getCanvas()
-  }
-
   public setFullscreen(callback?: Function): boolean {
     return tryFullscreen(this.contentHolder, (isFullscreen) => {
       const style = this.contentHolder.style
@@ -124,11 +120,6 @@ export class ScreenWnd extends Wnd {
     this.subscription.unsubscribe()
     this.stream.triggerDestroy()
     super.close()
-  }
-
-  public setFocus(): Wnd {
-    this.scaler.getCanvas().focus()
-    return this
   }
 
   private setUpMenuBar(): void {

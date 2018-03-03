@@ -74,6 +74,10 @@ export default class Wnd {
     return this
   }
 
+  public getRootElement(): HTMLElement {
+    return this.root
+  }
+
   public setPos(x: number, y: number): Wnd {
     this.root.style.left = `${x}px`
     this.root.style.top = `${y}px`
