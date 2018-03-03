@@ -4,6 +4,7 @@ import Wnd from '../wnd/wnd'
 import {Nes} from '../nes/nes'
 import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst'
 import {disassemble} from '../nes/disasm'
+import {Scaler, ScanlineScaler} from '../util/scaler'
 import Util from '../util/util'
 
 import {App} from './app'
@@ -14,13 +15,6 @@ import * as Stats from 'stats-js'
 
 const WIDTH = 256
 const HEIGHT = 240
-
-function clearCanvas(canvas: HTMLCanvasElement): void {
-  const context = canvas.getContext('2d')
-  context.strokeStyle = ''
-  context.fillStyle = `rgb(64,64,64)`
-  context.fillRect(0, 0, canvas.width, canvas.height)
-}
 
 function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const img = document.createElement('img') as HTMLImageElement
@@ -65,9 +59,7 @@ function tryFullscreen(element: HTMLElement, callback: Function): boolean {
 }
 
 export class ScreenWnd extends Wnd {
-  private canvas: HTMLCanvasElement
-  private context: CanvasRenderingContext2D
-  private imageData: ImageData
+  private scaler: Scaler
   private subscription: Rx.Subscription
 
   public constructor(wndMgr: WindowManager, private app: App, private nes: Nes,
@@ -76,44 +68,33 @@ export class ScreenWnd extends Wnd {
     super(wndMgr, WIDTH * 2, HEIGHT * 2 + Wnd.MENUBAR_HEIGHT, 'NES')
     this.setUpMenuBar()
 
-    const canvas = document.createElement('canvas') as HTMLCanvasElement
-    canvas.width = WIDTH
-    canvas.height = HEIGHT
-    canvas.style.display = 'block'
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
-    canvas.className = 'pixelated'
-    clearCanvas(canvas)
-
-    this.setContent(canvas)
-    this.canvas = canvas
-    this.context = this.canvas.getContext('2d')
-    this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
+    // this.scaler = new NoScaler()
+    this.scaler = new ScanlineScaler()
+    this.setContent(this.scaler.getCanvas())
     this.addResizeBox()
 
     this.subscription = this.stream
       .subscribe(type => {
         switch (type) {
         case AppEvent.Type.RENDER:
-          this.nes.render(this.imageData.data)
-          this.context.putImageData(this.imageData, 0, 0)
+          this.scaler.render(this.nes)
           break
         case AppEvent.Type.SCREEN_SHOT:
           takeScreenshot(this.wndMgr, this)
           break
         case AppEvent.Type.RESET:
-          clearCanvas(this.canvas)
+          this.scaler.reset()
           break
         }
       })
   }
 
   public capture(): string {
-    return this.canvas.toDataURL()
+    return this.scaler.getCanvas().toDataURL()
   }
 
   public getCanvas(): HTMLCanvasElement {
-    return this.canvas
+    return this.scaler.getCanvas()
   }
 
   public setFullscreen(callback?: Function): boolean {
@@ -146,7 +127,7 @@ export class ScreenWnd extends Wnd {
   }
 
   public setFocus(): Wnd {
-    this.canvas.focus()
+    this.scaler.getCanvas().focus()
     return this
   }
 
@@ -203,7 +184,7 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Adjust aspect ratio',
             click: () => {
-              const rect = this.canvas.getBoundingClientRect()
+              const rect = this.scaler.getCanvas().getBoundingClientRect()
               const height = Math.round(rect.width * (HEIGHT / WIDTH))
               this.setClientSize(rect.width, height)
             },
@@ -384,7 +365,7 @@ export class NameTableWnd extends Wnd {
     canvas.style.width = `${width}px`
     canvas.style.height = `${height}px`
     canvas.className = 'pixelated'
-    clearCanvas(canvas)
+    Util.clearCanvas(canvas)
 
     this.setContent(canvas)
     this.canvas = canvas
@@ -440,7 +421,7 @@ export class PatternTableWnd extends Wnd {
     canvas.style.width = '256px'
     canvas.style.height = '128px'
     canvas.className = 'pixelated'
-    clearCanvas(canvas)
+    Util.clearCanvas(canvas)
     return canvas
   }
 
