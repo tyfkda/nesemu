@@ -217,8 +217,8 @@ export default class Wnd {
           bottom: rect.bottom - prect.top,
         }
 
-        const dragMove = (event) => {
-          let [x, y] = this.getMousePosIn(event, this.root.parentNode as HTMLElement)
+        const dragMove = (event2) => {
+          let [x, y] = this.getMousePosIn(event2, this.root.parentNode as HTMLElement)
           x = Util.clamp(x, -dragOfsX, window.innerWidth - dragOfsX)
           y = Util.clamp(y, -dragOfsY, window.innerHeight - dragOfsY)
           box[param.horz] = x + dragOfsX
@@ -238,7 +238,7 @@ export default class Wnd {
           this.root.style.top = `${box.top}px`
           this.callback('resize', width, height - Wnd.TITLEBAR_HEIGHT)
         }
-        const dragFinish = (event) => {
+        const dragFinish = (_event2) => {
           document.removeEventListener('mousemove', dragMove)
           document.removeEventListener('mouseup', dragFinish)
           this.root.style['transition-property'] = null
@@ -283,15 +283,15 @@ export default class Wnd {
       const dragOfsX = -mx
       const dragOfsY = -my
       const winSize = this.getWindowSize()
-      const dragMove = (event) => {
-        let [x, y] = this.getMousePosIn(event, this.root.parentNode as HTMLElement)
+      const dragMove = (event2) => {
+        let [x, y] = this.getMousePosIn(event2, this.root.parentNode as HTMLElement)
         x = Util.clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
         y = Util.clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
 
         this.root.style.left = `${x + dragOfsX}px`
         this.root.style.top = `${y + dragOfsY}px`
       }
-      const dragFinish = (event) => {
+      const dragFinish = (_event2) => {
         document.removeEventListener('mousemove', dragMove)
         document.removeEventListener('mouseup', dragFinish)
       }
