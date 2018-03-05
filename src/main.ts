@@ -14,14 +14,14 @@ window.requestAnimationFrame = (function() {
           window.webkitRequestAnimationFrame || window.msRequestAnimationFrame)
 })()
 
-function getExt(fileName) {
+function getExt(fileName: string): string {
   const index = fileName.lastIndexOf('.')
   if (index >= 0)
     return fileName.slice(index + 1)
   return ''
 }
 
-function loadNes(file, onNesFileLoaded) {
+function loadNes(file: File, onNesFileLoaded: (rom: Uint8Array, fn: string) => void): void {
   const reader = new FileReader()
   reader.onload = function(e) {
     const binary = new Uint8Array((e.target as any).result)
@@ -30,7 +30,7 @@ function loadNes(file, onNesFileLoaded) {
   reader.readAsArrayBuffer(file)
 }
 
-function loadZip(file, onNesFileLoaded) {
+function loadZip(file: File, onNesFileLoaded: (rom: Uint8Array, fn: string) => void): void {
   const reader = new FileReader()
   reader.onload = function(e) {
     const zipBinary = new Uint8Array((e.target as any).result)
@@ -52,7 +52,7 @@ function loadZip(file, onNesFileLoaded) {
   reader.readAsArrayBuffer(file)
 }
 
-function handleFile(file, callback) {
+function handleFile(file: File, callback: (binary: Uint8Array, fileName: string) => void): void {
   switch (getExt(file.name).toLowerCase()) {
   case 'nes':
     loadNes(file, callback)
@@ -66,7 +66,10 @@ function handleFile(file, callback) {
   }
 }
 
-function handleFileDrop(dropZone, onDropped) {
+function handleFileDrop(dropZone: HTMLElement,
+                        onDropped: (rom: Uint8Array, fn: string,
+                                    x: number, y: number) => void): void
+{
   function onDrop(event) {
     event.stopPropagation()
     event.preventDefault()
@@ -104,7 +107,7 @@ class Main {
     this.setUpBlur()
   }
 
-  private setUpFileDrop() {
+  private setUpFileDrop(): void {
     // Handle file drop.
     if (!(window.File && window.FileReader && window.FileList && window.Blob))
       return
@@ -114,7 +117,7 @@ class Main {
     })
   }
 
-  private createApp(romData, name, x, y) {
+  private createApp(romData, name, x, y): void {
     const option = {
       title: name,
       centerX: x,
@@ -128,13 +131,13 @@ class Main {
     this.apps.push(app)
   }
 
-  private removeApp(app) {
+  private removeApp(app): void {
     const index = this.apps.indexOf(app)
     if (index >= 0)
       this.apps.splice(index, 1)
   }
 
-  private setUpGamePadLink() {
+  private setUpGamePadLink(): void {
     const gamepadText = document.getElementById('gamepad')
     if (!GamepadManager.isSupported()) {
       gamepadText.style.display = 'none'
@@ -147,7 +150,7 @@ class Main {
     })
   }
 
-  private setUpOpenRomLink() {
+  private setUpOpenRomLink(): void {
     const romFile = document.getElementById('rom-file') as HTMLInputElement
     romFile.addEventListener('change', () => {
       if (!romFile.value)
@@ -168,7 +171,7 @@ class Main {
     })
   }
 
-  private setUpBlur() {
+  private setUpBlur(): void {
     window.addEventListener('blur', () => {
       this.apps.forEach(app => { app.onBlur() })
     })
