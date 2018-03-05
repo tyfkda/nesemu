@@ -45,9 +45,9 @@ function loadZip(file: File, onNesFileLoaded: (rom: Uint8Array, fn: string) => v
           }
         })
       })
-    .catch(error => {
-      console.error(error)
-    })
+      .catch(error => {
+        console.error(error)
+      })
   }
   reader.readAsArrayBuffer(file)
 }
