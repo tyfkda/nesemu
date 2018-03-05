@@ -1,4 +1,4 @@
-import * as Rx from 'rxjs/Rx'
+import * as Pubsub from '../util/pubsub'
 
 export namespace AppEvent {
   export enum Type {
@@ -15,7 +15,7 @@ export namespace AppEvent {
     END_CALC,
   }
 
-  export class Stream extends Rx.Subject<Type> {
+  export class Stream extends Pubsub.Subject<Type> {
     public triggerRender() {
       this.next(Type.RENDER)
     }

@@ -11,7 +11,7 @@ import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
 import Util from '../util/util'
 import WindowManager from '../wnd/window_manager'
 
-import * as Rx from 'rxjs/Rx'
+import * as Pubsub from '../util/pubsub'
 
 const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
@@ -24,7 +24,7 @@ export class App {
   private padKeyHandler: PadKeyHandler
   private audioManager = new AudioManager()
   private stream = new AppEvent.Stream()
-  private subscription: Rx.Subscription
+  private subscription: Pubsub.Subscription
 
   private screenWnd: ScreenWnd
   private hasPaletWnd: boolean
