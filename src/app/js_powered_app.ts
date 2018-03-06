@@ -36,7 +36,7 @@ class JsNes extends Nes {
     return true
   }
 
-  private reload(): void {
+  public reload(): void {
     Util.loadFile(this.file)
       .then(data => {
         const jsCode = String.fromCharCode.apply('', data)
@@ -107,6 +107,12 @@ class JsScreenWnd extends ScreenWnd {
       {
         label: 'File',
         submenu: [
+          {
+            label: 'Reload',
+            click: () => {
+              this.jsApp.reload()
+            },
+          },
           {
             label: 'Quit',
             click: () => {
@@ -187,6 +193,12 @@ export class JsApp extends App {
       return false
     }
     return true
+  }
+
+  public reload(): void {
+    this.cancelLoopAnimation()
+    this.jsNes.reload()
+    this.startLoopAnimation()
   }
 
   protected startLoopAnimation(): void {
