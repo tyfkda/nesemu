@@ -16,6 +16,7 @@ const HEIGHT = 240
 const MAX_FRAME_COUNT = 4
 
 class JsNes extends Nes {
+  private file: File
   private program: any
 
   public static create(): JsNes {
@@ -27,10 +28,21 @@ class JsNes extends Nes {
     this.reset()
   }
 
-  public loadProgram(program: string): boolean {
-    this.program = eval(program)
-    this.program.init(this)
+  public setFile(file: File): boolean {
+    if (file == null)
+      return false
+    this.file = file
+    this.reload()
     return true
+  }
+
+  private reload(): void {
+    Util.loadFile(this.file)
+      .then(data => {
+        const jsCode = String.fromCharCode.apply('', data)
+        this.program = eval(jsCode)
+        this.program.init(this)
+      })
   }
 
   public reset(): void {
@@ -170,8 +182,8 @@ export class JsApp extends App {
     this.startLoopAnimation()
   }
 
-  public loadProgram(program: string): boolean {
-    if (!this.jsNes.loadProgram(program)) {
+  public setFile(file: File): boolean {
+    if (!this.jsNes.setFile(file)) {
       return false
     }
     return true
