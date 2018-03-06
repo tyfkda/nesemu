@@ -60,12 +60,17 @@ function tryFullscreen(element: HTMLElement, callback: Function): boolean {
 
 export class ScreenWnd extends Wnd {
   private scaler: Scaler
-  private subscription: Pubsub.Subscription
+  protected subscription: Pubsub.Subscription
 
-  public constructor(wndMgr: WindowManager, private app: App, private nes: Nes,
-                     private stream: AppEvent.Stream)
+  constructor(wndMgr: WindowManager)
+  constructor(wndMgr: WindowManager, app: App, nes: Nes, stream: AppEvent.Stream)
+  constructor(wndMgr: WindowManager, protected app?: App, protected nes?: Nes,
+              protected stream?: AppEvent.Stream)
   {
     super(wndMgr, WIDTH * 2, HEIGHT * 2 + Wnd.MENUBAR_HEIGHT, 'NES')
+    if (app == null || nes == null || stream == null)
+      return
+
     this.setUpMenuBar()
 
     this.setScaler(new IdentityScaler())
@@ -115,12 +120,13 @@ export class ScreenWnd extends Wnd {
   }
 
   public close(): void {
-    this.subscription.unsubscribe()
+    if (this.subscription != null)
+      this.subscription.unsubscribe()
     this.stream.triggerDestroy()
     super.close()
   }
 
-  private setUpMenuBar(): void {
+  protected setUpMenuBar(): void {
     this.addMenuBar([
       {
         label: 'File',

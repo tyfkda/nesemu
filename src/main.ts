@@ -1,6 +1,7 @@
 ///<reference path="./decl/patch.d.ts" />
 
 import {App} from './app/app'
+import {JsApp} from './app/js_powered_app'
 import {GamepadManager, GamepadWnd} from './util/gamepad_manager'
 import StorageUtil from './util/storage_util'
 import WindowManager from './wnd/window_manager'
@@ -21,7 +22,8 @@ function getExt(fileName: string): string {
   return ''
 }
 
-function loadNes(file: File, onNesFileLoaded: (rom: Uint8Array, fn: string) => void): void {
+function loadNes(file: File, onNesFileLoaded: (rom: Uint8Array | string, fn: string) => void): void
+{
   const reader = new FileReader()
   reader.onload = function(e) {
     const binary = new Uint8Array((e.target as any).result)
@@ -30,7 +32,8 @@ function loadNes(file: File, onNesFileLoaded: (rom: Uint8Array, fn: string) => v
   reader.readAsArrayBuffer(file)
 }
 
-function loadZip(file: File, onNesFileLoaded: (rom: Uint8Array, fn: string) => void): void {
+function loadZip(file: File, onNesFileLoaded: (rom: Uint8Array | string, fn: string) => void): void
+{
   const reader = new FileReader()
   reader.onload = function(e) {
     const zipBinary = new Uint8Array((e.target as any).result)
@@ -52,13 +55,27 @@ function loadZip(file: File, onNesFileLoaded: (rom: Uint8Array, fn: string) => v
   reader.readAsArrayBuffer(file)
 }
 
-function handleFile(file: File, callback: (binary: Uint8Array, fileName: string) => void): void {
+function loadJsPrg(file: File,
+                   onNesFileLoaded: (rom: Uint8Array | string, fn: string) => void): void
+{
+  const reader = new FileReader()
+  reader.onload = function(e) {
+    const jsprg = String.fromCharCode.apply('', new Uint8Array((e.target as any).result))
+    onNesFileLoaded(jsprg, file.name)
+  }
+  reader.readAsArrayBuffer(file)
+}
+
+function handleFile(file: File, callback: (rom: Uint8Array | string, fileName: string) => void): void {
   switch (getExt(file.name).toLowerCase()) {
   case 'nes':
     loadNes(file, callback)
     break
   case 'zip':
     loadZip(file, callback)
+    break
+  case 'js':
+    loadJsPrg(file, callback)
     break
   default:
     // TODO: Show error message.
@@ -67,7 +84,7 @@ function handleFile(file: File, callback: (binary: Uint8Array, fileName: string)
 }
 
 function handleFileDrop(dropZone: HTMLElement,
-                        onDropped: (rom: Uint8Array, fn: string,
+                        onDropped: (rom: Uint8Array | string, fn: string,
                                     x: number, y: number) => void): void
 {
   function onDrop(event) {
@@ -117,7 +134,13 @@ class Main {
     })
   }
 
-  private createApp(romData, name, x, y): void {
+  private createApp(romData: Uint8Array | string, name: string, x: number, y: number): void {
+    if (typeof(romData) === 'string') {
+      const app = new JsApp(this.wndMgr, {title: name, centerX: x, centerY: y})
+      app.loadProgram(romData)
+      return
+    }
+
     const option = {
       title: name,
       centerX: x,

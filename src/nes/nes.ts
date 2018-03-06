@@ -48,10 +48,10 @@ function loadChrRom(romData: Uint8Array): Uint8Array {
 }
 
 export class Nes implements PrgBankController {
-  public apu: Apu
   public cpu: Cpu
   public ram = new Uint8Array(RAM_SIZE)
   public ppu: Ppu
+  public apu: Apu
   public cycleCount = 0
 
   private romData = new Uint8Array(0)

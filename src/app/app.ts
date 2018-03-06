@@ -17,29 +17,34 @@ const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
 
 export class App {
-  private destroying = false
-  private isBlur = false
-  private rafId: number  // requestAnimationFrame
-  private nes: Nes
-  private padKeyHandler: PadKeyHandler
-  private audioManager = new AudioManager()
-  private stream = new AppEvent.Stream()
-  private subscription: Pubsub.Subscription
+  protected destroying = false
+  protected isBlur = false
+  protected rafId: number  // requestAnimationFrame
+  protected nes: Nes
+  protected padKeyHandler: PadKeyHandler
+  protected audioManager = new AudioManager()
+  protected stream = new AppEvent.Stream()
+  protected subscription: Pubsub.Subscription
 
-  private screenWnd: ScreenWnd
-  private hasPaletWnd: boolean
-  private hasNameTableWnd: boolean
-  private hasPatternTableWnd: boolean
+  protected screenWnd: ScreenWnd
+  protected hasPaletWnd: boolean
+  protected hasNameTableWnd: boolean
+  protected hasPatternTableWnd: boolean
 
-  private hasRegisterWnd: boolean
-  private hasTraceWnd: boolean
-  private hasCtrlWnd: boolean
+  protected hasRegisterWnd: boolean
+  protected hasTraceWnd: boolean
+  protected hasCtrlWnd: boolean
 
   public static create(wndMgr: WindowManager, option: any): App {
     return new App(wndMgr, option)
   }
 
-  constructor(private wndMgr: WindowManager, option: any) {
+  constructor(wndMgr: WindowManager, option: any)
+  constructor(wndMgr: WindowManager, option: any, noDefault: boolean)
+  constructor(protected wndMgr: WindowManager, option: any, noDefault?: boolean) {
+    if (noDefault)
+      return
+
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
     this.nes.setVblankCallback((leftV) => { this.onVblank(leftV) })
@@ -234,7 +239,7 @@ export class App {
     this.stream.triggerBreakPoint()
   }
 
-  private startLoopAnimation(): void {
+  protected startLoopAnimation(): void {
     if (this.rafId != null)
       return
 
@@ -255,14 +260,14 @@ export class App {
     this.rafId = requestAnimationFrame(loopFn)
   }
 
-  private cancelLoopAnimation(): void {
+  protected cancelLoopAnimation(): void {
     if (this.rafId == null)
       return
     cancelAnimationFrame(this.rafId)
     this.rafId = null
   }
 
-  private loop(elapsedTime: number): void {
+  protected loop(elapsedTime: number): void {
     if (this.nes.cpu.isPaused())
       return
 
@@ -293,7 +298,7 @@ export class App {
     }
   }
 
-  private setUpKeyEvent(root: HTMLElement, padKeyHandler: PadKeyHandler): void {
+  protected setUpKeyEvent(root: HTMLElement, padKeyHandler: PadKeyHandler): void {
     root.setAttribute('tabindex', '1')  // To accept key event.
     root.style.outline = 'none'
     root.addEventListener('keydown', (event) => {
