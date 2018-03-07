@@ -1,8 +1,7 @@
 // MMC3
 
-import {Mapper, PrgBankController} from './mapper'
-import {Cpu} from '../cpu'
-import {Ppu, MirrorMode} from '../ppu'
+import {Mapper, MapperOptions} from './mapper'
+import {MirrorMode} from '../ppu'
 import Util from '../../util/util'
 
 const VRETURN = 262
@@ -16,26 +15,24 @@ export class Mapper004 extends Mapper {
   private irqHlineValue = -1
   private irqHlineCounter = -1
 
-  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
-    return new Mapper004(pbc, size, cpu, ppu)
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper004(options)
   }
 
-  constructor(private prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu,
-              private ppu: Ppu)
-  {
+  constructor(private options: MapperOptions) {
     super()
 
     const BANK_BIT = 13  // 0x2000
-    this.maxPrg = (prgSize >> BANK_BIT) - 1
+    this.maxPrg = (options.prgSize >> BANK_BIT) - 1
 
-    this.prgBankCtrl.setPrgBank(3, this.maxPrg)
+    this.options.prgBankCtrl.setPrgBank(3, this.maxPrg)
 
     this.ram.fill(0xff)
-    cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
-    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
+    this.options.cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
 
     // Select
-    cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if ((adr & 1) === 0) {
         this.bankSelect = value
         this.setPrgBank(this.bankSelect)
@@ -52,9 +49,9 @@ export class Mapper004 extends Mapper {
     })
 
     // Mirroring
-    cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if ((adr & 1) === 0) {
-        this.ppu.setMirrorMode((value & 1) === 0 ? MirrorMode.VERT : MirrorMode.HORZ)
+        this.options.ppu.setMirrorMode((value & 1) === 0 ? MirrorMode.VERT : MirrorMode.HORZ)
       } else {
         // PRG RAM protect, TODO: Implement.
       }
@@ -62,7 +59,7 @@ export class Mapper004 extends Mapper {
 
     // IRQ
     let irqLatch = 0
-    cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if ((adr & 1) === 0) {
         irqLatch = value
         this.setIrqHlineValue(irqLatch)
@@ -70,7 +67,7 @@ export class Mapper004 extends Mapper {
         this.setIrqHlineValue(irqLatch)
       }
     })
-    cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
       if ((adr & 1) === 0) {
         this.enableIrqHline(false)
         this.resetIrqHlineCounter()
@@ -85,7 +82,7 @@ export class Mapper004 extends Mapper {
     // iNes header, flags 6
     // > Some mappers, such as MMC1, MMC3, and AxROM, can control nametable mirroring.
     // > They ignore bit 0
-    this.ppu.setMirrorMode(MirrorMode.VERT)  // Default vertical mirroring?
+    this.options.ppu.setMirrorMode(MirrorMode.VERT)  // Default vertical mirroring?
   }
 
   public reset() {
@@ -120,9 +117,9 @@ export class Mapper004 extends Mapper {
     // http://bobrost.com/nes/files/mmc3irqs.txt
     // Note: BGs OR sprites MUST be enabled in $2001 (bits 3 and 4)
     // in order for the countdown to occur.
-    if ((this.ppu.regs[1] & 0x18) !== 0) {
+    if ((this.options.ppu.regs[1] & 0x18) !== 0) {
       if (--this.irqHlineCounter === 0 && this.irqHlineEnable) {
-        this.cpu.requestIrq()
+        this.options.cpu.requestIrq()
       }
     }
 
@@ -137,35 +134,35 @@ export class Mapper004 extends Mapper {
 
   private setPrgBank(swap) {
     if ((swap & 0x40) === 0) {
-      this.prgBankCtrl.setPrgBank(0, this.regs[6])
-      this.prgBankCtrl.setPrgBank(1, this.regs[7])
-      this.prgBankCtrl.setPrgBank(2, this.maxPrg - 1)
+      this.options.prgBankCtrl.setPrgBank(0, this.regs[6])
+      this.options.prgBankCtrl.setPrgBank(1, this.regs[7])
+      this.options.prgBankCtrl.setPrgBank(2, this.maxPrg - 1)
     } else {
-      this.prgBankCtrl.setPrgBank(2, this.regs[6])
-      this.prgBankCtrl.setPrgBank(1, this.regs[7])
-      this.prgBankCtrl.setPrgBank(0, this.maxPrg - 1)
+      this.options.prgBankCtrl.setPrgBank(2, this.regs[6])
+      this.options.prgBankCtrl.setPrgBank(1, this.regs[7])
+      this.options.prgBankCtrl.setPrgBank(0, this.maxPrg - 1)
     }
   }
 
   private setChrBank(swap) {
     if ((swap & 0x80) === 0) {
-      this.ppu.setChrBankOffset(0, this.regs[0] & 0xfe)
-      this.ppu.setChrBankOffset(1, this.regs[0] | 1)
-      this.ppu.setChrBankOffset(2, this.regs[1] & 0xfe)
-      this.ppu.setChrBankOffset(3, this.regs[1] | 1)
-      this.ppu.setChrBankOffset(4, this.regs[2])
-      this.ppu.setChrBankOffset(5, this.regs[3])
-      this.ppu.setChrBankOffset(6, this.regs[4])
-      this.ppu.setChrBankOffset(7, this.regs[5])
+      this.options.ppu.setChrBankOffset(0, this.regs[0] & 0xfe)
+      this.options.ppu.setChrBankOffset(1, this.regs[0] | 1)
+      this.options.ppu.setChrBankOffset(2, this.regs[1] & 0xfe)
+      this.options.ppu.setChrBankOffset(3, this.regs[1] | 1)
+      this.options.ppu.setChrBankOffset(4, this.regs[2])
+      this.options.ppu.setChrBankOffset(5, this.regs[3])
+      this.options.ppu.setChrBankOffset(6, this.regs[4])
+      this.options.ppu.setChrBankOffset(7, this.regs[5])
     } else {
-      this.ppu.setChrBankOffset(4, this.regs[0] & 0xfe)
-      this.ppu.setChrBankOffset(5, this.regs[0] | 1)
-      this.ppu.setChrBankOffset(6, this.regs[1] & 0xfe)
-      this.ppu.setChrBankOffset(7, this.regs[1] | 1)
-      this.ppu.setChrBankOffset(0, this.regs[2])
-      this.ppu.setChrBankOffset(1, this.regs[3])
-      this.ppu.setChrBankOffset(2, this.regs[4])
-      this.ppu.setChrBankOffset(3, this.regs[5])
+      this.options.ppu.setChrBankOffset(4, this.regs[0] & 0xfe)
+      this.options.ppu.setChrBankOffset(5, this.regs[0] | 1)
+      this.options.ppu.setChrBankOffset(6, this.regs[1] & 0xfe)
+      this.options.ppu.setChrBankOffset(7, this.regs[1] | 1)
+      this.options.ppu.setChrBankOffset(0, this.regs[2])
+      this.options.ppu.setChrBankOffset(1, this.regs[3])
+      this.options.ppu.setChrBankOffset(2, this.regs[4])
+      this.options.ppu.setChrBankOffset(3, this.regs[5])
     }
   }
 

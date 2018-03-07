@@ -1,31 +1,29 @@
 // Namco 163
 
-import {Mapper, PrgBankController} from './mapper'
-import {Cpu} from '../cpu'
-import {Ppu} from '../ppu'
+import {Mapper, MapperOptions} from './mapper'
 
 export class Mapper019 extends Mapper {
-  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
-    return new Mapper019(pbc, size, cpu, ppu)
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper019(options)
   }
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
+  constructor(private options: MapperOptions) {
     super()
 
     // const BANK_BIT = 13
     // const count = prgSize >> BANK_BIT
 
     // CHR ROM bank
-    cpu.setWriteMemory(0x8000, 0xbfff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0x8000, 0xbfff, (adr, value) => {
       const bank = (adr >> 11) & 7
-      ppu.setChrBankOffset(bank, value)
+      this.options.ppu.setChrBankOffset(bank, value)
     })
 
     // PRG ROM bank
-    cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
       if (adr <= 0xf7ff) {
         const bank = (adr - 0xe000) / 0x800
-        prgBankCtrl.setPrgBank(bank, value)
+        this.options.prgBankCtrl.setPrgBank(bank, value)
       }
     })
   }

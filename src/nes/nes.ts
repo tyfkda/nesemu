@@ -241,7 +241,12 @@ export class Nes implements PrgBankController {
       mapperNo = 0
     }
     const mapperFunc = kMapperTable[mapperNo]
-    return mapperFunc(this, this.romData.length, this.cpu, this.ppu)
+    return mapperFunc({
+      cpu: this.cpu,
+      ppu: this.ppu,
+      prgBankCtrl: this,
+      prgSize: this.romData.length,
+    })
   }
 
   private tryHblankEvent(cycleCount: number, cycle: number, leftCycles: number): number {

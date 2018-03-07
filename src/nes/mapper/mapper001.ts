@@ -1,8 +1,7 @@
 // MMC1
 
-import {Mapper, PrgBankController} from './mapper'
-import {Cpu} from '../cpu'
-import {Ppu, MirrorMode} from '../ppu'
+import {Mapper, MapperOptions} from './mapper'
+import {MirrorMode} from '../ppu'
 import Util from '../../util/util'
 
 const kMirrorTable = [
@@ -22,18 +21,18 @@ export class Mapper001 extends Mapper {
   private chrBank4k = true
   private chrBank = [0 << 2, 1 << 2]
 
-  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
-    return new Mapper001(pbc, size, cpu, ppu)
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper001(options)
   }
 
-  constructor(private prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, private ppu: Ppu) {
+  constructor(private options: MapperOptions) {
     super()
 
     const BANK_BIT = 14  // 16KB
-    this.maxPrg = (prgSize >> BANK_BIT) - 1
+    this.maxPrg = (options.prgSize >> BANK_BIT) - 1
 
     // Serial: 5bits.
-    cpu.setWriteMemory(0x8000, 0xffff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0x8000, 0xffff, (adr, value) => {
       if ((value & 0x80) !== 0) {  // Reset
         this.resetRegister()
         return
@@ -47,7 +46,7 @@ export class Mapper001 extends Mapper {
       switch (adr & 0xe000) {
       case 0x8000:  // Controll
         {
-          ppu.setMirrorMode(kMirrorTable[this.register & 3])
+          this.options.ppu.setMirrorMode(kMirrorTable[this.register & 3])
 
           this.prgBankMode = (this.register >> 2) & 3
           this.setPrgBank(this.prgReg, this.chrBank[0])
@@ -82,8 +81,8 @@ export class Mapper001 extends Mapper {
 
     // PRG RAM
     this.ram.fill(0xbf)
-    cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
-    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
+    this.options.cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
 
     this.setPrgBank(0, 0xff)
   }
@@ -122,10 +121,10 @@ export class Mapper001 extends Mapper {
       const chr = hilo << 2
       const b = bank << 2
       for (let i = 0; i < 4; ++i)
-        this.ppu.setChrBankOffset(chr + i, b + i)
+        this.options.ppu.setChrBankOffset(chr + i, b + i)
     } else {
       if (hilo === 0)
-        this.ppu.setChrBank(bank >> 1)
+        this.options.ppu.setChrBank(bank >> 1)
     }
     this.chrBank[hilo] = bank
   }
@@ -151,9 +150,9 @@ export class Mapper001 extends Mapper {
     default:
       return
     }
-    this.prgBankCtrl.setPrgBank(0, p0 << 1)
-    this.prgBankCtrl.setPrgBank(1, (p0 << 1) + 1)
-    this.prgBankCtrl.setPrgBank(2, p1 << 1)
-    this.prgBankCtrl.setPrgBank(3, (p1 << 1) + 1)
+    this.options.prgBankCtrl.setPrgBank(0, p0 << 1)
+    this.options.prgBankCtrl.setPrgBank(1, (p0 << 1) + 1)
+    this.options.prgBankCtrl.setPrgBank(2, p1 << 1)
+    this.options.prgBankCtrl.setPrgBank(3, (p1 << 1) + 1)
   }
 }

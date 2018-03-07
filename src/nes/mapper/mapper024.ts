@@ -1,9 +1,8 @@
 // VRC6
 // http://wiki.nesdev.com/w/index.php/VRC6
 
-import {Mapper, PrgBankController} from './mapper'
-import {Cpu} from '../cpu'
-import {Ppu, MirrorMode} from '../ppu'
+import {Mapper, MapperOptions} from './mapper'
+import {MirrorMode} from '../ppu'
 import Util from '../../util/util'
 
 const IRQ_ENABLE_AFTER = 1 << 0
@@ -30,41 +29,39 @@ class Mapper024Base extends Mapper {
   private irqLatch: number = 0
   private irqCounter: number = 0
 
-  constructor(private prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu,
-              private ppu: Ppu, mapping: {[key: number]: number})
-  {
+  constructor(private options: MapperOptions, mapping: {[key: number]: number}) {
     super()
 
     const BANK_BIT = 13
-    this.prgCount = prgSize >> BANK_BIT
-    prgBankCtrl.setPrgBank(0, 0)
-    prgBankCtrl.setPrgBank(1, 1)
+    this.prgCount = options.prgSize >> BANK_BIT
+    this.options.prgBankCtrl.setPrgBank(0, 0)
+    this.options.prgBankCtrl.setPrgBank(1, 1)
     this.setPrgBank(this.prgCount - 2)
 
     // PRG ROM bank
-    cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (0x8000 <= adr && adr <= 0x8003) {
         this.setPrgBank((value & (this.prgCount / 2 - 1)) << 1)
       }
     })
-    cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if (0xc000 <= adr && adr <= 0xc003) {
-        prgBankCtrl.setPrgBank(2, value)
+        this.options.prgBankCtrl.setPrgBank(2, value)
       }
     })
 
     // CHR ROM bank
     const b003 = 0xb000 | mapping[3]
-    cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if ((adr & 0xf0ff) === b003) {
         this.ppuBankMode = value & 3
         this.setChrBank()
 
         this.mirrorMode = (value >> 2) & 3
-        this.ppu.setMirrorMode(kMirrorTable[this.mirrorMode])
+        this.options.ppu.setMirrorMode(kMirrorTable[this.mirrorMode])
       }
     })
-    cpu.setWriteMemory(0xd000, 0xffff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0xd000, 0xffff, (adr, value) => {
       if (0xd000 <= adr && adr <= 0xefff) {
         const high = ((adr - 0xd000) >> 10) & 4
         const low = adr & 0x0f
@@ -98,8 +95,8 @@ class Mapper024Base extends Mapper {
 
     // PRG RAM
     this.ram.fill(0xff)
-    cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
-    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
+    this.options.cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
   }
 
   public reset() {
@@ -146,7 +143,7 @@ class Mapper024Base extends Mapper {
       }
       if (c >= 255) {
         c = this.irqLatch
-        this.cpu.requestIrq()
+        this.options.cpu.requestIrq()
       }
       this.irqCounter = c
     }
@@ -154,24 +151,24 @@ class Mapper024Base extends Mapper {
 
   private setPrgBank(prgBank: number) {
     this.prgBank = prgBank
-    this.prgBankCtrl.setPrgBank(0, prgBank)
-    this.prgBankCtrl.setPrgBank(1, prgBank + 1)
+    this.options.prgBankCtrl.setPrgBank(0, prgBank)
+    this.options.prgBankCtrl.setPrgBank(1, prgBank + 1)
   }
 
   private setChrBank() {
     const table = kChrBankTable[this.ppuBankMode]
     for (let i = 0; i < 8; ++i)
-      this.ppu.setChrBankOffset(i, this.chrRegs[table[i]])
+      this.options.ppu.setChrBankOffset(i, this.chrRegs[table[i]])
   }
 }
 
 export class Mapper024 extends Mapper024Base {
-  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
-    return new Mapper024(pbc, size, cpu, ppu)
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper024(options)
   }
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
-    super(prgBankCtrl, prgSize, cpu, ppu, {
+  constructor(options: MapperOptions) {
+    super(options, {
       0: 0,
       1: 1,
       2: 2,
@@ -181,12 +178,12 @@ export class Mapper024 extends Mapper024Base {
 }
 
 export class Mapper026 extends Mapper024Base {
-  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
-    return new Mapper026(pbc, size, cpu, ppu)
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper026(options)
   }
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
-    super(prgBankCtrl, prgSize, cpu, ppu, {
+  constructor(options: MapperOptions) {
+    super(options, {
       0: 0,
       1: 2,
       2: 1,

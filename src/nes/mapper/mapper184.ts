@@ -1,25 +1,23 @@
 // Sunsoft-1 mapper
 
-import {Mapper, PrgBankController} from './mapper'
-import {Cpu} from '../cpu'
-import {Ppu} from '../ppu'
+import {Mapper, MapperOptions} from './mapper'
 
 export class Mapper184 extends Mapper {
-  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
-    return new Mapper184(pbc, size, cpu, ppu)
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper184(options)
   }
 
-  constructor(_prgBankCtrl: PrgBankController, _prgSize: number, cpu: Cpu, ppu: Ppu) {
+  constructor(private options: MapperOptions) {
     super()
 
     // CHR ROM bank
-    cpu.setWriteMemory(0x6000, 0x7fff, (_adr, value) => {
+    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (_adr, value) => {
       const hi = ((value >> (4 - 2)) & (7 << 2)) + (4 << 2)
       const lo = (value & 7) << 2
       for (let i = 0; i < 4; ++i)
-        ppu.setChrBankOffset(i + 4, hi + i)
+        this.options.ppu.setChrBankOffset(i + 4, hi + i)
       for (let i = 0; i < 4; ++i)
-        ppu.setChrBankOffset(i, lo + i)
+        this.options.ppu.setChrBankOffset(i, lo + i)
     })
   }
 }

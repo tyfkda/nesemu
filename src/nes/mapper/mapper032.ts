@@ -1,21 +1,20 @@
 // Irem's G-101
 
-import {Mapper, PrgBankController} from './mapper'
-import {Cpu} from '../cpu'
-import {Ppu, MirrorMode} from '../ppu'
+import {Mapper, MapperOptions} from './mapper'
+import {MirrorMode} from '../ppu'
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ]
 
 export class Mapper032 extends Mapper {
-  public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
-    return new Mapper032(pbc, size, cpu, ppu)
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper032(options)
   }
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
+  constructor(private options: MapperOptions) {
     super()
 
     const BANK_BIT = 13  // 0x2000
-    const maxPrg = (prgSize >> BANK_BIT) - 1
+    const maxPrg = (options.prgSize >> BANK_BIT) - 1
     const kLast2Bank = maxPrg - 1
 
     let prgReg = [0, 1 << BANK_BIT]
@@ -32,34 +31,34 @@ export class Mapper032 extends Mapper {
         p1 = prgReg[1]
         p0 = kLast2Bank
       }
-      prgBankCtrl.setPrgBank(0, p0)
-      prgBankCtrl.setPrgBank(1, p1)
-      prgBankCtrl.setPrgBank(2, p2)
+      this.options.prgBankCtrl.setPrgBank(0, p0)
+      this.options.prgBankCtrl.setPrgBank(1, p1)
+      this.options.prgBankCtrl.setPrgBank(2, p2)
     }
 
     // PRG RAM
     const ram = new Uint8Array(0x2000)
     ram.fill(0xbf)
-    cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
-    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+    this.options.cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
+    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
 
     // Select
-    cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (adr <= 0x8fff) {
         prgReg[0] = value
         setPrgBank()
       } else {
-        ppu.setMirrorMode(kMirrorTable[value & 1])
+        this.options.ppu.setMirrorMode(kMirrorTable[value & 1])
         prgMode = (value >> 1) & 1
         setPrgBank()
       }
     })
-    cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if (adr <= 0xafff) {
         prgReg[1] = value
         setPrgBank()
       } else {
-        ppu.setChrBankOffset(adr & 7, value)
+        this.options.ppu.setChrBankOffset(adr & 7, value)
       }
     })
   }

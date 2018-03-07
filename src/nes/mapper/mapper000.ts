@@ -1,9 +1,7 @@
-import {Mapper, PrgBankController} from './mapper'
-import {Cpu} from '../cpu'
-import {Ppu} from '../ppu'
+import {Mapper, MapperOptions} from './mapper'
 
 export class Mapper000 extends Mapper {
-  public static create(_pbc: PrgBankController, _size: number, _cpu: Cpu, _ppu: Ppu): Mapper {
+  public static create(_options: MapperOptions): Mapper {
     return new Mapper000()
   }
 
