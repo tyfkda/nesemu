@@ -245,6 +245,7 @@ export class Nes implements PrgBankController {
     }
     const mapperFunc = kMapperTable[mapperNo]
     return mapperFunc({
+      bus: this.bus,
       cpu: this.cpu,
       ppu: this.ppu,
       prgBankCtrl: this,

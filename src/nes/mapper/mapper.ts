@@ -1,3 +1,4 @@
+import {Bus} from '../bus'
 import {Cpu} from '../cpu'
 import {Ppu} from '../ppu'
 
@@ -6,6 +7,7 @@ export interface PrgBankController {
 }
 
 export interface MapperOptions {
+  bus: Bus,
   cpu: Cpu
   ppu: Ppu,
   prgBankCtrl: PrgBankController

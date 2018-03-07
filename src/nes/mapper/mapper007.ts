@@ -17,7 +17,7 @@ export class Mapper007 extends Mapper {
     // const count = prgSize >> BANK_BIT
 
     // PRG ROM bank
-    this.options.cpu.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
       const bank = value << 2
       for (let i = 0; i < 4; ++i)
         this.options.prgBankCtrl.setPrgBank(i, bank + i)

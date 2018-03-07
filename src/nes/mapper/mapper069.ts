@@ -20,10 +20,10 @@ export class Mapper069 extends Mapper {
 
     // CHR ROM bank
     let command = 0
-    this.options.cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       command = value & 0x0f
     })
-    this.options.cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       switch (command) {
       case 0x00: case 0x01: case 0x02: case 0x03:
       case 0x04: case 0x05: case 0x06: case 0x07:
@@ -45,7 +45,7 @@ export class Mapper069 extends Mapper {
     // PRG RAM
     const ram = new Uint8Array(0x2000)
     ram.fill(0xbf)
-    this.options.cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
-    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
+    this.options.bus.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
   }
 }

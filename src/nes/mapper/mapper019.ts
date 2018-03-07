@@ -14,13 +14,13 @@ export class Mapper019 extends Mapper {
     // const count = prgSize >> BANK_BIT
 
     // CHR ROM bank
-    this.options.cpu.setWriteMemory(0x8000, 0xbfff, (adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0xbfff, (adr, value) => {
       const bank = (adr >> 11) & 7
       this.options.ppu.setChrBankOffset(bank, value)
     })
 
     // PRG ROM bank
-    this.options.cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xe000, 0xffff, (adr, value) => {
       if (adr <= 0xf7ff) {
         const bank = (adr - 0xe000) / 0x800
         this.options.prgBankCtrl.setPrgBank(bank, value)

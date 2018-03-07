@@ -28,26 +28,26 @@ export class Mapper073 extends Mapper {
     this.setPrgBank((prgCount - 1) * 2)
 
     // PRG ROM bank
-    this.options.cpu.setWriteMemory(0xf000, 0xffff, (_adr, value) => {
+    this.options.bus.setWriteMemory(0xf000, 0xffff, (_adr, value) => {
       this.setPrgBank(value << 1)
     })
 
     // IRQ Latch 0, 1
-    this.options.cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (adr < 0x9000)
         this.irqValue = (this.irqValue & 0xfff0) | (value & 0x0f)
       else
         this.irqValue = (this.irqValue & 0xff0f) | ((value & 0x0f) << 4)
     })
     // IRQ Latch 2, 3
-    this.options.cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if (adr < 0xb000)
         this.irqValue = (this.irqValue & 0xf0ff) | ((value & 0x0f) << 8)
       else
         this.irqValue = (this.irqValue & 0x0fff) | ((value & 0x0f) << 12)
     })
 
-    this.options.cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if (adr < 0xd000) {
         // IRQ Control
         this.enableIrq((value & 2) !== 0)
@@ -59,8 +59,8 @@ export class Mapper073 extends Mapper {
 
     // PRG RAM
     this.ram.fill(0xff)
-    this.options.cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
-    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
+    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.options.bus.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
   }
 
   public reset() {
