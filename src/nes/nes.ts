@@ -185,7 +185,7 @@ export class Nes implements PrgBankController {
     this.prgBank[bank] = page << 13
   }
 
-  private setMemoryMap(mapperNo: number): void {
+  protected setMemoryMap(mapperNo: number): void {
     const bus = this.bus
     bus.clearMemoryMap()
 
