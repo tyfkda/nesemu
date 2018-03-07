@@ -15,9 +15,15 @@ const HEIGHT = 240
 
 const MAX_FRAME_COUNT = 4
 
+interface Program {
+  init(nes: Nes): void
+  getChrRom(): Uint8Array
+  update(): void
+}
+
 class JsNes extends Nes {
   private file: File
-  private program: any
+  private program: Program
 
   public static create(): JsNes {
     return new JsNes()
@@ -42,6 +48,7 @@ class JsNes extends Nes {
         //const jsCode = String.fromCharCode.apply('', data)
         const jsCode = new TextDecoder('utf-8').decode(data)
         this.program = eval(jsCode)
+        this.ppu.setChrData(this.program.getChrRom())
         this.program.init(this)
       })
   }
