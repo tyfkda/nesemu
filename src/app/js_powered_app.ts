@@ -39,7 +39,8 @@ class JsNes extends Nes {
   public reload(): void {
     Util.loadFile(this.file)
       .then(data => {
-        const jsCode = String.fromCharCode.apply('', data)
+        //const jsCode = String.fromCharCode.apply('', data)
+        const jsCode = new TextDecoder('utf-8').decode(data)
         this.program = eval(jsCode)
         this.program.init(this)
       })
