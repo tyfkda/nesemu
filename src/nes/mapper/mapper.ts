@@ -8,4 +8,11 @@ export class Mapper {
 
   public onHblank(hcount: number): void {
   }
+
+  public save(): object {
+    return null
+  }
+
+  public load(_saveData: any): void {
+  }
 }

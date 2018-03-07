@@ -4,6 +4,7 @@
 import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
+import Util from '../../util/util'
 
 const IRQ_ENABLE_AFTER = 1 << 0
 const IRQ_ENABLE = 1 << 1
@@ -12,34 +13,36 @@ const IRQ_MODE = 1 << 2
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
 class Mapper023Base extends Mapper {
+  private ram = new Uint8Array(0x2000)
+  private prgBankMode = 0
+  private prgBank = new Array(4)
+  private chrBank = new Array(8)
   private irqControl: number = 0
   private irqLatch: number = 0
   private irqCounter: number = 0
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, ppu: Ppu,
-              mapping: {[key: number]: number})
+  constructor(private prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu,
+              private ppu: Ppu, mapping: {[key: number]: number})
   {
     super()
 
     const BANK_BIT = 13
-    const count = prgSize >> BANK_BIT
-    let prgBankMode = 0
-    const chrBank = new Array(8)
+    const prgCount = prgSize >> BANK_BIT
 
-    prgBankCtrl.setPrgBank(0, 0)
-    prgBankCtrl.setPrgBank(1, 1)
-    prgBankCtrl.setPrgBank(2, count - 2)
-    prgBankCtrl.setPrgBank(3, count - 1)
+    this.setPrgBank(0, 0)
+    this.setPrgBank(1, 1)
+    this.setPrgBank(2, prgCount - 2)
+    this.setPrgBank(3, prgCount - 1)
 
     // PRG ROM bank
     cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (0x8000 <= adr && adr <= 0x8006) {
-        switch (prgBankMode) {
+        switch (this.prgBankMode) {
         case 0:
-          prgBankCtrl.setPrgBank(0, value)
+          this.setPrgBank(0, value)
           break
         case 1:
-          prgBankCtrl.setPrgBank(2, value)
+          this.setPrgBank(2, value)
           break
         }
       } else if ((adr & 0xff00) === 0x9000) {
@@ -48,13 +51,13 @@ class Mapper023Base extends Mapper {
           const mirrorMode = value & 3
           ppu.setMirrorMode(kMirrorTable[mirrorMode])
         } else if (reg === 4 || reg === 6) {  // PRG Swap Mode control.
-          prgBankMode = (value >> 1) & 1
-          switch (prgBankMode) {
+          this.prgBankMode = (value >> 1) & 1
+          switch (this.prgBankMode) {
           case 0:
-            prgBankCtrl.setPrgBank(2, count - 2)
+            this.setPrgBank(2, prgCount - 2)
             break
           case 1:
-            prgBankCtrl.setPrgBank(0, count - 2)
+            this.setPrgBank(0, prgCount - 2)
             break
           }
         }
@@ -62,21 +65,17 @@ class Mapper023Base extends Mapper {
     })
     cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if (0xa000 <= adr && adr <= 0xa006) {
-        prgBankCtrl.setPrgBank(1, value & (count - 1))
+        this.setPrgBank(1, value & (prgCount - 1))
       } else if ((adr & 0xff00) === 0xb000) {
         const reg = mapping[adr & 0xff]
         if (reg === 0) {  // CHR Select 0
-          chrBank[0] = (chrBank[0] & ~0x0f) | (value & 0x0f)
-          ppu.setChrBankOffset(0, chrBank[0])
+          this.setChrBankOffset(0, (this.chrBank[0] & ~0x0f) | (value & 0x0f))
         } else if (reg === 2) {
-          chrBank[0] = (chrBank[0] & ~0x1f0) | ((value & 0x1f) << 4)
-          ppu.setChrBankOffset(0, chrBank[0])
+          this.setChrBankOffset(0, (this.chrBank[0] & ~0x1f0) | ((value & 0x1f) << 4))
         } else if (reg === 4) {  // CHR Select 1
-          chrBank[1] = (chrBank[1] & ~0x0f) | (value & 0x0f)
-          ppu.setChrBankOffset(1, chrBank[1])
+          this.setChrBankOffset(1, (this.chrBank[1] & ~0x0f) | (value & 0x0f))
         } else if (reg === 6) {
-          chrBank[1] = (chrBank[1] & ~0x1f0) | ((value & 0x1f) << 4)
-          ppu.setChrBankOffset(1, chrBank[1])
+          this.setChrBankOffset(1, (this.chrBank[1] & ~0x1f0) | ((value & 0x1f) << 4))
         }
       }
     })
@@ -98,11 +97,12 @@ class Mapper023Base extends Mapper {
           return
         }
         const bank = ((adr & 0x3000) >> 11) + 2 + ofs
+        let newValue
         if (hi)
-          chrBank[bank] = (chrBank[bank] & ~0x1f0) | ((value & 0x1f) << 4)
+          newValue = (this.chrBank[bank] & ~0x1f0) | ((value & 0x1f) << 4)
         else
-          chrBank[bank] = (chrBank[bank] & ~0x0f) | (value & 0x0f)
-        ppu.setChrBankOffset(bank, chrBank[bank])
+          newValue = (this.chrBank[bank] & ~0x0f) | (value & 0x0f)
+        this.setChrBankOffset(bank, newValue)
       } else {  // IRQ
         const reg = mapping[adr & 0xff]
         if (reg === 0) {  // IRQ Latch: low 4 bits
@@ -123,15 +123,41 @@ class Mapper023Base extends Mapper {
     })
 
     // PRG RAM
-    const ram = new Uint8Array(0x2000)
-    ram.fill(0xff)
-    cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
-    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+    this.ram.fill(0xff)
+    cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
   }
 
   public reset() {
     this.irqControl = 0
     this.irqLatch = this.irqCounter = 0
+  }
+
+  public save(): object {
+    return {
+      ram: Util.convertUint8ArrayToBase64String(this.ram),
+      prgBankMode: this.prgBankMode,
+      prgBank: this.prgBank,
+      chrBank: this.chrBank,
+      irqControl: this.irqControl,
+      irqLatch: this.irqLatch,
+      irqCounter: this.irqCounter,
+    }
+  }
+
+  public load(saveData: any): void {
+    this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    this.prgBankMode = saveData.prgBankMode
+    // this.prgBank = saveData.prgBank
+    // this.chrBank = saveData.chrBank
+    this.irqControl = saveData.irqControl
+    this.irqLatch = saveData.irqLatch
+    this.irqCounter = saveData.irqCounter
+
+    for (let i = 0; i < 4; ++i)
+      this.setPrgBank(i, saveData.prgBank[i])
+    for (let i = 0; i < 8; ++i)
+      this.setChrBankOffset(i, saveData.chrBank[i])
   }
 
   public onHblank(hcount: number): void {
@@ -148,6 +174,16 @@ class Mapper023Base extends Mapper {
       }
       this.irqCounter = c
     }
+  }
+
+  private setPrgBank(bank: number, value: number) {
+    this.prgBank[bank] = value
+    this.prgBankCtrl.setPrgBank(bank, value)
+  }
+
+  private setChrBankOffset(bank: number, value: number) {
+    this.chrBank[bank] = value
+    this.ppu.setChrBankOffset(bank, value)
   }
 }
 

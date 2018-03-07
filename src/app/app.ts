@@ -16,6 +16,24 @@ import * as Pubsub from '../util/pubsub'
 const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
 
+function download(blob: Blob, filename: string) {
+  const objectURL = window.URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = objectURL
+  a.setAttribute('download', filename)
+  a.click()
+}
+
+function chooseFile(callback: (files: any) => void) {
+  const elem = document.createElement('input')
+  elem.setAttribute('type', 'file')
+  elem.setAttribute('accept', '.sav, application/json')
+  elem.addEventListener('change', function(event) {
+    callback((event.target as any).files)
+  })
+  elem.click()
+}
+
 export class App {
   protected destroying = false
   protected isBlur = false
@@ -26,6 +44,7 @@ export class App {
   protected stream = new AppEvent.Stream()
   protected subscription: Pubsub.Subscription
 
+  protected title: string
   protected screenWnd: ScreenWnd
   protected hasPaletWnd: boolean
   protected hasNameTableWnd: boolean
@@ -77,8 +96,8 @@ export class App {
 
     this.screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
     this.wndMgr.add(this.screenWnd)
-    if (option.title)
-      this.screenWnd.setTitle(option.title as string)
+    this.title = (option.title as string) || 'NES'
+    this.screenWnd.setTitle(this.title)
 
     const size = this.screenWnd.getWindowSize()
     let x = Util.clamp((option.centerX || 0) - size.width / 2,
@@ -113,6 +132,32 @@ export class App {
     }
 
     return true
+  }
+
+  public saveData() {
+    const saveData = this.nes.save()
+    const content = JSON.stringify(saveData)
+    const blob = new Blob([content], {type: 'text/plain'})
+    download(blob, `${this.title}.sav`)
+  }
+
+  public loadData() {
+    chooseFile(files => {
+      if (files.length < 1) {
+        return
+      }
+
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        try {
+          const json = JSON.parse((event.target as any).result)
+          this.nes.load(json)
+        } catch (e) {
+          console.error(e)
+        }
+      }
+      reader.readAsText(files[0])
+    })
   }
 
   public onBlur() {

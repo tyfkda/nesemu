@@ -3,6 +3,7 @@
 import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
+import Util from '../../util/util'
 
 const kMirrorTable = [
   MirrorMode.SINGLE0,
@@ -12,122 +13,147 @@ const kMirrorTable = [
 ]
 
 export class Mapper001 extends Mapper {
+  private maxPrg = 0
+  private ram = new Uint8Array(0x2000)
+  private register = 0
+  private counter = 0
+  private prgBankMode = 3
+  private prgReg = 0
+  private chrBank4k = true
+  private chrBank = [0 << 2, 1 << 2]
+
   public static create(pbc: PrgBankController, size: number, cpu: Cpu, ppu: Ppu): Mapper {
     return new Mapper001(pbc, size, cpu, ppu)
   }
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, ppu: Ppu) {
+  constructor(private prgBankCtrl: PrgBankController, prgSize: number, cpu: Cpu, private ppu: Ppu) {
     super()
 
     const BANK_BIT = 14  // 16KB
-    const maxPrg = (prgSize >> BANK_BIT) - 1
-
-    let register = 0
-    let counter = 0
-    let prgBankMode = 3
-    let prgReg = 0
-    let chrBank4k = true
-    let chrBank = [0 << 2, 1 << 2]
-
-    const resetRegister = () => {
-      register = 0
-      counter = 0
-    }
-
-    const setChrBank = (hilo, bank) => {
-      if (chrBank4k) {
-        const chr = hilo << 2
-        const b = bank << 2
-        for (let i = 0; i < 4; ++i)
-          ppu.setChrBankOffset(chr + i, b + i)
-      } else {
-        if (hilo === 0)
-          ppu.setChrBank(bank >> 1)
-      }
-      chrBank[hilo] = bank
-    }
-
-    const setPrgBank = (reg, chrBank0) => {
-      prgReg = reg
-      const highBit = chrBank0 & (0x10 & maxPrg)
-      const bank = ((reg & 0x0f) | highBit) & maxPrg
-      let p0, p1
-      switch (prgBankMode) {
-      case 0: case 1:
-        p0 = bank & ~1
-        p1 = bank | 1
-        break
-      case 2:
-        p0 = 0
-        p1 = bank
-        break
-      case 3:
-        p0 = bank
-        p1 = (maxPrg & 0x0f) | highBit
-        break
-      default:
-        return
-      }
-      prgBankCtrl.setPrgBank(0, p0 << 1)
-      prgBankCtrl.setPrgBank(1, (p0 << 1) + 1)
-      prgBankCtrl.setPrgBank(2, p1 << 1)
-      prgBankCtrl.setPrgBank(3, (p1 << 1) + 1)
-    }
+    this.maxPrg = (prgSize >> BANK_BIT) - 1
 
     // Serial: 5bits.
     cpu.setWriteMemory(0x8000, 0xffff, (adr, value) => {
       if ((value & 0x80) !== 0) {  // Reset
-        resetRegister()
+        this.resetRegister()
         return
       }
 
-      register |= (value & 1) << counter
-      if (++counter < 5)
+      this.register |= (value & 1) << this.counter
+      if (++this.counter < 5)
         return
 
       // Register filled: branch according to bit 13~14.
       switch (adr & 0xe000) {
       case 0x8000:  // Controll
         {
-          ppu.setMirrorMode(kMirrorTable[register & 3])
+          ppu.setMirrorMode(kMirrorTable[this.register & 3])
 
-          prgBankMode = (register >> 2) & 3
-          setPrgBank(prgReg, chrBank[0])
+          this.prgBankMode = (this.register >> 2) & 3
+          this.setPrgBank(this.prgReg, this.chrBank[0])
 
-          const newChrBank4k = (register & 0x10) !== 0
-          if (chrBank4k !== newChrBank4k) {
-            chrBank4k = newChrBank4k
-            setChrBank(0, chrBank[0])
-            setChrBank(1, chrBank[1])
+          const newChrBank4k = (this.register & 0x10) !== 0
+          if (this.chrBank4k !== newChrBank4k) {
+            this.chrBank4k = newChrBank4k
+            this.setChrBank(0, this.chrBank[0])
+            this.setChrBank(1, this.chrBank[1])
           }
         }
         break
       case 0xa000: case 0xc000:  // CHR bank
         {
           const hilo = ((adr - 0xa000) >> 13) & 1
-          const bank = register & 0x1f
-          if (chrBank[hilo] !== bank)
-            setChrBank(hilo, bank)
+          const bank = this.register & 0x1f
+          if (this.chrBank[hilo] !== bank)
+            this.setChrBank(hilo, bank)
 
           if (hilo === 0)
-            setPrgBank(prgReg, bank)
+            this.setPrgBank(this.prgReg, bank)
         }
         break
       case 0xe000:  // PRG bank
-        setPrgBank(register, chrBank[0])
+        this.setPrgBank(this.register, this.chrBank[0])
         break
       default:
         break
       }
-      resetRegister()
+      this.resetRegister()
     })
 
     // PRG RAM
-    const ram = new Uint8Array(0x2000)
-    ram.fill(0xbf)
-    cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
-    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+    this.ram.fill(0xbf)
+    cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
 
-    setPrgBank(0, 0xff)
+    this.setPrgBank(0, 0xff)
+  }
+
+  public save(): object {
+    return {
+      ram: Util.convertUint8ArrayToBase64String(this.ram),
+      register: this.register,
+      counter: this.counter,
+      prgBankMode: this.prgBankMode,
+      prgReg: this.prgReg,
+      chrBank4k: this.chrBank4k,
+      chrBank: this.chrBank,
+    }
+  }
+
+  public load(saveData: any): void {
+    this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    this.register = saveData.register
+    this.counter = saveData.counter
+    this.prgBankMode = saveData.prgBankMode
+    this.chrBank4k = saveData.chrBank4k
+
+    for (let i = 0; i < 2; ++i)
+      this.setChrBank(i, saveData.chrBank[i])
+    this.setPrgBank(saveData.prgReg, this.chrBank[0])
+  }
+
+  private resetRegister() {
+    this.register = 0
+    this.counter = 0
+  }
+
+  private setChrBank(hilo, bank) {
+    if (this.chrBank4k) {
+      const chr = hilo << 2
+      const b = bank << 2
+      for (let i = 0; i < 4; ++i)
+        this.ppu.setChrBankOffset(chr + i, b + i)
+    } else {
+      if (hilo === 0)
+        this.ppu.setChrBank(bank >> 1)
+    }
+    this.chrBank[hilo] = bank
+  }
+
+  private setPrgBank(reg, chrBank0) {
+    this.prgReg = reg
+    const highBit = chrBank0 & (0x10 & this.maxPrg)
+    const bank = ((reg & 0x0f) | highBit) & this.maxPrg
+    let p0, p1
+    switch (this.prgBankMode) {
+    case 0: case 1:
+      p0 = bank & ~1
+      p1 = bank | 1
+      break
+    case 2:
+      p0 = 0
+      p1 = bank
+      break
+    case 3:
+      p0 = bank
+      p1 = (this.maxPrg & 0x0f) | highBit
+      break
+    default:
+      return
+    }
+    this.prgBankCtrl.setPrgBank(0, p0 << 1)
+    this.prgBankCtrl.setPrgBank(1, (p0 << 1) + 1)
+    this.prgBankCtrl.setPrgBank(2, p1 << 1)
+    this.prgBankCtrl.setPrgBank(3, (p1 << 1) + 1)
   }
 }

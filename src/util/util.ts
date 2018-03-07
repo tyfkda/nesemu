@@ -89,4 +89,19 @@ export default class Util {
     dropZone.addEventListener('dragover', onDragOver, false)
     dropZone.addEventListener('drop', onDrop, false)
   }
+
+  public static convertUint8ArrayToBase64String(src: Uint8Array): string {
+    const s = Array.from(src).map(x => String.fromCharCode(x)).join('')
+    // return new Buffer(s).toString('base64')  // node.js
+    return btoa(s)
+  }
+
+  public static convertBase64StringToUint8Array(src: string): Uint8Array {
+    // const decoded = new Buffer(s, 'base64').toString('ascii')  // node.js
+    const decoded = atob(src)
+    const array = new Array(decoded.length)
+    for (let i = 0; i < decoded.length; ++i)
+      array[i] = decoded.charCodeAt(i)
+    return new Uint8Array(array)
+  }
 }

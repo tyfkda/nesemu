@@ -4,6 +4,7 @@
 import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu, MirrorMode} from '../ppu'
+import Util from '../../util/util'
 
 const IRQ_ENABLE_AFTER = 1 << 0
 const IRQ_ENABLE = 1 << 1
@@ -19,28 +20,31 @@ const kChrBankTable = [
 ]
 
 class Mapper024Base extends Mapper {
+  private ram = new Uint8Array(0x2000)
+  private chrRegs = new Uint8Array(8)
+  private prgCount = 0
+  private prgBank = 0
+  private ppuBankMode = 0
+  private mirrorMode = 0
   private irqControl: number = 0
   private irqLatch: number = 0
   private irqCounter: number = 0
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, ppu: Ppu,
-              mapping: {[key: number]: number})
+  constructor(private prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu,
+              private ppu: Ppu, mapping: {[key: number]: number})
   {
     super()
 
     const BANK_BIT = 13
-    const count = prgSize >> BANK_BIT
+    this.prgCount = prgSize >> BANK_BIT
     prgBankCtrl.setPrgBank(0, 0)
     prgBankCtrl.setPrgBank(1, 1)
-    prgBankCtrl.setPrgBank(2, count - 2)
-    prgBankCtrl.setPrgBank(3, count - 1)
+    this.setPrgBank(this.prgCount - 2)
 
     // PRG ROM bank
     cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (0x8000 <= adr && adr <= 0x8003) {
-        const bank = (value & (count / 2 - 1)) << 1
-        prgBankCtrl.setPrgBank(0, bank)
-        prgBankCtrl.setPrgBank(1, bank + 1)
+        this.setPrgBank((value & (this.prgCount / 2 - 1)) << 1)
       }
     })
     cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
@@ -49,23 +53,15 @@ class Mapper024Base extends Mapper {
       }
     })
 
-    let ppuBankMode = 0
-    let mirrorMode = 0
-    let chrRegs = new Uint8Array(8)
-    const setChrBank = () => {
-      const table = kChrBankTable[ppuBankMode]
-      for (let i = 0; i < 8; ++i)
-        ppu.setChrBankOffset(i, chrRegs[table[i]])
-    }
     // CHR ROM bank
     const b003 = 0xb000 | mapping[3]
     cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if ((adr & 0xf0ff) === b003) {
-        ppuBankMode = value & 3
-        setChrBank()
+        this.ppuBankMode = value & 3
+        this.setChrBank()
 
-        mirrorMode = (value >> 2) & 3
-        ppu.setMirrorMode(kMirrorTable[mirrorMode])
+        this.mirrorMode = (value >> 2) & 3
+        this.ppu.setMirrorMode(kMirrorTable[this.mirrorMode])
       }
     })
     cpu.setWriteMemory(0xd000, 0xffff, (adr, value) => {
@@ -74,8 +70,8 @@ class Mapper024Base extends Mapper {
         const low = adr & 0x0f
         if (low < 4) {
           const reg = mapping[low] + high
-          chrRegs[reg] = value
-          setChrBank()
+          this.chrRegs[reg] = value
+          this.setChrBank()
         }
       } else {
         const low = adr & 0xff
@@ -101,15 +97,43 @@ class Mapper024Base extends Mapper {
     })
 
     // PRG RAM
-    const ram = new Uint8Array(0x2000)
-    ram.fill(0xff)
-    cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
-    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+    this.ram.fill(0xff)
+    cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
   }
 
   public reset() {
     this.irqControl = 0
     this.irqLatch = this.irqCounter = 0
+  }
+
+  public save(): object {
+    return {
+      ram: Util.convertUint8ArrayToBase64String(this.ram),
+      chrRegs: Util.convertUint8ArrayToBase64String(this.chrRegs),
+      prgCount: this.prgCount,
+      prgBank: this.prgBank,
+      ppuBankMode: this.ppuBankMode,
+      mirrorMode: this.mirrorMode,
+      irqControl: this.irqControl,
+      irqLatch: this.irqLatch,
+      irqCounter: this.irqCounter,
+    }
+  }
+
+  public load(saveData: any): void {
+    this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    this.chrRegs = Util.convertBase64StringToUint8Array(saveData.chrRegs)
+    this.prgCount = saveData.prgCount
+    // this.prgBank = saveData.prgBank
+    this.ppuBankMode = saveData.ppuBankMode
+    this.mirrorMode = saveData.mirrorMode
+    this.irqControl = saveData.irqControl
+    this.irqLatch = saveData.irqLatch
+    this.irqCounter = saveData.irqCounter
+
+    this.setPrgBank(saveData.prgBank)
+    this.setChrBank()
   }
 
   public onHblank(hcount: number): void {
@@ -126,6 +150,18 @@ class Mapper024Base extends Mapper {
       }
       this.irqCounter = c
     }
+  }
+
+  private setPrgBank(prgBank: number) {
+    this.prgBank = prgBank
+    this.prgBankCtrl.setPrgBank(0, prgBank)
+    this.prgBankCtrl.setPrgBank(1, prgBank + 1)
+  }
+
+  private setChrBank() {
+    const table = kChrBankTable[this.ppuBankMode]
+    for (let i = 0; i < 8; ++i)
+      this.ppu.setChrBankOffset(i, this.chrRegs[table[i]])
   }
 }
 

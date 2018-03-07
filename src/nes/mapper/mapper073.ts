@@ -4,8 +4,11 @@
 import {Mapper, PrgBankController} from './mapper'
 import {Cpu} from '../cpu'
 import {Ppu} from '../ppu'
+import Util from '../../util/util'
 
 export class Mapper073 extends Mapper {
+  private ram = new Uint8Array(0x2000)
+  private prgBank = 0
   private irqEnable: boolean
   private irqValue: number
   private irqCounter: number
@@ -14,29 +17,25 @@ export class Mapper073 extends Mapper {
     return new Mapper073(pbc, size, cpu, ppu)
   }
 
-  constructor(prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, ppu: Ppu) {
+  constructor(private prgBankCtrl: PrgBankController, prgSize: number, private cpu: Cpu, ppu: Ppu) {
     super()
 
     this.irqEnable = false
     this.irqValue = this.irqCounter = -1
 
     const BANK_BIT = 14
-    const count = prgSize >> BANK_BIT
+    const prgCount = prgSize >> BANK_BIT
     prgBankCtrl.setPrgBank(0, 0)
     prgBankCtrl.setPrgBank(1, 1)
-    prgBankCtrl.setPrgBank(2, count * 2 - 2)
-    prgBankCtrl.setPrgBank(3, count * 2 - 1)
+    this.setPrgBank((prgCount - 1) * 2)
 
     // PRG ROM bank
     cpu.setWriteMemory(0xf000, 0xffff, (_adr, value) => {
-      const bank = value << 1
-      prgBankCtrl.setPrgBank(0, bank)
-      prgBankCtrl.setPrgBank(1, bank + 1)
+      this.setPrgBank(value << 1)
     })
 
     // IRQ Latch 0, 1
     cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
-      console.log()
       if (adr < 0x9000)
         this.irqValue = (this.irqValue & 0xfff0) | (value & 0x0f)
       else
@@ -61,15 +60,34 @@ export class Mapper073 extends Mapper {
     })
 
     // PRG RAM
-    const ram = new Uint8Array(0x2000)
-    ram.fill(0xff)
-    cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
-    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+    this.ram.fill(0xff)
+    cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
   }
 
   public reset() {
     this.irqEnable = false
     this.irqValue = this.irqCounter = -1
+  }
+
+  public save(): object {
+    return {
+      ram: Util.convertUint8ArrayToBase64String(this.ram),
+      prgBank: this.prgBank,
+      irqEnable: this.irqEnable,
+      irqValue: this.irqValue,
+      irqCounter: this.irqCounter,
+    }
+  }
+
+  public load(saveData: any): void {
+    this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    // this.prgBank = saveData.prgBank
+    this.irqEnable = saveData.irqEnable
+    this.irqValue = saveData.irqValue
+    this.irqCounter = saveData.irqCounter
+
+    this.setPrgBank(saveData.prgBank)
   }
 
   public onHblank(hcount: number): void {
@@ -80,6 +98,12 @@ export class Mapper073 extends Mapper {
         this.cpu.requestIrq()
       }
     }
+  }
+
+  private setPrgBank(prgBank) {
+    this.prgBank = prgBank
+    this.prgBankCtrl.setPrgBank(0, prgBank)
+    this.prgBankCtrl.setPrgBank(1, prgBank + 1)
   }
 
   private enableIrq(value: boolean): void {
