@@ -28,11 +28,11 @@ export class Mapper004 extends Mapper {
     this.options.prgBankCtrl.setPrgBank(3, this.maxPrg)
 
     this.ram.fill(0xff)
-    this.options.cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
-    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
+    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.options.bus.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
 
     // Select
-    this.options.cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if ((adr & 1) === 0) {
         this.bankSelect = value
         this.setPrgBank(this.bankSelect)
@@ -49,7 +49,7 @@ export class Mapper004 extends Mapper {
     })
 
     // Mirroring
-    this.options.cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if ((adr & 1) === 0) {
         this.options.ppu.setMirrorMode((value & 1) === 0 ? MirrorMode.VERT : MirrorMode.HORZ)
       } else {
@@ -59,7 +59,7 @@ export class Mapper004 extends Mapper {
 
     // IRQ
     let irqLatch = 0
-    this.options.cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if ((adr & 1) === 0) {
         irqLatch = value
         this.setIrqHlineValue(irqLatch)
@@ -67,7 +67,7 @@ export class Mapper004 extends Mapper {
         this.setIrqHlineValue(irqLatch)
       }
     })
-    this.options.cpu.setWriteMemory(0xe000, 0xffff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xe000, 0xffff, (adr, value) => {
       if ((adr & 1) === 0) {
         this.enableIrqHline(false)
         this.resetIrqHlineCounter()

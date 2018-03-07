@@ -39,11 +39,11 @@ export class Mapper032 extends Mapper {
     // PRG RAM
     const ram = new Uint8Array(0x2000)
     ram.fill(0xbf)
-    this.options.cpu.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
-    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
+    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
+    this.options.bus.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
 
     // Select
-    this.options.cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (adr <= 0x8fff) {
         prgReg[0] = value
         setPrgBank()
@@ -53,7 +53,7 @@ export class Mapper032 extends Mapper {
         setPrgBank()
       }
     })
-    this.options.cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if (adr <= 0xafff) {
         prgReg[1] = value
         setPrgBank()

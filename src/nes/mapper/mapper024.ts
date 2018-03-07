@@ -39,12 +39,12 @@ class Mapper024Base extends Mapper {
     this.setPrgBank(this.prgCount - 2)
 
     // PRG ROM bank
-    this.options.cpu.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (0x8000 <= adr && adr <= 0x8003) {
         this.setPrgBank((value & (this.prgCount / 2 - 1)) << 1)
       }
     })
-    this.options.cpu.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if (0xc000 <= adr && adr <= 0xc003) {
         this.options.prgBankCtrl.setPrgBank(2, value)
       }
@@ -52,7 +52,7 @@ class Mapper024Base extends Mapper {
 
     // CHR ROM bank
     const b003 = 0xb000 | mapping[3]
-    this.options.cpu.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if ((adr & 0xf0ff) === b003) {
         this.ppuBankMode = value & 3
         this.setChrBank()
@@ -61,7 +61,7 @@ class Mapper024Base extends Mapper {
         this.options.ppu.setMirrorMode(kMirrorTable[this.mirrorMode])
       }
     })
-    this.options.cpu.setWriteMemory(0xd000, 0xffff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xd000, 0xffff, (adr, value) => {
       if (0xd000 <= adr && adr <= 0xefff) {
         const high = ((adr - 0xd000) >> 10) & 4
         const low = adr & 0x0f
@@ -95,8 +95,8 @@ class Mapper024Base extends Mapper {
 
     // PRG RAM
     this.ram.fill(0xff)
-    this.options.cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
-    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
+    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.options.bus.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
   }
 
   public reset() {

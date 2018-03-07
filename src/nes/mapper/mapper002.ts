@@ -16,7 +16,7 @@ class Mapper002Base extends Mapper {
     this.options.prgBankCtrl.setPrgBank(3, count * 2 - 1)
 
     // PRG ROM bank
-    this.options.cpu.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
       const bank = (value >> prgBankShift) << 1
       this.setBank(bank)
     })

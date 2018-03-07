@@ -1,6 +1,7 @@
 // CPU: MOS 6502
 
 import {Addressing, Instruction, OpType, kInstTable} from './inst'
+import {Bus} from './bus'
 import Util from '../util/util'
 import {Address, Byte, Word} from './types'
 
@@ -27,8 +28,6 @@ const NEGATIVE_FLAG: Byte = 1 << NEGATIVE_BIT
 const VEC_NMI: Address = 0xfffa
 const VEC_RESET: Address = 0xfffc
 const VEC_IRQ: Address = 0xfffe
-
-const BLOCK_SIZE = 0x2000
 
 const MAX_STEP_LOG = 200
 
@@ -76,20 +75,20 @@ const disasm = (() => {
   const mem = new Uint8Array(3)
   const bins = new Array(3) as string[]
 
-  return function disasm(cpu: Cpu, pc: number): string {
-    const op = cpu.read8Raw(pc)
+  return function disasm(bus: Bus, pc: number): string {
+    const op = bus.read8(pc)
     const inst = kInstTable[op] || kIllegalInstruction
     for (let i = 0; i < inst.bytes; ++i) {
-      const m = cpu.read8Raw(cpu.pc + i)
+      const m = bus.read8(pc + i)
       mem[i] = m
       bins[i] = Util.hex(m, 2)
     }
     for (let i = inst.bytes; i < 3; ++i)
       bins[i] = '  '
 
-    const pcStr = Util.hex(cpu.pc, 4)
+    const pcStr = Util.hex(pc, 4)
     const binStr = bins.join(' ')
-    const asmStr = disassemble(inst, mem, 1, cpu.pc)
+    const asmStr = disassemble(inst, mem, 1, pc)
     return `${pcStr}: ${binStr}   ${asmStr}`
   }
 })()
@@ -113,45 +112,20 @@ export class Cpu {
   public watchRead: any = {}
   public watchWrite: any = {}
   public paused = false
-  private readerFuncTable = new Array<(adr: Address) => Byte>(0x10000 / BLOCK_SIZE)
-  private writerFuncTable = new Array<(adr: Address, value: Byte) => void>(0x10000 / BLOCK_SIZE)
-  private readErrorReported: boolean
-  private writeErrorReported: boolean
 
   private $DEBUG: boolean
   private stepLogs: string[] = []
 
-  constructor() {
+  constructor(private bus: Bus) {
     this.$DEBUG = !!window.$DEBUG  // Accessing global variable!!!
 
     this.a = this.x = this.y = this.s = 0
-  }
-
-  public resetMemoryMap(): void {
-    this.readerFuncTable.fill(null)
-    this.writerFuncTable.fill(null)
-  }
-
-  public setReadMemory(start: Address, end: Address, func: (adr: Address) => Byte): void {
-    const startBlock = (start / BLOCK_SIZE) | 0
-    const endBlock = (end / BLOCK_SIZE) | 0
-    for (let i = startBlock; i <= endBlock; ++i)
-      this.readerFuncTable[i] = func
-  }
-
-  public setWriteMemory(start: Address, end: Address,
-                        func: (adr: Address, value: Byte) => void): void {
-    const startBlock = (start / BLOCK_SIZE) | 0
-    const endBlock = (end / BLOCK_SIZE) | 0
-    for (let i = startBlock; i <= endBlock; ++i)
-      this.writerFuncTable[i] = func
   }
 
   public reset(): void {
     this.p = IRQBLK_FLAG | BREAK_FLAG | RESERVED_FLAG
     this.s = (this.s - 3) & 0xff
     this.pc = this.read16(VEC_RESET)
-    this.readErrorReported = this.writeErrorReported = false
     this.stepLogs.length = 0
   }
 
@@ -223,7 +197,7 @@ export class Cpu {
   public step(): number {
     let pc = this.pc
     if (this.$DEBUG) {
-      this.addStepLog(disasm(this, pc))
+      this.addStepLog(disasm(this.bus, pc))
     }
     const op = this.read8(pc++)
     const inst = kInstTable[op]
@@ -250,7 +224,7 @@ export class Cpu {
       this.setNZFlag(this.a)
       break
     case 3:  // STA
-      this.write8(adr, this.a)
+      this.bus.write8(adr, this.a)
       break
 
     case 4:  // LDX
@@ -258,7 +232,7 @@ export class Cpu {
       this.setNZFlag(this.x)
       break
     case 5:  // STX
-      this.write8(adr, this.x)
+      this.bus.write8(adr, this.x)
       break
 
     case 6:  // LDY
@@ -266,7 +240,7 @@ export class Cpu {
       this.setNZFlag(this.y)
       break
     case 7:  // STY
-      this.write8(adr, this.y)
+      this.bus.write8(adr, this.y)
       break
 
     case 8:  // TAX
@@ -329,7 +303,7 @@ export class Cpu {
     case 18:  // INC
       {
         const value = inc8(this.read8(adr))
-        this.write8(adr, value)
+        this.bus.write8(adr, value)
         this.setNZFlag(value)
       }
       break
@@ -345,7 +319,7 @@ export class Cpu {
     case 21:  // DEC
       {
         const value = dec8(this.read8(adr))
-        this.write8(adr, value)
+        this.bus.write8(adr, value)
         this.setNZFlag(value)
       }
       break
@@ -380,7 +354,7 @@ export class Cpu {
         if (adr == null)
           this.a = newValue
         else
-          this.write8(adr, newValue)
+          this.bus.write8(adr, newValue)
         this.setNZCFlag(newValue, newCarry)
       }
       break
@@ -393,7 +367,7 @@ export class Cpu {
         if (adr == null)
           this.a = newValue
         else
-          this.write8(adr, newValue)
+          this.bus.write8(adr, newValue)
         this.setNZCFlag(newValue, newCarry)
       }
       break
@@ -405,7 +379,7 @@ export class Cpu {
         if (adr == null)
           this.a = newValue
         else
-          this.write8(adr, newValue)
+          this.bus.write8(adr, newValue)
         this.setNZCFlag(newValue, newCarry)
       }
       break
@@ -417,7 +391,7 @@ export class Cpu {
         if (adr == null)
           this.a = newValue
         else
-          this.write8(adr, newValue)
+          this.bus.write8(adr, newValue)
         this.setNZCFlag(newValue, newCarry)
       }
       break
@@ -552,26 +526,13 @@ export class Cpu {
   }
 
   public read8(adr: Address): Byte {
-    const value = this.read8Raw(adr)
+    const value = this.bus.read8(adr)
     if (this.watchRead[adr]) {
       this.paused = true
       console.warn(
         `Break because watched point read: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
     }
     return value
-  }
-
-  public read8Raw(adr: Address): Byte {
-    const block = (adr / BLOCK_SIZE) | 0
-    const reader = this.readerFuncTable[block]
-    if (!reader) {
-      if (!this.readErrorReported) {
-        console.error(`Illegal read at ${Util.hex(adr, 4)}, pc=${Util.hex(this.pc, 4)}`)
-        this.readErrorReported = true
-      }
-      return 0xbf  // Returns dummy value (undefined opcode, non plausible value).
-    }
-    return reader(adr)
   }
 
   public read16(adr: Address): Word {
@@ -584,25 +545,6 @@ export class Cpu {
     const lo = this.read8(adr)
     const hi = this.read8((adr & 0xff00) + ((adr + 1) & 0xff))
     return (hi << 8) | lo
-  }
-
-  public write8(adr: Address, value: Byte): void {
-    const block = (adr / BLOCK_SIZE) | 0
-    const writer = this.writerFuncTable[block]
-    if (!writer) {
-      if (!this.writeErrorReported) {
-        const sadr = Util.hex(adr, 4), spc = Util.hex(this.pc, 4), sv = Util.hex(value, 2)
-        console.error(`Illegal write at ${sadr}, pc=${spc}, ${sv}`)
-        this.writeErrorReported = true
-      }
-      return
-    }
-    if (this.watchWrite[adr]) {
-      this.paused = true
-      console.warn(
-        `Break because watched point write: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
-    }
-    return writer(adr, value)
   }
 
   public dump(start: Address, count: number): void {
@@ -618,15 +560,15 @@ export class Cpu {
   }
 
   private push(value: Word): void {
-    this.write8(0x0100 + this.s, value)
+    this.bus.write8(0x0100 + this.s, value)
     this.s = dec8(this.s)
   }
 
   private push16(value: Word): void {
     let s = this.s
-    this.write8(0x0100 + s, value >> 8)
+    this.bus.write8(0x0100 + s, value >> 8)
     s = dec8(s)
-    this.write8(0x0100 + s, value & 0xff)
+    this.bus.write8(0x0100 + s, value & 0xff)
     this.s = dec8(s)
   }
 

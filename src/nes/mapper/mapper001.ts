@@ -32,7 +32,7 @@ export class Mapper001 extends Mapper {
     this.maxPrg = (options.prgSize >> BANK_BIT) - 1
 
     // Serial: 5bits.
-    this.options.cpu.setWriteMemory(0x8000, 0xffff, (adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0xffff, (adr, value) => {
       if ((value & 0x80) !== 0) {  // Reset
         this.resetRegister()
         return
@@ -81,8 +81,8 @@ export class Mapper001 extends Mapper {
 
     // PRG RAM
     this.ram.fill(0xbf)
-    this.options.cpu.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
-    this.options.cpu.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
+    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.options.bus.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
 
     this.setPrgBank(0, 0xff)
   }

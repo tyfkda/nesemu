@@ -619,20 +619,22 @@ export class TraceWnd extends Wnd {
 
   public updateStatus(): void {
     const cpu = this.nes.cpu
-    const op = cpu.read8Raw(cpu.pc)
+    const bus = this.nes.cpu
+    const pc = cpu.pc
+    const op = bus.read8(pc)
     const inst = kInstTable[op] || kIllegalInstruction
 
     for (let i = 0; i < inst.bytes; ++i) {
-      const m = cpu.read8Raw(cpu.pc + i)
+      const m = bus.read8(pc + i)
       this.mem[i] = m
       this.bins[i] = Util.hex(m, 2)
     }
     for (let i = inst.bytes; i < MAX_BYTES; ++i)
       this.bins[i] = '  '
 
-    const pcStr = Util.hex(cpu.pc, 4)
+    const pcStr = Util.hex(pc, 4)
     const binStr = this.bins.join(' ')
-    const asmStr = disassemble(inst, this.mem, 1, cpu.pc)
+    const asmStr = disassemble(inst, this.mem, 1, pc)
     this.putConsole(`${pcStr}: ${binStr}   ${asmStr}`)
   }
 
