@@ -1,6 +1,7 @@
 // NES: Nintendo Entertainment System
 
 import {Apu} from './apu'
+import {Bus} from './bus'
 import {kColors} from './const'
 import {Cpu} from './cpu'
 import {Ppu, MirrorMode} from './ppu'
@@ -48,8 +49,9 @@ function loadChrRom(romData: Uint8Array): Uint8Array {
 }
 
 export class Nes implements PrgBankController {
-  public cpu: Cpu
   public ram = new Uint8Array(RAM_SIZE)
+  public bus: Bus
+  public cpu: Cpu
   public ppu: Ppu
   public apu: Apu
   public cycleCount = 0
@@ -73,7 +75,8 @@ export class Nes implements PrgBankController {
   }
 
   constructor() {
-    this.cpu = new Cpu()
+    this.bus = new Bus()
+    this.cpu = new Cpu(this.bus)
     this.ppu = new Ppu()
     this.apu = new Apu(() => { this.cpu.requestIrq() })
     this.vblankCallback = (_leftV) => {}
@@ -183,22 +186,22 @@ export class Nes implements PrgBankController {
   }
 
   private setMemoryMap(mapperNo: number): void {
-    const cpu = this.cpu
-    cpu.resetMemoryMap()
+    const bus = this.bus
+    bus.clearMemoryMap()
 
-    cpu.setReadMemory(0x2000, 0x3fff, (adr) => {  // PPU
+    bus.setReadMemory(0x2000, 0x3fff, (adr) => {  // PPU
       const reg = adr & 7
       return this.ppu.read(reg)
     })
-    cpu.setWriteMemory(0x2000, 0x3fff, (adr, value) => {  // PPU
+    bus.setWriteMemory(0x2000, 0x3fff, (adr, value) => {  // PPU
       const reg = adr & 7
       this.ppu.write(reg, value)
     })
 
-    cpu.setReadMemory(0x4000, 0x5fff, (adr) => {  // APU
+    bus.setReadMemory(0x4000, 0x5fff, (adr) => {  // APU
       return this.apu.read(adr)
     })
-    cpu.setWriteMemory(0x4000, 0x5fff, (adr, value) => {  // APU
+    bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => {  // APU
       switch (adr) {
       case OAMDMA:
         if (0 <= value && value <= 0x1f) {  // RAM
@@ -220,7 +223,7 @@ export class Nes implements PrgBankController {
                     0x2000,  // 0xa000~
                     -0x4000 & prgMask,  // 0xc000~
                     -0x2000 & prgMask]  // 0xe000~
-    cpu.setReadMemory(0x8000, 0xffff, (adr) => {
+    bus.setReadMemory(0x8000, 0xffff, (adr) => {
       const bank = (adr - 0x8000) >> 13
       const offset = adr & ((1 << 13) - 1)
       const prgSize = this.romData.length
@@ -228,8 +231,8 @@ export class Nes implements PrgBankController {
     })
 
     // RAM
-    cpu.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])
-    cpu.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
+    bus.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])
+    bus.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
 
     this.mapper = this.createMapper(mapperNo)
   }
