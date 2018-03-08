@@ -105,11 +105,6 @@ class JsScreenWnd extends ScreenWnd {
     this.setContent(this.canvas)
   }
 
-  public close(): void {
-    //this.stream.triggerDestroy()
-    super.close()
-  }
-
   public render(): void {
     this.jsNes.render(this.imageData.data)
     this.context.putImageData(this.imageData, 0, 0)
@@ -184,6 +179,20 @@ export class JsApp extends App {
     this.wndMgr.add(this.jsScreenWnd)
     if (option.title)
       this.jsScreenWnd.setTitle(option.title as string)
+
+    this.subscription = this.stream
+      .subscribe(type => {
+        switch (type) {
+        case AppEvent.Type.DESTROY:
+          this.cleanUp()
+          if (option.onClosed)
+            option.onClosed(this)
+          break
+        case AppEvent.Type.RESET:
+          this.nes.reset()
+          break
+        }
+      })
 
     this.nes = this.jsNes
     this.screenWnd = this.jsScreenWnd
