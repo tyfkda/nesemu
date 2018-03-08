@@ -56,7 +56,14 @@ class Main {
       break
     case 'js':
       {
-        const jsApp = new JsApp(this.wndMgr, {title: file.name, centerX: x, centerY: y})
+        const jsApp = new JsApp(this.wndMgr, {
+          title: file.name,
+          centerX: x,
+          centerY: y,
+          onClosed: (app) => {
+            this.removeApp(app)
+          },
+        })
         jsApp.setFile(file)
         this.apps.push(jsApp)
       }
