@@ -17,21 +17,59 @@
     })
   }
 
-
   function formatNumLiteral(literal) {
-    if (literal[0] === '<')
-      return `LO(${formatNumLiteral(literal.substring(1))})`
-    if (literal[0] === '>')
-      return `HI(${formatNumLiteral(literal.substring(1))})`
+    let p = literal
 
-    let m
-    m = literal.match(/^\$([0-9a-fA-F]+)$/)
-    if (m)
-      return `0x${m[1]}`
-    m = literal.match(/^%([01]+)$/)
-    if (m)
-      return `0x${parseInt(m[1], 2).toString(16)}`
-    return literal
+    function parseAtom() {
+      p = p.trimLeft()
+      if (p[0] === '<') {
+        p = p.substring(1)
+        return `LO(${parseAtom()})`
+      }
+      if (p[0] === '>') {
+        p = p.substring(1)
+        return `HI(${parseAtom()})`
+      }
+
+      let m
+      m = p.match(/^\$([0-9a-fA-F]+)(.*)$/)
+      if (m) {
+        p = m[2]
+        return `0x${m[1]}`
+      }
+      m = p.match(/^%([01]+)(.*)$/)
+      if (m) {
+        p = m[2]
+        return `0x${parseInt(m[1], 2).toString(16)}`
+      }
+      m = p.match(/^(\w+)(.*)/)
+      if (m) {
+        p = m[2]
+        return m[1]
+      }
+      return null
+    }
+
+    function parseExp() {
+      const t1 = parseAtom()
+      if (t1 == null)
+        return null
+      const m = p.match(/^\s*([+\-*\/<>])(.*)/)
+      if (!m)
+        return t1
+      p = m[2]
+      const op = m[1]
+      const t2 = parseExp()
+      if (t2 == null)
+        return null
+      return `${t1} ${op} ${t2}`
+    }
+
+    const result = parseExp()
+    if (result == null || p.trim() !== '') {
+      throw new Error(`Illegal expression: ${literal} (at ${p})`)
+    }
+    return result
   }
 
   class Line {
@@ -83,6 +121,7 @@
       super()
       this.name = name
       this.comment = comment
+      this.isRomDataLabel = false
     }
 
     toString() {
@@ -141,6 +180,8 @@
       case 'RTS':
       case 'RTI':
         return `\tpc=${this.opcode}(${this.operand ? this.operand : ''}); break  ${this.comment ? '// ' + this.comment : ''}`
+      case 'CALLJS':
+        return `\t${this.operand}  ${this.comment ? '// ' + this.comment : ''}`
       default:
         return `\t${this.opcode}(${this.operand ? this.operand : ''})  ${this.comment ? '// ' + this.comment : ''}`
       }
@@ -170,7 +211,7 @@
           if (m) {
             return `\t${this.opcode}_indirect_${second}(${formatNumLiteral(m[1])})  ${this.comment ? '// ' + this.comment : ''}`
           } else {
-            return `\t${this.opcode}_${second}(${operands[0]})  ${this.comment ? '// ' + this.comment : ''}`
+            return `\t${this.opcode}_${second}(${formatNumLiteral(operands[0])})  ${this.comment ? '// ' + this.comment : ''}`
           }
         }
       }
@@ -201,7 +242,7 @@
           if (m) {
             return `\t${this.opcode}_indirect_${second}(${formatNumLiteral(m[1])})  ${this.comment ? '// ' + this.comment : ''}`
           } else {
-            return `\t${this.opcode}_${second}(${operands[0]})  ${this.comment ? '// ' + this.comment : ''}`
+            return `\t${this.opcode}_${second}(${formatNumLiteral(operands[0])})  ${this.comment ? '// ' + this.comment : ''}`
           }
         }
       }
@@ -235,7 +276,7 @@
           if (m) {
             return `\t${this.opcode}_indirect_${second}(${formatNumLiteral(m[1])})  ${this.comment ? '// ' + this.comment : ''}`
           } else {
-            return `\t${this.opcode}_${second}(${operands[0]})  ${this.comment ? '// ' + this.comment : ''}`
+            return `\t${this.opcode}_${second}(${formatNumLiteral(operands[0])})  ${this.comment ? '// ' + this.comment : ''}`
           }
         }
       }
@@ -249,6 +290,25 @@
       } else {
         return `\tpc=${this.opcode}(${this.operand}); break  ${this.comment ? '// ' + this.comment : ''}`
       }
+    }
+  }
+
+  class ByteData {
+    constructor(label, directives) {
+      this.label = label
+
+      // データ生成
+      const data = []
+      for (let d of directives) {
+        for (let e of d.operand.split(',')) {
+          data.push(e.trim())
+        }
+      }
+      this.data = data
+    }
+
+    getSize() {
+      return this.data.length
     }
   }
 
@@ -266,7 +326,7 @@
     if (m)
       return new Comment(m[1])
 
-    m = line.match(/^(\w+)\s*=\s*([<>]?\$[0-9a-fA-F]+|[0-9]+|%[01]+)(\s+;(.*))?$/)
+    m = line.match(/^(\w+)\s*=\s*([^;]*)(;(.*))?$/)
     if (m)
       return new Definition(m[1], m[2], m[4])
 
@@ -300,72 +360,156 @@
     return null
   }
 
-  function outputDefinitions(lines) {
-    console.log('  // Definitions')
-    for (let line of lines) {
-      if (line instanceof Definition) {
-        console.log(`  const ${line.toString()}`.trimRight())
-      }
+  // ================================================
+  class Converter{
+    constructor(lines) {
+      this.lines = lines
     }
-  }
 
-  function outputProgram(lines, pass) {
-    if (pass === 1) {
-      // Labels
+    buildLabels() {
+      this.doOutputProgram(0)
+    }
+
+    outputLabels() {
+      // Call after buildLabels()
       console.log('  // Lables')
-      for (let line of lines) {
-        if (line instanceof Label) {
+      for (let line of this.lines) {
+        if ((line instanceof Label) && !line.isRomDataLabel) {
           console.log(`  const ${line.name} = ${line.pcNo}`)
         }
       }
 
+      // Rom data addresses
+      console.log('\n  // Rom data addresses')
+      for (let rd of this.romData) {
+        console.log(`  const ${rd.label.name} = 0x${rd.label.pcNo.toString(16)}`)
+      }
+    }
+
+    outputDefinitions() {
+      console.log('  // Definitions')
+      for (let line of this.lines) {
+        if (line instanceof Definition) {
+          console.log(`  const ${line.toString()}`.trimRight())
+        }
+      }
+    }
+
+    listupRomData() {
+      let addr = 0x8000
+      this.romData = []
+      for (let i = 0; i < this.lines.length; ++i) {
+        const line = this.lines[i]
+        if (!(line instanceof Label))
+          continue
+
+        const label = line
+        // Directive
+        let j = i
+        for (; ++j < this.lines.length;) {
+          if (!(this.lines[j] instanceof Directive) ||
+              this.lines[j].opcode !== '.db')
+            break
+        }
+        if (j === i + 1) {
+          // データが続いていない：
+          // 複数のラベルが並んだ後にデータが来ているかチェック
+          for (j = i; ++j < this.lines.length;) {
+            if (!(this.lines[j] instanceof Label))
+              break
+          }
+          if (j < this.lines.length && (this.lines[j] instanceof Directive) &&
+              this.lines[j].opcode === '.db') {
+            label.isRomDataLabel = true
+            label.pcNo = addr
+            const directives = []
+            const byteData = new ByteData(label, directives)
+            this.romData.push(byteData)
+            // No need to add addr, because the size equals 0.
+          }
+        } else {
+          label.isRomDataLabel = true
+          label.pcNo = addr
+          const directives = this.lines.slice(i + 1, j)
+          const byteData = new ByteData(label, directives)
+          this.romData.push(byteData)
+          addr += byteData.getSize()
+        }
+      }
+    }
+
+    outputRomData() {
+      console.log(`
+  // Rom data
+  const ROM_DATA = [`)
+      let totalSize = 0
+      for (let rd of this.romData) {
+        console.log(`    // ${rd.label.name}: 0x${rd.label.pcNo.toString(16)}`)
+        if (rd.data.length === 0) {
+          console.log(`    // Empty`)
+        } else {
+          const data = rd.data.map(d => formatNumLiteral(d)).join(', ')
+          console.log(`    ${data},`)
+        }
+        totalSize += rd.getSize()
+      }
+      console.log(`  ]  // Total size: ${totalSize}`)
+    }
+
+    outputProgram() {
       console.log(`
 function step(pc) {
   switch (pc) {
   case -1:  // Dummy
 `)
-    }
-    let pc = 0
-    let emptyLineCount = 0
-    for (let i = 0; i < lines.length; ++i) {
-      let line = lines[i]
-      let s
-      let emptyLine = false
-      line.pcNo = pc
-      if (line instanceof Comment) {
-        emptyLine = !line.comment
-        s = `${line.toString()}`
-      } else if (line instanceof Directive) {
-        s = `// ${line.toString()}`
-      } else if (line instanceof Definition) {
-        emptyLine = true
-        s = '//'
-      } else if (line instanceof Label) {
-        s = `// ${line.toString()}`
-      } else {
-          s = `  pc=${pc}; break; case ${pc}: ${line.toString()}`
-          ++pc
-      }
-      if (pass === 1) {
-        if (!emptyLine) {
-          emptyLineCount = 0
-        } else {
-          ++emptyLineCount
-          if (emptyLineCount > 1)
-            s = null
-        }
-        if (s) {
-          console.log(s.trimRight())
-        } else {
-        }
-      }
-    }
-    if (pass === 1) {
+
+      const pc = this.doOutputProgram(1)
+
       console.log(`\
     pc=${pc}; case ${pc}: break
   }
   return pc
 }`)
+    }
+
+    doOutputProgram(pass) {
+      let pc = 0
+      let emptyLineCount = 0
+      for (let i = 0; i < this.lines.length; ++i) {
+        let line = this.lines[i]
+        let s
+        let emptyLine = false
+        if (!((line instanceof Label) && line.isRomDataLabel))
+          line.pcNo = pc
+        if (line instanceof Comment) {
+          emptyLine = !line.comment
+          s = `${line.toString()}`
+        } else if (line instanceof Directive) {
+          s = `// ${line.toString()}`
+        } else if (line instanceof Definition) {
+          emptyLine = true
+          s = '//'
+        } else if (line instanceof Label) {
+          s = `// ${line.toString()}`
+        } else {
+          s = `  pc=${pc}; break; case ${pc}: ${line.toString()}`
+          ++pc
+        }
+        if (pass === 1) {
+          if (!emptyLine) {
+            emptyLineCount = 0
+          } else {
+            ++emptyLineCount
+            if (emptyLineCount > 1)
+              s = null
+          }
+          if (s) {
+            console.log(s.trimRight())
+          } else {
+          }
+        }
+      }
+      return pc
     }
   }
 
@@ -381,12 +525,13 @@ function step(pc) {
       console.error(`Unknown line: ${line}`)
     }
   }, () => {
-    // Definitions first.
-    outputDefinitions(lines)
-
-    // Lines.
-    for (let pass = 0; pass < 2; ++pass)
-      outputProgram(lines, pass)
+    const converter = new Converter(lines)
+    converter.listupRomData()
+    // Buid labels
+    converter.buildLabels()
+    converter.outputLabels()
+    converter.outputDefinitions()
+    converter.outputRomData()
+    converter.outputProgram()
   })
-
 })()

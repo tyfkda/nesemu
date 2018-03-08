@@ -264,7 +264,7 @@ export class App {
     return this.hasCtrlWnd = true
   }
 
-  private cleanUp() {
+  protected cleanUp() {
     this.cancelLoopAnimation()
     this.destroying = true
     this.audioManager.destroy()
