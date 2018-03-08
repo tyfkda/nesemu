@@ -253,7 +253,7 @@ export class Cpu {
       break
     case 10:  // TXA
       this.a = this.x
-      this.setNZFlag(this.x)
+      this.setNZFlag(this.a)
       break
     case 11:  // TYA
       this.a = this.y
