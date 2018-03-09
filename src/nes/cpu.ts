@@ -73,7 +73,7 @@ const disasm = (() => {
     cycle: 0,
   }
   const mem = new Uint8Array(3)
-  const bins = new Array(3) as string[]
+  const bins = new Array<string>(3)
 
   return function disasm(bus: Bus, pc: number): string {
     const op = bus.read8(pc)

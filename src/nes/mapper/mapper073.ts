@@ -60,7 +60,8 @@ export class Mapper073 extends Mapper {
     // PRG RAM
     this.ram.fill(0xff)
     this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
-    this.options.bus.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.ram[adr & 0x1fff] = value })
+    this.options.bus.setWriteMemory(0x6000, 0x7fff,
+                                    (adr, value) => { this.ram[adr & 0x1fff] = value })
   }
 
   public reset() {

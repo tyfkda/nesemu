@@ -274,13 +274,13 @@ export class App {
     this.wndMgr = null
   }
 
-  private onVblank(leftV: number): void {
+  protected onVblank(leftV: number): void {
     if (leftV < 1)
       this.render()
     this.updateAudio()
   }
 
-  private onBreakPoint(): void {
+  protected onBreakPoint(): void {
     this.stream.triggerBreakPoint()
   }
 
@@ -329,11 +329,11 @@ export class App {
     this.nes.runCycles(cycles)
   }
 
-  private render(): void {
+  protected render(): void {
     this.stream.triggerRender()
   }
 
-  private updateAudio(): void {
+  protected updateAudio(): void {
     const apu = this.nes.apu
     for (let ch = 0; ch < AudioManager.CHANNEL_COUNT; ++ch) {
       const volume = apu.getVolume(ch)

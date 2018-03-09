@@ -43,6 +43,13 @@ export enum OpType {
   BRK,
 }
 
+export interface Instruction {
+  opType: OpType
+  addressing: Addressing
+  bytes: number
+  cycle: number
+}
+
 const kTable = [
   [0xea, OpType.NOP, Addressing.IMPLIED, 1, 2],
   // LDA
@@ -238,13 +245,6 @@ const kTable = [
 
   [0x00, OpType.BRK, Addressing.IMPLIED, 1, 7],
 ]
-
-export interface Instruction {
-  opType: OpType
-  addressing: Addressing
-  bytes: number
-  cycle: number
-}
 
 export const kInstTable: Instruction[] = (() => {
   const table = new Array<Instruction>(256)

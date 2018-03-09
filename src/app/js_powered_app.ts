@@ -30,6 +30,17 @@ class JsNes extends Nes {
     return new JsNes()
   }
 
+  private static createCanvas(width: number, height: number): HTMLCanvasElement {
+    const canvas = document.createElement('canvas') as HTMLCanvasElement
+    canvas.width = width
+    canvas.height = height
+    canvas.style.display = 'block'
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
+    Util.clearCanvas(canvas)
+    return canvas
+  }
+
   public constructor() {
     super()
     this.reset()
@@ -50,7 +61,7 @@ class JsNes extends Nes {
   public reload(): void {
     Util.loadFile(this.file)
       .then(data => {
-        //const jsCode = String.fromCharCode.apply('', data)
+        // const jsCode = String.fromCharCode.apply('', data)
         const jsCode = new TextDecoder('utf-8').decode(data)
         this.jsCpu = eval(jsCode)
         this.ppu.setChrData(this.jsCpu.getChrRom())
@@ -154,17 +165,6 @@ class JsScreenWnd extends ScreenWnd {
       },
     ])
   }
-
-  private static createCanvas(width: number, height: number): HTMLCanvasElement {
-    const canvas = document.createElement('canvas') as HTMLCanvasElement
-    canvas.width = width
-    canvas.height = height
-    canvas.style.display = 'block'
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
-    Util.clearCanvas(canvas)
-    return canvas
-  }
 }
 
 export class JsApp extends App {
@@ -232,13 +232,13 @@ export class JsApp extends App {
       if (this.destroying)
         return
 
-      //this.stream.triggerStartCalc()
+      // this.stream.triggerStartCalc()
       const curTime = window.performance.now()
       const elapsedTime = curTime - lastTime
       lastTime = curTime
 
       this.loop(elapsedTime)
-      //this.stream.triggerEndCalc()
+      // this.stream.triggerEndCalc()
       this.rafId = requestAnimationFrame(loopFn)
     }
     this.rafId = requestAnimationFrame(loopFn)
@@ -265,7 +265,7 @@ export class JsApp extends App {
     if (frameCount > 0) {
       for (let i = 0; i < frameCount; ++i) {
         this.jsNes.update()
-        //this.updateAudio()
+        // this.updateAudio()
       }
       this.jsScreenWnd.render()
 

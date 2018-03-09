@@ -59,8 +59,8 @@ function tryFullscreen(element: HTMLElement, callback: Function): boolean {
 }
 
 export class ScreenWnd extends Wnd {
-  private scaler: Scaler
   protected subscription: Pubsub.Subscription
+  private scaler: Scaler
 
   constructor(wndMgr: WindowManager)
   constructor(wndMgr: WindowManager, app: App, nes: Nes, stream: AppEvent.Stream)
