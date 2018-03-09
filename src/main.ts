@@ -7,6 +7,7 @@ import StorageUtil from './util/storage_util'
 import Util from './util/util'
 import WindowManager from './wnd/window_manager'
 import './nes/polyfill'
+import * as JSZip from 'jszip'
 
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
@@ -48,7 +49,17 @@ class Main {
     case 'zip':
       Util.loadFile(file)
         .then(binary => {
-          return Util.unzip(binary)
+          const zip = new JSZip()
+          return zip.loadAsync(binary)
+        })
+        .then((loadedZip: JSZip) => {
+          for (let fileName of Object.keys(loadedZip.files)) {
+            if (Util.getExt(fileName).toLowerCase() === 'nes') {
+              return loadedZip.files[fileName].async('uint8array')
+                .then(unzipped => Promise.resolve({unzipped, fileName}))
+            }
+          }
+          return Promise.reject('No .nes file included')
         })
         .then(({unzipped, fileName}) => {
           this.createAppFromRom(unzipped, fileName, x, y)

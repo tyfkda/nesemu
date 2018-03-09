@@ -1,5 +1,3 @@
-import * as JSZip from 'jszip'
-
 export default class Util {
   public static hex(x: number, order: number = 2): string {
     const s = x.toString(16)
@@ -40,20 +38,6 @@ export default class Util {
       }
       reader.readAsArrayBuffer(file)
     })
-  }
-
-  public static unzip(zipped: Uint8Array): Promise<any> {
-    const zip = new JSZip()
-    return zip.loadAsync(zipped)
-      .then((loadedZip: JSZip) => {
-        for (let fileName of Object.keys(loadedZip.files)) {
-          if (Util.getExt(fileName).toLowerCase() === 'nes') {
-            return loadedZip.files[fileName].async('uint8array')
-              .then(unzipped => Promise.resolve({unzipped, fileName}))
-          }
-        }
-        return Promise.reject('No .nes file included')
-      })
   }
 
   public static getExt(fileName: string): string {
