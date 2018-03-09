@@ -1,7 +1,7 @@
 import {Addressing, Instruction, OpType} from './inst'
 import Util from '../util/util'
 
-const kOpcode = {
+export const kOpcode = {
   [OpType.LDA]: 'LDA',
   [OpType.STA]: 'STA',
   [OpType.LDX]: 'LDX',
@@ -70,10 +70,10 @@ const kOpcode = {
   [OpType.NOP]: 'NOP',
 }
 
-export function disassemble(opInst: Instruction, mem: Uint8Array, start: number, pc: number): string
+export function disassemble(inst: Instruction, mem: Uint8Array, start: number, pc: number): string
 {
   let operand = ''
-  switch (opInst.addressing) {
+  switch (inst.addressing) {
   case Addressing.IMPLIED:
   case Addressing.ACCUMULATOR:
     break
@@ -112,16 +112,16 @@ export function disassemble(opInst: Instruction, mem: Uint8Array, start: number,
     break
   case Addressing.RELATIVE:
     {
-      let offset = mem[start]
+      const offset = mem[start]
       if (offset < 0x80)
-        operand = ` +${offset}  ; $${Util.hex(pc + opInst.bytes + offset, 4)}`
+        operand = ` +${offset}  ; $${Util.hex(pc + inst.bytes + offset, 4)}`
       else
-        operand = ` ${offset - 256}  ; \$${Util.hex(pc + opInst.bytes + offset - 256, 4)}`
+        operand = ` ${offset - 256}  ; \$${Util.hex(pc + inst.bytes + offset - 256, 4)}`
     }
     break
   default:
-    console.error(`Unhandled addressing: ${opInst.addressing}`)
+    console.error(`Unhandled addressing: ${inst.addressing}`)
     break
   }
-  return `${kOpcode[opInst.opType]}${operand}`
+  return `${kOpcode[inst.opType]}${operand}`
 }
