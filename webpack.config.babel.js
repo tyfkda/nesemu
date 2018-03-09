@@ -1,4 +1,4 @@
-var webpack = require('webpack')
+const webpack = require('webpack')
 
 module.exports = {
   context: __dirname + '/src',
@@ -14,11 +14,11 @@ module.exports = {
     new webpack.optimize.CommonsChunkPlugin({ name: ['main', 'lib'], minChunks: Infinity }),
   ],
   resolve: {
-    extensions: ['.ts', '.js', '.tsx', '.jsx']
+    extensions: ['.ts', '.js', '.tsx', '.jsx'],
   },
   module: {
     loaders: [
       { test: /\.ts$/, exclude: /node_modules/, loader: 'babel-loader!awesome-typescript-loader' },
     ],
-  }
+  },
 }
