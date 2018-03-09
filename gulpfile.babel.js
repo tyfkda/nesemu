@@ -88,8 +88,8 @@ gulp.task('watch-html', [], () => {
 gulp.task('ts', () => {
   const config = clone(webpackConfig)
   config.devtool = '#cheap-module-source-map'
-  return gulp.src([`${SRC_TS_DIR}/main.js`,
-                   `${SRC_TS_DIR}/lib.js`])
+  return gulp.src([`${SRC_TS_DIR}/main.ts`,
+                   `${SRC_TS_DIR}/lib.ts`])
     .pipe(plumber())
     .pipe(webpack(config, require('webpack')))
     .pipe(gulp.dest(ASSETS_DIR))
