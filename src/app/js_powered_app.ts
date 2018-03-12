@@ -30,17 +30,6 @@ class JsNes extends Nes {
     return new JsNes()
   }
 
-  private static createCanvas(width: number, height: number): HTMLCanvasElement {
-    const canvas = document.createElement('canvas') as HTMLCanvasElement
-    canvas.width = width
-    canvas.height = height
-    canvas.style.display = 'block'
-    canvas.style.width = '100%'
-    canvas.style.height = '100%'
-    Util.clearCanvas(canvas)
-    return canvas
-  }
-
   public constructor() {
     super()
     this.reset()
@@ -95,6 +84,17 @@ class JsScreenWnd extends ScreenWnd {
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private imageData: ImageData
+
+  private static createCanvas(width: number, height: number): HTMLCanvasElement {
+    const canvas = document.createElement('canvas') as HTMLCanvasElement
+    canvas.width = width
+    canvas.height = height
+    canvas.style.display = 'block'
+    canvas.style.width = '100%'
+    canvas.style.height = '100%'
+    Util.clearCanvas(canvas)
+    return canvas
+  }
 
   public constructor(wndMgr: WindowManager, private jsApp: JsApp, private jsNes: JsNes,
                      stream: AppEvent.Stream)
