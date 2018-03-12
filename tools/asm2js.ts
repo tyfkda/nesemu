@@ -72,71 +72,64 @@ function formatNumLiteral(literal) {
 }
 
 class Line {
-  constructor() {
-    this.pcNo = -1
-  }
+  public pcNo: number = -1
 }
 
 class Comment extends Line {
-  constructor(comment) {
+  constructor(public comment: string) {
     super()
-    this.comment = comment
   }
 
-  toString() {
+  public toString() {
     return `// ${this.comment}`
   }
 }
 
 class Definition extends Line {
-  constructor(name, value, comment) {
+  constructor(private name: string, private value: number, private comment: string) {
     super()
-    this.name = name
-    this.value = value
-    this.comment = comment
   }
 
-  toString() {
+  public toString() {
     const valStr = formatNumLiteral(this.value)
     return `${this.name} = ${valStr}  ${this.comment ? '// ' + this.comment : ''}`
   }
 }
 
 class Directive extends Line {
-  constructor(opcode, operand, comment) {
+  constructor(public opcode: string, public operand: string, private comment: string) {
     super()
-    this.opcode = opcode
-    this.operand = operand
-    this.comment = comment
   }
 
-  toString() {
+  public toString() {
     return `\t//${this.opcode}${this.operand ? '\t' + this.operand : ''}  ${this.comment ? '// ' + this.comment : ''}`
   }
 }
 
 class Label extends Line {
-  constructor(name, comment) {
+  public pcNo: number = 0
+  public isRomDataLabel = false
+
+  constructor(public name: string, private comment: string = null) {
     super()
-    this.name = name
-    this.comment = comment
-    this.isRomDataLabel = false
   }
 
-  toString() {
+  public toString() {
     return `${this.name}: (${this.pcNo})  ${this.comment ? '// ' + this.comment : ''}`
   }
 }
 
 class Op extends Line {
-  constructor(opcode, operand, comment) {
+  private operand: string
+
+  constructor(private opcode: string, operand: string, private comment: string) {
     super()
     this.opcode = opcode.trim().toUpperCase()
     this.operand = (operand ? operand : '').trim()
     this.comment = comment
   }
 
-  toString() {
+  public toString() {
     switch (this.opcode) {
     case 'LDA':
     case 'LDX':
@@ -186,7 +179,7 @@ class Op extends Line {
     }
   }
 
-  toStringLD() {
+  private toStringLD() {
     const operands = this.operand.split(',')
     switch (operands.length) {
     case 1:
@@ -217,7 +210,7 @@ class Op extends Line {
     return `\t${this.opcode}(${this.operand ? this.operand : ''})  ${this.comment ? '// ' + this.comment : ''}`
   }
 
-  toStringST() {
+  private toStringST() {
     const operands = this.operand.split(',')
     switch (operands.length) {
     case 1:
@@ -248,7 +241,7 @@ class Op extends Line {
     return `\t${this.opcode}(${this.operand ? this.operand : ''})  ${this.comment ? '// ' + this.comment : ''}`
   }
 
-  toStringARITH() {
+  private toStringARITH() {
     if (!this.operand)
       return `\t${this.opcode}()  ${this.comment ? '// ' + this.comment : ''}`
 
@@ -282,7 +275,7 @@ class Op extends Line {
     return `\t${this.opcode}(${this.operand ? this.operand : ''})  ${this.comment ? '// ' + this.comment : ''}`
   }
 
-  toStringJMP() {
+  private toStringJMP() {
     const m = this.operand.match(/^\((.*)\)$/)
     if (m) {
       return `\tpc=${this.opcode}_indirect(${formatNumLiteral(m[1])}); break  ${this.comment ? '// ' + this.comment : ''}`
@@ -293,11 +286,13 @@ class Op extends Line {
 }
 
 class ByteData {
-  constructor(label, directives) {
+  public data: string[]
+
+  constructor(public label: Label, directives: Directive[]) {
     this.label = label
 
     // データ生成
-    const data = []
+    const data = new Array<string>()
     for (let d of directives) {
       for (let e of d.operand.split(',')) {
         data.push(e.trim())
@@ -306,7 +301,7 @@ class ByteData {
     this.data = data
   }
 
-  getSize() {
+  public getSize() {
     return this.data.length
   }
 }
@@ -315,7 +310,7 @@ function parseMnemonic(opcode, operand, comment) {
   return new Op(opcode, operand, comment)
 }
 
-function parseLine(line) {
+function parseLine(line): Line | Line[] {
   let m
   m = line.match(/^\s*$/)
   if (m)
@@ -360,16 +355,17 @@ function parseLine(line) {
 }
 
 // ================================================
-class Converter{
-  constructor(lines) {
-    this.lines = lines
+class Converter {
+  private romData: ByteData[]
+
+  constructor(private lines: Line[]) {
   }
 
-  buildLabels() {
+  public buildLabels() {
     this.doOutputProgram(0)
   }
 
-  outputLabels() {
+  public outputLabels() {
     // Call after buildLabels()
     console.log('  // Lables')
     for (let line of this.lines) {
@@ -385,7 +381,7 @@ class Converter{
     }
   }
 
-  outputDefinitions() {
+  public outputDefinitions() {
     console.log('  // Definitions')
     for (let line of this.lines) {
       if (line instanceof Definition) {
@@ -394,7 +390,7 @@ class Converter{
     }
   }
 
-  listupRomData() {
+  public listupRomData() {
     let addr = 0x8000
     this.romData = []
     for (let i = 0; i < this.lines.length; ++i) {
@@ -407,7 +403,7 @@ class Converter{
       let j = i
       for (; ++j < this.lines.length;) {
         if (!(this.lines[j] instanceof Directive) ||
-            this.lines[j].opcode !== '.db')
+            (this.lines[j] as Directive).opcode !== '.db')
           break
       }
       if (j === i + 1) {
@@ -418,10 +414,10 @@ class Converter{
             break
         }
         if (j < this.lines.length && (this.lines[j] instanceof Directive) &&
-            this.lines[j].opcode === '.db') {
+            (this.lines[j] as Directive).opcode === '.db') {
           label.isRomDataLabel = true
           label.pcNo = addr
-          const directives = []
+          const directives = new Array<Directive>()
           const byteData = new ByteData(label, directives)
           this.romData.push(byteData)
           // No need to add addr, because the size equals 0.
@@ -429,7 +425,7 @@ class Converter{
       } else {
         label.isRomDataLabel = true
         label.pcNo = addr
-        const directives = this.lines.slice(i + 1, j)
+        const directives = this.lines.slice(i + 1, j) as Array<Directive>
         const byteData = new ByteData(label, directives)
         this.romData.push(byteData)
         addr += byteData.getSize()
@@ -437,7 +433,7 @@ class Converter{
     }
   }
 
-  outputRomData() {
+  public outputRomData() {
     console.log(`
   // Rom data
   const ROM_DATA = [`)
@@ -455,7 +451,7 @@ class Converter{
     console.log(`  ]  // Total size: ${totalSize}`)
   }
 
-  outputProgram() {
+  public outputProgram() {
     console.log(`
 function step(pc) {
   switch (pc) {
@@ -471,7 +467,7 @@ function step(pc) {
 }`)
   }
 
-  doOutputProgram(pass) {
+  private doOutputProgram(pass) {
     let pc = 0
     let emptyLineCount = 0
     for (let i = 0; i < this.lines.length; ++i) {
@@ -512,24 +508,26 @@ function step(pc) {
   }
 }
 
-const lines = []
-readAllLine(process.stdin, (line) => {
-  let item = parseLine(line)
-  if (item != null) {
-    if (Array.isArray(item))
-      Array.prototype.push.apply(lines, item)
-    else
-      lines.push(item)
-  } else {
-    console.error(`Unknown line: ${line}`)
-  }
-}, () => {
-  const converter = new Converter(lines)
-  converter.listupRomData()
-  // Buid labels
-  converter.buildLabels()
-  converter.outputLabels()
-  converter.outputDefinitions()
-  converter.outputRomData()
-  converter.outputProgram()
-})
+{
+  const lines = new Array<Line>()
+  readAllLine(process.stdin, (line) => {
+    let item = parseLine(line)
+    if (item != null) {
+      if (Array.isArray(item))
+        Array.prototype.push.apply(lines, item)
+      else
+        lines.push(item)
+    } else {
+      console.error(`Unknown line: ${line}`)
+    }
+  }, () => {
+    const converter = new Converter(lines)
+    converter.listupRomData()
+    // Buid labels
+    converter.buildLabels()
+    converter.outputLabels()
+    converter.outputDefinitions()
+    converter.outputRomData()
+    converter.outputProgram()
+  })
+}
