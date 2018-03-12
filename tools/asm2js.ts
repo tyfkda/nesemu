@@ -1,7 +1,7 @@
 // 6502 assembler to JavaScript converter.
 'use strict'
 
-const readline = require('readline')
+import * as readline from 'readline'
 
 function readAllLine(input, lineCb, endCb) {
   const reader = readline.createInterface({
