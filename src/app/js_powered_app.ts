@@ -52,7 +52,9 @@ class JsNes extends Nes {
       .then(data => {
         // const jsCode = String.fromCharCode.apply('', data)
         const jsCode = new TextDecoder('utf-8').decode(data)
+        /* tslint:disable:no-eval */
         this.jsCpu = eval(jsCode)
+        /* tslint:enable:no-eval */
         this.ppu.setChrData(this.jsCpu.getChrRom())
         this.jsCpu.init(this.bus)
       })

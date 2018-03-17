@@ -91,8 +91,8 @@ class Main {
       title,
       centerX: x,
       centerY: y,
-      onClosed: (app) => {
-        this.removeApp(app)
+      onClosed: (_app) => {
+        this.removeApp(_app)
       },
     }
     const app = App.create(this.wndMgr, option)

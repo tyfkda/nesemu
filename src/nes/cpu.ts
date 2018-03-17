@@ -75,7 +75,7 @@ const disasm = (() => {
   const mem = new Uint8Array(3)
   const bins = new Array<string>(3)
 
-  return function disasm(bus: Bus, pc: number): string {
+  return function disasm_(bus: Bus, pc: number): string {
     const op = bus.read8(pc)
     const inst = kInstTable[op] || kIllegalInstruction
     for (let i = 0; i < inst.bytes; ++i) {
