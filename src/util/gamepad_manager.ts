@@ -41,7 +41,7 @@ export class GamepadManager {
   }
 
   public static getState(padNo: number): number {
-    if (GamepadManager.isSupported())
+    if (!GamepadManager.isSupported())
       return 0
     const gamepads = navigator.getGamepads()
     if (padNo >= gamepads.length)
