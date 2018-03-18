@@ -490,10 +490,10 @@ export class PatternTableWnd extends Wnd {
 }
 
 export class RegisterWnd extends Wnd {
-  private valueElems: HTMLInputElement[]
-  private subscription: Pubsub.Subscription
+  protected valueElems: HTMLInputElement[]
+  protected subscription: Pubsub.Subscription
 
-  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
+  public constructor(wndMgr: WindowManager, protected nes: Nes, protected stream: AppEvent.Stream) {
     super(wndMgr, 100, 160, 'Regs')
 
     const content = this.createContent()
@@ -531,7 +531,7 @@ export class RegisterWnd extends Wnd {
     super.close()
   }
 
-  private createContent(): HTMLElement {
+  protected createContent(): HTMLElement {
     const root = document.createElement('div')
     root.className = 'fixed-font'
 
