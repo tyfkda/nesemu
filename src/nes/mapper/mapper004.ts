@@ -14,6 +14,7 @@ export class Mapper004 extends Mapper {
   private irqHlineEnable = false
   private irqHlineValue = -1
   private irqHlineCounter = -1
+  private irqLatch = 0
 
   public static create(options: MapperOptions): Mapper {
     return new Mapper004(options)
@@ -59,13 +60,12 @@ export class Mapper004 extends Mapper {
     })
 
     // IRQ
-    let irqLatch = 0
     this.options.bus.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if ((adr & 1) === 0) {
-        irqLatch = value
-        this.setIrqHlineValue(irqLatch)
+        this.irqLatch = value
+        this.setIrqHlineValue(this.irqLatch)
       } else {
-        this.setIrqHlineValue(irqLatch)
+        this.setIrqHlineValue(this.irqLatch)
       }
     })
     this.options.bus.setWriteMemory(0xe000, 0xffff, (adr, value) => {
@@ -99,6 +99,7 @@ export class Mapper004 extends Mapper {
       irqHlineEnable: this.irqHlineEnable,
       irqHlineValue: this.irqHlineValue,
       irqHlineCounter: this.irqHlineCounter,
+      irqLatch: this.irqLatch,
     }
   }
 
@@ -109,6 +110,7 @@ export class Mapper004 extends Mapper {
     this.irqHlineEnable = saveData.irqHlineEnable
     this.irqHlineValue = saveData.irqHlineValue
     this.irqHlineCounter = saveData.irqHlineCounter
+    this.irqLatch = saveData.irqLatch
 
     this.setPrgBank(this.bankSelect)
     this.setChrBank(this.bankSelect)
