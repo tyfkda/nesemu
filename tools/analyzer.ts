@@ -1,6 +1,6 @@
 import * as fs from 'fs'
 
-import {Addressing, OpType, kInstTable} from '../src/nes/inst'
+import {Addressing, Instruction, OpType, kInstTable} from '../src/nes/inst'
 import {kOpcode} from '../src/nes/disasm'
 import Util from '../src/util/util'
 
@@ -50,7 +50,7 @@ class Analyzer {
   private endAdr = 0
   private entryPoints = new Array<number>()
   private stopPoints = new Set<number>()
-  private labels = new Map<number, object>()
+  private labels = new Map<number, any>()
   private blocks = new Array<Block>()
   private labelNameTable: object = {}
 
@@ -329,13 +329,13 @@ function main() {
 
   if (targets.length <= 0) {
     console.error('arg: [.nes file]')
-    return system.exit(1)
+    process.exit(1)
   }
 
   fs.readFile(targets[0], (err, data) => {
     if (err) {
       console.error(err)
-      return system.exit(1)
+      process.exit(1)
     }
 
     const analyzer = new Analyzer()

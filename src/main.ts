@@ -151,5 +151,5 @@ window.addEventListener('load', () => {
   GamepadManager.setUp()
 
   const root = document.getElementById('nesroot')
-  const main = new Main(root)
+  new Main(root)
 })
