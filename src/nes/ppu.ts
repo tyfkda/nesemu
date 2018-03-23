@@ -396,8 +396,43 @@ export class Ppu {
   }
 
   public render(pixels: Uint8ClampedArray): void {
-    this.renderBg()
-    this.renderSprite()
+    const n = this.hevents.count
+    let sprChrStart = 0
+    for (let i = 0; i < n; ++i) {
+      const h = this.hevents.events[i]
+      const hline0 = h.hcount
+      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : Const.HEIGHT
+      if (hline0 >= hline1)
+        continue
+
+      // BG
+      if ((h.ppuMask & SHOW_BG) === 0) {
+        this.clearBg(this.offscreen, hline0, hline1, Const.WIDTH)
+      } else {
+        const baseNameTable = (h.scrollCurr & 0x0c00) >> 10
+        const bgChrStart = getBgPatternTableAddress(h.ppuCtrl)
+        let x0 = 0
+        if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0) {
+          x0 = 8
+          this.clearBg(this.offscreen, hline0, hline1, x0)
+        }
+
+        const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
+        const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
+
+        this.doRenderBg(scrollX, scrollY, baseNameTable, hline0, hline1, x0,
+                        h.chrBankOffset, h.mirrorModeBit, bgChrStart)
+      }
+
+      // Sprite
+      if ((h.ppuMask & SHOW_SPRITE) !== 0) {
+        if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
+          sprChrStart = (this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9
+        const x0 = (h.ppuMask & SHOW_SPRITE_LEFT_8PX) ? 0 : 8
+        this.renderSprite2(hline0, hline1, x0, h.chrBankOffset, sprChrStart)
+      }
+    }
+
     copyOffscreenToPixels(this.offscreen, pixels, this.vram)
   }
 
@@ -504,34 +539,6 @@ export class Ppu {
     }
   }
 
-  private renderBg(): void {
-    const n = this.hevents.count
-    for (let i = 0; i < n; ++i) {
-      const h = this.hevents.events[i]
-      const hline0 = h.hcount
-      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : Const.HEIGHT
-      if (hline0 >= hline1)
-        continue
-      if ((h.ppuMask & SHOW_BG) === 0) {
-        this.clearBg(this.offscreen, hline0, hline1, Const.WIDTH)
-        continue
-      }
-      const baseNameTable = (h.scrollCurr & 0x0c00) >> 10
-      const chrStart = getBgPatternTableAddress(h.ppuCtrl)
-      let x0 = 0
-      if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0) {
-        x0 = 8
-        this.clearBg(this.offscreen, hline0, hline1, x0)
-      }
-
-      const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
-      const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
-
-      this.doRenderBg(scrollX, scrollY, baseNameTable, hline0, hline1, x0,
-                      h.chrBankOffset, h.mirrorModeBit, chrStart)
-    }
-  }
-
   private doRenderBg(scrollX: number, scrollY: number,
                      baseNameTable: Address, hline0: number, hline1: number, x0: number,
                      chrBankOffset: number[], mirrorModeBit: number, chrStart: Address): void
@@ -591,24 +598,6 @@ export class Ppu {
 
   private isSprite8x16(): boolean {
     return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
-  }
-
-  private renderSprite(): void {
-    let chrStart = 0
-    const n = this.hevents.count
-    for (let i = 0; i < n; ++i) {
-      const h = this.hevents.events[i]
-      if ((h.ppuMask & SHOW_SPRITE) === 0)
-        continue
-      const hline0 = h.hcount
-      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : Const.HEIGHT
-      if (hline0 >= hline1)
-        continue
-      if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
-        chrStart = ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
-      const x0 = (h.ppuMask & SHOW_SPRITE_LEFT_8PX) ? 0 : 8
-      this.renderSprite2(hline0, hline1, x0, h.chrBankOffset, chrStart)
-    }
   }
 
   private renderSprite2(hline0: number, hline1: number, x0: number,
