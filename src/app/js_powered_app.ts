@@ -36,20 +36,19 @@ class JsNes extends Nes {
     this.reset()
   }
 
-  public setFile(file: File): boolean {
+  public setFile(file: File): Promise<void> {
     if (file == null)
-      return false
+      return Promise.reject('null')
     this.file = file
 
     // TODO: Detect mapper.
     this.setMemoryMap(0)
 
-    this.reload()
-    return true
+    return this.reload()
   }
 
-  public reload(): void {
-    Util.loadFile(this.file)
+  public reload(): Promise<void> {
+    return Util.loadFile(this.file)
       .then(data => {
         // const jsCode = String.fromCharCode.apply('', data)
         const jsCode = new TextDecoder('utf-8').decode(data)
@@ -58,6 +57,7 @@ class JsNes extends Nes {
         /* tslint:enable:no-eval */
         this.ppu.setChrData(this.jsCpu.getChrRom())
         this.jsCpu.init(this.bus)
+        return Promise.resolve()
       })
   }
 
@@ -290,13 +290,12 @@ export class JsApp extends App {
     this.setUpKeyEvent(this.screenWnd.getRootElement(), this.padKeyHandler)
   }
 
-  public setFile(file: File): boolean {
+  public setFile(file: File): void {
     this.cancelLoopAnimation()
-    if (!this.jsNes.setFile(file)) {
-      return false
-    }
-    this.startLoopAnimation()
-    return true
+    this.jsNes.setFile(file)
+      .then(() => {
+        this.startLoopAnimation()
+      })
   }
 
   public reload(): void {
