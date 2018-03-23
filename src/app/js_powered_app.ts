@@ -79,8 +79,6 @@ class JsNes extends Nes {
   }
 
   public render(pixels: Uint8ClampedArray): void {
-    this.ppu.setVBlank()
-    this.ppu.clearVBlank()
     this.ppu.render(pixels)
   }
 
@@ -345,8 +343,10 @@ export class JsApp extends App {
     let frameCount = Math.min((et * 60 / 1000) | 0, MAX_FRAME_COUNT)
     if (frameCount > 0) {
       for (let i = 0; i < frameCount; ++i) {
+        this.jsNes.ppu.clearVBlank()
         this.jsNes.update()
         // this.updateAudio()
+        this.jsNes.ppu.setVBlank()
       }
       this.jsScreenWnd.render()
 
