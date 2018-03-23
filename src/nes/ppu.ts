@@ -151,8 +151,7 @@ export class Ppu {
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
 
   constructor() {
-    for (let i = 0; i < 8; ++i)
-      this.chrBankOffset[i] = i << 10
+    this.reset()
   }
 
   public reset(): void {
