@@ -19,6 +19,7 @@ const MAX_FRAME_COUNT = 4
 interface JsCpu {
   init(bus: Bus): void
   getChrRom(): Uint8Array
+  reset(): void
   update(): void
   step(): void
   togglePause(): boolean
@@ -64,7 +65,8 @@ class JsNes extends Nes {
     this.ram.fill(0xff)
     this.ppu.reset()
     this.apu.reset()
-    this.cycleCount = 0
+    if (this.jsCpu != null)
+      this.jsCpu.reset()
   }
 
   public update(): void {
@@ -140,6 +142,13 @@ class JsScreenWnd extends ScreenWnd {
                 this.stream.triggerRun()
               else
                 this.stream.triggerPause()
+            },
+          },
+          {
+            label: 'Reset',
+            click: () => {
+              this.stream.triggerReset()
+//              this.stream.triggerRun()
             },
           },
           {
@@ -262,7 +271,7 @@ export class JsApp extends App {
           this.jsNes.step()
           break
         case AppEvent.Type.RESET:
-          this.nes.reset()
+          this.jsNes.reset()
           break
         }
       })
@@ -279,14 +288,14 @@ export class JsApp extends App {
 
     this.padKeyHandler = new PadKeyHandler()
     this.setUpKeyEvent(this.screenWnd.getRootElement(), this.padKeyHandler)
-
-    this.startLoopAnimation()
   }
 
   public setFile(file: File): boolean {
+    this.cancelLoopAnimation()
     if (!this.jsNes.setFile(file)) {
       return false
     }
+    this.startLoopAnimation()
     return true
   }
 
