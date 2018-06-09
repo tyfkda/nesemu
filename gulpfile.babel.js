@@ -5,7 +5,8 @@ const browserSync = require('browser-sync').create()
 
 // TypeScript
 import clone from 'clone'
-import webpack from 'webpack-stream'
+import webpack from 'webpack'
+import webpackStream from 'webpack-stream'
 import webpackConfig from './webpack.config.babel'
 import tslint from 'gulp-tslint'
 
@@ -91,7 +92,7 @@ gulp.task('ts', () => {
   return gulp.src([`${SRC_TS_DIR}/main.ts`,
                    `${SRC_TS_DIR}/lib.ts`])
     .pipe(plumber())
-    .pipe(webpack(config, require('webpack')))
+    .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(ASSETS_DIR))
 })
 
@@ -101,7 +102,7 @@ gulp.task('watch-ts', [], () => {
   config.devtool = '#cheap-module-source-map'
   gulp.src(SRC_TS_FILES)
     .pipe(plumber())
-    .pipe(webpack(config, require('webpack')))
+    .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(ASSETS_DIR))
     .pipe(browserSync.reload({stream: true}))
 })
@@ -175,12 +176,11 @@ gulp.task('release', ['build'], () => {
   convertHtml('release', RELEASE_DIR)
 
   // Concatenate ts into single 'assets/main.js' file.
-  const webpackRaw = require('webpack')
   const config = clone(webpackConfig)
   config.plugins = config.plugins || []
-  config.plugins.push(new webpackRaw.optimize.UglifyJsPlugin())
+  config.plugins.push(new webpack.optimize.UglifyJsPlugin())
   gulp.src(`${SRC_TS_DIR}/main.js`)
     .pipe(plumber())
-    .pipe(webpack(config))
+    .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(RELEASE_ASSETS_DIR))
 })
