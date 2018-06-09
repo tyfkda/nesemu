@@ -32,8 +32,3 @@ interface CSSStyleDeclaration {
   imageRendering: string
   resize: string
 }
-
-declare class TextDecoder {
-  constructor(code: string)
-  public decode(data: Uint8Array): string
-}
