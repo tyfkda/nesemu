@@ -1,24 +1,35 @@
-const webpack = require('webpack')
+import webpack from 'webpack'
 
 module.exports = {
   context: __dirname + '/src',
+  mode: "production",
   entry: {
+    lib: ['./lib.ts'],
     main: './main.ts',
-    lib: './lib.ts',
   },
   output: {
     path: __dirname + '/public/assets',
     filename: '[name].js',
+    sourceMapFilename: '[name].map',
   },
-  plugins: [
-    new webpack.optimize.CommonsChunkPlugin({ name: ['main', 'lib'], minChunks: Infinity }),
-  ],
   resolve: {
     extensions: ['.ts', '.js', '.tsx', '.jsx'],
   },
   module: {
-    loaders: [
-      { test: /\.ts$/, exclude: /node_modules/, loader: 'babel-loader!awesome-typescript-loader' },
+    rules: [
+      { test: /\.ts$/, exclude: /node_modules/, use: { loader: 'ts-loader' } },
     ],
+  },
+  optimization: {
+    splitChunks: {
+      cacheGroups: {
+        lib: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'lib',
+          enforce: true,
+          chunks: 'all',
+        },
+      },
+    },
   },
 }
