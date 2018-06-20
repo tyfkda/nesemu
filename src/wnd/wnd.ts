@@ -97,8 +97,8 @@ export default class Wnd {
   }
 
   public getWindowSize(): {width: number, height: number} {
-    const width = parseInt(this.root.style.width, 10)
-    const height = parseInt(this.root.style.height, 10)
+    const width = parseInt(this.root.style.width || '-1', 10)
+    const height = parseInt(this.root.style.height || '-1', 10)
     return { width, height }
   }
 
@@ -160,7 +160,7 @@ export default class Wnd {
     if (this.callback('close') === false)
       return  // Cancel close
     this.wndMgr.remove(this)
-    this.root = null
+    //this.root = null
   }
 
   public addResizeBox() {
@@ -347,7 +347,8 @@ export default class Wnd {
 
     // To handle earlier than menu open, pass useCapture=true
     const onClickOther = (event) => {
-      subItemHolder.parentNode.removeChild(subItemHolder)
+      if (subItemHolder.parentNode != null)
+        subItemHolder.parentNode.removeChild(subItemHolder)
       document.removeEventListener('click', onClickOther, true)
     }
     document.addEventListener('click', onClickOther, true)

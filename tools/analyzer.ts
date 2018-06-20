@@ -105,7 +105,7 @@ class Analyzer {
   public analyze(): void {
     while (this.entryPoints.length > 0) {
       const adr = this.entryPoints.pop()
-      if (this.isInBlock(adr))
+      if (adr == null || this.isInBlock(adr))
         continue
       this.analyzeEntry(adr)
     }
@@ -230,7 +230,7 @@ class Analyzer {
     const op = mem[pc]
     const inst = kInstTable[op]
 
-    const bins = []
+    const bins = new Array<string>()
     for (let i = 0; i < inst.bytes; ++i) {
       const m = mem[pc + i]
       bins.push(Util.hex(m, 2))

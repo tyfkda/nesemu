@@ -347,11 +347,12 @@ export class Cpu {
       break
     case 25:  // ROL
       {
-        const value = adr == null ? this.a : this.read8(adr)
+        const isAcc = inst.addressing == Addressing.ACCUMULATOR
+        const value = isAcc ? this.a : this.read8(adr)
         const oldCarry = (this.p & CARRY_FLAG) !== 0 ? 1 : 0
         const newCarry = (value & 0x80) !== 0
         const newValue = ((value << 1) | oldCarry) & 0xff
-        if (adr == null)
+        if (isAcc)
           this.a = newValue
         else
           this.bus.write8(adr, newValue)
@@ -360,11 +361,12 @@ export class Cpu {
       break
     case 26:  // ROR
       {
-        const value = adr == null ? this.a : this.read8(adr)
+        const isAcc = inst.addressing == Addressing.ACCUMULATOR
+        const value = isAcc ? this.a : this.read8(adr)
         const oldCarry = (this.p & CARRY_FLAG) !== 0 ? 0x80 : 0
         const newCarry = (value & 0x01) !== 0
         const newValue = (value >> 1) | oldCarry
-        if (adr == null)
+        if (isAcc)
           this.a = newValue
         else
           this.bus.write8(adr, newValue)
@@ -373,10 +375,11 @@ export class Cpu {
       break
     case 27:  // ASL
       {
-        const value = adr == null ? this.a : this.read8(adr)
+        const isAcc = inst.addressing == Addressing.ACCUMULATOR
+        const value = isAcc ? this.a : this.read8(adr)
         const newCarry = (value & 0x80) !== 0
         const newValue = (value << 1) & 0xff
-        if (adr == null)
+        if (isAcc)
           this.a = newValue
         else
           this.bus.write8(adr, newValue)
@@ -385,10 +388,11 @@ export class Cpu {
       break
     case 28:  // LSR
       {
-        const value = adr == null ? this.a : this.read8(adr)
+        const isAcc = inst.addressing == Addressing.ACCUMULATOR
+        const value = isAcc ? this.a : this.read8(adr)
         const newCarry = (value & 0x01) !== 0
         const newValue = (value >> 1) & 0xff
-        if (adr == null)
+        if (isAcc)
           this.a = newValue
         else
           this.bus.write8(adr, newValue)
@@ -548,7 +552,7 @@ export class Cpu {
   }
 
   public dump(start: Address, count: number): void {
-    const mem = []
+    const mem = new Array<Byte>()
     for (let i = 0; i < count; ++i) {
       mem.push(this.read8(i + start))
     }
@@ -619,7 +623,7 @@ export class Cpu {
     switch (addressing) {
     case Addressing.ACCUMULATOR:
     case Addressing.IMPLIED:
-      return null  // Dummy.
+      return 0  // Dummy.
     case Addressing.IMMEDIATE:
     case Addressing.RELATIVE:
       return pc
@@ -654,7 +658,7 @@ export class Cpu {
     default:
       console.error(`Illegal addressing: ${addressing}`)
       this.paused = true
-      return null
+      return 0
     }
   }
 

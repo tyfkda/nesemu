@@ -472,7 +472,7 @@ export class Ppu {
   }
 
   public dumpVram(start: Address, count: number): void {
-    const mem = []
+    const mem = new Array<Byte>()
     for (let i = 0; i < count; ++i) {
       mem.push(this.vram[getPpuAddr(start + i, this.mirrorModeBit)])
     }

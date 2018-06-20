@@ -62,10 +62,10 @@ export class ScreenWnd extends Wnd {
   protected subscription: Pubsub.Subscription
   private scaler: Scaler
 
-  constructor(wndMgr: WindowManager)
-  constructor(wndMgr: WindowManager, app: App, nes: Nes, stream: AppEvent.Stream)
-  constructor(wndMgr: WindowManager, protected app?: App, protected nes?: Nes,
-              protected stream?: AppEvent.Stream)
+  //constructor(wndMgr: WindowManager)
+  //constructor(wndMgr: WindowManager, app: App, nes: Nes, stream: AppEvent.Stream)
+  constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,
+              protected stream: AppEvent.Stream)
   {
     super(wndMgr, WIDTH * 2, HEIGHT * 2 + Wnd.MENUBAR_HEIGHT, 'NES')
     if (app == null || nes == null || stream == null)

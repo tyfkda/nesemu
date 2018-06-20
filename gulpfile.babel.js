@@ -88,6 +88,7 @@ gulp.task('watch-html', [], () => {
 
 gulp.task('ts', () => {
   const config = clone(webpackConfig)
+  config.mode = 'development'
   config.devtool = '#cheap-module-source-map'
   return gulp.src([`${SRC_TS_DIR}/main.ts`,
                    `${SRC_TS_DIR}/lib.ts`])
@@ -98,6 +99,7 @@ gulp.task('ts', () => {
 
 gulp.task('watch-ts', [], () => {
   const config = clone(webpackConfig)
+  config.mode = 'development'
   config.watch = true
   config.devtool = '#cheap-module-source-map'
   gulp.src(SRC_TS_FILES)
@@ -177,8 +179,8 @@ gulp.task('release', ['build'], () => {
 
   // Concatenate ts into single 'assets/main.js' file.
   const config = clone(webpackConfig)
-  config.plugins = config.plugins || []
-  config.plugins.push(new webpack.optimize.UglifyJsPlugin())
+  //config.plugins = config.plugins || []
+  //config.plugins.push(new webpack.optimize.UglifyJsPlugin())
   gulp.src(`${SRC_TS_DIR}/main.js`)
     .pipe(plumber())
     .pipe(webpackStream(config, webpack))

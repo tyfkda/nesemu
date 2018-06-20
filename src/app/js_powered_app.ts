@@ -106,10 +106,10 @@ class JsScreenWnd extends ScreenWnd {
   public constructor(wndMgr: WindowManager, private jsApp: JsApp, private jsNes: JsNes,
                      stream: AppEvent.Stream)
   {
-    super(wndMgr)
-    this.app = jsApp
-    this.nes = jsNes
-    this.stream = stream
+    super(wndMgr, jsApp, jsNes, stream)
+    //this.app = jsApp
+    //this.nes = jsNes
+    //this.stream = stream
 
     this.setUpMenuBar()
 
@@ -355,14 +355,14 @@ export class JsApp extends App {
   }
 
   public createRegisterWnd(): boolean {
-    if (this.hasRegisterWnd != null)
+    if (this.hasRegisterWnd)
       return false
     const registerWnd = new JsRegisterWnd(this.wndMgr, this.jsNes, this.stream)
     this.wndMgr.add(registerWnd)
     registerWnd.setPos(410, 500)
     registerWnd.setCallback(action => {
       if (action === 'close') {
-        this.hasRegisterWnd = null
+        this.hasRegisterWnd = false
       }
     })
 

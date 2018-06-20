@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "es2015",
     "target": "es6",
     "outDir": "dist",
     "rootDir": ".",
@@ -9,7 +9,8 @@
     "experimentalDecorators": true,
     "moduleResolution": "node",
     "noImplicitReturns": true,
-    "noUnusedLocals": true
+    "noUnusedLocals": true,
+    "strictNullChecks": true
   },
   "exclude": [
     "node_modules"

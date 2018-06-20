@@ -90,7 +90,7 @@ export class GamepadManager {
       const key = kKeyTable[i]
       switch (s.type) {
       default:
-        return null
+        break
       case Type.BUTTON:
         data[key] = {
           button: s.index,
@@ -166,7 +166,7 @@ function createButton(parent: HTMLElement, x: number, y: number, name: string,
 export class GamepadWnd extends Wnd {
   private destroying = false
   private buttons: HTMLElement[]
-  private selectedButton: HTMLElement
+  private selectedButton: HTMLElement|null = null
 
   public constructor(wndMgr: WindowManager) {
     super(wndMgr, 230, 150, 'Gamepad config')
@@ -258,7 +258,7 @@ export class GamepadWnd extends Wnd {
     }
   }
 
-  private setSelectedButton(btn: HTMLElement): void {
+  private setSelectedButton(btn: HTMLElement|null): void {
     if (this.selectedButton != null) {
       this.selectedButton.classList.remove('selected')
     }

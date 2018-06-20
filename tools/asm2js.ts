@@ -110,7 +110,7 @@ class Label extends Line {
   public pcNo: number = 0
   public isRomDataLabel = false
 
-  constructor(public name: string, private comment: string = null) {
+  constructor(public name: string, private comment?: string) {
     super()
   }
 
@@ -310,7 +310,7 @@ function parseMnemonic(opcode, operand, comment) {
   return new Op(opcode, operand, comment)
 }
 
-function parseLine(line): Line | Line[] {
+function parseLine(line): Line|Line[]|null {
   let m
   m = line.match(/^\s*$/)
   if (m)

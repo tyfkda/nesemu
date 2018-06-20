@@ -108,6 +108,9 @@ class Main {
 
   private setUpGamePadLink(): void {
     const gamepadText = document.getElementById('gamepad')
+    if (gamepadText == null)
+      return
+
     if (!GamepadManager.isSupported()) {
       gamepadText.style.display = 'none'
       return
@@ -151,5 +154,6 @@ window.addEventListener('load', () => {
   GamepadManager.setUp()
 
   const root = document.getElementById('nesroot')
-  new Main(root)
+  if (root != null)
+    new Main(root)
 })

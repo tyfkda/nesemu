@@ -58,7 +58,7 @@ export class Nes implements PrgBankController {
 
   private romData = new Uint8Array(0)
   private mapperNo = 0
-  private mapper: Mapper = null
+  private mapper: Mapper
   private vblankCallback: (leftV: number) => void
   private breakPointCallback: () => void
   private prgBank: number[]
@@ -81,6 +81,9 @@ export class Nes implements PrgBankController {
     this.apu = new Apu(() => { this.cpu.requestIrq() })
     this.vblankCallback = (_leftV) => {}
     this.breakPointCallback = () => {}
+
+    this.mapperNo = 0
+    this.mapper = this.createMapper(this.mapperNo)
   }
 
   public setVblankCallback(callback: (leftV: number) => void): void {
@@ -109,7 +112,7 @@ export class Nes implements PrgBankController {
     return {
       cpu: this.cpu.save(),
       ppu: this.ppu.save(),
-      mapper: this.mapper.save(),
+      mapper: this.mapper != null ? this.mapper.save() : null,
       ram: Util.convertUint8ArrayToBase64String(this.ram),
     }
   }
@@ -155,7 +158,7 @@ export class Nes implements PrgBankController {
     }
   }
 
-  public step(leftCycles?: number): number {
+  public step(leftCycles: number): number {
     const cycle = this.cpu.step()
     this.cycleCount = this.tryHblankEvent(this.cycleCount, cycle, leftCycles)
     return cycle

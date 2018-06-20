@@ -22,7 +22,7 @@ export class Mapper {
   }
 
   public save(): object {
-    return null
+    return {}
   }
 
   public load(_saveData: any): void {
