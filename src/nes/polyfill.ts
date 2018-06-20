@@ -24,9 +24,7 @@ if (!('fill' in Uint8Array.prototype)) {
 
 if (!Uint8Array.prototype.slice) {
   /* tslint:disable:no-invalid-this */
-  Uint8Array.prototype.slice = function(start, end) {
-    if (end == undefined)
-      end = this.length
+  Uint8Array.prototype.slice = function(start: number, end: number = this.length) {
     const sliced = new Uint8Array(end - start)
     for (let i = 0; i < sliced.length; ++i)
       sliced[i] = this[i + start]

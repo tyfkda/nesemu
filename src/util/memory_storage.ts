@@ -1,8 +1,8 @@
-export default class MemoryStorage {
-  private storage: any
+export default class MemoryStorage extends Storage {
+  private storage = {}
 
   constructor() {
-    this.storage = {}
+    super()
   }
 
   public setItem(key, value) {

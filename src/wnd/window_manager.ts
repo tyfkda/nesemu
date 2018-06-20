@@ -22,7 +22,7 @@ export default class WindowManager {
     this.removeWnd(wnd)
 
     const elem = wnd.getRootNode()
-    if (elem != null)
+    if (elem != null && elem.parentNode != null)
       elem.parentNode.removeChild(elem)
   }
 

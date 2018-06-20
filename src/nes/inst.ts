@@ -248,7 +248,7 @@ const kTable = [
 
 export const kInstTable: Instruction[] = (() => {
   const table = new Array<Instruction>(256)
-  table.fill(null)
+  //table.fill(null)
   kTable.forEach(inst => {
     const [code, opType, addressing, bytes, cycle] = inst
     table[code] = { opType, addressing, bytes, cycle }

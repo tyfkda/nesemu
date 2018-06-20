@@ -7,11 +7,11 @@ class SoundChannel {
   public destroy() {
     if (this.gainNode != null) {
       this.gainNode.disconnect()
-      this.gainNode = null
+      //this.gainNode = null
     }
     if (this.oscillator != null) {
       this.oscillator.disconnect()
-      this.oscillator = null
+      //this.oscillator = null
     }
   }
 
@@ -55,7 +55,7 @@ export class AudioManager {
   public static CHANNEL_COUNT = kChannelTypes.length
 
   private static initialized: boolean = false
-  private static context: AudioContext = null
+  private static context?: AudioContext
 
   private channels: SoundChannel[]
   private masterVolume: number = 0
@@ -73,13 +73,14 @@ export class AudioManager {
 
   constructor() {
     AudioManager.setUp()
-    if (AudioManager.context == null)
+    const context = AudioManager.context
+    if (context == null)
       return
 
     this.masterVolume = 1.0
     this.channels = kChannelTypes.map(type => {
       const sc = new SoundChannel()
-      sc.create(AudioManager.context, type)
+      sc.create(context, type)
       sc.start()
       return sc
     })
@@ -90,7 +91,7 @@ export class AudioManager {
       for (let channel of this.channels) {
         channel.destroy()
       }
-      this.channels = null
+      this.channels.length = 0
     }
   }
 
@@ -107,12 +108,13 @@ export class AudioManager {
   }
 
   public setMasterVolume(volume: number): void {
-    if (AudioManager.context == null)
+    const context = AudioManager.context
+    if (context == null)
       return
     this.masterVolume = volume
     if (volume <= 0) {
       this.channels.forEach(channel => {
-        channel.setVolume(0, AudioManager.context)
+        channel.setVolume(0, context)
       })
     }
   }

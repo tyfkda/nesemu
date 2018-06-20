@@ -37,7 +37,7 @@ function chooseFile(callback: (files: any) => void) {
 export class App {
   protected destroying = false
   protected isBlur = false
-  protected rafId: number  // requestAnimationFrame
+  protected rafId: number|null  // requestAnimationFrame
   protected nes: Nes
   protected padKeyHandler: PadKeyHandler
   protected audioManager = new AudioManager()
@@ -50,9 +50,9 @@ export class App {
   protected hasNameTableWnd: boolean
   protected hasPatternTableWnd: boolean
 
-  protected hasRegisterWnd: boolean
-  protected hasTraceWnd: boolean
-  protected hasCtrlWnd: boolean
+  protected hasRegisterWnd = false
+  protected hasTraceWnd = false
+  protected hasCtrlWnd = false
 
   public static create(wndMgr: WindowManager, option: any): App {
     return new App(wndMgr, option)
@@ -86,7 +86,7 @@ export class App {
           this.nes.cpu.pause(true)
           break
         case AppEvent.Type.STEP:
-          this.nes.step()
+          this.nes.step(0)
           break
         case AppEvent.Type.RESET:
           this.nes.reset()
@@ -235,14 +235,14 @@ export class App {
   }
 
   public createRegisterWnd(): boolean {
-    if (this.hasRegisterWnd != null)
+    if (this.hasRegisterWnd)
       return false
     const registerWnd = new RegisterWnd(this.wndMgr, this.nes, this.stream)
     this.wndMgr.add(registerWnd)
     registerWnd.setPos(410, 500)
     registerWnd.setCallback(action => {
       if (action === 'close') {
-        this.hasRegisterWnd = null
+        this.hasRegisterWnd = false
       }
     })
 
@@ -250,14 +250,14 @@ export class App {
   }
 
   public createControlWnd(): boolean {
-    if (this.hasCtrlWnd != null)
+    if (this.hasCtrlWnd)
       return false
     const ctrlWnd = new ControlWnd(this.wndMgr, this.stream)
     this.wndMgr.add(ctrlWnd)
     ctrlWnd.setPos(520, 500)
     ctrlWnd.setCallback((action) => {
       if (action === 'close') {
-        this.hasCtrlWnd = null
+        this.hasCtrlWnd = false
       }
     })
 
@@ -270,8 +270,6 @@ export class App {
     this.audioManager.destroy()
 
     this.subscription.unsubscribe()
-
-    this.wndMgr = null
   }
 
   protected onVblank(leftV: number): void {

@@ -14,13 +14,10 @@ function compactArray(array: any[]): void {
 }
 
 export class Subject<Type> {
-  private subscribers = new Array<Callback<Type>>()
+  private subscribers = new Array<Callback<Type>|null>()
   private anyRemoved = false
 
   public subscribe(callback: Callback<Type>): Subscription {
-    if (callback == null)
-      return null
-
     this.subscribers.push(callback)
     return {
       unsubscribe: () => {

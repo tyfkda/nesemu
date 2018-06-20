@@ -16,6 +16,8 @@ export default class Util {
 
   public static clearCanvas(canvas: HTMLCanvasElement): void {
     const context = canvas.getContext('2d')
+    if (context == null)
+      return
     context.strokeStyle = ''
     context.fillStyle = `rgb(64,64,64)`
     context.fillRect(0, 0, canvas.width, canvas.height)

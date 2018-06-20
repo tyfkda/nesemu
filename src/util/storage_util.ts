@@ -1,7 +1,7 @@
 // Local storage
 import MemoryStorage from './memory_storage'
 
-let storage = null
+let storage: Storage = window.localStorage
 let keyPrefix = ''
 
 // Set up.
@@ -31,13 +31,16 @@ export default class StorageUtil {
   // Get string value.
   public static get(key: any, defaultValue: string): string {
     const k = getKey(key)
-    return storage.getItem(k) != null ? storage.getItem(k) : defaultValue
+    return storage.getItem(k) || defaultValue
   }
 
   // Get int value.
   public static getInt(key: any, defaultValue: number): number {
     const k = getKey(key)
-    const value = parseInt(storage.getItem(k), 10)
+    const item = storage.getItem(k)
+    if (item == null)
+      return defaultValue
+    const value = parseInt(item, 10)
     if (isNaN(value))
       return defaultValue
     return value
@@ -46,7 +49,10 @@ export default class StorageUtil {
   // Get float value.
   public static getFloat(key: any, defaultValue: number): number {
     const k = getKey(key)
-    const value = parseFloat(storage.getItem(k))
+    const item = storage.getItem(k)
+    if (item == null)
+      return defaultValue
+    const value = parseFloat(item)
     if (isNaN(value))
       return defaultValue
     return value
