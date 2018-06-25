@@ -1,6 +1,6 @@
 // Instruction definitions
 
-export enum Addressing {
+export const enum Addressing {
   UNKNOWN,
   IMPLIED,
   ACCUMULATOR,
@@ -18,7 +18,7 @@ export enum Addressing {
   RELATIVE,
 }
 
-export enum OpType {
+export const enum OpType {
   UNKNOWN,
 
   NOP,

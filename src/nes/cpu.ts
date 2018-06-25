@@ -1,6 +1,6 @@
 // CPU: MOS 6502
 
-import {Addressing, kInstTable} from './inst'
+import {Addressing, OpType, kInstTable} from './inst'
 import {Bus} from './bus'
 import Util from '../util/util'
 import {Address, Byte, Word} from './types'
@@ -207,59 +207,59 @@ export class Cpu {
     // Dispatch
     switch (inst.opType) {
     default:
-    case 0:  // UNKNOWN
+    case OpType.UNKNOWN:
       break
-    case 1:  // NOP
+    case OpType.NOP:
       break
-    case 2:  // LDA
+    case OpType.LDA:
       this.a = this.read8(adr)
       this.setNZFlag(this.a)
       break
-    case 3:  // STA
+    case OpType.STA:
       this.write8(adr, this.a)
       break
 
-    case 4:  // LDX
+    case OpType.LDX:
       this.x = this.read8(adr)
       this.setNZFlag(this.x)
       break
-    case 5:  // STX
+    case OpType.STX:
       this.write8(adr, this.x)
       break
 
-    case 6:  // LDY
+    case OpType.LDY:
       this.y = this.read8(adr)
       this.setNZFlag(this.y)
       break
-    case 7:  // STY
+    case OpType.STY:
       this.write8(adr, this.y)
       break
 
-    case 8:  // TAX
+    case OpType.TAX:
       this.x = this.a
       this.setNZFlag(this.x)
       break
-    case 9:  // TAY
+    case OpType.TAY:
       this.y = this.a
       this.setNZFlag(this.y)
       break
-    case 10:  // TXA
+    case OpType.TXA:
       this.a = this.x
       this.setNZFlag(this.a)
       break
-    case 11:  // TYA
+    case OpType.TYA:
       this.a = this.y
       this.setNZFlag(this.a)
       break
-    case 12:  // TXS
+    case OpType.TXS:
       this.s = this.x
       break
-    case 13:  // TSX
+    case OpType.TSX:
       this.x = this.s
       this.setNZFlag(this.x)
       break
 
-    case 14:  // ADC
+    case OpType.ADC:
       {
         const carry = (this.p & CARRY_FLAG) !== 0 ? 1 : 0
         const operand = this.read8(adr)
@@ -270,7 +270,7 @@ export class Cpu {
         this.setOverFlow(overflow)
       }
       break
-    case 15:  // SBC
+    case OpType.SBC:
       // The 6502 overflow flag explained mathematically
       // http://www.righto.com/2012/12/the-6502-overflow-flag-explained.html
       {
@@ -284,15 +284,15 @@ export class Cpu {
       }
       break
 
-    case 16:  // INX
+    case OpType.INX:
       this.x = inc8(this.x)
       this.setNZFlag(this.x)
       break
-    case 17:  // INY
+    case OpType.INY:
       this.y = inc8(this.y)
       this.setNZFlag(this.y)
       break
-    case 18:  // INC
+    case OpType.INC:
       {
         const value = inc8(this.read8(adr))
         this.write8(adr, value)
@@ -300,15 +300,15 @@ export class Cpu {
       }
       break
 
-    case 19:  // DEX
+    case OpType.DEX:
       this.x = dec8(this.x)
       this.setNZFlag(this.x)
       break
-    case 20:  // DEY
+    case OpType.DEY:
       this.y = dec8(this.y)
       this.setNZFlag(this.y)
       break
-    case 21:  // DEC
+    case OpType.DEC:
       {
         const value = dec8(this.read8(adr))
         this.write8(adr, value)
@@ -316,28 +316,28 @@ export class Cpu {
       }
       break
 
-    case 22:  // AND
+    case OpType.AND:
       {
         const value = this.read8(adr)
         this.a &= value
         this.setNZFlag(this.a)
       }
       break
-    case 23:  // ORA
+    case OpType.ORA:
       {
         const value = this.read8(adr)
         this.a |= value
         this.setNZFlag(this.a)
       }
       break
-    case 24:  // EOR
+    case OpType.EOR:
       {
         const value = this.read8(adr)
         this.a ^= value
         this.setNZFlag(this.a)
       }
       break
-    case 25:  // ROL
+    case OpType.ROL:
       {
         const isAcc = inst.addressing === Addressing.ACCUMULATOR
         const value = isAcc ? this.a : this.read8(adr)
@@ -351,7 +351,7 @@ export class Cpu {
         this.setNZCFlag(newValue, newCarry)
       }
       break
-    case 26:  // ROR
+    case OpType.ROR:
       {
         const isAcc = inst.addressing === Addressing.ACCUMULATOR
         const value = isAcc ? this.a : this.read8(adr)
@@ -365,7 +365,7 @@ export class Cpu {
         this.setNZCFlag(newValue, newCarry)
       }
       break
-    case 27:  // ASL
+    case OpType.ASL:
       {
         const isAcc = inst.addressing === Addressing.ACCUMULATOR
         const value = isAcc ? this.a : this.read8(adr)
@@ -378,7 +378,7 @@ export class Cpu {
         this.setNZCFlag(newValue, newCarry)
       }
       break
-    case 28:  // LSR
+    case OpType.LSR:
       {
         const isAcc = inst.addressing === Addressing.ACCUMULATOR
         const value = isAcc ? this.a : this.read8(adr)
@@ -391,7 +391,7 @@ export class Cpu {
         this.setNZCFlag(newValue, newCarry)
       }
       break
-    case 29:  // BIT
+    case OpType.BIT:
       {
         const value = this.read8(adr)
         const result = this.a & value
@@ -401,21 +401,21 @@ export class Cpu {
         this.p = (this.p & ~mask) | (value & mask)
       }
       break
-    case 30:  // CMP
+    case OpType.CMP:
       {
         const value = this.read8(adr)
         const result = this.a - value
         this.setNZCFlag(result & 255, result >= 0)
       }
       break
-    case 31:  // CPX
+    case OpType.CPX:
       {
         const value = this.read8(adr)
         const result = this.x - value
         this.setNZCFlag(result & 255, result >= 0)
       }
       break
-    case 32:  // CPY
+    case OpType.CPY:
       {
         const value = this.read8(adr)
         const result = this.y - value
@@ -423,88 +423,88 @@ export class Cpu {
       }
       break
 
-    case 33:  // JMP
+    case OpType.JMP:
       this.pc = adr
       break
-    case 34:  // JSR
+    case OpType.JSR:
       this.push16(this.pc - 1)
       this.pc = adr
       break
-    case 35:  // RTS
+    case OpType.RTS:
       this.pc = this.pop16() + 1
       break
-    case 36:  // RTI
+    case OpType.RTI:
       this.p = this.pop() | RESERVED_FLAG
       this.pc = this.pop16()
       break
 
-    case 37:  // BCC
+    case OpType.BCC:
       cycle += this.branch(adr, (this.p & CARRY_FLAG) === 0)
       break
-    case 38:  // BCS
+    case OpType.BCS:
       cycle += this.branch(adr, (this.p & CARRY_FLAG) !== 0)
       break
-    case 39:  // BPL
+    case OpType.BPL:
       cycle += this.branch(adr, (this.p & NEGATIVE_FLAG) === 0)
       break
-    case 40:  // BMI
+    case OpType.BMI:
       cycle += this.branch(adr, (this.p & NEGATIVE_FLAG) !== 0)
       break
-    case 41:  // BNE
+    case OpType.BNE:
       cycle += this.branch(adr, (this.p & ZERO_FLAG) === 0)
       break
-    case 42:  // BEQ
+    case OpType.BEQ:
       cycle += this.branch(adr, (this.p & ZERO_FLAG) !== 0)
       break
-    case 43:  // BVC
+    case OpType.BVC:
       cycle += this.branch(adr, (this.p & OVERFLOW_FLAG) === 0)
       break
-    case 44:  // BVS
+    case OpType.BVS:
       cycle += this.branch(adr, (this.p & OVERFLOW_FLAG) !== 0)
       break
 
-    case 45:  // PHA
+    case OpType.PHA:
       this.push(this.a)
       break
-    case 46:  // PHP
+    case OpType.PHP:
       this.push(this.p | BREAK_FLAG)
       break
-    case 47:  // PLA
+    case OpType.PLA:
       this.a = this.pop()
       this.setNZFlag(this.a)
       break
-    case 48:  // PLP
+    case OpType.PLP:
       this.p = this.pop() | RESERVED_FLAG
       break
 
-    case 49:  // CLC
+    case OpType.CLC:
       this.p &= ~CARRY_FLAG
       break
-    case 50:  // SEC
+    case OpType.SEC:
       this.p |= CARRY_FLAG
       break
 
-    case 51:  // SEI
+    case OpType.SEI:
       this.p |= IRQBLK_FLAG
       break
-    case 52:  // CLI
+    case OpType.CLI:
       this.p &= ~IRQBLK_FLAG
       break
-    case 53:  // CLV
+    case OpType.CLV:
       this.p &= ~OVERFLOW_FLAG
       break
-    case 54:  // SED
+    case OpType.SED:
       // SED: normal to BCD mode
       // not implemented on NES
       this.p |= DECIMAL_FLAG
       break
-    case 55:  // CLD
+    case OpType.CLD:
       // CLD: BCD to normal mode
       // not implemented on NES
       this.p &= ~DECIMAL_FLAG
       break
 
-    case 56:  // BRK
+    case OpType.BRK:
       this.push16(this.pc + 1)
       this.push(this.p | BREAK_FLAG)
       this.pc = this.read16(VEC_IRQ)

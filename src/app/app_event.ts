@@ -1,7 +1,7 @@
 import * as Pubsub from '../util/pubsub'
 
 export namespace AppEvent {
-  export enum Type {
+  export const enum Type {
     RENDER = 1,
     RUN,
     PAUSE,

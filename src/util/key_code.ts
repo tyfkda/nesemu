@@ -1,4 +1,4 @@
-export enum KeyCode {
+export const enum KeyCode {
   // Controller 1
   SPACE = 32,
   RETURN = 13,

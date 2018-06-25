@@ -5,7 +5,7 @@ import StorageUtil from '../util/storage_util'
 import Util from '../util/util'
 
 // Type
-enum Type {
+const enum Type {
   AXIS,
   BUTTON,
 }

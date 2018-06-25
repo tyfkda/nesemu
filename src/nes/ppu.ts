@@ -52,7 +52,7 @@ const FLIP_VERT = 0x80
 const PALET_ADR = 0x3f00
 const PALET_END_ADR = 0x3fff
 
-export enum MirrorMode {
+export const enum MirrorMode {
   HORZ = 0,
   VERT = 1,
   SINGLE0 = 2,

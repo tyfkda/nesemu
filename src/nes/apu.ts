@@ -2,7 +2,7 @@
 
 import {Address, Byte} from './types'
 
-export enum PadBit {
+export const enum PadBit {
   A = 0,
   B = 1,
   SELECT = 2,
@@ -13,7 +13,7 @@ export enum PadBit {
   R = 7,
 }
 
-export enum PadValue {
+export const enum PadValue {
   A = 1 << PadBit.A,
   B = 1 << PadBit.B,
   SELECT = 1 << PadBit.SELECT,
@@ -24,7 +24,7 @@ export enum PadValue {
   R = 1 << PadBit.R,
 }
 
-export enum ChannelType {
+export const enum ChannelType {
   PULSE,
   TRIANGLE,
   SAWTOOTH,
