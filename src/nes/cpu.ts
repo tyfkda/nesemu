@@ -347,7 +347,7 @@ export class Cpu {
       break
     case 25:  // ROL
       {
-        const isAcc = inst.addressing == Addressing.ACCUMULATOR
+        const isAcc = inst.addressing === Addressing.ACCUMULATOR
         const value = isAcc ? this.a : this.read8(adr)
         const oldCarry = (this.p & CARRY_FLAG) !== 0 ? 1 : 0
         const newCarry = (value & 0x80) !== 0
@@ -361,7 +361,7 @@ export class Cpu {
       break
     case 26:  // ROR
       {
-        const isAcc = inst.addressing == Addressing.ACCUMULATOR
+        const isAcc = inst.addressing === Addressing.ACCUMULATOR
         const value = isAcc ? this.a : this.read8(adr)
         const oldCarry = (this.p & CARRY_FLAG) !== 0 ? 0x80 : 0
         const newCarry = (value & 0x01) !== 0
@@ -375,7 +375,7 @@ export class Cpu {
       break
     case 27:  // ASL
       {
-        const isAcc = inst.addressing == Addressing.ACCUMULATOR
+        const isAcc = inst.addressing === Addressing.ACCUMULATOR
         const value = isAcc ? this.a : this.read8(adr)
         const newCarry = (value & 0x80) !== 0
         const newValue = (value << 1) & 0xff
@@ -388,7 +388,7 @@ export class Cpu {
       break
     case 28:  // LSR
       {
-        const isAcc = inst.addressing == Addressing.ACCUMULATOR
+        const isAcc = inst.addressing === Addressing.ACCUMULATOR
         const value = isAcc ? this.a : this.read8(adr)
         const newCarry = (value & 0x01) !== 0
         const newValue = (value >> 1) & 0xff
