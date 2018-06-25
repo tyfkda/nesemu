@@ -116,7 +116,7 @@ class JsScreenWnd extends ScreenWnd {
     this.addResizeBox()
 
     this.canvas = JsScreenWnd.createCanvas(WIDTH, HEIGHT)
-    this.context = this.canvas.getContext('2d')
+    this.context = Util.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
     this.canvas.className = 'pixelated'
 

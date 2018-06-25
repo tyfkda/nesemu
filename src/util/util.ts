@@ -90,4 +90,11 @@ export default class Util {
       array[i] = decoded.charCodeAt(i)
     return new Uint8Array(array)
   }
+
+  public static getCanvasContext2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
+    const context = canvas.getContext('2d')
+    if (context == null)
+      throw new Error('2d context not supported or canvas already initialized')
+    return context
+  }
 }

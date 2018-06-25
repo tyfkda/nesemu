@@ -399,7 +399,7 @@ export class NameTableWnd extends Wnd {
     this.setContent(canvas)
     this.canvas = canvas
 
-    this.context = this.canvas.getContext('2d')
+    this.context = Util.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
 
     this.subscription = this.stream
@@ -461,7 +461,7 @@ export class PatternTableWnd extends Wnd {
     this.setContent(canvas)
     this.canvas = canvas
 
-    this.context = this.canvas.getContext('2d')
+    this.context = Util.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
 
     this.subscription = this.stream
