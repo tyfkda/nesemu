@@ -246,9 +246,16 @@ const kTable = [
   [0x00, OpType.BRK, Addressing.IMPLIED, 1, 7],
 ]
 
+export const kIllegalInstruction: Instruction = {
+  opType: OpType.UNKNOWN,
+  addressing: Addressing.UNKNOWN,
+  bytes: 1,
+  cycle: 0,
+}
+
 export const kInstTable: Instruction[] = (() => {
   const table = new Array<Instruction>(256)
-  //table.fill(null)
+  table.fill(kIllegalInstruction)
   kTable.forEach(inst => {
     const [code, opType, addressing, bytes, cycle] = inst
     table[code] = { opType, addressing, bytes, cycle }

@@ -1,6 +1,6 @@
 // CPU: MOS 6502
 
-import {Addressing, Instruction, OpType, kInstTable} from './inst'
+import {Addressing, kInstTable, kIllegalInstruction} from './inst'
 import {Bus} from './bus'
 import Util from '../util/util'
 import {Address, Byte, Word} from './types'
@@ -66,12 +66,6 @@ function toSigned(value: Byte): number {
 }
 
 const disasm = (() => {
-  const kIllegalInstruction: Instruction = {
-    opType: OpType.UNKNOWN,
-    addressing: Addressing.UNKNOWN,
-    bytes: 1,
-    cycle: 0,
-  }
   const mem = new Uint8Array(3)
   const bins = new Array<string>(3)
 
