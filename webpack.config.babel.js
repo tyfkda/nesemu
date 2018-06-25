@@ -1,3 +1,4 @@
+import path from 'path'
 import webpack from 'webpack'
 
 module.exports = {
@@ -8,7 +9,7 @@ module.exports = {
     main: './main.ts',
   },
   output: {
-    path: __dirname + '/public/assets',
+    path: path.resolve(__dirname, 'public/assets'),
     filename: '[name].js',
     sourceMapFilename: '[name].map',
   },
