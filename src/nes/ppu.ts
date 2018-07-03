@@ -59,9 +59,13 @@ export enum MirrorMode {
   SINGLE1 = 3,
 }
 
-interface HEvents {
-  count: number
-  events: any[]
+class HEvents {
+  public count = 0
+  public events = new Array<any>()
+
+  public clear(): void {
+    this.count = 0
+  }
 }
 
 const kMirrorModeBitTable = [0x50, 0x44, 0x00, 0x55]
@@ -144,8 +148,8 @@ export class Ppu {
   private ppuAddr: Address
   private bufferedValue: Byte
   private chrBankOffset = new Array<number>(8)
-  private hevents: HEvents = {count: 0, events: []}
-  private hevents2: HEvents = {count: 0, events: []}
+  private hevents = new HEvents()
+  private hevents2 = new HEvents()
 
   private isChrRam = false
   private scrollCurr: Word = 0
@@ -166,8 +170,8 @@ export class Ppu {
     this.ppuAddr = 0
     this.latch = 0
     this.bufferedValue = 0
-    this.hevents = {count: 0, events: []}
-    this.hevents2 = {count: 0, events: []}
+    this.hevents.clear()
+    this.hevents2.clear()
     this.offscreen.fill(0)
 
     for (let i = 0; i < 8; ++i)
@@ -369,7 +373,7 @@ export class Ppu {
     const tmp = this.hevents
     this.hevents = this.hevents2
     this.hevents2 = tmp
-    this.hevents.count = 0
+    this.hevents.clear()
 
     this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
                     chrBankOffset: cloneArray(this.chrBankOffset),
