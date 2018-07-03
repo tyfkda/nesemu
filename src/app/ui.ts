@@ -619,7 +619,7 @@ export class TraceWnd extends Wnd {
 
   public updateStatus(): void {
     const cpu = this.nes.cpu
-    const bus = this.nes.cpu
+    const bus = this.nes.bus
     const pc = cpu.pc
     const op = bus.read8(pc)
     const inst = kInstTable[op] || kIllegalInstruction
