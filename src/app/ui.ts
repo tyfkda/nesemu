@@ -134,7 +134,7 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Pause',
             click: () => {
-              if (this.nes.cpu.paused)
+              if (this.nes.cpu.isPaused())
                 this.stream.triggerRun()
               else
                 this.stream.triggerPause()
