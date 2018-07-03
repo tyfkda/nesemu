@@ -342,11 +342,12 @@ export class JsApp extends App {
     let et = elapsedTime + this.leftTime
     let frameCount = Math.min((et * 60 / 1000) | 0, MAX_FRAME_COUNT)
     if (frameCount > 0) {
+      const ppu = this.jsNes.getPpu()
       for (let i = 0; i < frameCount; ++i) {
-        this.jsNes.ppu.clearVBlank()
+        ppu.clearVBlank()
         this.jsNes.update()
         // this.updateAudio()
-        this.jsNes.ppu.setVBlank()
+        ppu.setVBlank()
       }
       this.jsScreenWnd.render()
 

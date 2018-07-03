@@ -80,10 +80,10 @@ export class App {
         case AppEvent.Type.RENDER:
           break
         case AppEvent.Type.RUN:
-          this.nes.cpu.pause(false)
+          this.nes.getCpu().pause(false)
           break
         case AppEvent.Type.PAUSE:
-          this.nes.cpu.pause(true)
+          this.nes.getCpu().pause(true)
           break
         case AppEvent.Type.STEP:
           this.nes.step(0)
@@ -118,7 +118,7 @@ export class App {
       return false
     }
     this.nes.reset()
-    this.nes.cpu.pause(false)
+    this.nes.getCpu().pause(false)
     this.screenWnd.getRootElement().focus()
     this.stream.triggerLoadRom()
 
@@ -194,7 +194,7 @@ export class App {
     if (this.hasNameTableWnd)
       return false
     const nameTableWnd = new NameTableWnd(this.wndMgr, this.nes, this.stream,
-                                          this.nes.ppu.mirrorMode === MirrorMode.HORZ)
+                                          this.nes.getPpu().mirrorMode === MirrorMode.HORZ)
     this.wndMgr.add(nameTableWnd)
     nameTableWnd.setPos(520, 40)
     nameTableWnd.setCallback(action => {
@@ -311,7 +311,7 @@ export class App {
   }
 
   protected loop(elapsedTime: number): void {
-    if (this.nes.cpu.isPaused())
+    if (this.nes.getCpu().isPaused())
       return
 
     const isActive = this.screenWnd.isTop()
@@ -332,7 +332,7 @@ export class App {
   }
 
   protected updateAudio(): void {
-    const apu = this.nes.apu
+    const apu = this.nes.getApu()
     for (let ch = 0; ch < AudioManager.CHANNEL_COUNT; ++ch) {
       const volume = apu.getVolume(ch)
       this.audioManager.setChannelVolume(ch, volume)

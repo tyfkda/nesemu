@@ -134,7 +134,7 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Pause',
             click: () => {
-              if (this.nes.cpu.isPaused())
+              if (this.nes.getCpu().isPaused())
                 this.stream.triggerRun()
               else
                 this.stream.triggerPause()
@@ -516,7 +516,7 @@ export class RegisterWnd extends Wnd {
   }
 
   public updateStatus(): void {
-    const cpu = this.nes.cpu
+    const cpu = this.nes.getCpu()
     const regs = cpu.getRegs()
     this.valueElems[0].value = Util.hex(regs.pc, 4)
     this.valueElems[1].value = Util.hex(regs.a, 2)
@@ -524,7 +524,7 @@ export class RegisterWnd extends Wnd {
     this.valueElems[3].value = Util.hex(regs.y, 2)
     this.valueElems[4].value = Util.hex(regs.s, 2)
     this.valueElems[5].value = Util.hex(regs.p, 2)
-    this.valueElems[6].value = String(this.nes.cycleCount)
+    this.valueElems[6].value = String(this.nes.getCycleCount())
   }
 
   public close(): void {
@@ -619,8 +619,8 @@ export class TraceWnd extends Wnd {
   }
 
   public updateStatus(): void {
-    const cpu = this.nes.cpu
-    const bus = this.nes.bus
+    const cpu = this.nes.getCpu()
+    const bus = this.nes.getBus()
     const pc = cpu.getRegs().pc
     const op = bus.read8(pc)
     const inst = kInstTable[op] || kIllegalInstruction

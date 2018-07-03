@@ -49,12 +49,12 @@ function loadChrRom(romData: Uint8Array): Uint8Array {
 }
 
 export class Nes implements PrgBankController {
-  public ram = new Uint8Array(RAM_SIZE)
-  public bus: Bus
-  public cpu: Cpu
-  public ppu: Ppu
-  public apu: Apu
-  public cycleCount = 0
+  protected ram = new Uint8Array(RAM_SIZE)
+  protected bus: Bus
+  protected cpu: Cpu
+  protected ppu: Ppu
+  protected apu: Apu
+  protected cycleCount = 0
 
   private romData = new Uint8Array(0)
   private mapperNo = 0
@@ -85,6 +85,12 @@ export class Nes implements PrgBankController {
     this.mapperNo = 0
     this.mapper = this.createMapper(this.mapperNo)
   }
+
+  public getBus(): Bus { return this.bus }
+  public getCpu(): Cpu { return this.cpu }
+  public getPpu(): Ppu { return this.ppu }
+  public getApu(): Apu { return this.apu }
+  public getCycleCount(): number { return this.cycleCount }
 
   public setVblankCallback(callback: (leftV: number) => void): void {
     this.vblankCallback = callback
