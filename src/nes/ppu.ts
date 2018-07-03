@@ -133,13 +133,13 @@ function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8ClampedArray,
 }
 
 export class Ppu {
-  public chrData: Uint8Array
-  public regs = new Uint8Array(REGISTER_COUNT)
-  public vram = new Uint8Array(VRAM_SIZE)
-  public oam = new Uint8Array(OAM_SIZE)  // Object Attribute Memory
-  public mirrorMode = MirrorMode.VERT
-  public mirrorModeBit = 0x44  // 2bit x 4screen
-  public hcount: number
+  private chrData: Uint8Array
+  private regs = new Uint8Array(REGISTER_COUNT)
+  private vram = new Uint8Array(VRAM_SIZE)
+  private oam = new Uint8Array(OAM_SIZE)  // Object Attribute Memory
+  private mirrorMode = MirrorMode.VERT
+  private mirrorModeBit = 0x44  // 2bit x 4screen
+  private hcount: number
   private latch: number
   private ppuAddr: Address
   private bufferedValue: Byte
@@ -223,6 +223,10 @@ export class Ppu {
                     chrBankOffset: cloneArray(this.chrBankOffset),
                     mirrorModeBit: this.mirrorModeBit, scrollCurr: this.scrollCurr,
                     scrollFineX: this.scrollFineX})
+  }
+
+  public getMirrorMode(): MirrorMode {
+    return this.mirrorMode
   }
 
   public setMirrorMode(mode: MirrorMode): void {
@@ -540,6 +544,14 @@ export class Ppu {
         }
       }
     }
+  }
+
+  public getPalet(pal: number): number {
+    return this.vram[PALET_ADR + (pal & 31)] & 0x3f
+  }
+
+  public getReg(index: number): Byte {
+    return this.regs[index]
   }
 
   private doRenderBg(scrollX: number, scrollY: number,

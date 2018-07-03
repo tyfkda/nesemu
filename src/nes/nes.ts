@@ -184,12 +184,6 @@ export class Nes implements PrgBankController {
     this.ppu.renderPattern(pixels, lineWidth, colors)
   }
 
-  public getPalet(pal: number): number {
-    const vram = this.ppu.vram
-    const paletTable = 0x3f00
-    return vram[paletTable + (pal & 31)] & 0x3f
-  }
-
   public setPrgBank(bank: number, page: number): void {
     this.prgBank[bank] = page << 13
   }
@@ -283,7 +277,7 @@ export class Nes implements PrgBankController {
         break
       case VRETURN:
         cycleCount2 -= (VRETURN * 341 / 3) | 0
-        this.ppu.hcount = 0
+        this.ppu.setHcount(0)
         break
       default:
         break

@@ -324,9 +324,10 @@ export class PaletWnd extends Wnd {
   }
 
   private static getPalet(nes: Nes, buf: Uint8Array): void {
+    const ppu = nes.getPpu()
     const n = PaletWnd.W * PaletWnd.H
     for (let i = 0; i < n; ++i)
-      buf[i] = nes.getPalet(i)
+      buf[i] = ppu.getPalet(i)
   }
 
   constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {

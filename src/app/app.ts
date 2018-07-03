@@ -194,7 +194,7 @@ export class App {
     if (this.hasNameTableWnd)
       return false
     const nameTableWnd = new NameTableWnd(this.wndMgr, this.nes, this.stream,
-                                          this.nes.getPpu().mirrorMode === MirrorMode.HORZ)
+                                          this.nes.getPpu().getMirrorMode() === MirrorMode.HORZ)
     this.wndMgr.add(nameTableWnd)
     nameTableWnd.setPos(520, 40)
     nameTableWnd.setCallback(action => {
