@@ -19,7 +19,7 @@ import sass from 'gulp-sass'
 import cssnano from 'gulp-cssnano'
 
 // Unit test
-const karmaServer = require('karma').Server
+const jest = require('gulp-jest').default
 
 import plumber from 'gulp-plumber'
 import del from 'del'
@@ -33,7 +33,8 @@ const SRC_TS_FILES = `${SRC_TS_DIR}/**/*.ts`
 const SRC_HTML_DIR = `${ROOT_DIR}/src`
 const SRC_HTML_FILES = `${SRC_HTML_DIR}/*.html`  // */
 const SRC_SASS_FILES = `${ROOT_DIR}/src/**/*.scss`
-const SRC_TEST_FILES = `${ROOT_DIR}/test/**/*.spec.ts`
+const SRC_TEST_DIR = `${ROOT_DIR}/test`
+const SRC_TEST_FILES = `${SRC_TEST_DIR}/**/*.spec.ts`
 const RELEASE_DIR = `${ROOT_DIR}/release`
 const RELEASE_ASSETS_DIR = `${RELEASE_DIR}/assets`
 
@@ -149,16 +150,27 @@ gulp.task('server', () => {
 
 // Unit test.
 gulp.task('test', (done) => {
-  new karmaServer({
-    configFile: __dirname + '/karma.conf.js',
-    singleRun: true,
-  }, done).start()
-  //.on('error', err => console.log('Error : ' + err.message))
+  return gulp.src(SRC_TEST_DIR)
+    .pipe(jest({
+      "transform": {
+        "^.+\\.tsx?$": "ts-jest",
+      },
+      "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+      "moduleFileExtensions": [
+        "ts",
+        "tsx",
+        "js",
+        "jsx",
+        "json",
+        "node",
+      ],
+    }))
 })
 gulp.task('watch-test', () => {
-  new karmaServer({
-    configFile: __dirname + '/karma.conf.js',
-  }).start()
+  gulp.watch(
+    [SRC_TS_FILES,
+     SRC_TEST_FILES],
+    ['test'])
 })
 
 gulp.task('clean', del.bind(null, [

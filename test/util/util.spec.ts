@@ -1,5 +1,3 @@
-///<reference path="../decl/patch.d.ts" />
-
 import Util from '../../src/util/util'
 
 describe('util', () => {
