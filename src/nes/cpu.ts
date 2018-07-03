@@ -1,11 +1,11 @@
 // CPU: MOS 6502
 
-import {Addressing, kInstTable, kIllegalInstruction} from './inst'
+import {Addressing, kInstTable} from './inst'
 import {Bus} from './bus'
 import Util from '../util/util'
 import {Address, Byte, Word} from './types'
 
-import {disassemble} from './disasm'
+import {disasm} from './disasm'
 
 const CARRY_BIT = 0
 const ZERO_BIT = 1
@@ -64,28 +64,6 @@ function dec8(value: Byte): Byte {
 function toSigned(value: Byte): number {
   return value < 0x80 ? value : value - 0x0100
 }
-
-const disasm = (() => {
-  const mem = new Uint8Array(3)
-  const bins = new Array<string>(3)
-
-  return function disasm_(bus: Bus, pc: number): string {
-    const op = bus.read8(pc)
-    const inst = kInstTable[op] || kIllegalInstruction
-    for (let i = 0; i < inst.bytes; ++i) {
-      const m = bus.read8(pc + i)
-      mem[i] = m
-      bins[i] = Util.hex(m, 2)
-    }
-    for (let i = inst.bytes; i < 3; ++i)
-      bins[i] = '  '
-
-    const pcStr = Util.hex(pc, 4)
-    const binStr = bins.join(' ')
-    const asmStr = disassemble(inst, mem, 1, pc)
-    return `${pcStr}: ${binStr}   ${asmStr}`
-  }
-})()
 
 interface Regs {
   a: Byte
