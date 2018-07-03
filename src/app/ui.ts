@@ -517,12 +517,13 @@ export class RegisterWnd extends Wnd {
 
   public updateStatus(): void {
     const cpu = this.nes.cpu
-    this.valueElems[0].value = Util.hex(cpu.pc, 4)
-    this.valueElems[1].value = Util.hex(cpu.a, 2)
-    this.valueElems[2].value = Util.hex(cpu.x, 2)
-    this.valueElems[3].value = Util.hex(cpu.y, 2)
-    this.valueElems[4].value = Util.hex(cpu.s, 2)
-    this.valueElems[5].value = Util.hex(cpu.p, 2)
+    const regs = cpu.getRegs()
+    this.valueElems[0].value = Util.hex(regs.pc, 4)
+    this.valueElems[1].value = Util.hex(regs.a, 2)
+    this.valueElems[2].value = Util.hex(regs.x, 2)
+    this.valueElems[3].value = Util.hex(regs.y, 2)
+    this.valueElems[4].value = Util.hex(regs.s, 2)
+    this.valueElems[5].value = Util.hex(regs.p, 2)
     this.valueElems[6].value = String(this.nes.cycleCount)
   }
 
@@ -620,7 +621,7 @@ export class TraceWnd extends Wnd {
   public updateStatus(): void {
     const cpu = this.nes.cpu
     const bus = this.nes.bus
-    const pc = cpu.pc
+    const pc = cpu.getRegs().pc
     const op = bus.read8(pc)
     const inst = kInstTable[op] || kIllegalInstruction
 

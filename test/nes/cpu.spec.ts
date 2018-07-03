@@ -26,6 +26,6 @@ describe('cpu', () => {
       0xfffd: 0xab,
     }))
     cpu.reset()
-    expect(cpu.pc).toBe(0xabcd)
+    expect(cpu.getRegs().pc).toBe(0xabcd)
   })
 })

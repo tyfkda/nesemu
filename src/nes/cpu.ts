@@ -87,25 +87,34 @@ const disasm = (() => {
   }
 })()
 
+interface Regs {
+  a: Byte
+  x: Byte
+  y: Byte
+  s: Byte
+  p: Byte
+  pc: Address
+}
+
 export class Cpu {
-  public a: Byte  // A register
-  public x: Byte  // X register
-  public y: Byte  // Y register
-  public s: Byte  // Stack pointer
-  public p: Byte  // Status register [NVRBDIZC],
-                  //   N: negative
-                  //   V: overflow
-                  //   R: reserved
-                  //   B: breakmode
-                  //   D: decimal mode
-                  //   I: irq blocked
-                  //   Z: zero
-                  //   C: carry
-  public pc: Address  // Program counter
-  public breakPoints: any = {}
-  public watchRead: any = {}
-  public watchWrite: any = {}
-  public paused = false
+  private a: Byte  // A register
+  private x: Byte  // X register
+  private y: Byte  // Y register
+  private s: Byte  // Stack pointer
+  private p: Byte  // Status register [NVRBDIZC],
+                   //   N: negative
+                   //   V: overflow
+                   //   R: reserved
+                   //   B: breakmode
+                   //   D: decimal mode
+                   //   I: irq blocked
+                   //   Z: zero
+                   //   C: carry
+  private pc: Address  // Program counter
+  private breakPoints: any = {}
+  private watchRead: any = {}
+  private watchWrite: any = {}
+  private paused = false
 
   private $DEBUG: boolean
   private stepLogs: string[] = []
@@ -121,6 +130,17 @@ export class Cpu {
     this.s = (this.s - 3) & 0xff
     this.pc = this.read16(VEC_RESET)
     this.stepLogs.length = 0
+  }
+
+  public getRegs(): Regs {
+    return {
+      a: this.a,
+      x: this.x,
+      y: this.y,
+      s: this.s,
+      p: this.p,
+      pc: this.pc,
+    }
   }
 
   public save(): object {
@@ -523,7 +543,7 @@ export class Cpu {
     return cycle
   }
 
-  public read8(adr: Address): Byte {
+  private read8(adr: Address): Byte {
     const value = this.bus.read8(adr)
     if (this.watchRead[adr]) {
       this.paused = true
@@ -533,28 +553,16 @@ export class Cpu {
     return value
   }
 
-  public read16(adr: Address): Word {
+  private read16(adr: Address): Word {
     const lo = this.read8(adr)
     const hi = this.read8(adr + 1)
     return (hi << 8) | lo
   }
 
-  public read16Indirect(adr: Address): Word {
+  private read16Indirect(adr: Address): Word {
     const lo = this.read8(adr)
     const hi = this.read8((adr & 0xff00) + ((adr + 1) & 0xff))
     return (hi << 8) | lo
-  }
-
-  public dump(start: Address, count: number): void {
-    const mem = new Array<Byte>()
-    for (let i = 0; i < count; ++i) {
-      mem.push(this.read8(i + start))
-    }
-
-    for (let i = 0; i < count; i += 16) {
-      const line = mem.splice(0, 16).map(x => Util.hex(x, 2)).join(' ')
-      console.log(`${Util.hex(start + i, 4)}: ${line}`)
-    }
   }
 
   private push(value: Word): void {

@@ -59,4 +59,16 @@ export class Bus {
     }
     return writer(adr, value)
   }
+
+  public dump(start: Address, count: number): void {
+    const mem = new Array<Byte>()
+    for (let i = 0; i < count; ++i) {
+      mem.push(this.read8(i + start))
+    }
+
+    for (let i = 0; i < count; i += 16) {
+      const line = mem.splice(0, 16).map(x => Util.hex(x, 2)).join(' ')
+      console.log(`${Util.hex(start + i, 4)}: ${line}`)
+    }
+  }
 }
