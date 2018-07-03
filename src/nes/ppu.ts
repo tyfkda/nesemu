@@ -48,6 +48,10 @@ const PPUDATA = 0x07  // $2007
 const FLIP_HORZ = 0x40
 const FLIP_VERT = 0x80
 
+// Palette
+const PALET_ADR = 0x3f00
+const PALET_END_ADR = 0x3fff
+
 export enum MirrorMode {
   HORZ = 0,
   VERT = 1,
@@ -92,7 +96,7 @@ function getPpuAddr(adr: Address, mirrorModeBit: number): Address {
     return (adr & 0xf3ff) | m
   }
 
-  if (0x3f00 <= adr && adr <= 0x3fff) {
+  if (PALET_ADR <= adr && adr <= PALET_END_ADR) {
     adr &= 0xff1f  // Repeat 0x3f00~0x3f1f --> 0x3fff
     // "Addresses $3F10/$3F14/$3F18/$3F1C are mirrors of $3F00/$3F04/$3F08/$3F0C."
     // http://wiki.nesdev.com/w/index.php/PPU_palettes#Memory_Map
@@ -114,7 +118,7 @@ function getBgPatternTableAddress(ppuCtrl: Byte): Address {
 function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8ClampedArray,
                                vram: Uint8Array): void
 {
-  const paletTable: Address = 0x3f00
+  const paletTable: Address = PALET_ADR
   const n = Const.WIDTH * Const.HEIGHT
   let index = 0
   for (let i = 0; i < n; ++i) {
@@ -170,7 +174,7 @@ export class Ppu {
       this.chrBankOffset[i] = i << 10
 
     for (let i = 0; i < 16 * 2; ++i)
-      this.vram[0x3f00 + i] = kInitialPalette[i]
+      this.vram[PALET_ADR + i] = kInitialPalette[i]
   }
 
   public save(): object {
@@ -246,7 +250,7 @@ export class Ppu {
       {
         const ppuAddr = this.ppuAddr
         const addr = getPpuAddr(ppuAddr, this.mirrorModeBit)
-        if (0x3f00 <= addr && addr <= 0x3fff) {  // Palette
+        if (PALET_ADR <= addr && addr <= PALET_END_ADR) {
           result = this.readPpuDirect(addr)  // Palette read shouldn't be buffered like other VRAM
           // Palette read should also read VRAM into read buffer
           this.bufferedValue = this.readPpuDirect(getPpuAddr(ppuAddr - 0x1000, this.mirrorModeBit))
@@ -489,7 +493,7 @@ export class Ppu {
     const W = 8
     const chrStart = getBgPatternTableAddress(this.regs[PPUCTRL])
     const vram = this.vram
-    const paletTable = 0x3f00
+    const paletTable = PALET_ADR
 
     const clearColor = vram[paletTable] & 0x3f  // Universal background color
     const clearR = kColors[clearColor * 3 + 0]
