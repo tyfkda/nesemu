@@ -25,8 +25,6 @@ export class Mapper004 extends Mapper {
     const BANK_BIT = 13  // 0x2000
     this.maxPrg = (options.prgSize >> BANK_BIT) - 1
 
-    this.options.prgBankCtrl.setPrgBank(3, this.maxPrg)
-
     this.ram.fill(0xff)
     this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.ram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
@@ -75,8 +73,6 @@ export class Mapper004 extends Mapper {
       }
     })
 
-    this.setPrgBank(this.bankSelect)  // Initial
-
     // http://wiki.nesdev.com/w/index.php/INES#Flags_6
     // iNes header, flags 6
     // > Some mappers, such as MMC1, MMC3, and AxROM, can control nametable mirroring.
@@ -94,11 +90,18 @@ export class Mapper004 extends Mapper {
       break
     }
     this.options.ppu.setMirrorMode(mirror)  // Default vertical mirroring?
+
+    this.reset()
   }
 
   public reset(): void {
     this.irqHlineEnable = false
     this.irqHlineValue = this.irqHlineCounter = -1
+
+    this.options.prgBankCtrl.setPrgBank(3, this.maxPrg)
+
+    this.bankSelect = 0
+    this.setPrgBank(this.bankSelect)
   }
 
   public save(): object {

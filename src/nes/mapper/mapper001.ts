@@ -89,6 +89,10 @@ export class Mapper001 extends Mapper {
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
                                     (adr, value) => { this.ram[adr & 0x1fff] = value })
 
+    this.reset()
+  }
+
+  public reset(): void {
     this.setPrgBank(0, 0xff)
   }
 
