@@ -81,6 +81,10 @@ export class Mapper001 extends Mapper {
       this.resetRegister()
     })
 
+    this.reset()
+  }
+
+  public reset(): void {
     this.setPrgBank(0, 0xff)
   }
 
