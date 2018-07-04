@@ -60,11 +60,42 @@ export enum MirrorMode {
 }
 
 class HEvents {
-  public count = 0
-  public events = new Array<any>()
+  private count = 0
+  private events = new Array<any>()
+  private eventsAlt = new Array<any>()
 
   public clear(): void {
     this.count = 0
+  }
+
+  public swap(): void {
+    const tmp = this.events
+    this.events = this.eventsAlt
+    this.eventsAlt = tmp
+    this.count = 0
+  }
+
+  public getCount(): number {
+    return this.count
+  }
+
+  public getEvent(index: number): any {
+    return this.events[index]
+  }
+
+  public add(hcount: number, hevent: any): void {
+    let n = this.count
+    if (n <= 0 || this.events[n - 1].hcount !== hcount) {
+      if (++n >= this.events.length) {
+        this.events.push({})
+      }
+    }
+    let event = this.events[n - 1]
+    event.hcount = hcount
+    Object.keys(hevent).forEach(key => {
+      event[key] = hevent[key]
+    })
+    this.count = n
   }
 }
 
@@ -149,7 +180,6 @@ export class Ppu {
   private bufferedValue: Byte
   private chrBankOffset = new Array<number>(8)
   private hevents = new HEvents()
-  private hevents2 = new HEvents()
 
   private isChrRam = false
   private scrollCurr: Word = 0
@@ -171,7 +201,6 @@ export class Ppu {
     this.latch = 0
     this.bufferedValue = 0
     this.hevents.clear()
-    this.hevents2.clear()
     this.offscreen.fill(0)
 
     for (let i = 0; i < 8; ++i)
@@ -369,11 +398,7 @@ export class Ppu {
   public setVBlank(): void {
     this.regs[PPUSTATUS] = this.regs[PPUSTATUS] | VBLANK
 
-    // Swap HEvents
-    const tmp = this.hevents
-    this.hevents = this.hevents2
-    this.hevents2 = tmp
-    this.hevents.clear()
+    this.hevents.swap()
 
     this.addHevent({ppuCtrl: this.regs[PPUCTRL], ppuMask: this.regs[PPUMASK],
                     chrBankOffset: cloneArray(this.chrBankOffset),
@@ -407,12 +432,12 @@ export class Ppu {
   }
 
   public render(pixels: Uint8ClampedArray): void {
-    const n = this.hevents.count
+    const n = this.hevents.getCount()
     let sprChrStart = 0
     for (let i = 0; i < n; ++i) {
-      const h = this.hevents.events[i]
+      const h = this.hevents.getEvent(i)
       const hline0 = h.hcount
-      const hline1 = i < n - 1 ? this.hevents.events[i + 1].hcount : Const.HEIGHT
+      const hline1 = i < n - 1 ? this.hevents.getEvent(i + 1).hcount : Const.HEIGHT
       if (hline0 >= hline1)
         continue
 
@@ -733,29 +758,18 @@ export class Ppu {
     return -1
   }
 
-  private addHevent(param: any): void {
+  private addHevent(hevent: any): void {
     let hcount = this.hcount + 1
     if (hcount >= Const.HEIGHT)
       hcount = 0
-    const hevents = this.hevents
-    let n = hevents.count
-    if (n <= 0 || hevents.events[n - 1].hcount !== hcount) {
-      if (++n >= hevents.events.length) {
-        hevents.events.push({})
-      }
-    }
-    let event = hevents.events[n - 1]
-    event.hcount = hcount
-    Object.keys(param).forEach(key => {
-      event[key] = param[key]
-    })
-    hevents.count = n
+    this.hevents.add(hcount, hevent)
   }
 
   private incScrollCounter(): void {
-    if (this.hevents.count <= 0)
+    const n = this.hevents.getCount()
+    if (n <= 0)
       return
-    const h = this.hevents.events[this.hevents.count - 1]
+    const h = this.hevents.getEvent(n - 1)
     const hcount = this.hcount < Const.HEIGHT - 1 ? this.hcount + 1 : 0
     const dy = hcount - h.hcount
     if (dy <= 0)
