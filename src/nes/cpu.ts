@@ -216,7 +216,7 @@ export class Cpu {
       this.setNZFlag(this.a)
       break
     case 3:  // STA
-      this.bus.write8(adr, this.a)
+      this.write8(adr, this.a)
       break
 
     case 4:  // LDX
@@ -224,7 +224,7 @@ export class Cpu {
       this.setNZFlag(this.x)
       break
     case 5:  // STX
-      this.bus.write8(adr, this.x)
+      this.write8(adr, this.x)
       break
 
     case 6:  // LDY
@@ -232,7 +232,7 @@ export class Cpu {
       this.setNZFlag(this.y)
       break
     case 7:  // STY
-      this.bus.write8(adr, this.y)
+      this.write8(adr, this.y)
       break
 
     case 8:  // TAX
@@ -295,7 +295,7 @@ export class Cpu {
     case 18:  // INC
       {
         const value = inc8(this.read8(adr))
-        this.bus.write8(adr, value)
+        this.write8(adr, value)
         this.setNZFlag(value)
       }
       break
@@ -311,7 +311,7 @@ export class Cpu {
     case 21:  // DEC
       {
         const value = dec8(this.read8(adr))
-        this.bus.write8(adr, value)
+        this.write8(adr, value)
         this.setNZFlag(value)
       }
       break
@@ -347,7 +347,7 @@ export class Cpu {
         if (isAcc)
           this.a = newValue
         else
-          this.bus.write8(adr, newValue)
+          this.write8(adr, newValue)
         this.setNZCFlag(newValue, newCarry)
       }
       break
@@ -361,7 +361,7 @@ export class Cpu {
         if (isAcc)
           this.a = newValue
         else
-          this.bus.write8(adr, newValue)
+          this.write8(adr, newValue)
         this.setNZCFlag(newValue, newCarry)
       }
       break
@@ -374,7 +374,7 @@ export class Cpu {
         if (isAcc)
           this.a = newValue
         else
-          this.bus.write8(adr, newValue)
+          this.write8(adr, newValue)
         this.setNZCFlag(newValue, newCarry)
       }
       break
@@ -387,7 +387,7 @@ export class Cpu {
         if (isAcc)
           this.a = newValue
         else
-          this.bus.write8(adr, newValue)
+          this.write8(adr, newValue)
         this.setNZCFlag(newValue, newCarry)
       }
       break
@@ -543,16 +543,25 @@ export class Cpu {
     return (hi << 8) | lo
   }
 
+  private write8(adr: Address, value: Byte): void {
+    this.bus.write8(adr, value)
+    if (this.watchWrite[adr]) {
+      this.paused = true
+      console.warn(
+        `Break because watched point write: adr=${Util.hex(adr, 4)}, value=${Util.hex(value, 2)}`)
+    }
+  }
+
   private push(value: Word): void {
-    this.bus.write8(0x0100 + this.s, value)
+    this.write8(0x0100 + this.s, value)
     this.s = dec8(this.s)
   }
 
   private push16(value: Word): void {
     let s = this.s
-    this.bus.write8(0x0100 + s, value >> 8)
+    this.write8(0x0100 + s, value >> 8)
     s = dec8(s)
-    this.bus.write8(0x0100 + s, value & 0xff)
+    this.write8(0x0100 + s, value & 0xff)
     this.s = dec8(s)
   }
 
