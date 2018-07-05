@@ -462,8 +462,8 @@ export class Ppu {
 
       // Sprite
       if ((h.ppuMask & SHOW_SPRITE) !== 0) {
-        if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
-          sprChrStart = (this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9
+        if ((h.ppuCtrl & SPRITE_SIZE) === 0)
+          sprChrStart = (h.ppuCtrl & SPRITE_PATTERN_TABLE_ADDRESS) << 9
         const x0 = (h.ppuMask & SHOW_SPRITE_LEFT_8PX) ? 0 : 8
         this.renderSprite2(hline0, hline1, x0, h.chrBankOffset, sprChrStart)
       }
