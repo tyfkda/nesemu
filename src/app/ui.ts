@@ -192,8 +192,12 @@ export class ScreenWnd extends Wnd {
             label: 'Adjust aspect ratio',
             click: () => {
               const rect = this.scaler.getCanvas().getBoundingClientRect()
-              const height = Math.round(rect.width * (HEIGHT / WIDTH))
-              this.setClientSize(rect.width, height)
+              let width = rect.width, height = rect.height
+              if (width / height >= WIDTH / HEIGHT)
+                width = height / HEIGHT * WIDTH
+              else
+                height = width / WIDTH * HEIGHT
+              this.setClientSize(width, height)
             },
           },
           {
