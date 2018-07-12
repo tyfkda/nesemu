@@ -107,7 +107,7 @@ export class App {
     this.screenWnd.setPos(x, y)
 
     this.padKeyHandler = new PadKeyHandler()
-    this.setUpKeyEvent(this.screenWnd.getRootElement(), this.padKeyHandler)
+    this.setUpKeyEvent(this.screenWnd.getContentHolder(), this.padKeyHandler)
 
     this.startLoopAnimation()
   }
@@ -119,7 +119,7 @@ export class App {
     }
     this.nes.reset()
     this.nes.getCpu().pause(false)
-    this.screenWnd.getRootElement().focus()
+    this.screenWnd.getContentHolder().focus()
     this.stream.triggerLoadRom()
 
     if (window.$DEBUG) {  // Accessing global variable!!!

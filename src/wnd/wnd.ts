@@ -75,6 +75,10 @@ export default class Wnd {
     return this
   }
 
+  public getContentHolder(): HTMLElement {
+    return this.contentHolder
+  }
+
   public getRootElement(): HTMLElement {
     return this.root
   }
