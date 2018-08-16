@@ -58,12 +58,49 @@ function tryFullscreen(element: HTMLElement, callback: Function): boolean {
   return false
 }
 
+export class FpsWnd extends Wnd {
+  private subscription: Pubsub.Subscription
+  private stats: Stats
+
+  constructor(wndMgr: WindowManager, private stream: AppEvent.Stream) {
+    super(wndMgr, 80, 48, 'Fps')
+
+    const content = document.createElement('div')
+    content.style.width = '80px'
+    content.style.height = '48px'
+    this.setContent(content)
+
+    this.stats = new Stats()
+    content.appendChild(this.stats.domElement)
+
+    this.subscription = this.stream
+      .subscribe(type => {
+        switch (type) {
+        case AppEvent.Type.DESTROY:
+          this.close()
+          break
+        case AppEvent.Type.START_CALC:
+          this.stats.begin()
+          break
+        case AppEvent.Type.END_CALC:
+          this.stats.end()
+          break
+        }
+      })
+  }
+
+  public close(): void {
+    this.subscription.unsubscribe()
+    super.close()
+  }
+}
+
 export class ScreenWnd extends Wnd {
   protected subscription: Pubsub.Subscription
   private scaler: Scaler
 
-  //constructor(wndMgr: WindowManager)
-  //constructor(wndMgr: WindowManager, app: App, nes: Nes, stream: AppEvent.Stream)
+  // constructor(wndMgr: WindowManager)
+  // constructor(wndMgr: WindowManager, app: App, nes: Nes, stream: AppEvent.Stream)
   constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,
               protected stream: AppEvent.Stream)
   {
@@ -757,42 +794,5 @@ export class ControlWnd extends Wnd {
     root.appendChild(captureBtn)
 
     return root
-  }
-}
-
-export class FpsWnd extends Wnd {
-  private subscription: Pubsub.Subscription
-  private stats: Stats
-
-  constructor(wndMgr: WindowManager, private stream: AppEvent.Stream) {
-    super(wndMgr, 80, 48, 'Fps')
-
-    const content = document.createElement('div')
-    content.style.width = '80px'
-    content.style.height = '48px'
-    this.setContent(content)
-
-    this.stats = new Stats()
-    content.appendChild(this.stats.domElement)
-
-    this.subscription = this.stream
-      .subscribe(type => {
-        switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.close()
-          break
-        case AppEvent.Type.START_CALC:
-          this.stats.begin()
-          break
-        case AppEvent.Type.END_CALC:
-          this.stats.end()
-          break
-        }
-      })
-  }
-
-  public close(): void {
-    this.subscription.unsubscribe()
-    super.close()
   }
 }

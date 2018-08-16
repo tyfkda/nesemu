@@ -74,8 +74,10 @@
     "no-string-literal": true,
     "no-switch-case-fall-through": false,
     "no-trailing-whitespace": true,
-    "no-unused-expression": true,
-    "no-unused-variable": true,
+    "no-unused-expression": [
+      true,
+      "allow-new"
+    ],
     "no-use-before-declare": true,
     "no-var-keyword": true,
     "no-var-requires": true,

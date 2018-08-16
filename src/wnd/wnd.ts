@@ -164,7 +164,7 @@ export default class Wnd {
     if (this.callback('close') === false)
       return  // Cancel close
     this.wndMgr.remove(this)
-    //this.root = null
+    // this.root = null
   }
 
   public addResizeBox() {

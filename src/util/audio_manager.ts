@@ -7,11 +7,11 @@ class SoundChannel {
   public destroy() {
     if (this.gainNode != null) {
       this.gainNode.disconnect()
-      //this.gainNode = null
+      // this.gainNode = null
     }
     if (this.oscillator != null) {
       this.oscillator.disconnect()
-      //this.oscillator = null
+      // this.oscillator = null
     }
   }
 

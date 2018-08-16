@@ -227,7 +227,7 @@ export class JsRegisterWnd extends RegisterWnd {
     this.valueElems[3].value = Util.hex(regs[2], 2)
     this.valueElems[4].value = Util.hex(regs[3], 2)
     this.valueElems[5].value = Util.hex(regs[4], 2)
-    //this.valueElems[6].value = String(this.nes.cycleCount)
+    // this.valueElems[6].value = String(this.nes.cycleCount)
   }
 }
 
