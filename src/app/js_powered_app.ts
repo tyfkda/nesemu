@@ -7,6 +7,7 @@ import {Bus} from '../nes/bus'
 import {GamepadManager} from '../util/gamepad_manager'
 import {Nes} from '../nes/nes'
 import {PadKeyHandler} from '../util/pad_key_handler'
+import {Ppu} from '../nes/ppu'
 import {ScreenWnd, RegisterWnd} from './ui'
 import Util from '../util/util'
 import WindowManager from '../wnd/window_manager'
@@ -17,7 +18,7 @@ const HEIGHT = 240
 const MAX_FRAME_COUNT = 4
 
 interface JsCpu {
-  init(bus: Bus): void
+  init(bus: Bus, ppu: Ppu): void
   getChrRom(): Uint8Array
   reset(): void
   update(): void
@@ -56,7 +57,7 @@ class JsNes extends Nes {
         this.jsCpu = eval(jsCode)
         /* tslint:enable:no-eval */
         this.ppu.setChrData(this.jsCpu.getChrRom())
-        this.jsCpu.init(this.bus)
+        this.jsCpu.init(this.bus, this.ppu)
         return Promise.resolve()
       })
   }
@@ -107,13 +108,6 @@ class JsScreenWnd extends ScreenWnd {
                      stream: AppEvent.Stream)
   {
     super(wndMgr, jsApp, jsNes, stream)
-    //this.app = jsApp
-    //this.nes = jsNes
-    //this.stream = stream
-
-    this.setUpMenuBar()
-
-    this.addResizeBox()
 
     this.canvas = JsScreenWnd.createCanvas(WIDTH, HEIGHT)
     this.context = Util.getCanvasContext2d(this.canvas)
