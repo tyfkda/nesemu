@@ -420,6 +420,8 @@ export class Apu {
   }
 
   public getVolume(ch: number): number {
+    if ((this.regs[STATUS_REG] & (1 << ch)) === 0)
+      return 0
     return this.channels[ch].getVolume()
   }
 
