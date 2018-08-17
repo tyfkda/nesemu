@@ -468,6 +468,107 @@ export class Cpu {
       this.pc = this.read16(VEC_IRQ)
       this.irqBlocked = 1
       break
+
+    // Unofficial
+
+    case OpType.LAX:
+      this.a = this.x = this.read8(adr)
+      this.setNZFlag(this.a)
+      break
+
+    case OpType.SAX:
+      this.write8(adr, this.a & this.x)
+      break
+
+    case OpType.ISB:
+      {
+        const value = (this.read8(adr) + 1) & 0xff
+        this.write8(adr, value)
+
+        const carry = this.carry
+        const operand = 255 - value
+        const result = this.a + operand + carry
+        const overflow = ((this.a ^ result) & (operand ^ result) & 0x80) !== 0
+        this.a = result & 0xff
+        this.setNZCFlag(this.a, result >= 0x0100)
+        this.setOverFlow(overflow)
+      }
+      break
+
+    case OpType.DCP:
+      {
+        // DEC
+        const value = (this.read8(adr) - 1) & 0xff
+        this.write8(adr, value)
+
+        // CMP
+        const result = this.a - value
+        this.setNZCFlag(result & 255, result >= 0)
+      }
+      break
+
+    case OpType.RLA:
+      {
+        // ROL
+        const value = this.read8(adr)
+        const oldCarry = this.carry
+        const newCarry = value >= 0x80
+        const newValue = ((value << 1) | oldCarry) & 0xff
+        this.write8(adr, newValue)
+
+        // AND
+        this.a &= newValue
+        this.setNZCFlag(this.a, newCarry)
+      }
+      break
+
+    case OpType.RRA:
+      {
+        // ROR
+        const value = this.read8(adr)
+        const oldCarry = this.carry
+        const newCarry = (value & 0x01) !== 0
+        const newValue = (value >> 1) | (oldCarry << 7)
+        this.write8(adr, newValue)
+
+        // ADC
+        const carry = newCarry ? 1 : 0
+        const operand = newValue
+        const result = this.a + operand + carry
+        const overflow = ((this.a ^ result) & (operand ^ result) & 0x80) !== 0
+        this.a = result & 0xff
+        this.setNZCFlag(this.a, result >= 0x0100)
+        this.setOverFlow(overflow)
+      }
+      break
+
+    case OpType.SLO:
+      {
+        // ASL
+        const value = /*isAcc ? this.a :*/ this.read8(adr)
+        const newCarry = value >= 0x80
+        const newValue = (value << 1) & 0xff
+        this.write8(adr, newValue)
+
+        // ORA
+        this.a |= newValue
+        this.setNZCFlag(this.a, newCarry)
+      }
+      break
+
+    case OpType.SRE:
+      {
+        // LSR
+        const value = this.read8(adr)
+        const newCarry = (value & 0x01) !== 0
+        const newValue = (value >> 1) & 0xff
+        this.write8(adr, newValue)
+
+        // EOR
+        this.a ^= newValue
+        this.setNZCFlag(this.a, newCarry)
+      }
+      break
     }
     // ========================================================
 
@@ -614,7 +715,7 @@ export class Cpu {
         return this.read16Indirect(adr)
       }
     default:
-      console.error(`Illegal addressing: ${addressing}`)
+      console.error(`Illegal addressing: ${addressing}, pc=${Util.hex(pc, 4)}`)
       this.paused = true
       return 0
     }

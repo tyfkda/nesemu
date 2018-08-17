@@ -43,6 +43,14 @@ export const enum OpType {
   BRK,
 
   // Unofficial
+  LAX,  // LDA-LDX
+  SAX,  // AND-STA
+  ISB,  // INC-SBC
+  DCP,  // DEC-CMP
+  RLA,  // ROL-AND
+  RRA,  // ROR-ADC
+  SLO,  // ASL-ORA
+  SRE,  // LSR-EOR
   IGN = NOP, SKB = NOP,
 }
 
@@ -264,7 +272,7 @@ const kTable = [
   [0x74, OpType.IGN, Addressing.IMPLIED, 2, 4],
   [0xd4, OpType.IGN, Addressing.IMPLIED, 2, 4],
   [0xf4, OpType.IGN, Addressing.IMPLIED, 2, 4],
-  [0x0c, OpType.IGN, Addressing.IMPLIED, 1, 4],
+  [0x0c, OpType.IGN, Addressing.IMPLIED, 3, 4],
   [0x1c, OpType.IGN, Addressing.IMPLIED, 3, 4],
   [0x3c, OpType.IGN, Addressing.IMPLIED, 3, 4],
   [0x5c, OpType.IGN, Addressing.IMPLIED, 3, 4],
@@ -276,6 +284,68 @@ const kTable = [
   [0x89, OpType.SKB, Addressing.IMPLIED, 2, 2],
   [0xc2, OpType.SKB, Addressing.IMPLIED, 2, 2],
   [0xe2, OpType.SKB, Addressing.IMPLIED, 2, 2],
+
+  [0xeb, OpType.SBC, Addressing.IMMEDIATE, 2, 2],
+
+  [0xa3, OpType.LAX, Addressing.INDIRECT_X, 2, 6],
+  [0xb3, OpType.LAX, Addressing.INDIRECT_Y, 2, 5],
+  [0xa7, OpType.LAX, Addressing.ZEROPAGE, 2, 3],
+  [0xb7, OpType.LAX, Addressing.ZEROPAGE_Y, 2, 4],
+  [0xaf, OpType.LAX, Addressing.ABSOLUTE, 3, 4],
+  [0xbf, OpType.LAX, Addressing.ABSOLUTE_Y, 3, 4],
+
+  [0x87, OpType.SAX, Addressing.ZEROPAGE, 2, 6],
+  [0x97, OpType.SAX, Addressing.ZEROPAGE_Y, 2, 3],
+  [0x8f, OpType.SAX, Addressing.ABSOLUTE, 3, 4],
+  [0x83, OpType.SAX, Addressing.INDIRECT_X, 3, 4],
+
+  [0xe7, OpType.ISB, Addressing.ZEROPAGE, 2, 5],
+  [0xf7, OpType.ISB, Addressing.ZEROPAGE_X, 2, 6],
+  [0xe3, OpType.ISB, Addressing.INDIRECT_X, 2, 8],
+  [0xf3, OpType.ISB, Addressing.INDIRECT_Y, 2, 8],
+  [0xef, OpType.ISB, Addressing.ABSOLUTE, 3, 6],
+  [0xff, OpType.ISB, Addressing.ABSOLUTE_X, 3, 7],
+  [0xfb, OpType.ISB, Addressing.ABSOLUTE_Y, 3, 7],
+
+  [0xc7, OpType.DCP, Addressing.ZEROPAGE, 2, 5],
+  [0xd7, OpType.DCP, Addressing.ZEROPAGE_X, 2, 6],
+  [0xc3, OpType.DCP, Addressing.INDIRECT_X, 2, 8],
+  [0xd3, OpType.DCP, Addressing.INDIRECT_Y, 2, 8],
+  [0xcf, OpType.DCP, Addressing.ABSOLUTE, 3, 6],
+  [0xdf, OpType.DCP, Addressing.ABSOLUTE_X, 3, 7],
+  [0xdb, OpType.DCP, Addressing.ABSOLUTE_Y, 3, 7],
+
+  [0x27, OpType.RLA, Addressing.ZEROPAGE, 2, 5],
+  [0x37, OpType.RLA, Addressing.ZEROPAGE_X, 2, 6],
+  [0x23, OpType.RLA, Addressing.INDIRECT_X, 2, 8],
+  [0x33, OpType.RLA, Addressing.INDIRECT_Y, 2, 8],
+  [0x2f, OpType.RLA, Addressing.ABSOLUTE, 3, 6],
+  [0x3f, OpType.RLA, Addressing.ABSOLUTE_X, 3, 7],
+  [0x3b, OpType.RLA, Addressing.ABSOLUTE_Y, 3, 7],
+
+  [0x67, OpType.RRA, Addressing.ZEROPAGE, 2, 5],
+  [0x77, OpType.RRA, Addressing.ZEROPAGE_X, 2, 6],
+  [0x63, OpType.RRA, Addressing.INDIRECT_X, 2, 8],
+  [0x73, OpType.RRA, Addressing.INDIRECT_Y, 2, 8],
+  [0x6f, OpType.RRA, Addressing.ABSOLUTE, 3, 6],
+  [0x7f, OpType.RRA, Addressing.ABSOLUTE_X, 3, 7],
+  [0x7b, OpType.RRA, Addressing.ABSOLUTE_Y, 3, 7],
+
+  [0x03, OpType.SLO, Addressing.INDIRECT_X, 2, 6],
+  [0x13, OpType.SLO, Addressing.INDIRECT_Y, 2, 5],
+  [0x07, OpType.SLO, Addressing.ZEROPAGE, 2, 3],
+  [0x17, OpType.SLO, Addressing.ZEROPAGE_X, 2, 4],
+  [0x0f, OpType.SLO, Addressing.ABSOLUTE, 3, 4],
+  [0x1f, OpType.SLO, Addressing.ABSOLUTE_X, 3, 4],
+  [0x1b, OpType.SLO, Addressing.ABSOLUTE_Y, 3, 4],
+
+  [0x47, OpType.SRE, Addressing.ZEROPAGE, 2, 5],
+  [0x57, OpType.SRE, Addressing.ZEROPAGE_X, 2, 6],
+  [0x43, OpType.SRE, Addressing.INDIRECT_X, 2, 8],
+  [0x53, OpType.SRE, Addressing.INDIRECT_Y, 2, 8],
+  [0x4f, OpType.SRE, Addressing.ABSOLUTE, 3, 6],
+  [0x5f, OpType.SRE, Addressing.ABSOLUTE_X, 3, 7],
+  [0x5b, OpType.SRE, Addressing.ABSOLUTE_Y, 3, 7],
 ]
 
 export const kIllegalInstruction: Instruction = {
