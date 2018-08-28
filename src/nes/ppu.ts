@@ -61,18 +61,21 @@ export enum MirrorMode {
 
 class HEvents {
   private count = 0
+  private countNext = 0
   private events = new Array<any>()
-  private eventsAlt = new Array<any>()
+  private eventsNext = new Array<any>()
 
   public clear(): void {
     this.count = 0
+    this.countNext = 0
   }
 
   public swap(): void {
     const tmp = this.events
-    this.events = this.eventsAlt
-    this.eventsAlt = tmp
-    this.count = 0
+    this.events = this.eventsNext
+    this.count = this.countNext
+    this.eventsNext = tmp
+    this.countNext = 0
   }
 
   public getCount(): number {
@@ -83,19 +86,27 @@ class HEvents {
     return this.events[index]
   }
 
+  public getCountNext(): number {
+    return this.countNext
+  }
+
+  public getEventNext(index: number): any {
+    return this.eventsNext[index]
+  }
+
   public add(hcount: number, hevent: any): void {
-    let n = this.count
-    if (n <= 0 || this.events[n - 1].hcount !== hcount) {
-      if (++n >= this.events.length) {
-        this.events.push({})
+    let n = this.countNext
+    if (n <= 0 || this.eventsNext[n - 1].hcount !== hcount) {
+      if (++n >= this.eventsNext.length) {
+        this.eventsNext.push({})
       }
     }
-    let event = this.events[n - 1]
+    let event = this.eventsNext[n - 1]
     event.hcount = hcount
     Object.keys(hevent).forEach(key => {
       event[key] = hevent[key]
     })
-    this.count = n
+    this.countNext = n
   }
 }
 
@@ -766,10 +777,10 @@ export class Ppu {
   }
 
   private incScrollCounter(): void {
-    const n = this.hevents.getCount()
+    const n = this.hevents.getCountNext()
     if (n <= 0)
       return
-    const h = this.hevents.getEvent(n - 1)
+    const h = this.hevents.getEventNext(n - 1)
     const hcount = this.hcount < Const.HEIGHT - 1 ? this.hcount + 1 : 0
     const dy = hcount - h.hcount
     if (dy <= 0)

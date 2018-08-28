@@ -266,8 +266,8 @@ export class Nes implements PrgBankController {
 
       switch (hcount) {
       case VBLANK_START:
-        this.vblankCallback((leftCycles / VCYCLE) | 0)
         this.ppu.setVBlank()
+        this.vblankCallback((leftCycles / VCYCLE) | 0)
         break
       case VBLANK_NMI:
         this.interruptVBlank()
