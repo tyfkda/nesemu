@@ -84,6 +84,7 @@ export class App {
           break
         case AppEvent.Type.PAUSE:
           this.nes.getCpu().pause(true)
+          this.muteAudio()
           break
         case AppEvent.Type.STEP:
           this.nes.step(0)
@@ -343,6 +344,11 @@ export class App {
       if (volume > 0)
         this.audioManager.setChannelFrequency(ch, apu.getFrequency(ch))
     }
+  }
+
+  protected muteAudio(): void {
+    for (let ch = 0; ch < AudioManager.CHANNEL_COUNT; ++ch)
+      this.audioManager.setChannelVolume(ch, 0)
   }
 
   protected setUpKeyEvent(root: HTMLElement, padKeyHandler: PadKeyHandler): void {
