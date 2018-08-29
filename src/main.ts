@@ -80,7 +80,7 @@ class Main {
       }
       break
     default:
-      // TODO: Show error message.
+      this.wndMgr.showSnackbar(`${file.name}: Supported .nes or .zip only`)
       break
     }
   }

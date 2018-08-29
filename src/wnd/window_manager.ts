@@ -1,4 +1,5 @@
 import Wnd from './wnd'
+import Util from '../util/util'
 
 const BASE_PRIORITY = 100
 
@@ -24,6 +25,27 @@ export default class WindowManager {
     const elem = wnd.getRootNode()
     if (elem != null && elem.parentNode != null)
       elem.parentNode.removeChild(elem)
+  }
+
+  public async showSnackbar(message: string, option: any = {}) {
+    const wait = option.wait || 3000
+
+    const div = document.createElement('div')
+    div.className = 'snackbar-container'
+    div.style.zIndex = '10000'
+    const box = document.createElement('div')
+    box.className = 'snackbar-box'
+    div.appendChild(box)
+    const text = document.createTextNode(message)
+    box.appendChild(text)
+    this.root.appendChild(div)
+
+    await Util.timeout(20)  // Dirty hack.
+    div.style.top = '8px'
+    await Util.timeout(wait)
+    div.style.top = '-32px'
+    await Util.timeout(500)
+    this.root.removeChild(div)
   }
 
   public moveToTop(wnd: Wnd): void {

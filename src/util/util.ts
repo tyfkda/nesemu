@@ -97,4 +97,8 @@ export default class Util {
       throw new Error('2d context not supported or canvas already initialized')
     return context
   }
+
+  public static timeout(millisec): Promise<void> {
+    return new Promise<void>(resolve => setTimeout(resolve, millisec))
+  }
 }
