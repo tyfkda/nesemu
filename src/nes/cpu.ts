@@ -93,6 +93,7 @@ export class Cpu {
   private watchRead: any = {}
   private watchWrite: any = {}
   private paused = false
+  private irqDetected = false
 
   private $DEBUG: boolean
   private stepLogs: string[] = []
@@ -172,21 +173,16 @@ export class Cpu {
     this.p |= IRQBLK_FLAG
   }
 
-  public requestIrq(): boolean {
-    if ((this.p & IRQBLK_FLAG) !== 0)
-      return false
-
-    if (this.$DEBUG) {
-      this.addStepLog(`IRQ occurred at pc=${Util.hex(this.pc, 4)}`)
-    }
-    this.push16(this.pc)
-    this.push(this.p & ~BREAK_FLAG)
-    this.pc = this.read16(VEC_IRQ)
-    this.p |= IRQBLK_FLAG
-    return true
+  public requestIrq(): void {
+    this.irqDetected = true
   }
 
   public step(): number {
+    if (this.irqDetected && ((this.p & IRQBLK_FLAG) === 0)) {
+      this.irqDetected = false
+      this.handleIrq()
+    }
+
     let pc = this.pc
     if (this.$DEBUG) {
       this.addStepLog(disasm(this.bus, pc))
@@ -658,5 +654,16 @@ export class Cpu {
     const newPc = (pc + toSigned(this.read8(adr))) & 0xffff
     this.pc = newPc
     return ((pc ^ newPc) & 0x0100) > 0 ? 2 : 1
+  }
+
+  private handleIrq() {
+    if (this.$DEBUG) {
+      this.addStepLog(`IRQ occurred at pc=${Util.hex(this.pc, 4)}`)
+    }
+    this.push16(this.pc)
+    this.push(this.p & ~BREAK_FLAG)
+    this.pc = this.read16(VEC_IRQ)
+    this.p |= IRQBLK_FLAG
+    return true
   }
 }
