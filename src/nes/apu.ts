@@ -78,9 +78,11 @@ class GamePad {
 // Sound channel
 class Channel {
   protected regs = new Uint8Array(4)
+  protected stopped = true
 
   public reset() {
     this.regs.fill(0)
+    this.stopped = true
   }
 
   public write(reg: number, value: Byte) {
@@ -89,27 +91,23 @@ class Channel {
 
   public getVolume(): number { return 0 }
   public getFrequency(): number { return 0 }
-  public stop() {}
+  public stop() {
+    this.stopped = true
+  }
   public update(): void {}
 
   public isPlaying(): boolean {
-    return false
+    return !this.stopped
   }
 }
 
 class PulseChannel extends Channel {
-  private stopped = false
   private lengthCounter = 0
   private sweepCounter = 0
 
   public reset() {
     super.reset()
-    this.stopped = true
     this.sweepCounter = 0
-  }
-
-  public stop() {
-    this.stopped = true
   }
 
   public write(reg: number, value: Byte) {
@@ -127,10 +125,6 @@ class PulseChannel extends Channel {
     default:
       break
     }
-  }
-
-  public isPlaying(): boolean {
-    return !this.stop
   }
 
   public getVolume(): number {
@@ -209,17 +203,7 @@ class PulseChannel extends Channel {
 }
 
 class TriangleChannel extends Channel {
-  private stopped = false
   private lengthCounter = 0
-
-  public reset() {
-    super.reset()
-    this.stopped = true
-  }
-
-  public stop() {
-    this.stopped = true
-  }
 
   public write(reg: number, value: Byte) {
     super.write(reg, value)
@@ -233,10 +217,6 @@ class TriangleChannel extends Channel {
     default:
       break
     }
-  }
-
-  public isPlaying(): boolean {
-    return !this.stop
   }
 
   public getVolume(): number {
@@ -273,17 +253,7 @@ class TriangleChannel extends Channel {
 }
 
 class NoiseChannel extends Channel {
-  private stopped = false
   private lengthCounter = 0
-
-  public reset() {
-    super.reset()
-    this.stopped = true
-  }
-
-  public stop() {
-    this.stopped = true
-  }
 
   public write(reg: number, value: Byte) {
     super.write(reg, value)
@@ -297,10 +267,6 @@ class NoiseChannel extends Channel {
     default:
       break
     }
-  }
-
-  public isPlaying(): boolean {
-    return !this.stop
   }
 
   public getVolume(): number {
