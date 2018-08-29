@@ -100,10 +100,13 @@ export class Nes implements PrgBankController {
     this.breakPointCallback = callback
   }
 
-  public setRomData(romData: Uint8Array): boolean {
+  public setRomData(romData: Uint8Array): boolean|string {
     if (!isRomValid(romData))
-      return false
+      return 'Invalid format'
     this.mapperNo = getMapperNo(romData)
+    if (!(this.mapperNo in kMapperTable))
+      return `Mapper ${this.mapperNo} not supported`
+
     this.romData = loadPrgRom(romData)
     this.ppu.setChrData(loadChrRom(romData))
     this.ppu.setMirrorMode((romData[6] & 1) === 0 ? MirrorMode.HORZ : MirrorMode.VERT)
@@ -241,11 +244,6 @@ export class Nes implements PrgBankController {
   }
 
   private createMapper(mapperNo: number): Mapper {
-    console.log(`Mapper ${mapperNo}`)
-    if (!(mapperNo in kMapperTable)) {
-      console.error(`  not supported`)
-      mapperNo = 0
-    }
     const mapperFunc = kMapperTable[mapperNo]
     return mapperFunc({
       bus: this.bus,

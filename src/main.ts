@@ -96,7 +96,12 @@ class Main {
       },
     }
     const app = App.create(this.wndMgr, option)
-    app.loadRom(romData)
+    const result = app.loadRom(romData)
+    if (result !== true) {
+      this.wndMgr.showSnackbar(`${name}: ${result}`)
+      app.close()
+      return
+    }
     this.apps.push(app)
   }
 

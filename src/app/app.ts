@@ -112,11 +112,11 @@ export class App {
     this.startLoopAnimation()
   }
 
-  public loadRom(romData: Uint8Array): boolean {
-    if (!this.nes.setRomData(romData)) {
-      alert(`Illegal ROM format`)
-      return false
-    }
+  public loadRom(romData: Uint8Array): boolean|string {
+    const result = this.nes.setRomData(romData)
+    if (result !== true)
+      return result
+
     this.nes.reset()
     this.nes.getCpu().pause(false)
     this.screenWnd.getContentHolder().focus()
@@ -132,6 +132,10 @@ export class App {
     }
 
     return true
+  }
+
+  public close(): void {
+    this.screenWnd.close()
   }
 
   public saveData() {
