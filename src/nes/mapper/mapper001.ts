@@ -44,7 +44,7 @@ export class Mapper001 extends Mapper {
 
       // Register filled: branch according to bit 13~14.
       switch (adr & 0xe000) {
-      case 0x8000:  // Controll
+      case 0x8000:  // Control
         {
           this.options.ppu.setMirrorMode(kMirrorTable[this.register & 3])
 
@@ -59,15 +59,19 @@ export class Mapper001 extends Mapper {
           }
         }
         break
-      case 0xa000: case 0xc000:  // CHR bank
+      case 0xa000:  // CHR bank 0
         {
-          const hilo = ((adr - 0xa000) >> 13) & 1
-          const bank = this.register & 0x1f
-          if (this.chrBank[hilo] !== bank)
-            this.setChrBank(hilo, bank)
-
-          if (hilo === 0)
-            this.setPrgBank(this.prgReg, bank)
+          const bank = this.register
+          if (this.chrBank[0] !== bank)
+            this.setChrBank(0, bank)
+          this.setPrgBank(this.prgReg, bank)
+        }
+        break
+      case 0xc000:  // CHR bank 1
+        {
+          const bank = this.register
+          if (this.chrBank[1] !== bank)
+            this.setChrBank(1, bank)
         }
         break
       case 0xe000:  // PRG bank
