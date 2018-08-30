@@ -34,6 +34,7 @@ const SEQUENCER_MODE = 1 << 7
 
 const CONSTANT_VOLUME = 0x10
 const LENGTH_COUNTER_HALT = 0x20
+const CPU_CLOCK = 1790000
 
 const CHANNEL_COUNT = 4
 const CH_PULSE1 = 0
@@ -139,7 +140,7 @@ class PulseChannel extends Channel {
 
   public getFrequency(): number {
     const value = this.regs[2] + ((this.regs[3] & 7) << 8)
-    return ((1790000 / 16) / (value + 1)) | 0
+    return ((CPU_CLOCK / 16) / (value + 1)) | 0
   }
 
   public update(): void {
@@ -227,7 +228,7 @@ class TriangleChannel extends Channel {
 
   public getFrequency(): number {
     const value = this.regs[2] + ((this.regs[3] & 7) << 8)
-    return ((1790000 / 32) / (value + 1)) | 0
+    return ((CPU_CLOCK / 32) / (value + 1)) | 0
   }
 
   public update(): void {
