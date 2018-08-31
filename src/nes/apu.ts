@@ -34,13 +34,20 @@ const SEQUENCER_MODE = 1 << 7
 
 const CONSTANT_VOLUME = 0x10
 const LENGTH_COUNTER_HALT = 0x20
-const CPU_CLOCK = 1790000
+const LENGTH_COUNTER_HALT_TRI = 0x80
+const ENVELOPE_LOOP = 0x20
+const CPU_CLOCK = 1789773  // Hz
 
 const CHANNEL_COUNT = 4
 const CH_PULSE1 = 0
 const CH_PULSE2 = 1
 const CH_TRIANGLE = 2
 const CH_NOISE = 3
+
+const REG_STATUS = 0
+const REG_SWEEP = 1
+const REG_TIMER_L = 2
+const REG_TIMER_H = 3
 
 const kLengthTable = [
   0x0a, 0xfe, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06, 0xa0, 0x08, 0x3c, 0x0a, 0x0e, 0x0c, 0x1a, 0x0e,
@@ -49,7 +56,7 @@ const kLengthTable = [
 
 const kNoiseFrequencies = (
   [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068]
-    .map(v => v * 1))
+    .map(v => v * 110))
 
 const VBLANK_START = 241
 
@@ -106,22 +113,34 @@ class PulseChannel extends Channel {
   private lengthCounter = 0
   private sweepCounter = 0
 
+  private envelopeDivider = 0  // i.e. Envelope counter
+  private envelopeCounter = 0  // i.e. Envelope volume
+  private envelopeReset = false
+
   public reset() {
     super.reset()
     this.sweepCounter = 0
+    this.envelopeDivider = this.envelopeCounter = 0
   }
 
   public write(reg: number, value: Byte) {
     super.write(reg, value)
 
     switch (reg) {
-    case 1:
-      this.sweepCounter = value >> 4
-      break
-    case 3:  // Set length.
-      const length = kLengthTable[value >> 3]
-      this.lengthCounter = length
+    case REG_STATUS:
       this.stopped = false
+      if ((value & CONSTANT_VOLUME) === 0) {
+        this.envelopeDivider = value & 0x0f
+        this.envelopeCounter = 0x0f
+      }
+      break
+    case REG_SWEEP:
+      this.sweepCounter = (value >> 4) & 7
+      break
+    case REG_TIMER_H:
+      this.lengthCounter = kLengthTable[value >> 3]
+      this.stopped = false
+      this.envelopeReset = true
       break
     default:
       break
@@ -132,14 +151,14 @@ class PulseChannel extends Channel {
     if (this.stopped)
       return 0
 
-    let v = this.regs[0]
+    let v = this.regs[REG_STATUS]
     if ((v & CONSTANT_VOLUME) !== 0)
-      return (v & 15) / 15.0
-    return 1
+      return (v & 15) / 15
+    return this.envelopeCounter / 15
   }
 
   public getFrequency(): number {
-    const value = this.regs[2] + ((this.regs[3] & 7) << 8)
+    const value = this.regs[REG_TIMER_L] + ((this.regs[REG_TIMER_H] & 7) << 8)
     return ((CPU_CLOCK / 16) / (value + 1)) | 0
   }
 
@@ -147,27 +166,54 @@ class PulseChannel extends Channel {
     if (this.stopped)
       return
 
-    this.updateVolumes()
+    this.updateLength()
+    this.updateEnvelope()
     this.sweep()
   }
 
-  private updateVolumes(): void {
-    let l = this.lengthCounter
-    let v = this.regs[0]
-    if ((v & LENGTH_COUNTER_HALT) === 0) {
-      l -= 2 * 4
-      this.lengthCounter = l
-      if (l <= 0) {
-        this.regs[0] = v = (v & 0xf0)  // Set volume = 0
-        this.lengthCounter = 0
-        this.stopped = true
+  private updateLength(): void {
+    let v = this.regs[REG_STATUS]
+    if ((v & LENGTH_COUNTER_HALT) !== 0)
+      return
+    let l = this.lengthCounter - 4
+    if (l <= 0) {
+      l = 0
+      this.stopped = true
+    }
+    this.lengthCounter = l
+  }
+
+  private updateEnvelope(): void {
+    if ((this.regs[REG_STATUS] & CONSTANT_VOLUME) !== 0)
+      return
+
+    if (this.envelopeReset) {
+      this.envelopeReset = false
+      this.envelopeCounter = 0x0f
+      this.envelopeDivider = this.regs[REG_STATUS] & 0x0f
+      return
+    }
+
+    const DEC = 2;
+    if (this.envelopeDivider >= DEC) {
+      this.envelopeDivider -= DEC
+    } else {
+      if (this.envelopeCounter > 0) {
+        --this.envelopeCounter
+        this.envelopeDivider += this.regs[REG_STATUS] & 0x0f
+      } else {
+        this.envelopeCounter = 0
+        if ((this.regs[REG_STATUS] & ENVELOPE_LOOP) !== 0) {
+          this.envelopeCounter = 0x0f
+          this.envelopeDivider += this.regs[REG_STATUS] & 0x0f
+        }
       }
     }
   }
 
   // APU Sweep: http://wiki.nesdev.com/w/index.php/APU_Sweep
   private sweep(): void {
-    const sweep = this.regs[1]
+    const sweep = this.regs[REG_SWEEP]
     if ((sweep & 0x80) === 0)  // Not enabled.
       return
 
@@ -177,7 +223,7 @@ class PulseChannel extends Channel {
     if (c >= count) {
       c -= count
 
-      let freq = this.regs[2] + ((this.regs[3] & 7) << 8)
+      let freq = this.regs[REG_TIMER_L] + ((this.regs[REG_TIMER_H] & 7) << 8)
       const shift = sweep & 7
       if (shift > 0) {
         const add = freq >> shift
@@ -190,8 +236,8 @@ class PulseChannel extends Channel {
           if (freq < 8)
             this.stopped = true
         }
-        this.regs[2] = freq & 0xff
-        this.regs[3] = (this.regs[3] & ~7) | ((freq & 0x0700) >> 8)
+        this.regs[REG_TIMER_L] = freq & 0xff
+        this.regs[REG_TIMER_H] = (this.regs[REG_TIMER_H] & ~7) | ((freq & 0x0700) >> 8)
       }
 
       c -= 2  // 2 sequences per frame
@@ -210,10 +256,10 @@ class TriangleChannel extends Channel {
     super.write(reg, value)
 
     switch (reg) {
-    case 3:  // Set length.
-      const length = kLengthTable[value >> 3]
-      this.lengthCounter = length
-      this.stopped = false
+    case REG_STATUS:
+    case REG_TIMER_H:
+      this.lengthCounter = this.regs[REG_STATUS] & 0x7f
+      this.stopped = this.lengthCounter <= 0
       break
     default:
       break
@@ -227,7 +273,7 @@ class TriangleChannel extends Channel {
   }
 
   public getFrequency(): number {
-    const value = this.regs[2] + ((this.regs[3] & 7) << 8)
+    const value = this.regs[REG_TIMER_L] + ((this.regs[REG_TIMER_H] & 7) << 8)
     return ((CPU_CLOCK / 32) / (value + 1)) | 0
   }
 
@@ -235,21 +281,19 @@ class TriangleChannel extends Channel {
     if (this.stopped)
       return
 
-    this.updateVolumes()
+    this.updateLength()
   }
 
-  private updateVolumes(): void {
-    let l = this.lengthCounter
-    let v = this.regs[0]
-    if ((v & LENGTH_COUNTER_HALT) === 0) {
-      l -= 2 * 4
-      this.lengthCounter = l
-      if (l <= 0) {
-        this.regs[0] = v = (v & 0xf0)  // Set volume = 0
-        this.lengthCounter = 0
-        this.stopped = true
-      }
+  private updateLength(): void {
+    let v = this.regs[REG_STATUS]
+    if ((v & LENGTH_COUNTER_HALT_TRI) !== 0)
+      return
+    let l = this.lengthCounter - 4
+    if (l <= 0) {
+      l = 0
+      this.stopped = true
     }
+    this.lengthCounter = l
   }
 }
 
@@ -260,9 +304,8 @@ class NoiseChannel extends Channel {
     super.write(reg, value)
 
     switch (reg) {
-    case 3:  // Set length.
-      const length = kLengthTable[value >> 3]
-      this.lengthCounter = length
+    case REG_TIMER_H:  // Set length.
+      this.lengthCounter = kLengthTable[value >> 3]
       this.stopped = false
       break
     default:
@@ -274,14 +317,14 @@ class NoiseChannel extends Channel {
     if (this.stopped)
       return 0
 
-    let v = this.regs[0]
+    let v = this.regs[REG_STATUS]
     if ((v & CONSTANT_VOLUME) !== 0)
-      return (v & 15) / 15.0
+      return (v & 15) / 15
     return 1
   }
 
   public getFrequency(): number {
-    const period = this.regs[2] & 15
+    const period = this.regs[REG_TIMER_L] & 15
     return kNoiseFrequencies[period]
   }
 
@@ -289,21 +332,21 @@ class NoiseChannel extends Channel {
     if (this.stopped)
       return
 
-    this.updateVolumes()
+    this.updateLength()
   }
 
-  private updateVolumes(): void {
-    let l = this.lengthCounter
-    let v = this.regs[0]
-    if ((v & LENGTH_COUNTER_HALT) === 0) {
-      l -= 2 * 4
-      this.lengthCounter = l
-      if (l <= 0) {
-        this.regs[0] = v = (v & 0xf0)  // Set volume = 0
-        this.lengthCounter = 0
+  private updateLength(): void {
+    let v = this.regs[REG_STATUS]
+    if ((v & LENGTH_COUNTER_HALT) !== 0)
+      return
+    let l = this.lengthCounter - 4
+    if (l <= 0) {
+      l = 0
+      if ((this.regs[2] & 0x80) === 0) {
         this.stopped = true
       }
     }
+    this.lengthCounter = l
   }
 }
 
@@ -372,7 +415,7 @@ export class Apu {
     case STATUS_REG:
       this.dmcInterrupt = 0  // Writing to this register clears the DMC interrupt flag.
       for (let ch = 0; ch < CHANNEL_COUNT; ++ch) {
-        if ((this.regs[STATUS_REG] & (1 << ch)) === 0)
+        if ((value & (1 << ch)) === 0)
           this.channels[ch].stop()
       }
       break
