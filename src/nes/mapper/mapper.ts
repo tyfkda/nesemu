@@ -12,6 +12,7 @@ export interface MapperOptions {
   ppu: Ppu,
   prgBankCtrl: PrgBankController
   prgSize: number
+  romHash?: string
 }
 
 export class Mapper {

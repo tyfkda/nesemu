@@ -10,6 +10,8 @@ import Util from '../util/util'
 import {Mapper, PrgBankController} from './mapper/mapper'
 import {kMapperTable} from './mapper/mapper_table'
 
+import md5 from 'md5'
+
 const RAM_SIZE = 0x0800
 
 const VBLANK_START = 241
@@ -112,7 +114,8 @@ export class Nes implements PrgBankController {
     this.ppu.setMirrorMode((romData[6] & 1) === 0 ? MirrorMode.HORZ : MirrorMode.VERT)
     this.cpu.deleteAllBreakPoints()
 
-    this.setMemoryMap(this.mapperNo)
+    const romHash = md5(romData)
+    this.setMemoryMap(this.mapperNo, romHash)
 
     return true
   }
@@ -191,7 +194,7 @@ export class Nes implements PrgBankController {
     this.prgBank[bank] = page << 13
   }
 
-  protected setMemoryMap(mapperNo: number): void {
+  protected setMemoryMap(mapperNo: number, romHash?: string): void {
     const bus = this.bus
     bus.clearMemoryMap()
 
@@ -240,10 +243,10 @@ export class Nes implements PrgBankController {
     bus.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])
     bus.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
 
-    this.mapper = this.createMapper(mapperNo)
+    this.mapper = this.createMapper(mapperNo, romHash)
   }
 
-  private createMapper(mapperNo: number): Mapper {
+  private createMapper(mapperNo: number, romHash?: string): Mapper {
     const mapperFunc = kMapperTable[mapperNo]
     return mapperFunc({
       bus: this.bus,
@@ -251,6 +254,7 @@ export class Nes implements PrgBankController {
       ppu: this.ppu,
       prgBankCtrl: this,
       prgSize: this.romData.length,
+      romHash,
     })
   }
 

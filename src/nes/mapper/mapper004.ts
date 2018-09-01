@@ -83,7 +83,18 @@ export class Mapper004 extends Mapper {
     // iNes header, flags 6
     // > Some mappers, such as MMC1, MMC3, and AxROM, can control nametable mirroring.
     // > They ignore bit 0
-    this.options.ppu.setMirrorMode(MirrorMode.VERT)  // Default vertical mirroring?
+    let mirror = MirrorMode.VERT
+    // Dirty hack: detect mirror mode from ROM hash.
+    switch (this.options.romHash) {
+    case '38bfd58a8fa42a3aec9d7f87d38ce5b7':  // Babel no Tou
+    case '5be551489233588475ac220efe457dda':  // Dragon Spirit
+    case 'ce29eec7e41386a22bd0453697c1ce2c':  // Family Pinball
+      mirror = MirrorMode.HORZ
+      break;
+    default:
+      break
+    }
+    this.options.ppu.setMirrorMode(mirror)  // Default vertical mirroring?
   }
 
   public reset() {
