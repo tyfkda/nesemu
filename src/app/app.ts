@@ -43,6 +43,7 @@ export class App {
   protected audioManager = new AudioManager()
   protected stream = new AppEvent.Stream()
   protected subscription: Pubsub.Subscription
+  protected pressingKeys: any = {}
 
   protected title: string
   protected screenWnd: ScreenWnd
@@ -327,7 +328,8 @@ export class App {
       this.nes.setPadStatus(i, pad)
     }
 
-    const et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
+    let et = this.pressingKeys[KeyCode.SHIFT] ? elapsedTime * 3 : elapsedTime
+    et = Math.min(et, MAX_ELAPSED_TIME)
     let cycles = (CPU_HZ * et / 1000) | 0
     this.nes.runCycles(cycles)
   }
@@ -366,10 +368,12 @@ export class App {
         return
       event.preventDefault()
       padKeyHandler.onKeyDown(event.keyCode)
+      this.pressingKeys[event.keyCode] = true
     })
     root.addEventListener('keyup', (event) => {
       event.preventDefault()
       padKeyHandler.onKeyUp(event.keyCode)
+      this.pressingKeys[event.keyCode] = false
     })
   }
 }

@@ -18,4 +18,7 @@ export enum KeyCode {
   W = 87,
   O = 79,
   P = 80,
+
+  // Misc.
+  SHIFT = 16,
 }
