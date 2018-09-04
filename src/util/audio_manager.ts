@@ -1,8 +1,4 @@
-export enum ChannelType {
-  SQUARE,
-  TRIANGLE,
-  NOISE,
-}
+import {ChannelType} from '../nes/apu'
 
 const kOscillatorTypes: OscillatorType[] = ['square', 'triangle']
 
@@ -92,7 +88,11 @@ export class AudioManager {
     this.channels.push(sc)
   }
 
-  public destroy() {
+  public getChannelCount(): number {
+    return this.channels.length
+  }
+
+  public release() {
     if (this.channels != null) {
       for (let channel of this.channels) {
         channel.destroy()

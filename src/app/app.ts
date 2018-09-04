@@ -2,7 +2,7 @@ import {Nes} from '../nes/nes'
 import {MirrorMode} from '../nes/ppu'
 
 import {AppEvent} from './app_event'
-import {AudioManager, ChannelType} from '../util/audio_manager'
+import {AudioManager} from '../util/audio_manager'
 import {GamepadManager} from '../util/gamepad_manager'
 import {KeyCode} from '../util/key_code'
 import {PadKeyHandler} from '../util/pad_key_handler'
@@ -16,14 +16,6 @@ import * as Pubsub from '../util/pubsub'
 const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
 const DEFAULT_MASTER_VOLUME = 0.125
-
-const kChannelTypes: ChannelType[] = [
-  ChannelType.SQUARE,
-  ChannelType.SQUARE,
-  ChannelType.TRIANGLE,
-  ChannelType.NOISE,
-]
-const CHANNEL_COUNT = kChannelTypes.length
 
 function download(blob: Blob, filename: string) {
   const objectURL = window.URL.createObjectURL(blob)
@@ -73,8 +65,6 @@ export class App {
   constructor(protected wndMgr: WindowManager, option: any, noDefault?: boolean) {
     if (noDefault)
       return
-
-    this.setupAudioManager()
 
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
@@ -129,6 +119,8 @@ export class App {
     const result = this.nes.setRomData(romData)
     if (result !== true)
       return result
+
+    this.setupAudioManager()
 
     this.nes.reset()
     this.nes.getCpu().pause(false)
@@ -284,7 +276,7 @@ export class App {
   protected cleanUp() {
     this.cancelLoopAnimation()
     this.destroying = true
-    this.audioManager.destroy()
+    this.audioManager.release()
 
     this.subscription.unsubscribe()
   }
@@ -350,17 +342,18 @@ export class App {
   }
 
   protected updateAudio(): void {
-    const apu = this.nes.getApu()
-    for (let ch = 0; ch < CHANNEL_COUNT; ++ch) {
-      const volume = apu.getVolume(ch)
+    const count = this.audioManager.getChannelCount()
+    for (let ch = 0; ch < count; ++ch) {
+      const volume = this.nes.getSoundVolume(ch)
       this.audioManager.setChannelVolume(ch, volume)
       if (volume > 0)
-        this.audioManager.setChannelFrequency(ch, apu.getFrequency(ch))
+        this.audioManager.setChannelFrequency(ch, this.nes.getSoundFrequency(ch))
     }
   }
 
   protected muteAudio(): void {
-    for (let ch = 0; ch < CHANNEL_COUNT; ++ch)
+    const n = this.audioManager.getChannelCount()
+    for (let ch = 0; ch < n; ++ch)
       this.audioManager.setChannelVolume(ch, 0)
   }
 
@@ -389,8 +382,11 @@ export class App {
   }
 
   private setupAudioManager() {
+    this.audioManager.release()
+
     this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
-    for (const type of kChannelTypes) {
+    const channelTypes = this.nes.getSoundChannelTypes()
+    for (const type of channelTypes) {
       this.audioManager.addChannel(type)
     }
   }

@@ -24,6 +24,12 @@ export enum PadValue {
   R = 1 << PadBit.R,
 }
 
+export enum ChannelType {
+  SQUARE,
+  TRIANGLE,
+  NOISE,
+}
+
 const BASE = 0x4000
 const STATUS_REG = 0x15
 const PAD1_REG = 0x16
@@ -48,6 +54,13 @@ const REG_STATUS = 0
 const REG_SWEEP = 1
 const REG_TIMER_L = 2
 const REG_TIMER_H = 3
+
+export const kChannelTypes: ChannelType[] = [
+  ChannelType.SQUARE,
+  ChannelType.SQUARE,
+  ChannelType.TRIANGLE,
+  ChannelType.NOISE,
+]
 
 const kLengthTable = [
   0x0a, 0xfe, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06, 0xa0, 0x08, 0x3c, 0x0a, 0x0e, 0x0c, 0x1a, 0x0e,
@@ -364,6 +377,10 @@ export class Apu {
     this.channels[CH_PULSE2] = new PulseChannel()
     this.channels[CH_TRIANGLE] = new TriangleChannel()
     this.channels[CH_NOISE] = new NoiseChannel()
+  }
+
+  public getChannelTypes(): ChannelType[] {
+    return kChannelTypes
   }
 
   public reset() {

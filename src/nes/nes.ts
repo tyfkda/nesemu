@@ -1,6 +1,6 @@
 // NES: Nintendo Entertainment System
 
-import {Apu} from './apu'
+import {Apu, ChannelType} from './apu'
 import {Bus} from './bus'
 import {kColors} from './const'
 import {Cpu} from './cpu'
@@ -91,7 +91,6 @@ export class Nes implements PrgBankController {
   public getBus(): Bus { return this.bus }
   public getCpu(): Cpu { return this.cpu }
   public getPpu(): Ppu { return this.ppu }
-  public getApu(): Apu { return this.apu }
   public getCycleCount(): number { return this.cycleCount }
 
   public setVblankCallback(callback: (leftV: number) => void): void {
@@ -174,6 +173,18 @@ export class Nes implements PrgBankController {
     const cycle = this.cpu.step()
     this.cycleCount = this.tryHblankEvent(this.cycleCount, cycle, leftCycles)
     return cycle
+  }
+
+  public getSoundChannelTypes(): ChannelType[] {
+    return this.apu.getChannelTypes()
+  }
+
+  public getSoundVolume(channel: number): number {
+    return this.apu.getVolume(channel)
+  }
+
+  public getSoundFrequency(channel: number): number {
+    return this.apu.getFrequency(channel)
   }
 
   public render(pixels: Uint8ClampedArray): void {
