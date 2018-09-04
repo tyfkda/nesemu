@@ -72,19 +72,12 @@ function buildWhenModified(glob, buildFunc) {
   })
 }
 
-gulp.task('default', ['build', 'server', 'watch'])
-
-gulp.task('watch', ['watch-html', 'watch-ts', 'watch-sass',
-                    'watch-lint', 'watch-test'])
-
-gulp.task('build', ['html', 'ts', 'sass', 'copy-res'])
-
 gulp.task('html', () => {
   return convertHtml('debug', DEST_DIR)
 })
 
-gulp.task('watch-html', [], () => {
-  gulp.watch(SRC_HTML_FILES, ['html'])
+gulp.task('watch-html', () => {
+  gulp.watch(SRC_HTML_FILES, gulp.series('html'))
 })
 
 gulp.task('ts', () => {
@@ -98,7 +91,7 @@ gulp.task('ts', () => {
     .pipe(gulp.dest(ASSETS_DIR))
 })
 
-gulp.task('watch-ts', [], () => {
+gulp.task('watch-ts', () => {
   const config = clone(webpackConfig)
   config.mode = 'development'
   config.watch = true
@@ -119,8 +112,8 @@ gulp.task('sass', () => {
     .pipe(browserSync.reload({stream: true}))
 })
 
-gulp.task('watch-sass', [], () => {
-  gulp.watch(SRC_SASS_FILES, ['sass'])
+gulp.task('watch-sass', () => {
+  gulp.watch(SRC_SASS_FILES, gulp.series('sass'))
 })
 
 gulp.task('lint', () => {
@@ -128,7 +121,7 @@ gulp.task('lint', () => {
                `!${SRC_TS_DIR}/lib.ts`])
 })
 
-gulp.task('watch-lint', [], () => {
+gulp.task('watch-lint', () => {
   buildWhenModified([`${SRC_TS_DIR}/**/*.ts`,
                      `!${SRC_TS_DIR}/lib.ts`],
                     lint)
@@ -170,14 +163,21 @@ gulp.task('watch-test', () => {
   gulp.watch(
     [SRC_TS_FILES,
      SRC_TEST_FILES],
-    ['test'])
+    gulp.series('test'))
 })
 
 gulp.task('clean', del.bind(null, [
   DEST_DIR,
 ]))
 
-gulp.task('release', ['build'], () => {
+gulp.task('watch', gulp.parallel('watch-html', 'watch-ts', 'watch-sass',
+                                 'watch-lint', 'watch-test'))
+
+gulp.task('build', gulp.parallel('html', 'ts', 'sass', 'copy-res'))
+
+gulp.task('default', gulp.series('build', gulp.parallel('server', 'watch')))
+
+gulp.task('release', gulp.series('build', () => {
   // Copy resources.
   gulp.src([`${DEST_DIR}/**/*.*`,
             `!${DEST_DIR}/index.html`,
@@ -189,12 +189,12 @@ gulp.task('release', ['build'], () => {
   // Build HTML for release.
   convertHtml('release', RELEASE_DIR)
 
-  // Concatenate ts into single 'assets/main.js' file.
+  // Concatenate ts into single 'assets/main.ts' file.
   const config = clone(webpackConfig)
   //config.plugins = config.plugins || []
   //config.plugins.push(new webpack.optimize.UglifyJsPlugin())
-  gulp.src(`${SRC_TS_DIR}/main.js`)
+  return gulp.src(`${SRC_TS_DIR}/main.ts`)
     .pipe(plumber())
     .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(RELEASE_ASSETS_DIR))
-})
+}))
