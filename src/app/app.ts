@@ -15,6 +15,7 @@ import * as Pubsub from '../util/pubsub'
 
 const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
+const DEFAULT_MASTER_VOLUME = 0.125
 
 function download(blob: Blob, filename: string) {
   const objectURL = window.URL.createObjectURL(blob)
@@ -64,6 +65,8 @@ export class App {
   constructor(protected wndMgr: WindowManager, option: any, noDefault?: boolean) {
     if (noDefault)
       return
+
+    this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
 
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
@@ -179,7 +182,7 @@ export class App {
       return
     this.isBlur = false
     // this.startLoopAnimation()
-    this.audioManager.setMasterVolume(1)
+    this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
   }
 
   public createPaletWnd(): boolean {
