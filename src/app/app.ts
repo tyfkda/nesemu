@@ -2,7 +2,7 @@ import {Nes} from '../nes/nes'
 import {MirrorMode} from '../nes/ppu'
 
 import {AppEvent} from './app_event'
-import {AudioManager} from '../util/audio_manager'
+import {AudioManager, ChannelType} from '../util/audio_manager'
 import {GamepadManager} from '../util/gamepad_manager'
 import {KeyCode} from '../util/key_code'
 import {PadKeyHandler} from '../util/pad_key_handler'
@@ -16,6 +16,14 @@ import * as Pubsub from '../util/pubsub'
 const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
 const DEFAULT_MASTER_VOLUME = 0.125
+
+const kChannelTypes: ChannelType[] = [
+  ChannelType.SQUARE,
+  ChannelType.SQUARE,
+  ChannelType.TRIANGLE,
+  ChannelType.NOISE,
+]
+const CHANNEL_COUNT = kChannelTypes.length
 
 function download(blob: Blob, filename: string) {
   const objectURL = window.URL.createObjectURL(blob)
@@ -66,7 +74,7 @@ export class App {
     if (noDefault)
       return
 
-    this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
+    this.setupAudioManager()
 
     this.nes = Nes.create()
     window.nes = this.nes  // Put nes into global.
@@ -343,7 +351,7 @@ export class App {
 
   protected updateAudio(): void {
     const apu = this.nes.getApu()
-    for (let ch = 0; ch < AudioManager.CHANNEL_COUNT; ++ch) {
+    for (let ch = 0; ch < CHANNEL_COUNT; ++ch) {
       const volume = apu.getVolume(ch)
       this.audioManager.setChannelVolume(ch, volume)
       if (volume > 0)
@@ -352,7 +360,7 @@ export class App {
   }
 
   protected muteAudio(): void {
-    for (let ch = 0; ch < AudioManager.CHANNEL_COUNT; ++ch)
+    for (let ch = 0; ch < CHANNEL_COUNT; ++ch)
       this.audioManager.setChannelVolume(ch, 0)
   }
 
@@ -378,5 +386,12 @@ export class App {
       padKeyHandler.onKeyUp(event.keyCode)
       this.pressingKeys[event.keyCode] = false
     })
+  }
+
+  private setupAudioManager() {
+    this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
+    for (const type of kChannelTypes) {
+      this.audioManager.addChannel(type)
+    }
   }
 }

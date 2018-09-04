@@ -1,4 +1,10 @@
-const kChannelTypes: (OscillatorType | 'noise')[] = ['square', 'square', 'triangle', 'noise']
+export enum ChannelType {
+  SQUARE,
+  TRIANGLE,
+  NOISE,
+}
+
+const kOscillatorTypes: OscillatorType[] = ['square', 'triangle']
 
 class SoundChannel {
   private gainNode: GainNode
@@ -15,13 +21,13 @@ class SoundChannel {
     }
   }
 
-  public create(context: AudioContext, type: (OscillatorType | 'noise')): void {
+  public create(context: AudioContext, type: ChannelType): void {
     this.gainNode = context.createGain()
     this.gainNode.gain.setTargetAtTime(0, context.currentTime, 0)
 
     this.oscillator = context.createOscillator()
-    if (type !== 'noise') {
-      this.oscillator.type = type
+    if (type !== ChannelType.NOISE) {
+      this.oscillator.type = kOscillatorTypes[type]
     } else {
       const count = 1024
       const real = new Float32Array(count)
@@ -52,12 +58,10 @@ class SoundChannel {
 }
 
 export class AudioManager {
-  public static CHANNEL_COUNT = kChannelTypes.length
-
   private static initialized: boolean = false
   private static context?: AudioContext
 
-  private channels: SoundChannel[]
+  private channels = new Array<SoundChannel>()
   private masterVolume: number = 0
 
   private static setUp() {
@@ -73,17 +77,19 @@ export class AudioManager {
 
   constructor() {
     AudioManager.setUp()
+
+    this.masterVolume = 1.0
+  }
+
+  public addChannel(type: ChannelType) {
     const context = AudioManager.context
     if (context == null)
       return
 
-    this.masterVolume = 1.0
-    this.channels = kChannelTypes.map(type => {
-      const sc = new SoundChannel()
-      sc.create(context, type)
-      sc.start()
-      return sc
-    })
+    const sc = new SoundChannel()
+    sc.create(context, type)
+    sc.start()
+    this.channels.push(sc)
   }
 
   public destroy() {
