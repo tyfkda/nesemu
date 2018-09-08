@@ -1,6 +1,6 @@
 import {ChannelType} from '../nes/apu'
 
-const kOscillatorTypes: OscillatorType[] = ['square', 'triangle']
+const kOscillatorTypes: OscillatorType[] = ['square', 'triangle', 'sawtooth']
 
 class SoundChannel {
   private gainNode: GainNode

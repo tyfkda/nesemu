@@ -1,4 +1,5 @@
 import {Bus} from '../bus'
+import {ChannelType} from '../apu'
 import {Cpu} from '../cpu'
 import {Ppu} from '../ppu'
 
@@ -27,5 +28,17 @@ export class Mapper {
   }
 
   public load(_saveData: any): void {
+  }
+
+  public getExtraSoundChannelTypes(): ChannelType[] {
+    return []
+  }
+
+  public getSoundVolume(channel: number): number {
+    return 0
+  }
+
+  public getSoundFrequency(channel: number): number {
+    return 0
   }
 }

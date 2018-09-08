@@ -27,6 +27,7 @@ export enum PadValue {
 export enum ChannelType {
   SQUARE,
   TRIANGLE,
+  SAWTOOTH,
   NOISE,
 }
 

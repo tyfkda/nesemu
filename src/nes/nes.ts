@@ -64,6 +64,7 @@ export class Nes implements PrgBankController {
   private vblankCallback: (leftV: number) => void
   private breakPointCallback: () => void
   private prgBank: number[]
+  private apuChannelCount = 0
 
   public static create(): Nes {
     return new Nes()
@@ -176,15 +177,22 @@ export class Nes implements PrgBankController {
   }
 
   public getSoundChannelTypes(): ChannelType[] {
-    return this.apu.getChannelTypes()
+    const channels = this.apu.getChannelTypes()
+    const extras = this.mapper.getExtraSoundChannelTypes()
+    this.apuChannelCount = channels.length
+    return channels.concat(extras)
   }
 
   public getSoundVolume(channel: number): number {
-    return this.apu.getVolume(channel)
+    if (channel < this.apuChannelCount)
+      return this.apu.getVolume(channel)
+    return this.mapper.getSoundVolume(channel - this.apuChannelCount)
   }
 
   public getSoundFrequency(channel: number): number {
-    return this.apu.getFrequency(channel)
+    if (channel < this.apuChannelCount)
+      return this.apu.getFrequency(channel)
+    return this.mapper.getSoundFrequency(channel - this.apuChannelCount)
   }
 
   public render(pixels: Uint8ClampedArray): void {
