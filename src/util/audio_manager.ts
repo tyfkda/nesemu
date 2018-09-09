@@ -19,7 +19,7 @@ class SoundChannel {
 
   public create(context: AudioContext, type: ChannelType): void {
     this.gainNode = context.createGain()
-    this.gainNode.gain.setTargetAtTime(0, context.currentTime, 0)
+    this.gainNode.gain.setValueAtTime(0, context.currentTime)
 
     this.oscillator = context.createOscillator()
     if (type !== ChannelType.NOISE) {
@@ -49,7 +49,7 @@ class SoundChannel {
   }
 
   public setVolume(volume: number, context: AudioContext) {
-    this.gainNode.gain.setTargetAtTime(volume, context.currentTime, 0)
+    this.gainNode.gain.setValueAtTime(volume, context.currentTime)
   }
 }
 
