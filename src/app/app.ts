@@ -111,8 +111,6 @@ export class App {
 
     this.padKeyHandler = new PadKeyHandler()
     this.setUpKeyEvent(this.screenWnd.getContentHolder(), this.padKeyHandler)
-
-    this.startLoopAnimation()
   }
 
   public loadRom(romData: Uint8Array): boolean|string {
@@ -126,6 +124,8 @@ export class App {
     this.nes.getCpu().pause(false)
     this.screenWnd.getContentHolder().focus()
     this.stream.triggerLoadRom()
+
+    this.startLoopAnimation()
 
     if (window.$DEBUG) {  // Accessing global variable!!!
       this.createPaletWnd()
