@@ -58,7 +58,7 @@ export class Nes implements PrgBankController {
   protected apu: Apu
   protected cycleCount = 0
 
-  private romData = new Uint8Array(0)
+  private prgRom = new Uint8Array(0)
   private mapperNo = 0
   private mapper: Mapper
   private vblankCallback: (leftV: number) => void
@@ -109,7 +109,7 @@ export class Nes implements PrgBankController {
     if (!(this.mapperNo in kMapperTable))
       return `Mapper ${this.mapperNo} not supported`
 
-    this.romData = loadPrgRom(romData)
+    this.prgRom = loadPrgRom(romData)
     this.ppu.setChrData(loadChrRom(romData))
     this.ppu.setMirrorMode((romData[6] & 1) === 0 ? MirrorMode.HORZ : MirrorMode.VERT)
     this.cpu.deleteAllBreakPoints()
@@ -246,7 +246,7 @@ export class Nes implements PrgBankController {
     })
 
     // PRG ROM
-    const prgMask = this.romData.length - 1
+    const prgMask = this.prgRom.length - 1
     this.prgBank = [0x0000,  // 0x8000~
                     0x2000,  // 0xa000~
                     -0x4000 & prgMask,  // 0xc000~
@@ -254,8 +254,8 @@ export class Nes implements PrgBankController {
     bus.setReadMemory(0x8000, 0xffff, (adr) => {
       const bank = (adr - 0x8000) >> 13
       const offset = adr & ((1 << 13) - 1)
-      const prgSize = this.romData.length
-      return this.romData[(this.prgBank[bank] + offset) & (prgSize - 1)]
+      const prgRom = this.prgRom
+      return prgRom[(this.prgBank[bank] + offset) & (prgRom.length - 1)]
     })
 
     // RAM
@@ -272,7 +272,7 @@ export class Nes implements PrgBankController {
       cpu: this.cpu,
       ppu: this.ppu,
       prgBankCtrl: this,
-      prgSize: this.romData.length,
+      prgSize: this.prgRom.length,
       romHash,
     })
   }
