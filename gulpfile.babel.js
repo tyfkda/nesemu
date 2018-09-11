@@ -24,7 +24,7 @@ const jest = require('gulp-jest').default
 import plumber from 'gulp-plumber'
 import del from 'del'
 
-const ROOT_DIR = `${__dirname}/.`
+const ROOT_DIR = `${__dirname}`
 const RES_DIR = `${ROOT_DIR}/res`
 const DEST_DIR = `${ROOT_DIR}/public`
 const ASSETS_DIR = `${DEST_DIR}/assets`
@@ -66,9 +66,8 @@ function lint(glob) {
 }
 
 function buildWhenModified(glob, buildFunc) {
-  gulp.watch(glob, (obj) => {
-    if (obj.type === 'changed')
-      buildFunc(obj.path)
+  gulp.watch(glob, () => {
+    return buildFunc()
   })
 }
 
@@ -122,9 +121,10 @@ gulp.task('lint', () => {
 })
 
 gulp.task('watch-lint', () => {
-  buildWhenModified([`${SRC_TS_DIR}/**/*.ts`,
-                     `!${SRC_TS_DIR}/lib.ts`],
-                    lint)
+  const globs = [`${SRC_TS_DIR}/**/*.ts`,
+                 `!${SRC_TS_DIR}/lib.ts`]
+  buildWhenModified(globs,
+                    () => lint(globs))
 })
 
 gulp.task('copy-res', () => {
@@ -173,7 +173,7 @@ gulp.task('clean', del.bind(null, [
 gulp.task('watch', gulp.parallel('watch-html', 'watch-ts', 'watch-sass',
                                  'watch-lint', 'watch-test'))
 
-gulp.task('build', gulp.parallel('html', 'ts', 'sass', 'copy-res'))
+gulp.task('build', gulp.parallel('html', 'ts', 'sass', 'copy-res', 'lint'))
 
 gulp.task('default', gulp.series('build', gulp.parallel('server', 'watch')))
 
