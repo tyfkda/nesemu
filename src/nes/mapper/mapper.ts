@@ -20,7 +20,7 @@ export class Mapper {
   public reset() {
   }
 
-  public onHblank(hcount: number): void {
+  public onHblank(_hcount: number): void {
   }
 
   public save(): object {
@@ -34,11 +34,11 @@ export class Mapper {
     return []
   }
 
-  public getSoundVolume(channel: number): number {
+  public getSoundVolume(_channel: number): number {
     return 0
   }
 
-  public getSoundFrequency(channel: number): number {
+  public getSoundFrequency(_channel: number): number {
     return 0
   }
 }

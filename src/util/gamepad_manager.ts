@@ -223,7 +223,7 @@ export class GamepadWnd extends Wnd {
     this.checkGamepadPressed(padNo)
   }
 
-  private replaceGamepadButton(padNo: number, gamepad: Gamepad, buttonIndex: number): boolean {
+  private replaceGamepadButton(_padNo: number, gamepad: Gamepad, buttonIndex: number): boolean {
     for (let i = 0; i < gamepad.buttons.length; ++i) {
       if (gamepad.buttons[i].pressed) {
         GamepadManager.setButton(kGamepadButtons[buttonIndex].padbit, i)

@@ -35,7 +35,7 @@ export default class Util {
         const binary = new Uint8Array((e.target as any).result)
         resolve(binary)
       }
-      reader.onerror = function(e) {
+      reader.onerror = function(_e) {
         reject(reader.error)
       }
       reader.readAsArrayBuffer(file)

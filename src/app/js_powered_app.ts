@@ -74,7 +74,7 @@ class JsNes extends Nes {
     this.jsCpu.update()
   }
 
-  public step(leftCycles?: number): number {
+  public step(_leftCycles?: number): number {
     this.jsCpu.step()
     return 1  // Dummy
   }

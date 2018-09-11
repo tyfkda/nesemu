@@ -20,10 +20,10 @@ export class Mapper069 extends Mapper {
 
     // CHR ROM bank
     let command = 0
-    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0x9fff, (_adr, value) => {
       command = value & 0x0f
     })
-    this.options.bus.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xa000, 0xbfff, (_adr, value) => {
       switch (command) {
       case 0x00: case 0x01: case 0x02: case 0x03:
       case 0x04: case 0x05: case 0x06: case 0x07:

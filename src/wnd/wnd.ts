@@ -142,7 +142,7 @@ export default class Wnd {
       const itemElem = document.createElement('div')
       itemElem.className = 'menu-item pull-left'
       itemElem.innerText = menuItem.label
-      itemElem.addEventListener('click', (event) => {
+      itemElem.addEventListener('click', (_event) => {
         if ('submenu' in menuItem) {
           this.addSubmenu(menuItem, itemElem)
         }
@@ -350,7 +350,7 @@ export default class Wnd {
     subItemHolder.style.top = `${rect.bottom - 1}px`
 
     // To handle earlier than menu open, pass useCapture=true
-    const onClickOther = (event) => {
+    const onClickOther = (_event) => {
       if (subItemHolder.parentNode != null)
         subItemHolder.parentNode.removeChild(subItemHolder)
       document.removeEventListener('click', onClickOther, true)

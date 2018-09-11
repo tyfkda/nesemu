@@ -89,7 +89,7 @@ export class Mapper073 extends Mapper {
     this.setPrgBank(saveData.prgBank)
   }
 
-  public onHblank(hcount: number): void {
+  public onHblank(_hcount: number): void {
     if (this.irqEnable && this.irqCounter > 0) {
       this.irqCounter -= 185  // TODO: Calculate.
       if (this.irqCounter < 0) {

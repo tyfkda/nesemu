@@ -208,7 +208,7 @@ class PulseChannel extends Channel {
       return
     }
 
-    const DEC = 2;
+    const DEC = 2
     if (this.envelopeDivider >= DEC) {
       this.envelopeDivider -= DEC
     } else {

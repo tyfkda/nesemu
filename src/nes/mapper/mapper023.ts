@@ -158,7 +158,7 @@ class Mapper023Base extends Mapper {
       this.setChrBankOffset(i, saveData.chrBank[i])
   }
 
-  public onHblank(hcount: number): void {
+  public onHblank(_hcount: number): void {
     if ((this.irqControl & IRQ_ENABLE) !== 0) {
       let c = this.irqCounter
       if ((this.irqControl & IRQ_MODE) === 0) {  // scanline mode

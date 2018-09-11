@@ -68,7 +68,7 @@ export class Mapper004 extends Mapper {
         this.setIrqHlineValue(this.irqLatch)
       }
     })
-    this.options.bus.setWriteMemory(0xe000, 0xffff, (adr, value) => {
+    this.options.bus.setWriteMemory(0xe000, 0xffff, (adr, _value) => {
       if ((adr & 1) === 0) {
         this.enableIrqHline(false)
         this.resetIrqHlineCounter()
@@ -90,7 +90,7 @@ export class Mapper004 extends Mapper {
     case '5be551489233588475ac220efe457dda':  // Dragon Spirit
     case 'ce29eec7e41386a22bd0453697c1ce2c':  // Family Pinball
       mirror = MirrorMode.HORZ
-      break;
+      break
     default:
       break
     }
@@ -220,7 +220,8 @@ export class Mapper118 extends Mapper004 {
         const chrA12 = this.regs[0] & 0x80
         const bank = this.regs[0] & 7
         if ((chrA12 === 0 && bank < 2) || (chrA12 !== 0 && bank >= 2 && bank < 6))
-          this.options.ppu.setMirrorMode((value & 0x80) === 0 ? MirrorMode.SINGLE0 : MirrorMode.SINGLE1)
+          this.options.ppu.setMirrorMode(
+            (value & 0x80) === 0 ? MirrorMode.SINGLE0 : MirrorMode.SINGLE1)
       }
     })
   }

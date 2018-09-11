@@ -14,8 +14,8 @@ export class Bus {
   }
 
   public clearMemoryMap(): void {
-    this.readerFuncTable.fill(adr => 0xff)
-    this.writerFuncTable.fill((adr, value) => {})
+    this.readerFuncTable.fill(_adr => 0xff)
+    this.writerFuncTable.fill((_adr, _value) => {})
   }
 
   public setReadMemory(start: Address, end: Address, func: (adr: Address) => Byte): void {

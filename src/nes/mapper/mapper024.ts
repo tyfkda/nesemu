@@ -42,7 +42,7 @@ class Channel {
 
 class PulseChannel extends Channel {
   public getVolume(): number {
-    if ((this.regs[2] & 0x80) == 0)
+    if ((this.regs[2] & 0x80) === 0)
       return 0
     return (this.regs[0] & 15) / 15
   }
@@ -88,9 +88,9 @@ class SawToothChannel extends Channel {
   }
 
   public getVolume(): number {
-    if ((this.regs[2] & 0x80) == 0)
+    if ((this.regs[2] & 0x80) === 0)
       return 0
-    //return (this.acc >> (8 - 3)) / 0x1f
+    // return (this.acc >> (8 - 3)) / 0x1f
     return 1
   }
 
@@ -248,6 +248,26 @@ class Mapper024Base extends Mapper {
       this.updateSound()
   }
 
+  public getExtraSoundChannelTypes(): ChannelType[] {
+    return kChannelTypes
+  }
+
+  public getSoundVolume(channel: number): number {
+    const halt = (this.frequencyScaling & 0x01) !== 0
+    if (halt)
+      return 0
+    return this.channels[channel].getVolume()
+  }
+
+  public getSoundFrequency(channel: number): number {
+    let f = this.channels[channel].getFrequency()
+    if ((this.frequencyScaling & 0x02) !== 0)
+      f *= 16
+    if ((this.frequencyScaling & 0x04) !== 0)
+      f *= 256
+    return f
+  }
+
   private setPrgBank(prgBank: number) {
     this.prgBank = prgBank
     this.options.prgBankCtrl.setPrgBank(0, prgBank)
@@ -262,10 +282,6 @@ class Mapper024Base extends Mapper {
 
   private writeSound(channel: number, reg: number, value: number) {
     this.channels[channel].write(reg, value)
-  }
-
-  public getExtraSoundChannelTypes(): ChannelType[] {
-    return kChannelTypes
   }
 
   private setupAudio() {
@@ -285,22 +301,6 @@ class Mapper024Base extends Mapper {
       }
       this.channels[i] = channel
     }
-  }
-
-  public getSoundVolume(channel: number): number {
-    const halt = (this.frequencyScaling & 0x01) !== 0
-    if (halt)
-      return 0
-    return this.channels[channel].getVolume()
-  }
-
-  public getSoundFrequency(channel: number): number {
-    let f = this.channels[channel].getFrequency()
-    if ((this.frequencyScaling & 0x02) !== 0)
-      f *= 16
-    if ((this.frequencyScaling & 0x04) !== 0)
-      f *= 256
-    return f
   }
 
   private updateSound() {

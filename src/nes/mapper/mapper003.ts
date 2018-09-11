@@ -11,7 +11,7 @@ export class Mapper003 extends Mapper {
     super()
 
     // Chr ROM bank
-    this.options.bus.setWriteMemory(0x8000, 0xffff, (adr, value) => {
+    this.options.bus.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
       this.chrBank = value
       this.options.ppu.setChrBank(this.chrBank)
     })
