@@ -1,7 +1,7 @@
 // JS-powered NES
 // Run JavaScript code, instead of 6502 CPU.
 
-import {App} from './app'
+import {App, Option} from './app'
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
 import {Bus} from '../nes/bus'
@@ -191,7 +191,7 @@ export class JsApp extends App {
   private jsScreenWnd: JsScreenWnd
   private leftTime = 0
 
-  constructor(wndMgr: WindowManager, option: any) {
+  constructor(wndMgr: WindowManager, option: Option) {
     super(wndMgr, option, true)
     this.jsNes = new JsNes()
     window.jsNes = this.jsNes  // Put jsNes into global.
@@ -280,7 +280,7 @@ export class JsApp extends App {
     if (this.rafId == null)
       return
     cancelAnimationFrame(this.rafId)
-    this.rafId = null
+    this.rafId = undefined
   }
 
   protected update(elapsedTime: number): void {

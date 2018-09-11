@@ -16,10 +16,17 @@ const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
 const DEFAULT_MASTER_VOLUME = 0.125
 
+export class Option {
+  public title?: string
+  public centerX?: number
+  public centerY?: number
+  public onClosed?: (app: App) => void
+}
+
 export class App {
   protected destroying = false
   protected isBlur = false
-  protected rafId: number|null  // requestAnimationFrame
+  protected rafId?: number  // requestAnimationFrame
   protected nes: Nes
   protected audioManager: AudioManager
   protected stream = new AppEvent.Stream()
@@ -27,19 +34,19 @@ export class App {
 
   protected title: string
   protected screenWnd: ScreenWnd
-  protected paletWnd: PaletWnd|null
-  protected hasNameTableWnd: boolean
-  protected hasPatternTableWnd: boolean
+  protected paletWnd: PaletWnd|null = null
+  protected hasNameTableWnd = false
+  protected hasPatternTableWnd = false
 
   protected hasRegisterWnd = false
   protected hasTraceWnd = false
   protected hasCtrlWnd = false
 
-  public static create(wndMgr: WindowManager, option: any): App {
+  public static create(wndMgr: WindowManager, option: Option): App {
     return new App(wndMgr, option)
   }
 
-  constructor(protected wndMgr: WindowManager, option: any, noDefault?: boolean) {
+  constructor(protected wndMgr: WindowManager, option: Option, noDefault?: boolean) {
     if (noDefault)
       return
 
@@ -266,7 +273,7 @@ export class App {
     const ctrlWnd = new ControlWnd(this.wndMgr, this.stream)
     this.wndMgr.add(ctrlWnd)
     ctrlWnd.setPos(520, 500)
-    ctrlWnd.setCallback((action) => {
+    ctrlWnd.setCallback(action => {
       if (action === 'close') {
         this.hasCtrlWnd = false
       }
@@ -319,7 +326,7 @@ export class App {
     if (this.rafId == null)
       return
     cancelAnimationFrame(this.rafId)
-    this.rafId = null
+    this.rafId = undefined
   }
 
   protected update(elapsedTime: number): void {

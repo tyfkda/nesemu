@@ -103,7 +103,8 @@ export class Cpu {
   constructor(private bus: Bus) {
     this.$DEBUG = typeof window !== 'undefined' && !!window.$DEBUG  // Accessing global variable!!!
 
-    this.a = this.x = this.y = this.s = 0
+    this.a = this.x = this.y = this.s = this.p = 0
+    this.pc = 0
   }
 
   public reset(): void {

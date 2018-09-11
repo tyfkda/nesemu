@@ -111,7 +111,7 @@ class Mapper024Base extends Mapper {
   private irqLatch: number = 0
   private irqCounter: number = 0
 
-  private channels: Channel[]
+  private channels: Channel[] = new Array<Channel>(kChannelTypes.length)
   private frequencyScaling = 0
 
   constructor(private options: MapperOptions, mapping: {[key: number]: number}) {
@@ -285,7 +285,6 @@ class Mapper024Base extends Mapper {
   }
 
   private setupAudio() {
-    this.channels = new Array<Channel>(kChannelTypes.length)
     for (let i = 0; i < this.channels.length; ++i) {
       const type = kChannelTypes[i]
       let channel: Channel

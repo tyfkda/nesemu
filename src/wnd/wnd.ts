@@ -5,7 +5,7 @@ import WindowManager from './window_manager'
 const Z_MENUBAR = 1000
 const Z_MENU_SUBITEM = Z_MENUBAR + 1
 
-function getOffsetRect(parent, target) {
+function getOffsetRect(parent: HTMLElement, target: HTMLElement) {
   const prect = parent.getBoundingClientRect()
   const trect = target.getBoundingClientRect()
   return {
@@ -16,7 +16,7 @@ function getOffsetRect(parent, target) {
   }
 }
 
-function createHorizontalSplitter(parent, upperHeight) {
+function createHorizontalSplitter(parent: HTMLElement, upperHeight: number) {
   const upper = document.createElement('div')
   upper.className = 'upper'
   DomUtil.setStyles(upper, {
@@ -70,7 +70,7 @@ export default class Wnd {
     const [upper, lower] = createHorizontalSplitter(this.root, Wnd.TITLEBAR_HEIGHT)
     this.clientMarginHeight += Wnd.TITLEBAR_HEIGHT
 
-    this.createTitleBar(title)
+    this.titleBar = this.createTitleBar(title)
     upper.appendChild(this.titleBar)
 
     this.contentHolder = lower
@@ -119,7 +119,7 @@ export default class Wnd {
     return { width, height }
   }
 
-  public setCallback(callback: Function): Wnd {
+  public setCallback(callback: (action: string, ...args: any[]) => void): Wnd {
     this.callback = callback
     return this
   }
@@ -151,7 +151,7 @@ export default class Wnd {
     this.menuBar.className = 'menu-bar'
     this.menuBar.style.zIndex = String(Z_MENUBAR)
 
-    menu.forEach(menuItem => {
+    menu.forEach((menuItem: any) => {
       const itemElem = document.createElement('div')
       itemElem.className = 'menu-item pull-left'
       itemElem.innerText = menuItem.label
@@ -187,7 +187,7 @@ export default class Wnd {
 
     const W = 8
 
-    const table = [
+    const table: {styleParams: {[key: string]: string}, horz: 'left'|'right', vert: 'top'|'bottom'}[] = [
       {
         styleParams: { right: '-1px', bottom: '-1px', cursor: 'nwse-resize' },
         horz: 'right',
@@ -216,7 +216,7 @@ export default class Wnd {
     table.forEach(param => {
       const resizeBox = document.createElement('div')
       resizeBox.style.position = 'absolute'
-      Object.keys(param.styleParams).forEach(key => {
+      Object.keys(param.styleParams).forEach((key: string) => {
         resizeBox.style[key] = param.styleParams[key]
       })
       DomUtil.setStyles(resizeBox, {
@@ -239,7 +239,7 @@ export default class Wnd {
           bottom: rect.bottom - prect.top,
         }
 
-        const dragMove = (event2) => {
+        const dragMove = (event2: MouseEvent) => {
           let [x, y] = this.getMousePosIn(event2, this.root.parentNode as HTMLElement)
           x = Util.clamp(x, -dragOfsX, window.innerWidth - dragOfsX)
           y = Util.clamp(y, -dragOfsY, window.innerHeight - dragOfsY)
@@ -262,7 +262,7 @@ export default class Wnd {
           })
           this.callback('resize', width, height - Wnd.TITLEBAR_HEIGHT)
         }
-        const dragFinish = (_event2) => {
+        const dragFinish = (_event2: MouseEvent) => {
           document.removeEventListener('mousemove', dragMove)
           document.removeEventListener('mouseup', dragFinish)
           this.root.style['transition-property'] = null
@@ -288,16 +288,16 @@ export default class Wnd {
     return root
   }
 
-  private createTitleBar(title: string): void {
-    this.titleBar = document.createElement('div')
-    this.titleBar.className = 'title-bar clearfix'
+  private createTitleBar(title: string): HTMLElement {
+    const titleBar = document.createElement('div')
+    titleBar.className = 'title-bar clearfix'
 
-    this.addTitleButton(this.titleBar, 'close', () => {
+    this.addTitleButton(titleBar, 'close', () => {
       this.close()
     })
-    this.titleElem = this.addTitle(this.titleBar, title)
+    this.titleElem = this.addTitle(titleBar, title)
 
-    this.titleBar.addEventListener('mousedown', (event) => {
+    titleBar.addEventListener('mousedown', (event) => {
       if (event.button !== 0)
         return false
 
@@ -307,7 +307,7 @@ export default class Wnd {
       const dragOfsX = -mx
       const dragOfsY = -my
       const winSize = this.getWindowSize()
-      const dragMove = (event2) => {
+      const dragMove = (event2: MouseEvent) => {
         let [x, y] = this.getMousePosIn(event2, this.root.parentNode as HTMLElement)
         x = Util.clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
         y = Util.clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
@@ -317,7 +317,7 @@ export default class Wnd {
           top: `${y + dragOfsY}px`,
         })
       }
-      const dragFinish = (_event2) => {
+      const dragFinish = (_event2: MouseEvent) => {
         document.removeEventListener('mousemove', dragMove)
         document.removeEventListener('mouseup', dragFinish)
       }
@@ -326,6 +326,7 @@ export default class Wnd {
       document.addEventListener('mouseup', dragFinish)
       return true
     })
+    return titleBar
   }
 
   private addTitleButton(parent: HTMLElement, className: string,
@@ -350,17 +351,17 @@ export default class Wnd {
     return titleElem
   }
 
-  private addSubmenu(menuItem, itemElem) {
+  private addSubmenu(menuItem: any, itemElem: HTMLElement) {
     const subItemHolder = document.createElement('div')
     subItemHolder.className = 'menu-subitem-holder'
     subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
-    menuItem.submenu.forEach(submenuItem => {
+    menuItem.submenu.forEach((submenuItem: {label: string, click?: () => void}) => {
       const subItemElem = document.createElement('div')
       subItemElem.className = 'menu-item'
       subItemElem.innerText = submenuItem.label
       subItemElem.addEventListener('click', (event) => {
         event.stopPropagation()
-        if ('click' in submenuItem)
+        if (submenuItem.click)
           submenuItem.click()
       })
       subItemHolder.appendChild(subItemElem)
@@ -374,7 +375,7 @@ export default class Wnd {
     })
 
     // To handle earlier than menu open, pass useCapture=true
-    const onClickOther = (_event) => {
+    const onClickOther = (_event: MouseEvent) => {
       if (subItemHolder.parentNode != null)
         subItemHolder.parentNode.removeChild(subItemHolder)
       document.removeEventListener('click', onClickOther, true)

@@ -14,7 +14,7 @@ function loadPrgRom(romData: Uint8Array): Uint8Array {
   return new Uint8Array(prg)
 }
 
-function insert(array, value, fn) {
+function insert<T>(array: Array<T>, value: any, fn: (elem: any, value: any) => boolean) {
   const n = array.length
   let i
   for (i = 0; i < n; ++i) {
@@ -41,9 +41,9 @@ function isBranch(opType: OpType) {
 }
 
 class Block {
-  public start: number
-  public end: number
-  public isJumpTable: boolean
+  public start = 0
+  public end = 0
+  public isJumpTable = false
 }
 
 class Analyzer {
@@ -54,7 +54,7 @@ class Analyzer {
   private stopPoints = new Set<number>()
   private labels = new Map<number, any>()
   private blocks = new Array<Block>()
-  private labelNameTable: object = {}
+  private labelNameTable: {[key: number]: string} = {}
 
   constructor() {
   }
@@ -75,7 +75,7 @@ class Analyzer {
   }
 
   public addEntryPoint(adr: number): void {
-    insert(this.entryPoints, adr, e => adr < e)
+    insert(this.entryPoints, adr, (e: number) => adr < e)
   }
 
   public addStopPoint(adr: number): void {
@@ -90,7 +90,7 @@ class Analyzer {
       this.addEntryPoint(this.read16(adr + i * 2))
   }
 
-  public setLabelNameTable(labelNameTable: object): void {
+  public setLabelNameTable(labelNameTable: {[key: number]: string}): void {
     this.labelNameTable = labelNameTable
   }
 
@@ -226,7 +226,7 @@ class Analyzer {
     }
   }
 
-  private step(mem, pc) {
+  private step(mem: Uint8Array, pc: number) {
     const op = mem[pc]
     const inst = kInstTable[op]
 
@@ -299,11 +299,11 @@ class Analyzer {
   private createBlock(adr: number): Block {
     const block = new Block()
     block.start = adr
-    insert(this.blocks, block, block => adr < block.start)
+    insert(this.blocks, block, (b: Block) => adr < b.start)
     return block
   }
 
-  private addLabel(adr, isCode): void {
+  private addLabel(adr: number, isCode: boolean): void {
     let label = this.labels.get(adr)
     if (!label) {
       label = {

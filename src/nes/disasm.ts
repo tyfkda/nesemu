@@ -2,7 +2,7 @@ import {Addressing, Instruction, OpType, kInstTable, kIllegalInstruction} from '
 import {Bus} from './bus'
 import Util from '../util/util'
 
-export const kOpcode = {
+export const kOpcode: {[key: number]: string} = {
   [OpType.LDA]: 'LDA',
   [OpType.STA]: 'STA',
   [OpType.LDX]: 'LDX',

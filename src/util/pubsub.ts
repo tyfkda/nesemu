@@ -1,5 +1,5 @@
 export interface Subscription {
-  unsubscribe()
+  unsubscribe(): void
 }
 
 export interface Callback<Type> { (param: Type): void }

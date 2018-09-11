@@ -17,7 +17,7 @@ export class Mapper075 extends Mapper {
       this.options.prgBankCtrl.setPrgBank(i, count - 1)
 
     const chrBank = [0, 0]
-    const setChrBank = (bank, value) => {
+    const setChrBank = (bank: number, value: number) => {
       chrBank[bank] = value
       const b = bank << 2
       const ofs = value << 2

@@ -1,9 +1,8 @@
 // 6502 assembler to JavaScript converter.
-'use strict'
 
 import * as readline from 'readline'
 
-function readAllLine(input, lineCb, endCb) {
+function readAllLine(input: NodeJS.ReadStream, lineCb: (_: string) => void, endCb: () => void) {
   const reader = readline.createInterface({
     input,
   })
@@ -16,10 +15,10 @@ function readAllLine(input, lineCb, endCb) {
   })
 }
 
-function formatNumLiteral(literal) {
+function formatNumLiteral(literal: string) {
   let p = literal
 
-  function parseAtom() {
+  function parseAtom(): string|null {
     p = p.trimLeft()
     if (p[0] === '<') {
       p = p.substring(1)
@@ -49,7 +48,7 @@ function formatNumLiteral(literal) {
     return null
   }
 
-  function parseExp() {
+  function parseExp(): string|null {
     const t1 = parseAtom()
     if (t1 == null)
       return null
@@ -86,7 +85,7 @@ class Comment extends Line {
 }
 
 class Definition extends Line {
-  constructor(private name: string, private value: number, private comment: string) {
+  constructor(private name: string, private value: string, private comment: string) {
     super()
   }
 
@@ -306,11 +305,11 @@ class ByteData {
   }
 }
 
-function parseMnemonic(opcode, operand, comment) {
+function parseMnemonic(opcode: string, operand: string, comment: string) {
   return new Op(opcode, operand, comment)
 }
 
-function parseLine(line): Line|Line[]|null {
+function parseLine(line: string): Line|Line[]|null {
   let m
   m = line.match(/^\s*$/)
   if (m)
@@ -356,7 +355,7 @@ function parseLine(line): Line|Line[]|null {
 
 // ================================================
 class Converter {
-  private romData: ByteData[]
+  private romData: ByteData[] = []
 
   constructor(private lines: Line[]) {
   }
@@ -467,7 +466,7 @@ function step(pc) {
 }`)
   }
 
-  private doOutputProgram(pass) {
+  private doOutputProgram(pass: number) {
     let pc = 0
     let emptyLineCount = 0
     for (let i = 0; i < this.lines.length; ++i) {
@@ -510,7 +509,7 @@ function step(pc) {
 
 {
   const lines = new Array<Line>()
-  readAllLine(process.stdin, (line) => {
+  readAllLine(process.stdin, (line: string) => {
     let item = parseLine(line)
     if (item != null) {
       if (Array.isArray(item))

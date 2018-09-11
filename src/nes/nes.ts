@@ -63,7 +63,7 @@ export class Nes implements PrgBankController {
   private prgRom = new Uint8Array(0)
   private vblankCallback: (leftV: number) => void
   private breakPointCallback: () => void
-  private prgBank: number[]
+  private prgBank: number[] = []
   private apuChannelCount = 0
 
   public static create(): Nes {

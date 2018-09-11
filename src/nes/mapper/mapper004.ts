@@ -145,7 +145,7 @@ export class Mapper004 extends Mapper {
     }
   }
 
-  protected setPrgBank(swap) {
+  protected setPrgBank(swap: number) {
     if ((swap & 0x40) === 0) {
       this.options.prgBankCtrl.setPrgBank(0, this.regs[6])
       this.options.prgBankCtrl.setPrgBank(1, this.regs[7])
@@ -157,7 +157,7 @@ export class Mapper004 extends Mapper {
     }
   }
 
-  protected setChrBank(swap) {
+  protected setChrBank(swap: number) {
     if ((swap & 0x80) === 0) {
       this.options.ppu.setChrBankOffset(0, this.regs[0] & 0xfe)
       this.options.ppu.setChrBankOffset(1, this.regs[0] | 1)

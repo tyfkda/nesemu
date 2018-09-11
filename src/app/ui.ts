@@ -641,7 +641,7 @@ export class PatternTableWnd extends Wnd {
 }
 
 export class RegisterWnd extends Wnd {
-  protected valueElems: HTMLInputElement[]
+  protected valueElems = new Array<HTMLInputElement>()
   protected subscription: Pubsub.Subscription
 
   public constructor(wndMgr: WindowManager, protected nes: Nes, protected stream: AppEvent.Stream) {
@@ -735,15 +735,13 @@ const kIllegalInstruction: Instruction = {
 export class TraceWnd extends Wnd {
   private textarea: HTMLTextAreaElement
 
-  private mem: Uint8Array
-  private bins: string[]
-  private lines: string[]
+  private mem = new Uint8Array(MAX_BYTES)
+  private bins = new Array<string>(MAX_BYTES)
+  private lines = new Array<string>()
   private subscription: Pubsub.Subscription
 
   public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 400, 160, 'Trace')
-    this.mem = new Uint8Array(MAX_BYTES)
-    this.bins = new Array(MAX_BYTES)
 
     const content = this.createContent()
     this.setContent(content)

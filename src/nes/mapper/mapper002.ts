@@ -32,7 +32,7 @@ class Mapper002Base extends Mapper {
     this.setBank(saveData.bank)
   }
 
-  private setBank(bank) {
+  private setBank(bank: number) {
     this.bank = bank
     this.options.prgBankCtrl.setPrgBank(0, bank)
     this.options.prgBankCtrl.setPrgBank(1, bank + 1)

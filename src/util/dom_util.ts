@@ -34,7 +34,7 @@ export default class DomUtil {
   public static handleFileDrop(dropZone: HTMLElement,
                                onDropped: (files: FileList, x: number, y: number) => void): void
   {
-    function onDrop(event) {
+    function onDrop(event: DragEvent) {
       event.stopPropagation()
       event.preventDefault()
       const files = event.dataTransfer.files
@@ -44,7 +44,7 @@ export default class DomUtil {
       return false
     }
 
-    function onDragOver(event) {
+    function onDragOver(event: DragEvent) {
       event.stopPropagation()
       event.preventDefault()
       event.dataTransfer.dropEffect = 'copy'
@@ -62,7 +62,7 @@ export default class DomUtil {
     return context
   }
 
-  public static timeout(millisec): Promise<void> {
+  public static timeout(millisec: number): Promise<void> {
     return new Promise<void>(resolve => setTimeout(resolve, millisec))
   }
 

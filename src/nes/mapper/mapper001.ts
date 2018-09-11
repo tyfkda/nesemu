@@ -121,7 +121,7 @@ export class Mapper001 extends Mapper {
     this.counter = 0
   }
 
-  private setChrBank(hilo, bank) {
+  private setChrBank(hilo: number, bank: number) {
     if (this.chrBank4k) {
       const chr = hilo << 2
       const b = bank << 2
@@ -134,7 +134,7 @@ export class Mapper001 extends Mapper {
     this.chrBank[hilo] = bank
   }
 
-  private setPrgBank(reg, chrBank0) {
+  private setPrgBank(reg: number, chrBank0: number) {
     this.prgReg = reg
     const highBit = chrBank0 & (0x10 & this.maxPrg)
     const bank = ((reg & 0x0f) | highBit) & this.maxPrg

@@ -201,12 +201,12 @@ function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8Cl
 }
 
 class HStatus {
-  public ppuCtrl: number
-  public ppuMask: number
+  public ppuCtrl: number = 0
+  public ppuMask: number = 0
   public chrBankOffset = new Array<number>(8)
   public mirrorModeBit: number = 0x44  // 2bit x 4screen
-  public scrollCurr: number
-  public scrollFineX: number
+  public scrollCurr: number = 0
+  public scrollFineX: number = 0
 
   constructor() {
     this.reset()
@@ -275,15 +275,15 @@ class HStatus {
 }
 
 export class Ppu {
-  private chrData: Uint8Array
+  private chrData = new Uint8Array(0)
   private regs = new Uint8Array(REGISTER_COUNT)
   private vram = new Uint8Array(VRAM_SIZE)
   private oam = new Uint8Array(OAM_SIZE)  // Object Attribute Memory
   private mirrorMode = MirrorMode.VERT
-  private hcount: number
-  private latch: number
-  private ppuAddr: Address
-  private bufferedValue: Byte
+  private hcount = 0
+  private latch = 0
+  private ppuAddr: Address = 0
+  private bufferedValue: Byte = 0
   private hevents = new HEvents()
   private hstatus: HStatus = new HStatus()
   private hstatusPrev: HStatus = new HStatus()
@@ -898,7 +898,7 @@ export class Ppu {
     if (dy <= 0)
       return
 
-    const inc = (t) => {
+    const inc = (t: number) => {
       let pageY = ((t >> 11) & 1) * 240
       let y = ((t & 0x03e0) >> (5 - 3)) | ((t >> 12) & 7)
       if (y >= 240)

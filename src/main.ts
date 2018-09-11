@@ -124,11 +124,11 @@ class Main {
       title,
       centerX: x,
       centerY: y,
-      onClosed: (_app) => {
-        this.removeApp(_app)
+      onClosed: (app) => {
+        this.removeApp(app)
       },
     }
-    const app = App.create(this.wndMgr, option)
+    const app = new App(this.wndMgr, option)
     const result = app.loadRom(romData)
     if (result !== true) {
       this.wndMgr.showSnackbar(`${name}: ${result}`)
@@ -138,7 +138,7 @@ class Main {
     this.apps.push(app)
   }
 
-  private removeApp(app): void {
+  private removeApp(app: App): void {
     const index = this.apps.indexOf(app)
     if (index >= 0)
       this.apps.splice(index, 1)

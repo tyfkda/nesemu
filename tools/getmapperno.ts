@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const {promisify} = require('util')
-const jszip = require('jszip')
+import * as JSZip from 'jszip'
 
 function getMapperNo(romData: Buffer): number {
   const NES = 'NES'
@@ -17,17 +17,17 @@ function dumpMapper(fn: string): void {
   switch (path.extname(fn).toLowerCase()) {
   case '.nes':
     promisify(fs.readFile)(fn)
-      .then(buffer => {
+      .then((buffer: Buffer) => {
         console.log(`"${path.basename(fn)}"\tmapper=${getMapperNo(buffer)}`)
       })
     break
   case '.zip':
     promisify(fs.readFile)(fn)
-      .then(buffer => {
-        const zip = new jszip()
+      .then((buffer: Buffer) => {
+        const zip = new JSZip()
         return zip.loadAsync(buffer)
       })
-      .then((loadedZip) => {
+      .then((loadedZip: JSZip) => {
         for (let fileName of Object.keys(loadedZip.files)) {
           if (path.extname(fileName).toLowerCase() === '.nes') {
             return loadedZip.files[fileName].async('uint8array')
@@ -35,7 +35,7 @@ function dumpMapper(fn: string): void {
         }
         return Promise.reject(`${fn}: .nes not included`)
       })
-      .then(unzipped => {
+      .then((unzipped: Buffer) => {
         console.log(`"${path.basename(fn)}"\tmapper=${getMapperNo(unzipped)}`)
       })
     break

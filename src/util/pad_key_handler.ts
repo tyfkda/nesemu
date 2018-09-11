@@ -24,14 +24,14 @@ const kKeyTable: {[key: number]: {no: number, bit: number}} = {
 export class PadKeyHandler {
   private controller: number[] = [0, 0]
 
-  public onKeyDown(keyCode: number): void {
+  public onKeyDown(keyCode: KeyCode): void {
     const c = kKeyTable[keyCode]
     if (!c)
       return
     this.controller[c.no] |= c.bit
   }
 
-  public onKeyUp(keyCode: number): void {
+  public onKeyUp(keyCode: KeyCode): void {
     const c = kKeyTable[keyCode]
     if (!c)
       return

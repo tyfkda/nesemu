@@ -99,7 +99,7 @@ export class Mapper073 extends Mapper {
     }
   }
 
-  private setPrgBank(prgBank) {
+  private setPrgBank(prgBank: number) {
     this.prgBank = prgBank
     this.options.prgBankCtrl.setPrgBank(0, prgBank)
     this.options.prgBankCtrl.setPrgBank(1, prgBank + 1)
