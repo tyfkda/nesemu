@@ -25,7 +25,7 @@ export enum PadValue {
 }
 
 export enum ChannelType {
-  SQUARE,
+  PULSE,
   TRIANGLE,
   SAWTOOTH,
   NOISE,
@@ -57,8 +57,8 @@ const REG_TIMER_L = 2
 const REG_TIMER_H = 3
 
 export const kChannelTypes: ChannelType[] = [
-  ChannelType.SQUARE,
-  ChannelType.SQUARE,
+  ChannelType.PULSE,
+  ChannelType.PULSE,
   ChannelType.TRIANGLE,
   ChannelType.NOISE,
 ]

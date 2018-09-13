@@ -23,8 +23,8 @@ const kChrBankTable = [
 ]
 
 const kChannelTypes: ChannelType[] = [
-  ChannelType.SQUARE,
-  ChannelType.SQUARE,
+  ChannelType.PULSE,
+  ChannelType.PULSE,
   ChannelType.SAWTOOTH,
 ]
 
@@ -290,7 +290,7 @@ class Mapper024Base extends Mapper {
       const type = kChannelTypes[i]
       let channel: Channel
       switch (type) {
-      case ChannelType.SQUARE:
+      case ChannelType.PULSE:
         channel = new PulseChannel()
         break
       case ChannelType.SAWTOOTH:
