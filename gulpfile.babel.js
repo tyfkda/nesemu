@@ -51,7 +51,6 @@ function convertHtml(buildTarget, dest) {
       removeAttributeQuotes: true,
     }))
     .pipe(gulp.dest(dest))
-    .pipe(browserSync.reload({stream: true}))
 }
 
 function lint(glob) {
@@ -70,6 +69,17 @@ function buildWhenModified(glob, buildFunc) {
     return buildFunc()
   })
 }
+
+gulp.task('reload', (done) => {
+  console.log('reload')
+  browserSync.reload()
+  done()
+})
+
+gulp.task('watch-reload', () => {
+  gulp.watch([`${DEST_DIR}/*.html`,
+              `${DEST_DIR}/**/*.js`], gulp.series(['reload']))
+})
 
 gulp.task('html', () => {
   return convertHtml('debug', DEST_DIR)
@@ -99,7 +109,6 @@ gulp.task('watch-ts', () => {
     .pipe(plumber())
     .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(ASSETS_DIR))
-    .pipe(browserSync.reload({stream: true}))
 })
 
 gulp.task('sass', () => {
@@ -108,7 +117,7 @@ gulp.task('sass', () => {
     .pipe(sass())
     .pipe(cssnano())
     .pipe(gulp.dest(ASSETS_DIR))
-    .pipe(browserSync.reload({stream: true}))
+    .pipe(browserSync.stream())
 })
 
 gulp.task('watch-sass', () => {
@@ -137,6 +146,7 @@ gulp.task('server', () => {
   browserSync.init({
     server: {
       baseDir: DEST_DIR,
+      index: `index.html`,
     },
   })
 })
@@ -171,7 +181,8 @@ gulp.task('clean', del.bind(null, [
 ]))
 
 gulp.task('watch', gulp.parallel('watch-html', 'watch-ts', 'watch-sass',
-                                 'watch-lint', 'watch-test'))
+                                 'watch-lint', 'watch-test',
+                                 'watch-reload'))
 
 gulp.task('build', gulp.parallel('html', 'ts', 'sass', 'copy-res', 'lint'))
 
