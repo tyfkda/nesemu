@@ -10,7 +10,7 @@ import Util from '../util/util'
 import {Mapper, PrgBankController} from './mapper/mapper'
 import {kMapperTable} from './mapper/mapper_table'
 
-import md5 from 'md5'
+import * as md5 from 'md5'
 
 const RAM_SIZE = 0x0800
 
@@ -114,7 +114,7 @@ export class Nes implements PrgBankController {
     this.ppu.setMirrorMode((romData[6] & 1) === 0 ? MirrorMode.HORZ : MirrorMode.VERT)
     this.cpu.deleteAllBreakPoints()
 
-    const romHash = md5(romData)
+    const romHash = md5(Array.from<number>(romData))
     this.setMemoryMap(this.mapperNo, romHash)
 
     return true

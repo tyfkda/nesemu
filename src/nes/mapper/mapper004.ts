@@ -86,9 +86,9 @@ export class Mapper004 extends Mapper {
     let mirror = MirrorMode.VERT
     // Dirty hack: detect mirror mode from ROM hash.
     switch (this.options.romHash) {
-    case '38bfd58a8fa42a3aec9d7f87d38ce5b7':  // Babel no Tou
-    case '5be551489233588475ac220efe457dda':  // Dragon Spirit
-    case 'ce29eec7e41386a22bd0453697c1ce2c':  // Family Pinball
+    case '6c0cd447297e95e45db35a4373dbeae1':  // Babel no Tou
+    case 'e791b12fc3419a2e2f8a5ed64b210d72':  // Dragon Spirit
+    case '44c206c61ff37406815f21b922e105c7':  // Family Pinball
       mirror = MirrorMode.HORZ
       break
     default:
