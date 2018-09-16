@@ -109,6 +109,13 @@ export class App {
                        0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
 
+    this.screenWnd.setCallback((action, ...args) => {
+      if (action === 'resize') {
+        const [width, height] = args
+        this.screenWnd.onResized(width, height)
+      }
+    })
+
     this.padKeyHandler = new PadKeyHandler()
     this.setUpKeyEvent(this.screenWnd.getContentHolder(), this.padKeyHandler)
   }

@@ -13,8 +13,9 @@ import {AppEvent} from './app_event'
 import * as Pubsub from '../util/pubsub'
 import * as Stats from 'stats-js'
 
-const WIDTH = 256
-const HEIGHT = 240
+const WIDTH = 256 | 0
+const HEIGHT = 240 | 0
+const EDGE = 8 | 0
 
 function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const img = document.createElement('img') as HTMLImageElement
@@ -99,20 +100,36 @@ export class FpsWnd extends Wnd {
 export class ScreenWnd extends Wnd {
   protected subscription: Pubsub.Subscription
   private fullscreenBase: HTMLElement
+  private canvasHolder: HTMLElement
   private scaler: Scaler
+  private hideEdge = true
+  private contentWidth = 0  // Content size, except fullscreen
+  private contentHeight = 0
 
   constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,
               protected stream: AppEvent.Stream)
   {
-    super(wndMgr, WIDTH * 2, HEIGHT * 2 + Wnd.MENUBAR_HEIGHT, 'NES')
+    super(wndMgr, (WIDTH - EDGE * 2) * 2, (HEIGHT - EDGE * 2) * 2 + Wnd.MENUBAR_HEIGHT, 'NES')
     if (app == null || nes == null || stream == null)
       return
 
     this.setUpMenuBar()
+    this.contentHolder.style.overflow = 'hidden'
 
     this.fullscreenBase = document.createElement('div')
     this.fullscreenBase.className = 'full-size'
+    Util.setStyles(this.fullscreenBase, {
+      position: 'relative',
+      overflow: 'hidden',
+    })
     this.setContent(this.fullscreenBase)
+
+    this.canvasHolder = document.createElement('div')
+    Util.setStyles(this.canvasHolder, {
+      transitionDuration: '0.1s',
+      transitionProperty: 'width, height',
+    })
+    this.fullscreenBase.appendChild(this.canvasHolder)
 
     this.setScaler(new IdentityScaler())
     this.addResizeBox()
@@ -131,6 +148,24 @@ export class ScreenWnd extends Wnd {
           break
         }
       })
+
+    this.contentWidth = (WIDTH - EDGE * 2) * 2
+    this.contentHeight = (HEIGHT - EDGE * 2) * 2
+    this.updateContentSize(this.contentWidth, this.contentHeight)
+  }
+
+  public onResized(width: number, height: number): void {
+    this.contentWidth = width
+    this.contentHeight = height
+    this.updateContentSize(width, height - Wnd.MENUBAR_HEIGHT)
+  }
+
+  public setClientSize(width: number, height: number): Wnd {
+    super.setClientSize(width, height)
+    this.contentWidth = width
+    this.contentHeight = height
+    this.updateContentSize(width, height)
+    return this
   }
 
   public capture(): string {
@@ -153,6 +188,7 @@ export class ScreenWnd extends Wnd {
           margin: 'auto',
         })
         this.contentHolder.style.backgroundColor = 'black'
+        this.updateContentSize(width, height)
       } else {
         Util.setStyles(this.fullscreenBase, {
           width: '',
@@ -160,6 +196,7 @@ export class ScreenWnd extends Wnd {
           margin: '',
         })
         this.contentHolder.style.backgroundColor = ''
+        this.updateContentSize(this.contentWidth, this.contentHeight)
       }
       if (callback)
         callback(isFullscreen)
@@ -172,6 +209,29 @@ export class ScreenWnd extends Wnd {
       this.subscription.unsubscribe()
     this.stream.triggerDestroy()
     super.close()
+  }
+
+  protected setClientScale(scale: number): Wnd {
+    const w = ((WIDTH - (this.hideEdge ? EDGE * 2 : 0)) * scale) | 0
+    const h = ((HEIGHT - (this.hideEdge ? EDGE * 2 : 0)) * scale) | 0
+    return this.setClientSize(w, h)
+  }
+
+  protected updateContentSize(width: number, height: number) {
+    if (!this.fullscreenBase)
+      return
+
+    const w = !this.hideEdge ? width : (width * (WIDTH / (WIDTH - EDGE * 2))) | 0
+    const h = !this.hideEdge ? height : (height * (HEIGHT / (HEIGHT - EDGE * 2))) | 0
+    const left = !this.hideEdge ? 0 : -(w * EDGE / WIDTH) | 0
+    const top = !this.hideEdge ? 0 : -(h * EDGE / HEIGHT) | 0
+    Util.setStyles(this.canvasHolder, {
+      position: 'absolute',
+      width: `${w}px`,
+      height: `${h}px`,
+      top: `${top}px`,
+      left: `${left}px`,
+    })
   }
 
   protected setUpMenuBar(): void {
@@ -227,25 +287,28 @@ export class ScreenWnd extends Wnd {
           {
             label: '1x1',
             click: () => {
-              this.setClientSize(WIDTH, HEIGHT)
+              this.setClientScale(1)
             },
           },
           {
             label: '2x2',
             click: () => {
-              this.setClientSize(WIDTH * 2, HEIGHT * 2)
+              this.setClientScale(2)
             },
           },
           {
             label: 'Adjust aspect ratio',
             click: () => {
-              const rect = this.scaler.getCanvas().getBoundingClientRect()
-              let width = rect.width, height = rect.height
-              if (width / height >= WIDTH / HEIGHT)
-                width = height / HEIGHT * WIDTH
+              const rect = this.contentHolder.getBoundingClientRect()
+              let cWidth = rect.width, cHeight = rect.height
+              const w = WIDTH - (this.hideEdge ? EDGE * 2 : 0)
+              const h = HEIGHT - (this.hideEdge ? EDGE * 2 : 0)
+              const ratio = w / h
+              if (cWidth / cHeight >= ratio)
+                cWidth = cHeight * ratio
               else
-                height = width / WIDTH * HEIGHT
-              this.setClientSize(width, height)
+                cHeight = cWidth / ratio
+              this.setClientSize(cWidth, cHeight)
             },
           },
           {
@@ -285,6 +348,12 @@ export class ScreenWnd extends Wnd {
       {
         label: 'Debug',
         submenu: [
+          {
+            label: 'Edge',
+            click: () => {
+              this.toggleEdge()
+            },
+          },
           {
             label: 'Palette',
             click: () => {
@@ -332,10 +401,15 @@ export class ScreenWnd extends Wnd {
     ])
   }
 
+  private toggleEdge() {
+    this.hideEdge = !this.hideEdge
+    this.updateContentSize(this.contentHolder.offsetWidth, this.contentHolder.offsetHeight)
+  }
+
   private setScaler(scaler: Scaler): void {
     this.scaler = scaler
-    Util.removeAllChildren(this.fullscreenBase)
-    this.fullscreenBase.appendChild(scaler.getCanvas())
+    Util.removeAllChildren(this.canvasHolder)
+    this.canvasHolder.appendChild(scaler.getCanvas())
   }
 
   private createFpsWnd(): void {
