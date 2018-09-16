@@ -246,16 +246,16 @@ export class Nes implements PrgBankController {
     })
 
     // PRG ROM
-    const prgMask = this.prgRom.length - 1
+    const prgMask = (this.prgRom.length - 1) | 0
     this.prgBank = [0x0000,  // 0x8000~
                     0x2000,  // 0xa000~
                     -0x4000 & prgMask,  // 0xc000~
                     -0x2000 & prgMask]  // 0xe000~
     bus.setReadMemory(0x8000, 0xffff, (adr) => {
+      adr = adr | 0
       const bank = (adr - 0x8000) >> 13
-      const offset = adr & ((1 << 13) - 1)
-      const prgRom = this.prgRom
-      return prgRom[(this.prgBank[bank] + offset) & (prgRom.length - 1)]
+      const offset = (adr & ((1 << 13) - 1)) | 0
+      return this.prgRom[((this.prgBank[bank] | 0) + offset) & prgMask] | 0
     })
 
     // RAM
