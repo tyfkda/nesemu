@@ -31,7 +31,7 @@ function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   return imgWnd
 }
 
-function tryFullscreen(element: HTMLElement, callback: Function): boolean {
+function tryFullscreen(element: HTMLElement, callback: (isFullscreen: boolean) => void): boolean {
   const kList = [
     { fullscreen: 'requestFullscreen', change: 'fullscreenchange' },
     { fullscreen: 'webkitRequestFullScreen', change: 'webkitfullscreenchange' },
@@ -43,8 +43,8 @@ function tryFullscreen(element: HTMLElement, callback: Function): boolean {
       element[kList[i].fullscreen]()
       const changeEvent = kList[i].change
       const exitHandler = () => {
-        const isFullscreen = (document.fullScreen || document.mozFullScreen ||
-                              document.webkitIsFullScreen)
+        const isFullscreen = !!(document.fullScreen || document.mozFullScreen ||
+                                document.webkitIsFullScreen)
         if (callback)
           callback(isFullscreen)
         if (!isFullscreen) {  // End
@@ -97,6 +97,7 @@ export class FpsWnd extends Wnd {
 
 export class ScreenWnd extends Wnd {
   protected subscription: Pubsub.Subscription
+  private fullscreenBase: HTMLElement
   private scaler: Scaler
 
   // constructor(wndMgr: WindowManager)
@@ -109,6 +110,11 @@ export class ScreenWnd extends Wnd {
       return
 
     this.setUpMenuBar()
+
+    this.fullscreenBase = document.createElement('div')
+    this.fullscreenBase.style.width = '100%'
+    this.fullscreenBase.style.height = '100%'
+    this.setContent(this.fullscreenBase)
 
     this.setScaler(new IdentityScaler())
     this.addResizeBox()
@@ -133,9 +139,9 @@ export class ScreenWnd extends Wnd {
     return this.scaler.getCanvas().toDataURL()
   }
 
-  public setFullscreen(callback?: Function): boolean {
+  public setFullscreen(callback?: (isFullscreen: boolean) => boolean): boolean {
     return tryFullscreen(this.contentHolder, (isFullscreen) => {
-      const style = this.contentHolder.style
+      const style = this.fullscreenBase.style
       if (isFullscreen) {
         let width = window.parent.screen.width
         let height = window.parent.screen.height
@@ -147,12 +153,14 @@ export class ScreenWnd extends Wnd {
         style.width = `${width}px`
         style.height = `${height}px`
         style.margin = 'auto'
-        style.backgroundColor = 'black'
+        this.contentHolder.style.backgroundColor = 'black'
       } else {
-        style.width = style.height = style.margin = style.backgroundColor = ''
+        style.width = style.height = '100%'
+        style.margin = this.contentHolder.style.backgroundColor = ''
       }
       if (callback)
         callback(isFullscreen)
+      this.contentHolder.focus()
     })
   }
 
@@ -323,7 +331,8 @@ export class ScreenWnd extends Wnd {
 
   private setScaler(scaler: Scaler): void {
     this.scaler = scaler
-    this.setContent(this.scaler.getCanvas())
+    Util.removeAllChildren(this.fullscreenBase)
+    this.fullscreenBase.appendChild(scaler.getCanvas())
   }
 
   private createFpsWnd(): void {
