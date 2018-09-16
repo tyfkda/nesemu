@@ -28,6 +28,10 @@ export default class Util {
       element.removeChild(child)
   }
 
+  public static setStyles(elem: HTMLElement, styles: Object) {
+    Object.assign(elem.style, styles)
+  }
+
   public static loadFile(file: File): Promise<Uint8Array> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()

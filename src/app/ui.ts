@@ -21,7 +21,10 @@ function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const title = String(Date.now())
   img.src = screenWnd.capture()
   img.className = 'pixelated'
-  img.style.width = img.style.height = '100%'
+  Util.setStyles(img, {
+    width: '100%',
+    height: '100%',
+  })
   img.title = img.alt = title
 
   const imgWnd = new Wnd(wndMgr, WIDTH, HEIGHT, title)
@@ -66,8 +69,10 @@ export class FpsWnd extends Wnd {
     super(wndMgr, 80, 48, 'Fps')
 
     const content = document.createElement('div')
-    content.style.width = '80px'
-    content.style.height = '48px'
+    Util.setStyles(content, {
+      width: '80px',
+      height: '48px',
+    })
     this.setContent(content)
 
     this.stats = new Stats()
@@ -112,8 +117,10 @@ export class ScreenWnd extends Wnd {
     this.setUpMenuBar()
 
     this.fullscreenBase = document.createElement('div')
-    this.fullscreenBase.style.width = '100%'
-    this.fullscreenBase.style.height = '100%'
+    Util.setStyles(this.fullscreenBase, {
+      width: '100%',
+      height: '100%',
+    })
     this.setContent(this.fullscreenBase)
 
     this.setScaler(new IdentityScaler())
@@ -141,7 +148,6 @@ export class ScreenWnd extends Wnd {
 
   public setFullscreen(callback?: (isFullscreen: boolean) => boolean): boolean {
     return tryFullscreen(this.contentHolder, (isFullscreen) => {
-      const style = this.fullscreenBase.style
       if (isFullscreen) {
         let width = window.parent.screen.width
         let height = window.parent.screen.height
@@ -150,13 +156,19 @@ export class ScreenWnd extends Wnd {
         } else {
           height = (width * (HEIGHT / WIDTH)) | 0
         }
-        style.width = `${width}px`
-        style.height = `${height}px`
-        style.margin = 'auto'
+        Util.setStyles(this.fullscreenBase, {
+          width: `${width}px`,
+          height: `${height}px`,
+          margin: 'auto',
+        })
         this.contentHolder.style.backgroundColor = 'black'
       } else {
-        style.width = style.height = '100%'
-        style.margin = this.contentHolder.style.backgroundColor = ''
+        Util.setStyles(this.fullscreenBase, {
+          width: '100%',
+          height: '100%',
+          margin: '',
+        })
+        this.contentHolder.style.backgroundColor = ''
       }
       if (callback)
         callback(isFullscreen)
@@ -355,17 +367,22 @@ export class PaletWnd extends Wnd {
     const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
     const root = document.createElement('div')
     root.className = 'clearfix'
-    root.style.width = `${UNIT * W}px`
-    root.style.height = `${UNIT * H}px`
+    Util.setStyles(root, {
+      width: `${UNIT * W}px`,
+      height: `${UNIT * H}px`,
+    })
 
     const boxes = new Array(W * H) as HTMLElement[]
     for (let i = 0; i < H; ++i) {
       for (let j = 0; j < W; ++j) {
         const box = document.createElement('div')
         box.className = 'pull-left'
-        box.style.width = `${UNIT - 1}px`
-        box.style.height = `${UNIT - 1}px`
-        box.style.borderRight = box.style.borderBottom = '1px solid black'
+        Util.setStyles(box, {
+          width: `${UNIT - 1}px`,
+          height: `${UNIT - 1}px`,
+          borderRight: '1px solid black',
+          borderBottom: '1px solid black',
+        })
         boxes[j + i * W] = box
         root.appendChild(box)
       }
@@ -442,8 +459,10 @@ export class NameTableWnd extends Wnd {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = width
     canvas.height = height
-    canvas.style.width = `${width}px`
-    canvas.style.height = `${height}px`
+    Util.setStyles(canvas, {
+      width: `${width}px`,
+      height: `${height}px`,
+    })
     canvas.className = 'pixelated'
     Util.clearCanvas(canvas)
 
@@ -498,8 +517,10 @@ export class PatternTableWnd extends Wnd {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = 256
     canvas.height = 128
-    canvas.style.width = '256px'
-    canvas.style.height = '128px'
+    Util.setStyles(canvas, {
+      width: '256px',
+      height: '128px',
+    })
     canvas.className = 'pixelated'
     Util.clearCanvas(canvas)
     return canvas
@@ -597,8 +618,10 @@ export class RegisterWnd extends Wnd {
       { name: 'cycle' },
     ]
     const table = document.createElement('table')
-    table.style.fontSize = '10px'
-    table.style.width = '100%'
+    Util.setStyles(table, {
+      fontSize: '10px',
+      width: '100%',
+    })
     this.valueElems = [] as HTMLInputElement[]
     for (let i = 0; i < kElems.length; ++i) {
       const tr = document.createElement('tr')
@@ -699,14 +722,16 @@ export class TraceWnd extends Wnd {
     const root = document.createElement('div')
     const textarea = document.createElement('textarea')
     textarea.className = 'fixed-font'
-    textarea.style.fontSize = '14px'
-    textarea.style.width = '100%'
-    textarea.style.height = '160px'
-    textarea.style.resize = 'none'
-    textarea.style.margin = '0'
-    textarea.style.padding = '2px'
-    textarea.style.border = 'none'
-    textarea.style.boxSizing = 'border-box'
+    Util.setStyles(textarea, {
+      fontSize: '14px',
+      width: '100%',
+      height: '160px',
+      resize: 'none',
+      margin: '0',
+      padding: '2px',
+      border: 'none',
+      boxSizing: 'border-box',
+    })
     root.appendChild(textarea)
     this.textarea = textarea
     return root
@@ -764,8 +789,10 @@ export class ControlWnd extends Wnd {
 
   private createElement(): HTMLElement {
     const root = document.createElement('div')
-    root.style.width = '256px'
-    root.style.height = '32px'
+    Util.setStyles(root, {
+      width: '256px',
+      height: '32px',
+    })
 
     this.stepBtn = document.createElement('button') as HTMLButtonElement
     this.stepBtn.innerText = 'Step'

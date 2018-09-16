@@ -18,17 +18,25 @@ function getOffsetRect(parent, target) {
 function createHorizontalSplitter(parent, upperHeight) {
   const upper = document.createElement('div')
   upper.className = 'upper'
-  upper.style.position = 'absolute'
-  upper.style.overflow = 'hidden'
-  upper.style.left = upper.style.top = upper.style.right = '0'
-  upper.style.height = `${upperHeight}px`
+  Util.setStyles(upper, {
+    position: 'absolute',
+    overflow: 'hidden',
+    left: 0,
+    top: 0,
+    right: 0,
+    height: `${upperHeight}px`,
+  })
 
   const lower = document.createElement('div')
   lower.className = 'lower'
-  lower.style.position = 'absolute'
-  lower.style.overflow = 'hidden'
-  lower.style.left = lower.style.bottom = lower.style.right = '0'
-  lower.style.top = `${upperHeight}px`
+  Util.setStyles(lower, {
+    position: 'absolute',
+    overflow: 'hidden',
+    left: 0,
+    bottom: 0,
+    right: 0,
+    top: `${upperHeight}px`,
+  })
 
   parent.appendChild(upper)
   parent.appendChild(lower)
@@ -84,8 +92,10 @@ export default class Wnd {
   }
 
   public setPos(x: number, y: number): Wnd {
-    this.root.style.left = `${x}px`
-    this.root.style.top = `${y}px`
+    Util.setStyles(this.root, {
+      left: `${x}px`,
+      top: `${y}px`,
+    })
     return this
   }
 
@@ -95,8 +105,10 @@ export default class Wnd {
   }
 
   public setClientSize(width: number, height: number): Wnd {
-    this.root.style.width = `${width + this.clientMarginWidth}px`
-    this.root.style.height = `${height + this.clientMarginHeight}px`
+    Util.setStyles(this.root, {
+      width: `${width + this.clientMarginWidth}px`,
+      height: `${height + this.clientMarginHeight}px`,
+    })
     return this
   }
 
@@ -204,8 +216,11 @@ export default class Wnd {
       Object.keys(param.styleParams).forEach(key => {
         resizeBox.style[key] = param.styleParams[key]
       })
-      resizeBox.style.width = resizeBox.style.height = `${W}px`
-      resizeBox.style.zIndex = '100'
+      Util.setStyles(resizeBox, {
+        width: `${W}px`,
+        height: `${W}px`,
+        zIndex: '100',
+      })
       resizeBox.addEventListener('mousedown', (event) => {
         event.stopPropagation()
         event.preventDefault()
@@ -236,10 +251,12 @@ export default class Wnd {
           if (height < MIN_HEIGHT) {
             box[param.vert] -= (MIN_HEIGHT - height) * (param.vert === 'top' ? 1 : -1)
           }
-          this.root.style.width = `${box.right - box.left -  2}px`
-          this.root.style.height = `${box.bottom - box.top - 2}px`
-          this.root.style.left = `${box.left}px`
-          this.root.style.top = `${box.top}px`
+          Util.setStyles(this.root, {
+            width: `${box.right - box.left -  2}px`,
+            height: `${box.bottom - box.top - 2}px`,
+            left: `${box.left}px`,
+            top: `${box.top}px`,
+          })
           this.callback('resize', width, height - Wnd.TITLEBAR_HEIGHT)
         }
         const dragFinish = (_event2) => {
@@ -292,8 +309,10 @@ export default class Wnd {
         x = Util.clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
         y = Util.clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
 
-        this.root.style.left = `${x + dragOfsX}px`
-        this.root.style.top = `${y + dragOfsY}px`
+        Util.setStyles(this.root, {
+          left: `${x + dragOfsX}px`,
+          top: `${y + dragOfsY}px`,
+        })
       }
       const dragFinish = (_event2) => {
         document.removeEventListener('mousemove', dragMove)
@@ -346,8 +365,10 @@ export default class Wnd {
     this.root.appendChild(subItemHolder)
 
     const rect = getOffsetRect(this.root, itemElem)
-    subItemHolder.style.left = `${rect.left - 1}px`  // For border size
-    subItemHolder.style.top = `${rect.bottom - 1}px`
+    Util.setStyles(subItemHolder, {
+      left: `${rect.left - 1}px`,  // For border size
+      top: `${rect.bottom - 1}px`,
+    })
 
     // To handle earlier than menu open, pass useCapture=true
     const onClickOther = (_event) => {

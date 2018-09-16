@@ -8,9 +8,11 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
   const canvas = document.createElement('canvas') as HTMLCanvasElement
   canvas.width = width
   canvas.height = height
-  canvas.style.display = 'block'
-  canvas.style.width = '100%'
-  canvas.style.height = '100%'
+  Util.setStyles(canvas, {
+    display: 'block',
+    width: '100%',
+    height: '100%',
+  })
   Util.clearCanvas(canvas)
   return canvas
 }

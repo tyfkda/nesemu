@@ -2,6 +2,7 @@ import {PadBit} from '../nes/apu'
 import WindowManager from '../wnd/window_manager'
 import Wnd from '../wnd/wnd'
 import StorageUtil from '../util/storage_util'
+import Util from '../util/util'
 
 // Type
 enum Type {
@@ -152,10 +153,12 @@ function createButton(parent: HTMLElement, x: number, y: number, name: string,
 {
   const btn = document.createElement('div')
   btn.className = 'gamepad-btn'
-  btn.style.left = `${x}px`
-  btn.style.top = `${y}px`
-  btn.style.width = `${opt.width || 30}px`
-  btn.style.height = `${opt.height || 30}px`
+  Util.setStyles(btn, {
+    left: `${x}px`,
+    top: `${y}px`,
+    width: `${opt.width || 30}px`,
+    height: `${opt.height || 30}px`,
+  })
   btn.innerHTML = name
   if (opt.type === 'round')
     btn.style.borderRadius = '15px'
@@ -172,8 +175,10 @@ export class GamepadWnd extends Wnd {
     super(wndMgr, 230, 150, 'Gamepad config')
     const content = document.createElement('div')
     content.className = 'gamepad-content'
-    content.style.width = '230px'
-    content.style.height = '150px'
+    Util.setStyles(content, {
+      width: '230px',
+      height: '150px',
+    })
     this.setContent(content)
 
     content.addEventListener('click', () => {
