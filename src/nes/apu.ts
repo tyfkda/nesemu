@@ -68,9 +68,8 @@ const kLengthTable = [
   0x0c, 0x10, 0x18, 0x12, 0x30, 0x14, 0x60, 0x16, 0xc0, 0x18, 0x48, 0x1a, 0x10, 0x1c, 0x20, 0x1e,
 ]
 
-const kNoiseFrequencies = (
-  [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068]
-    .map(v => v * 110))
+const kNoiseFrequencies =
+      [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068]
 
 const VBLANK_START = 241
 
@@ -353,7 +352,7 @@ class NoiseChannel extends Channel {
     let v = this.regs[REG_STATUS]
     if ((v & LENGTH_COUNTER_HALT) !== 0)
       return
-    let l = this.lengthCounter - 4
+    let l = this.lengthCounter - 1
     if (l <= 0) {
       l = 0
       if ((this.regs[2] & 0x80) === 0) {
