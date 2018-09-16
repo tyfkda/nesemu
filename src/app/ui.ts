@@ -105,8 +105,6 @@ export class ScreenWnd extends Wnd {
   private fullscreenBase: HTMLElement
   private scaler: Scaler
 
-  // constructor(wndMgr: WindowManager)
-  // constructor(wndMgr: WindowManager, app: App, nes: Nes, stream: AppEvent.Stream)
   constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,
               protected stream: AppEvent.Stream)
   {
