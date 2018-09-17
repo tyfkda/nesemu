@@ -146,7 +146,7 @@ gulp.task('server', () => {
   browserSync.init({
     server: {
       baseDir: DEST_DIR,
-      index: `index.html`,
+      index: 'index.html',
     },
   })
 })
