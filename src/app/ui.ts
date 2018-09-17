@@ -20,11 +20,7 @@ function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const img = document.createElement('img') as HTMLImageElement
   const title = String(Date.now())
   img.src = screenWnd.capture()
-  img.className = 'pixelated'
-  Util.setStyles(img, {
-    width: '100%',
-    height: '100%',
-  })
+  img.className = 'pixelated full-size'
   img.title = img.alt = title
 
   const imgWnd = new Wnd(wndMgr, WIDTH, HEIGHT, title)
@@ -115,10 +111,7 @@ export class ScreenWnd extends Wnd {
     this.setUpMenuBar()
 
     this.fullscreenBase = document.createElement('div')
-    Util.setStyles(this.fullscreenBase, {
-      width: '100%',
-      height: '100%',
-    })
+    this.fullscreenBase.className = 'full-size'
     this.setContent(this.fullscreenBase)
 
     this.setScaler(new IdentityScaler())
@@ -162,8 +155,8 @@ export class ScreenWnd extends Wnd {
         this.contentHolder.style.backgroundColor = 'black'
       } else {
         Util.setStyles(this.fullscreenBase, {
-          width: '100%',
-          height: '100%',
+          width: '',
+          height: '',
           margin: '',
         })
         this.contentHolder.style.backgroundColor = ''

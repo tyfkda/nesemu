@@ -6,12 +6,11 @@ const HEIGHT = 240
 
 function createCanvas(width: number, height: number): HTMLCanvasElement {
   const canvas = document.createElement('canvas') as HTMLCanvasElement
+  canvas.className = 'full-size'
   canvas.width = width
   canvas.height = height
   Util.setStyles(canvas, {
     display: 'block',
-    width: '100%',
-    height: '100%',
   })
   Util.clearCanvas(canvas)
   return canvas
@@ -42,7 +41,7 @@ export class IdentityScaler extends Scaler {
     this.context = Util.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
 
-    this.canvas.className = 'pixelated'
+    this.canvas.classList.add('pixelated')
   }
 
   public render(nes: Nes): void {
