@@ -42,11 +42,10 @@ export class Mapper004 extends Mapper {
       } else {
         const reg = this.bankSelect & 0x07
         this.regs[reg] = value
-        if (reg < 6) {  // CHR
+        if (reg < 6)  // CHR
           this.setChrBank(this.bankSelect)
-        } else {  // PRG
+        else  // PRG
           this.setPrgBank(this.bankSelect)
-        }
       }
     })
 
@@ -191,6 +190,37 @@ export class Mapper004 extends Mapper {
 
   protected resetIrqHlineCounter(): void {
     this.irqHlineCounter = 0
+  }
+}
+
+export class Mapper088 extends Mapper004 {
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper088(options)
+  }
+
+  constructor(protected options: MapperOptions) {
+    super(options)
+
+    // Select
+    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+      if ((adr & 1) === 0) {
+        this.bankSelect = value & 0x07
+        this.setPrgBank(this.bankSelect)
+        this.setChrBank(this.bankSelect)
+      } else {
+        const reg = this.bankSelect & 0x07
+        if (reg < 6) {  // CHR
+          value &= 0x3f
+          if (reg >= 2)
+            value |= 0x40
+          this.regs[reg] = value
+          this.setChrBank(this.bankSelect)
+        } else {  // PRG
+          this.regs[reg] = value
+          this.setPrgBank(this.bankSelect)
+        }
+      }
+    })
   }
 }
 

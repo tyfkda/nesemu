@@ -3,7 +3,7 @@ import {Mapper000} from './mapper000'
 import {Mapper001} from './mapper001'
 import {Mapper002, Mapper093} from './mapper002'
 import {Mapper003, Mapper185} from './mapper003'
-import {Mapper004, Mapper118} from './mapper004'
+import {Mapper004, Mapper088, Mapper118} from './mapper004'
 import {Mapper007} from './mapper007'
 import {Mapper010} from './mapper010'
 import {Mapper019} from './mapper019'
@@ -35,7 +35,7 @@ export const kMapperTable: {[key: number]: (options: MapperOptions) => Mapper} =
   73: Mapper073.create,  // INES Mapper 073: Konami VRC3
   75: Mapper075.create,
   87: Mapper087.create,
-  88: Mapper004.create,
+  88: Mapper088.create,
   93: Mapper093.create,  // INES Mapper 093: Sunsoft-2 IC
   95: Mapper004.create,
   118: Mapper118.create,
