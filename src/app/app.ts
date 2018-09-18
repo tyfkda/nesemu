@@ -355,6 +355,7 @@ export class App {
       this.audioManager.setChannelVolume(ch, volume)
       if (volume > 0)
         this.audioManager.setChannelFrequency(ch, this.nes.getSoundFrequency(ch))
+        this.audioManager.setChannelDutyRatio(ch, this.nes.getSoundDutyRatio(ch))
     }
   }
 

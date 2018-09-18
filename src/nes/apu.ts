@@ -71,6 +71,8 @@ const kLengthTable = [
 const kNoiseFrequencies =
       [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068]
 
+const kPulseDutyRatio = [0.125, 0.25, 0.5, -0.25]
+
 const VBLANK_START = 241
 
 // ================================================================
@@ -112,6 +114,7 @@ class Channel {
 
   public getVolume(): number { return 0 }
   public getFrequency(): number { return 0 }
+  public getDutyRatio(): number { return 0.5 }
   public stop() {
     this.stopped = true
   }
@@ -173,6 +176,10 @@ class PulseChannel extends Channel {
   public getFrequency(): number {
     const value = this.regs[REG_TIMER_L] + ((this.regs[REG_TIMER_H] & 7) << 8)
     return ((CPU_CLOCK / 16) / (value + 1)) | 0
+  }
+
+  public getDutyRatio(): number {
+    return kPulseDutyRatio[(this.regs[REG_STATUS] >> 6) & 3]
   }
 
   public update(): void {
@@ -454,6 +461,10 @@ export class Apu {
 
   public getFrequency(ch: number): number {
     return this.channels[ch].getFrequency()
+  }
+
+  public getDutyRatio(ch: number): number {
+    return this.channels[ch].getDutyRatio()
   }
 
   public setPadStatus(no: number, status: Byte): void {

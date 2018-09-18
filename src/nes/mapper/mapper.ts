@@ -41,4 +41,8 @@ export class Mapper {
   public getSoundFrequency(_channel: number): number {
     return 0
   }
+
+  public getSoundDutyRatio(_channel: number): number {
+    return 0.5
+  }
 }

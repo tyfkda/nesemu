@@ -195,6 +195,12 @@ export class Nes implements PrgBankController {
     return this.mapper.getSoundFrequency(channel - this.apuChannelCount)
   }
 
+  public getSoundDutyRatio(channel: number): number {
+    if (channel < this.apuChannelCount)
+      return this.apu.getDutyRatio(channel)
+    return this.mapper.getSoundDutyRatio(channel - this.apuChannelCount)
+  }
+
   public render(pixels: Uint8ClampedArray): void {
     this.ppu.render(pixels)
   }
