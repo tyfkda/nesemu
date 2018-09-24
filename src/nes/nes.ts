@@ -118,6 +118,16 @@ export class Nes implements PrgBankController {
     return true
   }
 
+  public setBiosData(biosData: Uint8Array): void {
+    this.prgRom = biosData
+    this.ppu.setChrData(Uint8Array.from([]))
+    this.ppu.setMirrorMode(MirrorMode.HORZ)
+    this.cpu.deleteAllBreakPoints()
+
+    this.mapperNo = 0
+    this.setMemoryMap()
+  }
+
   public save(): object {
     return {
       cpu: this.cpu.save(),

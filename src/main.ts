@@ -68,7 +68,7 @@ class Main {
       this.apps.push(jsApp)
     }
 
-    const kTargetExts = ['nes']
+    const kTargetExts = ['nes', 'bin']
 
     // Unzip and flatten.
     const promises = new Array<Promise<any>>()
@@ -122,6 +122,14 @@ class Main {
             y += 16
           })
         }
+        // Load .bin file.
+        if (typeMap.bin) {
+          typeMap.bin.forEach(file => {
+            this.bootDiskBios(file.binary)
+            x += 16
+            y += 16
+          })
+        }
       })
   }
 
@@ -143,6 +151,22 @@ class Main {
       app.close()
       return
     }
+    app.setVolume(this.volume)
+    this.apps.push(app)
+  }
+
+  private bootDiskBios(biosData: Uint8Array): void {
+    const option = {
+      title: 'DISK System',
+      centerX: 0,
+      centerY: 0,
+      onClosed: (_app) => {
+        this.removeApp(_app)
+      },
+    }
+
+    const app = App.create(this.wndMgr, option)
+    app.bootDiskBios(biosData)
     app.setVolume(this.volume)
     this.apps.push(app)
   }

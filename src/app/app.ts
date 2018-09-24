@@ -130,11 +130,6 @@ export class App {
     if (result !== true)
       return result
 
-    const contextClass = window.AudioContext || window.webkitAudioContext
-    // if (contextClass == null)
-    //   return
-
-    this.audioManager = new AudioManager(contextClass)
     this.setupAudioManager()
 
     this.nes.reset()
@@ -151,6 +146,20 @@ export class App {
       this.createRegisterWnd()
       this.createControlWnd()
     }
+
+    return true
+  }
+
+  public bootDiskBios(biosData: Uint8Array): boolean {
+    this.nes.setBiosData(biosData)
+
+    this.setupAudioManager()
+
+    this.nes.reset()
+    this.nes.getCpu().pause(false)
+    this.screenWnd.getContentHolder().focus()
+
+    this.startLoopAnimation()
 
     return true
   }
@@ -377,7 +386,15 @@ export class App {
   }
 
   protected setupAudioManager() {
-    this.audioManager.release()
+    if (this.audioManager == null) {
+      const contextClass = window.AudioContext || window.webkitAudioContext
+      //if (contextClass == null)
+      //  return
+
+      this.audioManager = new AudioManager(contextClass)
+    } else {
+      this.audioManager.release()
+    }
 
     this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
     const channelTypes = this.nes.getSoundChannelTypes()
