@@ -90,9 +90,20 @@ export class App {
     this.screenWnd.setPos(x, y)
 
     this.screenWnd.setCallback((action, ...args) => {
-      if (action === 'resize') {
-        const [width, height] = args
-        this.screenWnd.onResized(width, height)
+      switch (action) {
+      case 'resize':
+        {
+          const [width, height] = args
+          this.screenWnd.onResized(width, height)
+        }
+        break
+      case 'openMenu':
+        this.cancelLoopAnimation()
+        this.muteAudio()
+        break
+      case 'closeMenu':
+        this.startLoopAnimation()
+        break
       }
     })
 

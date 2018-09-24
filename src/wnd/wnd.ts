@@ -158,6 +158,7 @@ export default class Wnd {
       itemElem.addEventListener('click', (_event) => {
         if ('submenu' in menuItem) {
           this.addSubmenu(menuItem, itemElem)
+          this.callback('openMenu')
         }
       })
       this.menuBar.appendChild(itemElem)
@@ -376,6 +377,7 @@ export default class Wnd {
       if (subItemHolder.parentNode != null)
         subItemHolder.parentNode.removeChild(subItemHolder)
       document.removeEventListener('click', onClickOther, true)
+      this.callback('closeMenu')
     }
     document.addEventListener('click', onClickOther, true)
   }
