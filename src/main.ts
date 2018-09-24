@@ -21,6 +21,7 @@ class Main {
   private wndMgr: WindowManager
   private apps: App[] = []
   private diskBios: any = null
+  private uninsertedApp: App|null = null
   private volume = 1
   private gamepadWnd: GamepadWnd|null = null
   private globalPaletWnd: GlobalPaletWnd|null = null
@@ -119,7 +120,7 @@ class Main {
         if (typeMap.bin) {
           this.diskBios = typeMap.bin[0].binary
           if (!typeMap.fds) {  // Boot disk system without inserting disk.
-            this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
+            this.uninsertedApp = this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
           }
         }
         // Load .nes files.
@@ -138,7 +139,12 @@ class Main {
           }
 
           typeMap.fds.forEach(file => {
-            this.bootDiskImage(this.diskBios, file.binary, file.fileName, x, y)
+            if (this.uninsertedApp != null) {
+              this.uninsertedApp.setDiskImage(file.binary)
+              this.uninsertedApp = null
+            } else {
+              this.bootDiskImage(this.diskBios, file.binary, file.fileName, x, y)
+            }
             x += 16
             y += 16
           })
@@ -169,7 +175,7 @@ class Main {
   }
 
   private bootDiskImage(biosData: Uint8Array, diskImage: Uint8Array|null, name: string,
-                        x: number, y: number): void
+                        x: number, y: number): App
   {
     const m = name.match(/^(.*?)\s*\(.*\)\.\w*$/)
     const title = m ? m[1] : name
@@ -188,6 +194,7 @@ class Main {
     if (diskImage != null)
       app.setDiskImage(diskImage)
     this.apps.push(app)
+    return app
   }
 
   private removeApp(app: App): void {

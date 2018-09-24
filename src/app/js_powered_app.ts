@@ -46,7 +46,7 @@ class JsNes extends Nes {
     // TODO: Detect mapper.
     this.setMemoryMap()
     const mapperNo = 0
-    this.mapper = this.createMapper(mapperNo)
+    this.mapper = this.createMapper(mapperNo, -1)
 
     return this.reload()
   }

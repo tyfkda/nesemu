@@ -6,6 +6,7 @@ import {Cpu} from './cpu/cpu'
 import {MirrorMode} from './ppu/types'
 import {kColors} from './ppu/const'
 import {Ppu} from './ppu/ppu'
+import {Address, Byte} from './types'
 import Util from '../util/util'
 
 import {Mapper, PrgBankController} from './mapper/mapper'
@@ -83,7 +84,8 @@ export class Nes implements PrgBankController {
     this.breakPointCallback = () => {}
 
     const mapperNo = 0
-    this.mapper = this.createMapper(mapperNo)
+    this.mapper = this.createMapper(mapperNo, -1)
+    this.setMemoryMap()
   }
 
   public getBus(): Bus { return this.bus }
@@ -113,19 +115,13 @@ export class Nes implements PrgBankController {
 
     this.setMemoryMap()
     const romHash = md5(romData)
-    this.mapper = this.createMapper(mapperNo, romHash)
+    this.mapper = this.createMapper(mapperNo, this.prgRom.length, romHash)
 
     return true
   }
 
-  public setBiosData(biosData: Uint8Array): void {
-    this.prgRom = biosData
-    this.ppu.setChrData(Uint8Array.from([]))
-    this.ppu.setMirrorMode(MirrorMode.HORZ)
-    this.cpu.deleteAllBreakPoints()
-
-    this.mapperNo = 0
-    this.setMemoryMap()
+  public setMapper(mapper: Mapper): void {
+    this.mapper = mapper
   }
 
   public save(): object {
@@ -231,6 +227,38 @@ export class Nes implements PrgBankController {
     this.prgBank[bank] = page << 13
   }
 
+  public createMapper(mapperNo: number, prgSize: number, romHash?: string): Mapper {
+    const mapperFunc = kMapperTable[mapperNo]
+    return mapperFunc({
+      bus: this.bus,
+      cpu: this.cpu,
+      ppu: this.ppu,
+      prgBankCtrl: this,
+      prgSize,
+      romHash,
+    })
+  }
+
+  public readFromApu(adr: Address): Byte {
+    return this.apu.read(adr)
+  }
+
+  public writeToApu(adr: Address, value: Byte): void {
+    switch (adr) {
+    case OAMDMA:
+      if (0 <= value && value <= 0x1f) {  // RAM
+        this.ppu.copyWithDma(this.ram, value << 8)
+        // TODO: Consume CPU or GPU cycles.
+      } else {
+        console.error(`OAMDMA not implemented except for RAM: ${Util.hex(value, 2)}`)
+      }
+      break
+    default:
+      this.apu.write(adr, value)
+      break
+    }
+  }
+
   protected setMemoryMap(): void {
     const bus = this.bus
     bus.clearMemoryMap()
@@ -244,24 +272,8 @@ export class Nes implements PrgBankController {
       this.ppu.write(reg, value)
     })
 
-    bus.setReadMemory(0x4000, 0x5fff, (adr) => {  // APU
-      return this.apu.read(adr)
-    })
-    bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => {  // APU
-      switch (adr) {
-      case OAMDMA:
-        if (0 <= value && value <= 0x1f) {  // RAM
-          this.ppu.copyWithDma(this.ram, value << 8)
-          // TODO: Consume CPU or GPU cycles.
-        } else {
-          console.error(`OAMDMA not implemented except for RAM: ${Util.hex(value, 2)}`)
-        }
-        break
-      default:
-        this.apu.write(adr, value)
-        break
-      }
-    })
+    bus.setReadMemory(0x4000, 0x5fff, (adr) => this.readFromApu(adr))  // APU
+    bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => this.writeToApu(adr, value))  // APU
 
     // PRG ROM
     const prgMask = (this.prgRom.length - 1) | 0
@@ -279,18 +291,6 @@ export class Nes implements PrgBankController {
     // RAM
     bus.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])
     bus.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
-  }
-
-  protected createMapper(mapperNo: number, romHash?: string): Mapper {
-    const mapperFunc = kMapperTable[mapperNo]
-    return mapperFunc({
-      bus: this.bus,
-      cpu: this.cpu,
-      ppu: this.ppu,
-      prgBankCtrl: this,
-      prgSize: this.prgRom.length,
-      romHash,
-    })
   }
 
   private tryHblankEvent(cycleCount: number, cycle: number, leftCycles: number): number {

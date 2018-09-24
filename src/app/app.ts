@@ -3,6 +3,7 @@ import {MirrorMode} from '../nes/ppu/types'
 
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
+import {Fds} from '../nes/fds/fds'
 import {KeyCode} from '../util/key_code'
 import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
 import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd} from './other_wnd'
@@ -48,6 +49,8 @@ export class App {
   protected title: string
   protected screenWnd: ScreenWnd
   protected wndMap: {[key: number]: Wnd} = {}
+
+  protected fds?: Fds
 
   protected volume = 1
 
@@ -151,7 +154,7 @@ export class App {
   }
 
   public bootDiskBios(biosData: Uint8Array): boolean {
-    this.nes.setBiosData(biosData)
+    this.fds = new Fds(biosData, this.nes)
 
     this.setupAudioManager()
 
@@ -164,9 +167,10 @@ export class App {
     return true
   }
 
-  public setDiskImage(_diskData: Uint8Array): boolean {
-    // TODO: Implement
-    return false
+  public setDiskImage(diskData: Uint8Array): boolean {
+    if (this.fds == null)
+      return false
+    return this.fds.setImage(diskData)
   }
 
   public close(): void {
