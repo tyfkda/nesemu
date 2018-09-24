@@ -31,33 +31,6 @@ function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   return imgWnd
 }
 
-function tryFullscreen(element: HTMLElement, callback: (isFullscreen: boolean) => void): boolean {
-  const kList = [
-    { fullscreen: 'requestFullscreen', change: 'fullscreenchange' },
-    { fullscreen: 'webkitRequestFullScreen', change: 'webkitfullscreenchange' },
-    { fullscreen: 'mozRequestFullScreen', change: 'mozfullscreenchange' },
-    { fullscreen: 'msRequestFullscreen', change: 'MSFullscreenChange' },
-  ]
-  for (let i = 0; i < kList.length; ++i) {
-    if (element[kList[i].fullscreen]) {
-      element[kList[i].fullscreen]()
-      const changeEvent = kList[i].change
-      const exitHandler = () => {
-        const isFullscreen = !!(document.fullScreen || document.mozFullScreen ||
-                                document.webkitIsFullScreen)
-        if (callback)
-          callback(isFullscreen)
-        if (!isFullscreen) {  // End
-          document.removeEventListener(changeEvent, exitHandler, false)
-        }
-      }
-      document.addEventListener(changeEvent, exitHandler, false)
-      return true
-    }
-  }
-  return false
-}
-
 export class FpsWnd extends Wnd {
   private subscription: Pubsub.Subscription
   private stats: Stats
@@ -173,7 +146,7 @@ export class ScreenWnd extends Wnd {
   }
 
   public setFullscreen(callback?: (isFullscreen: boolean) => boolean): boolean {
-    return tryFullscreen(this.contentHolder, (isFullscreen) => {
+    return this.wndMgr.setFullscreen(this.contentHolder, (isFullscreen) => {
       if (isFullscreen) {
         let width = window.parent.screen.width
         let height = window.parent.screen.height

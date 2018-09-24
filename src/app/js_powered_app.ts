@@ -4,9 +4,7 @@
 import {App} from './app'
 import {AppEvent} from './app_event'
 import {Bus} from '../nes/bus'
-import {GamepadManager} from '../util/gamepad_manager'
 import {Nes} from '../nes/nes'
-import {PadKeyHandler} from '../util/pad_key_handler'
 import {Ppu} from '../nes/ppu'
 import {ScreenWnd, RegisterWnd} from './ui'
 import Util from '../util/util'
@@ -280,9 +278,6 @@ export class JsApp extends App {
     let y = Util.clamp((option.centerY || 0) - size.height / 2,
                        0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
-
-    this.padKeyHandler = new PadKeyHandler()
-    this.setUpKeyEvent(this.screenWnd.getRootElement(), this.padKeyHandler)
   }
 
   public setFile(file: File): void {
@@ -328,11 +323,8 @@ export class JsApp extends App {
   }
 
   protected loop(elapsedTime: number): void {
-    const isActive = this.screenWnd.isTop()
     for (let i = 0; i < 2; ++i) {
-      let pad = 0
-      if (isActive)
-        pad = this.padKeyHandler.getStatus(i) | GamepadManager.getState(i)
+      const pad =  this.wndMgr.getPadStatus(this.screenWnd, i)
       this.nes.setPadStatus(i, pad)
     }
 

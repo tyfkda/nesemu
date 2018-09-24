@@ -3,9 +3,7 @@ import {MirrorMode} from '../nes/ppu'
 
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
-import {GamepadManager} from '../util/gamepad_manager'
 import {KeyCode} from '../util/key_code'
-import {PadKeyHandler} from '../util/pad_key_handler'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
         RegisterWnd, TraceWnd, ControlWnd} from './ui'
 import StorageUtil from '../util/storage_util'
@@ -23,11 +21,9 @@ export class App {
   protected isBlur = false
   protected rafId: number|null  // requestAnimationFrame
   protected nes: Nes
-  protected padKeyHandler: PadKeyHandler
   protected audioManager = new AudioManager()
   protected stream = new AppEvent.Stream()
   protected subscription: Pubsub.Subscription
-  protected pressingKeys: any = {}
 
   protected title: string
   protected screenWnd: ScreenWnd
@@ -107,9 +103,6 @@ export class App {
         break
       }
     })
-
-    this.padKeyHandler = new PadKeyHandler()
-    this.setUpKeyEvent(this.screenWnd.getContentHolder(), this.padKeyHandler)
   }
 
   public loadRom(romData: Uint8Array): boolean|string {
@@ -316,17 +309,14 @@ export class App {
     if (this.nes.getCpu().isPaused())
       return
 
-    const isActive = this.screenWnd.isTop()
     for (let i = 0; i < 2; ++i) {
-      let pad = 0
-      if (isActive)
-        pad = this.padKeyHandler.getStatus(i) | GamepadManager.getState(i)
+      const pad =  this.wndMgr.getPadStatus(this.screenWnd, i)
       this.nes.setPadStatus(i, pad)
     }
 
-    let et = this.pressingKeys[KeyCode.SHIFT] ? elapsedTime * 3 : elapsedTime
+    let et = this.wndMgr.getKeyPressing(this.screenWnd, KeyCode.SHIFT) ? elapsedTime * 3 : elapsedTime
     et = Math.min(et, MAX_ELAPSED_TIME)
-    let cycles = (CPU_HZ * et / 1000) | 0
+    const cycles = (CPU_HZ * et / 1000) | 0
     this.nes.runCycles(cycles)
   }
 
@@ -349,30 +339,6 @@ export class App {
     const n = this.audioManager.getChannelCount()
     for (let ch = 0; ch < n; ++ch)
       this.audioManager.setChannelVolume(ch, 0)
-  }
-
-  protected setUpKeyEvent(root: HTMLElement, padKeyHandler: PadKeyHandler): void {
-    root.setAttribute('tabindex', '1')  // To accept key event.
-    root.style.outline = 'none'
-    root.addEventListener('keydown', (event) => {
-      if (event.ctrlKey) {  // Ctrl+W: Quit
-        if (event.keyCode === KeyCode.W) {
-          this.screenWnd.close()
-          return
-        }
-      }
-
-      if (event.ctrlKey || event.altKey || event.metaKey)
-        return
-      event.preventDefault()
-      padKeyHandler.onKeyDown(event.keyCode)
-      this.pressingKeys[event.keyCode] = true
-    })
-    root.addEventListener('keyup', (event) => {
-      event.preventDefault()
-      padKeyHandler.onKeyUp(event.keyCode)
-      this.pressingKeys[event.keyCode] = false
-    })
   }
 
   private setupAudioManager() {

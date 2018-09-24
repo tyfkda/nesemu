@@ -1,5 +1,8 @@
-import Wnd from './wnd'
+import {GamepadManager} from '../util/gamepad_manager'
+import {KeyCode} from '../util/key_code'
+import {PadKeyHandler} from '../util/pad_key_handler'
 import Util from '../util/util'
+import Wnd from './wnd'
 
 const BASE_PRIORITY = 100
 
@@ -9,8 +12,48 @@ function setWindowZIndex(wnd: Wnd, i: number, n: number) {
 
 export default class WindowManager {
   private windows: Wnd[] = []
+  private padKeyHandler = new PadKeyHandler()
+  private pressingKeys: {[key: number]: boolean} = {}
+
+  private onKeyDown: (event: Event) => any
+  private onKeyUp: (event: Event) => any
 
   public constructor(private root: HTMLElement) {
+    this.onKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey) {  // Ctrl+W: Quit
+        if (event.keyCode === KeyCode.W) {
+          if (this.windows.length > 0)
+            this.windows[0].close()
+          return
+        }
+      }
+
+      if (event.ctrlKey || event.altKey || event.metaKey)
+        return
+
+      event.preventDefault()
+      this.padKeyHandler.onKeyDown(event.keyCode)
+      this.pressingKeys[event.keyCode] = true
+    }
+    this.onKeyUp = (event: KeyboardEvent) => {
+      event.preventDefault()
+      this.padKeyHandler.onKeyUp(event.keyCode)
+      this.pressingKeys[event.keyCode] = false
+    }
+    this.root.addEventListener('keydown', this.onKeyDown)
+    this.root.addEventListener('keyup', this.onKeyUp)
+
+    this.root.focus()
+  }
+
+  public getPadStatus(wnd: Wnd, i: number): number {
+    if (!wnd.isTop())
+      return 0
+    return this.padKeyHandler.getStatus(i) | GamepadManager.getState(i)
+  }
+
+  public getKeyPressing(wnd: Wnd, keyCode: number): boolean {
+    return wnd.isTop() && this.pressingKeys[keyCode]
   }
 
   public add(wnd: Wnd): void {
@@ -63,6 +106,47 @@ export default class WindowManager {
     }
 
     this.updateWindowPriorities()
+  }
+
+  public setFullscreen(element: HTMLElement, callback: (isFullscreen: boolean) => void): boolean {
+    const kList = [
+      { fullscreen: 'requestFullscreen', change: 'fullscreenchange' },
+      { fullscreen: 'webkitRequestFullScreen', change: 'webkitfullscreenchange' },
+      { fullscreen: 'mozRequestFullScreen', change: 'mozfullscreenchange' },
+      { fullscreen: 'msRequestFullscreen', change: 'MSFullscreenChange' },
+    ]
+    for (let i = 0; i < kList.length; ++i) {
+      if (element[kList[i].fullscreen]) {
+        element[kList[i].fullscreen]()
+        const changeEvent = kList[i].change
+        const exitHandler = () => {
+          const isFullscreen = !!(document.fullScreen || document.mozFullScreen ||
+                                  document.webkitIsFullScreen)
+          if (isFullscreen) {
+            element.setAttribute('tabindex', '1')
+            element.addEventListener('keydown', this.onKeyDown)
+            element.addEventListener('keyup', this.onKeyUp)
+          } else {
+            element.removeAttribute('tabindex')
+            element.removeEventListener('keydown', this.onKeyDown)
+            element.removeEventListener('keyup', this.onKeyUp)
+          }
+
+          if (callback)
+            callback(isFullscreen)
+          if (isFullscreen) {
+            element.focus()
+          } else {  // End
+            document.removeEventListener(changeEvent, exitHandler, false)
+            this.root.focus()
+          }
+        }
+        document.addEventListener(changeEvent, exitHandler, false)
+
+        return true
+      }
+    }
+    return false
   }
 
   private removeWnd(wnd: Wnd): void {
