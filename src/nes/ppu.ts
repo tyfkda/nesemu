@@ -60,6 +60,7 @@ export const enum MirrorMode {
 }
 
 const enum HEVENTTYPE {
+  DUMMY,
   PPU_CTRL,
   PPU_MASK,
   CHR_BANK_OFFSET,
@@ -87,15 +88,20 @@ class HEvents {
   }
 
   public swap(): void {
+    // Add sentinel: Ensure that current frame has an event at hline 240.
+    this.add(Const.HEIGHT, HEVENTTYPE.DUMMY, 0)
+
     const tmp = this.events
     this.events = this.eventsNext
     this.count = this.countNext
     this.eventsNext = tmp
     this.countNext = 0
+
+    this.add(0, HEVENTTYPE.DUMMY, 0)  // Ensure that next frame has an event at hline 0.
   }
 
   public getCount(): number {
-    return this.count
+    return this.count - 1  // Last one is sentinel, so -1
   }
 
   public getEvent(index: number): any {
@@ -228,6 +234,8 @@ class HStatus {
 
   public set(type: HEVENTTYPE, value: number, index: number): boolean {
     switch (type) {
+    case HEVENTTYPE.DUMMY:
+      break
     case HEVENTTYPE.PPU_CTRL:
       if (this.ppuCtrl === value)
         return false
@@ -522,7 +530,7 @@ export class Ppu {
       h.set(hevent.type, hevent.value, hevent.index)
 
       const hline0 = hevent.hcount
-      const hline1 = i < n - 1 ? this.hevents.getEvent(i + 1).hcount : Const.HEIGHT
+      const hline1 = this.hevents.getEvent(i + 1).hcount
       if (hline0 >= hline1)
         continue
 
