@@ -33,58 +33,82 @@ class Main {
     if (!(window.File && window.FileReader && window.FileList && window.Blob))
       return
 
-    Util.handleFileDrop(this.root, (file, x, y) => {
-      this.createAppFromFile(file, x, y)
-    })
+    Util.handleFileDrop(this.root, (files, x, y) => this.createAppFromFiles(files, x, y))
 
     document.getElementById('drop-desc').style.display = ''
   }
 
-  private createAppFromFile(file: File, x: number, y: number): void {
-    switch (Util.getExt(file.name).toLowerCase()) {
-    case 'nes':
-      Util.loadFile(file)
-        .then(binary => {
-          this.createAppFromRom(binary, file.name, x, y)
-        })
-      break
-    case 'zip':
-      Util.loadFile(file)
-        .then(binary => {
-          const zip = new JSZip()
-          return zip.loadAsync(binary)
-        })
-        .then((loadedZip: JSZip) => {
-          for (let fileName of Object.keys(loadedZip.files)) {
-            if (Util.getExt(fileName).toLowerCase() === 'nes') {
-              return loadedZip.files[fileName].async('uint8array')
-                .then(unzipped => Promise.resolve({unzipped, fileName}))
-            }
-          }
-          return Promise.reject('No .nes file included')
-        })
-        .then(({unzipped, fileName}) => {
-          this.createAppFromRom(unzipped, fileName, x, y)
-        })
-      break
-    case 'js':
-      {
-        const jsApp = new JsApp(this.wndMgr, {
-          title: file.name,
-          centerX: x,
-          centerY: y,
-          onClosed: (app) => {
-            this.removeApp(app)
-          },
-        })
-        jsApp.setFile(file)
-        this.apps.push(jsApp)
-      }
-      break
-    default:
-      this.wndMgr.showSnackbar(`${file.name}: Supported .nes or .zip only`)
-      break
+  private createAppFromFiles(files: FileList, x: number, y: number): void {
+    // Load .js files
+    for (let i = 0; i < files.length; ++i) {
+      const file = files[i]
+      const ext = Util.getExt(file.name).toLowerCase()
+      if (ext !== 'js')
+        continue
+      const jsApp = new JsApp(this.wndMgr, {
+        title: file.name,
+        centerX: x,
+        centerY: y,
+        onClosed: (app) => {
+          this.removeApp(app)
+        },
+      })
+      jsApp.setFile(file)
+      this.apps.push(jsApp)
     }
+
+    const kTargetExts = ['nes']
+
+    // Unzip and flatten.
+    const promises = new Array<Promise<any>>()
+    for (let i = 0; i < files.length; ++i) {
+      const file = files[i]
+      let promise: Promise<any>|null = null
+      const ext = Util.getExt(file.name).toLowerCase()
+      if (ext === 'js') {
+        // Skip, because already processed.
+      } else if (ext === 'zip') {
+        promise = Util.loadFile(file)
+          .then(binary => {
+            const zip = new JSZip()
+            return zip.loadAsync(binary)
+          })
+          .then((loadedZip: JSZip) => {
+            for (let fileName of Object.keys(loadedZip.files)) {
+              const ext = Util.getExt(fileName).toLowerCase()
+              if (kTargetExts.indexOf(ext) >= 0) {
+                return loadedZip.files[fileName].async('uint8array')
+                  .then(unzipped => Promise.resolve({type: ext, binary: unzipped, fileName}))
+              }
+            }
+            return Promise.reject('No .nes file included')
+          })
+      } else if (kTargetExts.indexOf(ext) >= 0) {
+        promise = Util.loadFile(file)
+          .then(binary => Promise.resolve({type: ext, binary, fileName: file.name}))
+      } else {
+        promise = Promise.reject(`Unsupported ext: ${file.name}`)
+      }
+      if (promise)
+        promises.push(promise)
+    }
+    Promise.all(promises)
+      .then(results => {
+        const typeMap: {[key: string]: Array<any>} = {}
+        results.forEach(result => {
+          if (!typeMap[result.type])
+            typeMap[result.type] = []
+          typeMap[result.type].push(result)
+        })
+        // Load .nes files.
+        if (typeMap.nes) {
+          typeMap.nes.forEach(file => {
+            this.createAppFromRom(file.binary, file.fileName, x, y)
+            x += 16
+            y += 16
+          })
+        }
+      })
   }
 
   private createAppFromRom(romData: Uint8Array, name: string, x: number, y: number): void {
@@ -138,9 +162,7 @@ class Main {
       const fileList = romFile.files
       if (!fileList)
         return
-      for (let i = 0; i < fileList.length; ++i) {
-        this.createAppFromFile(fileList[i], 0, 0)
-      }
+      this.createAppFromFiles(fileList, 0, 0)
 
       // Clear.
       romFile.value = ''

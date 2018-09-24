@@ -54,17 +54,14 @@ export default class Util {
   }
 
   public static handleFileDrop(dropZone: HTMLElement,
-                               onDropped: (file: File, x: number, y: number) => void): void
+                               onDropped: (files: FileList, x: number, y: number) => void): void
   {
     function onDrop(event) {
       event.stopPropagation()
       event.preventDefault()
       const files = event.dataTransfer.files
       if (files.length > 0) {
-        for (let i = 0; i < files.length; ++i) {
-          const file = files[i]
-          onDropped(file, event.pageX, event.pageY)
-        }
+        onDropped(files, event.pageX, event.pageY)
       }
       return false
     }
