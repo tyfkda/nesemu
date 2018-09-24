@@ -58,9 +58,9 @@ export class Nes implements PrgBankController {
   protected apu: Apu
   protected cycleCount = 0
 
+  protected mapperNo = 0
+  protected mapper: Mapper
   private prgRom = new Uint8Array(0)
-  private mapperNo = 0
-  private mapper: Mapper
   private vblankCallback: (leftV: number) => void
   private breakPointCallback: () => void
   private prgBank: number[]
@@ -114,8 +114,9 @@ export class Nes implements PrgBankController {
     this.ppu.setMirrorMode((romData[6] & 1) === 0 ? MirrorMode.HORZ : MirrorMode.VERT)
     this.cpu.deleteAllBreakPoints()
 
+    this.setMemoryMap()
     const romHash = md5(Array.from<number>(romData))
-    this.setMemoryMap(this.mapperNo, romHash)
+    this.mapper = this.createMapper(this.mapperNo, romHash)
 
     return true
   }
@@ -221,7 +222,7 @@ export class Nes implements PrgBankController {
     this.prgBank[bank] = page << 13
   }
 
-  protected setMemoryMap(mapperNo: number, romHash?: string): void {
+  protected setMemoryMap(): void {
     const bus = this.bus
     bus.clearMemoryMap()
 
@@ -269,11 +270,9 @@ export class Nes implements PrgBankController {
     // RAM
     bus.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])
     bus.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
-
-    this.mapper = this.createMapper(mapperNo, romHash)
   }
 
-  private createMapper(mapperNo: number, romHash?: string): Mapper {
+  protected createMapper(mapperNo: number, romHash?: string): Mapper {
     const mapperFunc = kMapperTable[mapperNo]
     return mapperFunc({
       bus: this.bus,

@@ -43,7 +43,9 @@ class JsNes extends Nes {
     this.file = file
 
     // TODO: Detect mapper.
-    this.setMemoryMap(0)
+    this.setMemoryMap()
+    this.mapperNo = 0
+    this.mapper = this.createMapper(this.mapperNo)
 
     return this.reload()
   }
