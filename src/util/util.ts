@@ -105,4 +105,22 @@ export default class Util {
   public static timeout(millisec): Promise<void> {
     return new Promise<void>(resolve => setTimeout(resolve, millisec))
   }
+
+  public static download(blob: Blob, filename: string): void {
+    const objectURL = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = objectURL
+    a.setAttribute('download', filename)
+    a.click()
+  }
+
+  public static chooseFile(callback: (files: any) => void) {
+    const elem = document.createElement('input')
+    elem.setAttribute('type', 'file')
+    elem.setAttribute('accept', '.sav, application/json')
+    elem.addEventListener('change', function(event) {
+      callback((event.target as any).files)
+    })
+    elem.click()
+  }
 }

@@ -17,24 +17,6 @@ const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
 const DEFAULT_MASTER_VOLUME = 0.125
 
-function download(blob: Blob, filename: string) {
-  const objectURL = window.URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = objectURL
-  a.setAttribute('download', filename)
-  a.click()
-}
-
-function chooseFile(callback: (files: any) => void) {
-  const elem = document.createElement('input')
-  elem.setAttribute('type', 'file')
-  elem.setAttribute('accept', '.sav, application/json')
-  elem.addEventListener('change', function(event) {
-    callback((event.target as any).files)
-  })
-  elem.click()
-}
-
 export class App {
   protected destroying = false
   protected isBlur = false
@@ -60,8 +42,6 @@ export class App {
     return new App(wndMgr, option)
   }
 
-  constructor(wndMgr: WindowManager, option: any)
-  constructor(wndMgr: WindowManager, option: any, noDefault: boolean)
   constructor(protected wndMgr: WindowManager, option: any, noDefault?: boolean) {
     if (noDefault)
       return
@@ -154,11 +134,11 @@ export class App {
     const saveData = this.nes.save()
     const content = JSON.stringify(saveData)
     const blob = new Blob([content], {type: 'text/plain'})
-    download(blob, `${this.title}.sav`)
+    Util.download(blob, `${this.title}.sav`)
   }
 
   public loadData() {
-    chooseFile(files => {
+    Util.chooseFile(files => {
       if (files.length < 1) {
         return
       }
