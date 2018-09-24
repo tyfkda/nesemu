@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "@types/jest": "~23.3.2",
+    "@types/md5": "~2.1.33",
     "@types/node": "~10.7.2",
     "argv": "~0.0.2",
     "babel-core": "~6.26.3",
