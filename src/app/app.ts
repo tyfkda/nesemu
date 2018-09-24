@@ -8,6 +8,7 @@ import {KeyCode} from '../util/key_code'
 import {PadKeyHandler} from '../util/pad_key_handler'
 import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
         RegisterWnd, TraceWnd, ControlWnd} from './ui'
+import StorageUtil from '../util/storage_util'
 import Util from '../util/util'
 import WindowManager from '../wnd/window_manager'
 
@@ -143,28 +144,22 @@ export class App {
 
   public saveData() {
     const saveData = this.nes.save()
-    const content = JSON.stringify(saveData)
-    const blob = new Blob([content], {type: 'text/plain'})
-    Util.download(blob, `${this.title}.sav`)
+    StorageUtil.putObject(this.title, saveData)
   }
 
   public loadData() {
-    Util.chooseFile(files => {
-      if (files.length < 1) {
-        return
+    const saveData = StorageUtil.getObject(this.title, null)
+    if (saveData) {
+      try {
+        this.nes.load(saveData)
+      } catch (e) {
+        console.error(e)
+        this.wndMgr.showSnackbar('Error: Load data failed')
+        this.nes.reset()
       }
-
-      const reader = new FileReader()
-      reader.onload = (event) => {
-        try {
-          const json = JSON.parse((event.target as any).result)
-          this.nes.load(json)
-        } catch (e) {
-          console.error(e)
-        }
-      }
-      reader.readAsText(files[0])
-    })
+    } else {
+      this.wndMgr.showSnackbar(`No save data for "${this.title}"`)
+    }
   }
 
   public onBlur() {
