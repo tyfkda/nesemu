@@ -316,24 +316,38 @@ export class Ppu {
   }
 
   public save(): object {
-    return {
+    const data: any = {
       regs: Util.convertUint8ArrayToBase64String(this.regs),
-      vram: Util.convertUint8ArrayToBase64String(this.vram),
       oam: Util.convertUint8ArrayToBase64String(this.oam),
       mirrorMode: this.mirrorMode,
     }
+
+    if (this.isChrRam()) {
+      // Save VRAM including ChrRAM
+      data.vram = Util.convertUint8ArrayToBase64String(this.vram)
+    } else {
+      // Save VRAM except ChrROM
+      data.vramHigh = Util.convertUint8ArrayToBase64String(this.vram.subarray(0x2000))
+    }
+
+    return data
   }
 
   public load(saveData: any): void {
     const isRam = this.isChrRam()
 
     this.regs = Util.convertBase64StringToUint8Array(saveData.regs)
-    this.vram = Util.convertBase64StringToUint8Array(saveData.vram)
     this.oam = Util.convertBase64StringToUint8Array(saveData.oam)
     this.mirrorMode = saveData.mirrorMode
 
-    if (isRam)
+    if (isRam) {
+      this.vram = Util.convertBase64StringToUint8Array(saveData.vram)
       this.chrData = this.vram
+    } else {
+      const vramHigh = Util.convertBase64StringToUint8Array(saveData.vramHigh)
+      for (let i = 0; i < vramHigh.length; ++i)
+        this.vram[i + 0x2000] = vramHigh[i]
+    }
 
     this.hstatus.mirrorModeBit = saveData.mirrorModeBit  // TODO: Confirm status restoration
     this.hstatus.set(HEVENTTYPE.PPU_CTRL, this.regs[PPUCTRL], -1)
