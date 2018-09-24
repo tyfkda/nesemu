@@ -20,6 +20,7 @@ const KEY_VOLUME = 'volume'
 class Main {
   private wndMgr: WindowManager
   private apps: App[] = []
+  private diskBios: any = null
   private volume = 1
   private gamepadWnd: GamepadWnd|null = null
   private globalPaletWnd: GlobalPaletWnd|null = null
@@ -68,7 +69,7 @@ class Main {
       this.apps.push(jsApp)
     }
 
-    const kTargetExts = ['nes', 'bin']
+    const kTargetExts = ['nes', 'bin', 'fds']
 
     // Unzip and flatten.
     const promises = new Array<Promise<any>>()
@@ -114,6 +115,13 @@ class Main {
             typeMap[result.type] = []
           typeMap[result.type].push(result)
         })
+        // .bin: Disk BIOS
+        if (typeMap.bin) {
+          this.diskBios = typeMap.bin[0].binary
+          if (!typeMap.fds) {  // Boot disk system without inserting disk.
+            this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
+          }
+        }
         // Load .nes files.
         if (typeMap.nes) {
           typeMap.nes.forEach(file => {
@@ -122,10 +130,15 @@ class Main {
             y += 16
           })
         }
-        // Load .bin file.
-        if (typeMap.bin) {
-          typeMap.bin.forEach(file => {
-            this.bootDiskBios(file.binary)
+        // Load .fds
+        if (typeMap.fds) {
+          if (this.diskBios == null) {
+            this.wndMgr.showSnackbar('.fds needs BIOS file (.bin) for Disk System')
+            return
+          }
+
+          typeMap.fds.forEach(file => {
+            this.bootDiskImage(this.diskBios, file.binary, file.fileName, x, y)
             x += 16
             y += 16
           })
@@ -155,11 +168,15 @@ class Main {
     this.apps.push(app)
   }
 
-  private bootDiskBios(biosData: Uint8Array): void {
+  private bootDiskImage(biosData: Uint8Array, diskImage: Uint8Array|null, name: string,
+                        x: number, y: number): void
+  {
+    const m = name.match(/^(.*?)\s*\(.*\)\.\w*$/)
+    const title = m ? m[1] : name
     const option = {
-      title: 'DISK System',
-      centerX: 0,
-      centerY: 0,
+      title,
+      centerX: x,
+      centerY: y,
       onClosed: (_app) => {
         this.removeApp(_app)
       },
@@ -168,6 +185,8 @@ class Main {
     const app = App.create(this.wndMgr, option)
     app.bootDiskBios(biosData)
     app.setVolume(this.volume)
+    if (diskImage != null)
+      app.setDiskImage(diskImage)
     this.apps.push(app)
   }
 

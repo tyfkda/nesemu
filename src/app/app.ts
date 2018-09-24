@@ -164,6 +164,11 @@ export class App {
     return true
   }
 
+  public setDiskImage(_diskData: Uint8Array): boolean {
+    // TODO: Implement
+    return false
+  }
+
   public close(): void {
     this.screenWnd.close()
   }
