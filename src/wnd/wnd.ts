@@ -154,6 +154,7 @@ export default class Wnd {
       const itemElem = document.createElement('div')
       itemElem.className = 'menu-item pull-left'
       itemElem.innerText = menuItem.label
+      itemElem.style.height = '100%'
       itemElem.addEventListener('click', (_event) => {
         if ('submenu' in menuItem) {
           this.addSubmenu(menuItem, itemElem)
@@ -367,7 +368,7 @@ export default class Wnd {
     const rect = getOffsetRect(this.root, itemElem)
     Util.setStyles(subItemHolder, {
       left: `${rect.left - 1}px`,  // For border size
-      top: `${rect.bottom - 1}px`,
+      top: `${rect.bottom}px`,
     })
 
     // To handle earlier than menu open, pass useCapture=true
