@@ -1,6 +1,7 @@
 // APU: Audio Processing Unit
 
 import {Address, Byte} from './types'
+import Util from '../util/util'
 
 export const enum PadBit {
   A = 0,
@@ -396,6 +397,16 @@ export class Apu {
     this.frameInterrupt = 0
     this.dmcInterrupt = 0x80  // TODO: Implement
     this.channels.forEach(channel => { channel.reset() })
+  }
+
+  public save(): object {
+    return {
+      regs: Util.convertUint8ArrayToBase64String(this.regs),
+    }
+  }
+
+  public load(saveData: any): void {
+    this.regs = Util.convertBase64StringToUint8Array(saveData.regs)
   }
 
   public read(adr: Address): Byte {
