@@ -12,7 +12,8 @@
     "test": "gulp test",
     "lint": "gulp lint",
     "release": "gulp release",
-    "clean": "gulp clean"
+    "clean": "gulp clean",
+    "deploy": "pushd gh-pages && git reset --hard && git checkout gh-pages && popd && npm run release && cp -r release/* gh-pages/ && pushd gh-pages && git commit -a --amend -m 'Deploy' && git push -f && popd"
   },
   "author": "tyfkda",
   "repository": {
