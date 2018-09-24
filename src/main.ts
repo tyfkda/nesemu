@@ -36,6 +36,8 @@ class Main {
     Util.handleFileDrop(this.root, (file, x, y) => {
       this.createAppFromFile(file, x, y)
     })
+
+    document.getElementById('drop-desc').style.display = ''
   }
 
   private createAppFromFile(file: File, x: number, y: number): void {
