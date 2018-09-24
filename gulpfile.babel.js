@@ -202,8 +202,7 @@ gulp.task('release', gulp.series('build', () => {
 
   // Concatenate ts into single 'assets/main.ts' file.
   const config = clone(webpackConfig)
-  //config.plugins = config.plugins || []
-  //config.plugins.push(new webpack.optimize.UglifyJsPlugin())
+  delete config.output.sourceMapFilename
   return gulp.src(`${SRC_TS_DIR}/main.ts`)
     .pipe(plumber())
     .pipe(webpackStream(config, webpack))
