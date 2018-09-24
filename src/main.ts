@@ -88,7 +88,8 @@ class Main {
   }
 
   private createAppFromRom(romData: Uint8Array, name: string, x: number, y: number): void {
-    const title = name
+    const m = name.match(/^(.*?)\s*\(.*\)\.\w*$/)
+    const title = m ? m[1] : name
     const option = {
       title,
       centerX: x,
