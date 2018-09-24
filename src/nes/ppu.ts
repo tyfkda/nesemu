@@ -321,7 +321,6 @@ export class Ppu {
       vram: Util.convertUint8ArrayToBase64String(this.vram),
       oam: Util.convertUint8ArrayToBase64String(this.oam),
       mirrorMode: this.mirrorMode,
-      mirrorModeBit: this.hstatus.mirrorModeBit,  // TODO: Check
     }
   }
 
@@ -332,10 +331,14 @@ export class Ppu {
     this.vram = Util.convertBase64StringToUint8Array(saveData.vram)
     this.oam = Util.convertBase64StringToUint8Array(saveData.oam)
     this.mirrorMode = saveData.mirrorMode
-    this.hstatus.mirrorModeBit = saveData.mirrorModeBit  // TODO: Confirm status restoration
 
     if (isRam)
       this.chrData = this.vram
+
+    this.hstatus.mirrorModeBit = saveData.mirrorModeBit  // TODO: Confirm status restoration
+    this.hstatus.set(HEVENTTYPE.PPU_CTRL, this.regs[PPUCTRL], -1)
+    this.hstatus.set(HEVENTTYPE.PPU_MASK, this.regs[PPUMASK], -1)
+    this.hstatus.set(HEVENTTYPE.MIRROR_MODE_BIT, kMirrorModeBitTable[this.mirrorMode], -1)
   }
 
   public setChrData(chrData: Uint8Array): void {
