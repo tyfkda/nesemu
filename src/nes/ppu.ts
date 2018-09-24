@@ -289,7 +289,6 @@ export class Ppu {
   private hstatusPrev: HStatus = new HStatus()
   private hstatusBak: HStatus = new HStatus()
 
-  private isChrRam = false
   private scrollTemp: Word = 0
 
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
@@ -323,25 +322,25 @@ export class Ppu {
       oam: Util.convertUint8ArrayToBase64String(this.oam),
       mirrorMode: this.mirrorMode,
       mirrorModeBit: this.hstatus.mirrorModeBit,  // TODO: Check
-      isChrRam: this.isChrRam,
     }
   }
 
   public load(saveData: any): void {
+    const isRam = this.isChrRam()
+
     this.regs = Util.convertBase64StringToUint8Array(saveData.regs)
     this.vram = Util.convertBase64StringToUint8Array(saveData.vram)
     this.oam = Util.convertBase64StringToUint8Array(saveData.oam)
     this.mirrorMode = saveData.mirrorMode
     this.hstatus.mirrorModeBit = saveData.mirrorModeBit  // TODO: Confirm status restoration
-    this.isChrRam = saveData.isChrRam
 
-    if (this.isChrRam)
+    if (isRam)
       this.chrData = this.vram
   }
 
   public setChrData(chrData: Uint8Array): void {
-    this.isChrRam = !(chrData && chrData.length > 0)
-    if (this.isChrRam)
+    const isRam = !(chrData && chrData.length > 0)
+    if (isRam)
       this.chrData = this.vram
     else
       this.chrData = chrData
@@ -674,6 +673,10 @@ export class Ppu {
 
   public getReg(index: number): Byte {
     return this.regs[index]
+  }
+
+  private isChrRam(): boolean {
+    return this.chrData === this.vram
   }
 
   private doRenderBg(scrollX: number, scrollY: number,
