@@ -124,10 +124,12 @@ export default class WindowManager {
                                   document.webkitIsFullScreen)
           if (isFullscreen) {
             element.setAttribute('tabindex', '1')
+            element.style.cursor = 'none'
             element.addEventListener('keydown', this.onKeyDown)
             element.addEventListener('keyup', this.onKeyUp)
           } else {
             element.removeAttribute('tabindex')
+            element.style.cursor = ''
             element.removeEventListener('keydown', this.onKeyDown)
             element.removeEventListener('keyup', this.onKeyUp)
           }
