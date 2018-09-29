@@ -78,14 +78,6 @@ class JsNes extends Nes {
     this.jsCpu.step()
     return 1  // Dummy
   }
-
-  public render(pixels: Uint8ClampedArray): void {
-    this.ppu.render(pixels)
-  }
-
-  public renderPatternTable(pixels: Uint8ClampedArray, lineWidth: number, colors: number[]): void {
-    this.ppu.renderPattern(pixels, lineWidth, colors)
-  }
 }
 
 class JsScreenWnd extends ScreenWnd {

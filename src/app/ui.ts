@@ -397,36 +397,11 @@ export class PaletWnd extends Wnd {
   private static H = 2
 
   private boxes: HTMLElement[]
+  private groups: HTMLElement[]
   private palet = new Uint8Array(PaletWnd.W * PaletWnd.H)
   private tmp = new Uint8Array(PaletWnd.W * PaletWnd.H)
   private subscription: Pubsub.Subscription
-
-  private static createDom(): {root: HTMLElement, boxes: HTMLElement[]} {
-    const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
-    const root = document.createElement('div')
-    root.className = 'clearfix'
-    Util.setStyles(root, {
-      width: `${UNIT * W}px`,
-      height: `${UNIT * H}px`,
-    })
-
-    const boxes = new Array(W * H) as HTMLElement[]
-    for (let i = 0; i < H; ++i) {
-      for (let j = 0; j < W; ++j) {
-        const box = document.createElement('div')
-        box.className = 'pull-left'
-        Util.setStyles(box, {
-          width: `${UNIT - 1}px`,
-          height: `${UNIT - 1}px`,
-          borderRight: '1px solid black',
-          borderBottom: '1px solid black',
-        })
-        boxes[j + i * W] = box
-        root.appendChild(box)
-      }
-    }
-    return {root, boxes}
-  }
+  private selected = new Uint8Array(PaletWnd.H)
 
   private static getPalet(nes: Nes, buf: Uint8Array): void {
     const ppu = nes.getPpu()
@@ -438,9 +413,11 @@ export class PaletWnd extends Wnd {
   constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 128, 16, 'Palette')
 
-    const {root, boxes} = PaletWnd.createDom()
+    const {root, boxes, groups} = this.createDom()
     this.setContent(root)
     this.boxes = boxes
+    this.groups = groups
+    this.selected.fill(0)
 
     this.subscription = this.stream
       .subscribe(type => {
@@ -453,7 +430,15 @@ export class PaletWnd extends Wnd {
           break
         }
       })
+
+    this.palet.fill(-1)
     this.render()
+  }
+
+  public getSelectedPalets(buf: Uint8Array) {
+    const selected = this.selected
+    for (let i = 0; i < selected.length; ++i)
+      buf[i] = selected[i]
   }
 
   public close(): void {
@@ -473,6 +458,63 @@ export class PaletWnd extends Wnd {
       this.palet[i] = c
       this.boxes[i].style.backgroundColor = Nes.getPaletColorString(c)
     }
+  }
+
+  private createDom(): {root: HTMLElement, boxes: HTMLElement[], groups: HTMLElement[]} {
+    const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
+    const root = document.createElement('div')
+    root.className = 'clearfix'
+    Util.setStyles(root, {
+      width: `${UNIT * W}px`,
+      height: `${UNIT * H}px`,
+    })
+
+    const boxes = new Array<HTMLElement>(W * H)
+    const groups = new Array<HTMLElement>((W / 4) * H)
+    for (let i = 0; i < H; ++i) {
+      const line = document.createElement('div')
+      line.className = 'pull-left clearfix'
+      Util.setStyles(line, {
+        width: `${UNIT * W}px`,
+        height: `${UNIT}px`,
+        backgroundColor: 'black',
+      })
+      root.appendChild(line)
+
+      for (let j = 0; j < W / 4; ++j) {
+        const group = document.createElement('div')
+        group.className = 'pull-left clearfix'
+        Util.setStyles(group, {
+          width: `${UNIT * 4}px`,
+          height: `${UNIT}px`,
+          cursor: 'pointer',
+        })
+        groups[j + i * (W / 4)] = group
+        line.appendChild(group)
+        group.addEventListener('click', (_event) => {
+          this.select(i, j)
+        })
+
+        for (let k = 0; k < 4; ++k) {
+          const box = document.createElement('div')
+          box.className = 'pull-left'
+          Util.setStyles(box, {
+            width: `${UNIT - 1}px`,
+            height: `${UNIT - 1}px`,
+            marginRight: '1px',
+          })
+          boxes[(j * 4 + k) + i * W] = box
+          group.appendChild(box)
+        }
+      }
+    }
+    return {root, boxes, groups}
+  }
+
+  private select(i: number, j: number): void {
+    this.groups[i * (PaletWnd.W / 4) + this.selected[i]].style.backgroundColor = ''
+    this.groups[i * (PaletWnd.W / 4) + j].style.backgroundColor = 'red'
+    this.selected[i] = j
   }
 }
 
@@ -538,18 +580,12 @@ export class NameTableWnd extends Wnd {
   }
 }
 
-const kPatternColors = [
-  0, 0, 0,
-  255, 0, 0,
-  0, 255, 0,
-  0, 0, 255,
-]
-
 export class PatternTableWnd extends Wnd {
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
   private imageData: ImageData
   private subscription: Pubsub.Subscription
+  private buf = new Uint8Array(2)
 
   private static createCanvas(): HTMLCanvasElement {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
@@ -564,7 +600,8 @@ export class PatternTableWnd extends Wnd {
     return canvas
   }
 
-  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
+  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream,
+                     private getSelectedPalets: (buf: Uint8Array) => void) {
     super(wndMgr, 256, 128, 'PatternTable')
 
     const canvas = PatternTableWnd.createCanvas()
@@ -594,7 +631,10 @@ export class PatternTableWnd extends Wnd {
   }
 
   private render(): void {
-    this.nes.renderPatternTable(this.imageData.data, this.imageData.width, kPatternColors)
+    const buf = this.buf
+    this.getSelectedPalets(buf)
+
+    this.nes.renderPatternTable(this.imageData.data, this.imageData.width, buf)
     this.context.putImageData(this.imageData, 0, 0)
   }
 }

@@ -27,7 +27,7 @@ export class App {
 
   protected title: string
   protected screenWnd: ScreenWnd
-  protected hasPaletWnd: boolean
+  protected paletWnd: PaletWnd|null
   protected hasNameTableWnd: boolean
   protected hasPatternTableWnd: boolean
 
@@ -172,17 +172,18 @@ export class App {
   }
 
   public createPaletWnd(): boolean {
-    if (this.hasPaletWnd)
+    if (this.paletWnd != null)
       return false
     const paletWnd = new PaletWnd(this.wndMgr, this.nes, this.stream)
     this.wndMgr.add(paletWnd)
     paletWnd.setPos(520, 0)
     paletWnd.setCallback(action => {
       if (action === 'close') {
-        this.hasPaletWnd = false
+        this.paletWnd = null
       }
     })
-    return this.hasPaletWnd = true
+    this.paletWnd = paletWnd
+    return true
   }
 
   public createNameTableWnd(): boolean {
@@ -203,7 +204,15 @@ export class App {
   public createPatternTableWnd(): boolean {
     if (this.hasPatternTableWnd)
       return false
-    const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes, this.stream)
+
+    const getSelectedPalets = (buf: Uint8Array) => {
+      if (this.paletWnd != null)
+        this.paletWnd.getSelectedPalets(buf)
+      else
+        buf[0] = buf[1] = 0
+    }
+    const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes, this.stream,
+                                                getSelectedPalets)
     this.wndMgr.add(patternTableWnd)
     patternTableWnd.setPos(520, 300)
     patternTableWnd.setCallback(action => {

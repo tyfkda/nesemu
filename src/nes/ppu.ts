@@ -581,9 +581,15 @@ export class Ppu {
     copyOffscreenToPixels(this.offscreen, pixels, this.vram)
   }
 
-  public renderPattern(pixels: Uint8ClampedArray, lineWidth: number, colors: number[]): void {
+  public renderPattern(pixels: Uint8ClampedArray, lineWidth: number,
+                       colorGroups: Uint8Array): void
+  {
     const W = 8
+    const invert = (this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) === 0 ? 1 : 0
+
     for (let i = 0; i < 2; ++i) {
+      const b = i ^ invert
+      const paletHigh = ((colorGroups[b] << 2) | (b << 4)) | 0
       for (let by = 0; by < 16; ++by) {
         for (let bx = 0; bx < 16; ++bx) {
           const chridx = (bx + by * 16 + i * 256) * 16
@@ -594,13 +600,13 @@ export class Ppu {
                          kStaggered[this.readPpuDirect(idx)])
             for (let px = 0; px < W; ++px) {
               const xx = bx * W + px + i * (W * 16)
-              const col = (pat >> ((W - 1 - px) << 1)) & 3
-              const c = col * 3
+              const pal = this.getPalet(paletHigh | ((pat >> ((W - 1 - px) << 1)) & 3))
+              const p = pal * 3
 
               const index = (yy * lineWidth + xx) * 4
-              pixels[index + 0] = colors[c + 0]
-              pixels[index + 1] = colors[c + 1]
-              pixels[index + 2] = colors[c + 2]
+              pixels[index + 0] = kColors[p + 0]
+              pixels[index + 1] = kColors[p + 1]
+              pixels[index + 2] = kColors[p + 2]
             }
           }
         }
