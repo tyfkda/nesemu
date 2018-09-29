@@ -47,7 +47,7 @@ const kNZTable: Uint8Array = (() => {
   return table
 })()
 
-function setReset(p, flag, mask): number {
+function setReset(p: Byte, flag: boolean, mask: Byte): number {
   if (flag)
     return p | mask
   return p & ~mask
