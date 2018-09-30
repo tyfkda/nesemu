@@ -10,7 +10,7 @@ const enum Type {
   BUTTON,
 }
 
-const kKeyTable = ['A', 'B', 'SELECT', 'START', 'U', 'D', 'L', 'R']
+const kKeyTable: string[] = ['A', 'B', 'SELECT', 'START', 'U', 'D', 'L', 'R']
 
 // ================================================
 // Manager.

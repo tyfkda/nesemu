@@ -1,8 +1,8 @@
 import {PadValue} from '../nes/apu'
 import {KeyCode} from './key_code'
 
-const kKeyTable = (() => {
-  const t = {}
+const kKeyTable: {[key: number]: {no: number, bit: number}} = (() => {
+  const t: {[key: number]: {no: number, bit: number}} = {}
   t[KeyCode.LEFT] = {no: 0, bit: PadValue.L}
   t[KeyCode.RIGHT] = {no: 0, bit: PadValue.R}
   t[KeyCode.UP] = {no: 0, bit: PadValue.U}
@@ -26,14 +26,14 @@ const kKeyTable = (() => {
 export class PadKeyHandler {
   private controller: number[] = [0, 0]
 
-  public onKeyDown(keyCode): void {
+  public onKeyDown(keyCode: number): void {
     const c = kKeyTable[keyCode]
     if (!c)
       return
     this.controller[c.no] |= c.bit
   }
 
-  public onKeyUp(keyCode): void {
+  public onKeyUp(keyCode: number): void {
     const c = kKeyTable[keyCode]
     if (!c)
       return

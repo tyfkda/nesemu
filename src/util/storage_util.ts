@@ -18,7 +18,7 @@ if (storage == null) {
 }
 
 // Get key.
-function getKey(key: any): string {
+function getKey(key: string): string {
   return `${keyPrefix}${key}`
 }
 
@@ -29,13 +29,13 @@ export default class StorageUtil {
   }
 
   // Get string value.
-  public static get(key: any, defaultValue: string): string {
+  public static get(key: string, defaultValue: string): string {
     const k = getKey(key)
     return storage.getItem(k) || defaultValue
   }
 
   // Get int value.
-  public static getInt(key: any, defaultValue: number): number {
+  public static getInt(key: string, defaultValue: number): number {
     const k = getKey(key)
     const item = storage.getItem(k)
     if (item == null)
@@ -47,7 +47,7 @@ export default class StorageUtil {
   }
 
   // Get float value.
-  public static getFloat(key: any, defaultValue: number): number {
+  public static getFloat(key: string, defaultValue: number): number {
     const k = getKey(key)
     const item = storage.getItem(k)
     if (item == null)
@@ -59,7 +59,7 @@ export default class StorageUtil {
   }
 
   // Get bool value.
-  public static getBool(key: any, defaultValue: boolean): boolean {
+  public static getBool(key: string, defaultValue: boolean): boolean {
     const k = getKey(key)
     const value = storage.getItem(k)
     if (value === 'true')
@@ -70,7 +70,7 @@ export default class StorageUtil {
   }
 
   // Get object value.
-  public static getObject(key: any, defaultValue: any): any {
+  public static getObject(key: string, defaultValue: any): any {
     const k = getKey(key)
     const value = storage.getItem(k)
     try {
@@ -83,16 +83,16 @@ export default class StorageUtil {
   }
 
   // Put string value.
-  public static put(key: any, value: any): boolean {
+  public static put(key: string, value: any): boolean {
     const k = getKey(key)
     storage.setItem(k, value)
     return true
   }
 
   // Put object value.
-  public static putObject(key: any, object: any): boolean {
+  public static putObject(key: string, obj: object): boolean {
     const k = getKey(key)
-    storage.setItem(k, JSON.stringify(object))
+    storage.setItem(k, JSON.stringify(obj))
     return true
   }
 }
