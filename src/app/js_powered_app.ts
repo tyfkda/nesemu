@@ -21,8 +21,8 @@ interface JsCpu {
   reset(): void
   update(): void
   step(): void
-  togglePause(): boolean
   pause(value: boolean): void
+  isPaused(): boolean,
   getRegs(): number[]
 }
 
@@ -123,7 +123,7 @@ class JsScreenWnd extends ScreenWnd {
           {
             label: 'Pause',
             click: () => {
-              if (this.jsNes.jsCpu.togglePause())
+              if (this.jsNes.jsCpu.isPaused())
                 this.stream.triggerRun()
               else
                 this.stream.triggerPause()
@@ -321,7 +321,13 @@ export class JsApp extends App {
     }
 
     let et = elapsedTime + this.leftTime
-    let frameCount = Math.min((et * 60 / 1000) | 0, MAX_FRAME_COUNT)
+    let frameCount = (et * 60 / 1000) | 0
+    if (frameCount <= MAX_FRAME_COUNT) {
+      this.leftTime = et - ((frameCount * 1000 / 60) | 0)
+    } else {
+      frameCount = MAX_FRAME_COUNT
+      this.leftTime = 0
+    }
     if (frameCount > 0) {
       const ppu = this.jsNes.getPpu()
       for (let i = 0; i < frameCount; ++i) {
