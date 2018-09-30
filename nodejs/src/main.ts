@@ -1,86 +1,117 @@
 declare function __non_webpack_require__(fn: string)
 
-const NS = __non_webpack_require__('node-sdl2')
-const App = NS.app
-const Window = NS.window
+const fs = __non_webpack_require__('fs')
 
-const SDL_TEXTUREACCESS_STREAMING = 1
+import {Nes} from '../../src/nes/nes'
 
-const SDL_PIXELTYPE_PACKED32 = 6
-const SDL_PACKEDORDER_ABGR = 7
-const SDL_PACKEDLAYOUT_8888 = 6
-const SDL_DEFINE_PIXELFORMAT = (type, order, layout, bits, bytes) => {
-  return ((1 << 28) | ((type) << 24) | ((order) << 20) | ((layout) << 16) |
-          ((bits) << 8) | ((bytes) << 0))
-}
+function createMyApp() {
+  const NS = __non_webpack_require__('node-sdl2')
+  const App = NS.app
+  const Window = NS.window
 
-const SDL_PIXELFORMAT_ABGR8888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ABGR,
-                                                        SDL_PACKEDLAYOUT_8888, 32, 4)
+  const SDL_TEXTUREACCESS_STREAMING = 1
 
-const WIDTH = 256
-const HEIGHT = 240
-
-const TITLE = 'Nesemu'
-
-class MyApp {
-  private win: any
-  private texture: any
-  private pixels = new Uint8Array(WIDTH * HEIGHT * 4)
-  private count = 0
-  private nDraw = 0
-  private prevTime = 0
-
-  constructor() {
-    this.win = new Window({
-      title: TITLE,
-      w: WIDTH * 2,
-      h: HEIGHT * 2,
-    })
-    this.win.on('close', () => {
-      App.quit()
-    })
-    this.win.on('change', () => {
-      this.draw()
-    })
-
-    this.texture = this.win.render.createTexture(
-      256, 240, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING)
-
-    this.prevTime = Date.now()
-    setInterval(() => this.draw(), 1000 / 100)
+  const SDL_PIXELTYPE_PACKED32 = 6
+  const SDL_PACKEDORDER_ABGR = 7
+  const SDL_PACKEDLAYOUT_8888 = 6
+  const SDL_DEFINE_PIXELFORMAT = (type, order, layout, bits, bytes) => {
+    return ((1 << 28) | ((type) << 24) | ((order) << 20) | ((layout) << 16) |
+            ((bits) << 8) | ((bytes) << 0))
   }
 
-  private draw() {
-    //this.win.render.color = {r: 255, g: 0, b: 255, a: 255}
-    //this.win.render.clear()
+  const SDL_PIXELFORMAT_ABGR8888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ABGR,
+                                                          SDL_PACKEDLAYOUT_8888, 32, 4)
 
-    // FPS
-    ++this.nDraw
-    const now = Date.now()
-    if (now - this.prevTime >= 1000) {
-      this.win.title = `${TITLE}  (FPS:${this.nDraw})`
-      this.prevTime = now
-      this.nDraw = 0
+  const WIDTH = 256
+  const HEIGHT = 240
+
+  const TITLE = 'Nesemu'
+
+  const CPU_HZ = 1789773
+  const MAX_ELAPSED_TIME = 1000 / 15
+
+  class MyApp {
+    private win: any
+    private texture: any
+    private pixels = new Uint8Array(WIDTH * HEIGHT * 4)
+    private prevTime = 0
+
+    private nes: Nes
+
+    constructor() {
+      this.win = new Window({
+        title: TITLE,
+        w: WIDTH * 2,
+        h: HEIGHT * 2,
+      })
+      this.win.on('close', () => {
+        App.quit()
+      })
+      this.win.on('change', () => {
+        this.render()
+      })
+
+      this.texture = this.win.render.createTexture(
+        256, 240, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING)
+
+      this.nes = Nes.create()
+      this.nes.setVblankCallback((leftV) => { this.onVblank(leftV) })
+      this.nes.reset()
     }
 
-    if (++this.count >= 256)
-      this.count = 0
-    for (let i = 0; i < HEIGHT; ++i) {
-      for (let j = 0; j < WIDTH; ++j) {
-        const offset = (i * WIDTH + j) * 4
-        this.pixels[offset + 0] = j
-        this.pixels[offset + 1] = i
-        this.pixels[offset + 2] = this.count
-        this.pixels[offset + 3] = 255
-      }
+    public run(romData: Buffer): void {
+      const result = this.nes.setRomData(romData)
+      if (result !== true)
+        throw result
+      this.nes.reset()
+
+      this.prevTime = Date.now()
+      setInterval(() => {
+        const now = Date.now()
+        const elapsedTime = now - this.prevTime
+        this.loop(elapsedTime)
+        this.prevTime = now
+      }, 1000 / 100)
     }
 
-    const pitch = WIDTH * 4
-    this.texture.update(null, this.pixels, pitch)
-    this.win.render.copy(this.texture, null, null)
+    private loop(elapsedTime: number): void {
+      let et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
+      const cycles = (CPU_HZ * et / 1000) | 0
+      this.nes.runCycles(cycles)
+    }
 
-    this.win.render.present()
+    private onVblank(leftV: number) {
+      if (leftV < 1)
+        this.render()
+      //this.updateAudio()
+    }
+
+    private render(): void {
+      this.nes.render(this.pixels)
+
+      const pitch = WIDTH * 4
+      this.texture.update(null, this.pixels, pitch)
+      this.win.render.copy(this.texture, null, null)
+
+      this.win.render.present()
+    }
   }
+
+  //const myApp = new MyApp()
+
+  return new MyApp()
 }
 
-const myApp = new MyApp()
+if (process.argv.length < 3) {
+  console.error('ROMFILE')
+  process.exit(1)
+}
+
+fs.readFile(process.argv[2], (err, data) => {
+  if (err) {
+    throw err
+  }
+
+  const myApp = createMyApp()
+  myApp.run(data)
+})

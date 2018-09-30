@@ -3,7 +3,10 @@
     "module": "es2015",
     "target": "es6",
     "outDir": "dist",
-    "rootDir": ".",
+    "rootDirs": [
+      ".",
+      ".."
+    ],
     "sourceMap": true,
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
