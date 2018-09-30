@@ -183,7 +183,7 @@ function getBgPatternTableAddress(ppuCtrl: Byte): Address {
   return (ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
 }
 
-function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8ClampedArray,
+function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8ClampedArray,
                                vram: Uint8Array): void
 {
   const paletTable: Address = PALET_ADR
@@ -537,7 +537,7 @@ export class Ppu {
     this.checkSprite0Hit(hcount)
   }
 
-  public render(pixels: Uint8ClampedArray): void {
+  public render(pixels: Uint8Array|Uint8ClampedArray): void {
     const h = this.hstatusPrev
     const n = this.hevents.getCount()
     let sprChrStart = 0
