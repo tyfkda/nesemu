@@ -3,6 +3,28 @@ declare function __non_webpack_require__(fn: string)
 const fs = __non_webpack_require__('fs')
 
 import {Nes} from '../../src/nes/nes'
+import {PadValue} from '../../src/nes/apu'
+
+const KEY_X = 27
+const KEY_Z = 29
+const ARROW_RIGHT = 79
+const ARROW_LEFT = 80
+const ARROW_DOWN = 81
+const ARROW_UP = 82
+const RETURN = 40
+const ESCAPE = 41
+const SPACE = 44
+
+const kScanCode2PadValue: {[key: number]: number} = {
+  [ARROW_RIGHT]: PadValue.R,
+  [ARROW_LEFT]: PadValue.L,
+  [ARROW_DOWN]: PadValue.D,
+  [ARROW_UP]: PadValue.U,
+  [KEY_X]: PadValue.A,
+  [KEY_Z]: PadValue.B,
+  [RETURN]: PadValue.START,
+  [SPACE]: PadValue.SELECT,
+}
 
 function createMyApp() {
   const NS = __non_webpack_require__('node-sdl2')
@@ -37,6 +59,7 @@ function createMyApp() {
     private prevTime = 0
 
     private nes: Nes
+    private pad = 0
 
     constructor() {
       this.win = new Window({
@@ -49,6 +72,19 @@ function createMyApp() {
       })
       this.win.on('change', () => {
         this.render()
+      })
+      this.win.on('keydown', (key) => {
+        if (key.scancode === ESCAPE)
+          process.exit(0)
+
+        const v = kScanCode2PadValue[key.scancode]
+        if (v)
+          this.pad |= v
+      })
+      this.win.on('keyup', (key) => {
+        const v = kScanCode2PadValue[key.scancode]
+        if (v)
+          this.pad &= ~v
       })
 
       this.texture = this.win.render.createTexture(
@@ -75,6 +111,8 @@ function createMyApp() {
     }
 
     private loop(elapsedTime: number): void {
+      this.nes.setPadStatus(0, this.pad)
+
       let et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
       const cycles = (CPU_HZ * et / 1000) | 0
       this.nes.runCycles(cycles)
