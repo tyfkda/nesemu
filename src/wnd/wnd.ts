@@ -1,3 +1,4 @@
+import DomUtil from '../util/dom_util'
 import Util from '../util/util'
 import WindowManager from './window_manager'
 
@@ -18,7 +19,7 @@ function getOffsetRect(parent, target) {
 function createHorizontalSplitter(parent, upperHeight) {
   const upper = document.createElement('div')
   upper.className = 'upper'
-  Util.setStyles(upper, {
+  DomUtil.setStyles(upper, {
     position: 'absolute',
     overflow: 'hidden',
     left: 0,
@@ -29,7 +30,7 @@ function createHorizontalSplitter(parent, upperHeight) {
 
   const lower = document.createElement('div')
   lower.className = 'lower'
-  Util.setStyles(lower, {
+  DomUtil.setStyles(lower, {
     position: 'absolute',
     overflow: 'hidden',
     left: 0,
@@ -78,7 +79,7 @@ export default class Wnd {
   }
 
   public setContent(content: HTMLElement): Wnd {
-    Util.removeAllChildren(this.contentHolder)
+    DomUtil.removeAllChildren(this.contentHolder)
     this.contentHolder.appendChild(content)
     return this
   }
@@ -92,7 +93,7 @@ export default class Wnd {
   }
 
   public setPos(x: number, y: number): Wnd {
-    Util.setStyles(this.root, {
+    DomUtil.setStyles(this.root, {
       left: `${x}px`,
       top: `${y}px`,
     })
@@ -105,7 +106,7 @@ export default class Wnd {
   }
 
   public setClientSize(width: number, height: number): Wnd {
-    Util.setStyles(this.root, {
+    DomUtil.setStyles(this.root, {
       width: `${width + this.clientMarginWidth}px`,
       height: `${height + this.clientMarginHeight}px`,
     })
@@ -218,7 +219,7 @@ export default class Wnd {
       Object.keys(param.styleParams).forEach(key => {
         resizeBox.style[key] = param.styleParams[key]
       })
-      Util.setStyles(resizeBox, {
+      DomUtil.setStyles(resizeBox, {
         width: `${W}px`,
         height: `${W}px`,
         zIndex: '100',
@@ -253,7 +254,7 @@ export default class Wnd {
           if (height < MIN_HEIGHT) {
             box[param.vert] -= (MIN_HEIGHT - height) * (param.vert === 'top' ? 1 : -1)
           }
-          Util.setStyles(this.root, {
+          DomUtil.setStyles(this.root, {
             width: `${box.right - box.left -  2}px`,
             height: `${box.bottom - box.top - 2}px`,
             left: `${box.left}px`,
@@ -311,7 +312,7 @@ export default class Wnd {
         x = Util.clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
         y = Util.clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
 
-        Util.setStyles(this.root, {
+        DomUtil.setStyles(this.root, {
           left: `${x + dragOfsX}px`,
           top: `${y + dragOfsY}px`,
         })
@@ -367,7 +368,7 @@ export default class Wnd {
     this.root.appendChild(subItemHolder)
 
     const rect = getOffsetRect(this.root, itemElem)
-    Util.setStyles(subItemHolder, {
+    DomUtil.setStyles(subItemHolder, {
       left: `${rect.left - 1}px`,  // For border size
       top: `${rect.bottom}px`,
     })

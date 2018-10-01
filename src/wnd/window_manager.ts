@@ -1,7 +1,7 @@
+import DomUtil from '../util/dom_util'
 import {GamepadManager} from '../util/gamepad_manager'
 import {KeyCode} from '../util/key_code'
 import {PadKeyHandler} from '../util/pad_key_handler'
-import Util from '../util/util'
 import Wnd from './wnd'
 
 const BASE_PRIORITY = 100
@@ -83,11 +83,11 @@ export default class WindowManager {
     box.appendChild(text)
     this.root.appendChild(div)
 
-    await Util.timeout(20)  // Dirty hack.
+    await DomUtil.timeout(20)  // Dirty hack.
     div.style.top = '8px'
-    await Util.timeout(wait)
+    await DomUtil.timeout(wait)
     div.style.top = '-32px'
-    await Util.timeout(500)
+    await DomUtil.timeout(500)
     this.root.removeChild(div)
   }
 

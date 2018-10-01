@@ -4,6 +4,7 @@
 import {App} from './app'
 import {AppEvent} from './app_event'
 import {Bus} from '../nes/bus'
+import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
 import {Ppu} from '../nes/ppu'
 import {ScreenWnd, RegisterWnd} from './ui'
@@ -49,7 +50,7 @@ class JsNes extends Nes {
   }
 
   public reload(): Promise<void> {
-    return Util.loadFile(this.file)
+    return DomUtil.loadFile(this.file)
       .then(data => {
         // const jsCode = String.fromCharCode.apply('', data)
         const jsCode = new TextDecoder('utf-8').decode(data)
@@ -90,10 +91,10 @@ class JsScreenWnd extends ScreenWnd {
     canvas.width = width
     canvas.height = height
     canvas.className = 'full-size'
-    Util.setStyles(canvas, {
+    DomUtil.setStyles(canvas, {
       display: 'block',
     })
-    Util.clearCanvas(canvas)
+    DomUtil.clearCanvas(canvas)
     return canvas
   }
 
@@ -103,7 +104,7 @@ class JsScreenWnd extends ScreenWnd {
     super(wndMgr, jsApp, jsNes, stream)
 
     this.canvas = JsScreenWnd.createCanvas(WIDTH, HEIGHT)
-    this.context = Util.getCanvasContext2d(this.canvas)
+    this.context = DomUtil.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
     this.canvas.className = 'pixelated full-size'
 

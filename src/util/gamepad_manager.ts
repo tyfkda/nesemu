@@ -1,8 +1,8 @@
+import DomUtil from '../util/dom_util'
 import {PadBit} from '../nes/apu'
+import StorageUtil from '../util/storage_util'
 import WindowManager from '../wnd/window_manager'
 import Wnd from '../wnd/wnd'
-import StorageUtil from '../util/storage_util'
-import Util from '../util/util'
 
 // Type
 const enum Type {
@@ -153,7 +153,7 @@ function createButton(parent: HTMLElement, x: number, y: number, name: string,
 {
   const btn = document.createElement('div')
   btn.className = 'gamepad-btn'
-  Util.setStyles(btn, {
+  DomUtil.setStyles(btn, {
     left: `${x}px`,
     top: `${y}px`,
     width: `${opt.width || 30}px`,
@@ -175,7 +175,7 @@ export class GamepadWnd extends Wnd {
     super(wndMgr, 230, 150, 'Gamepad config')
     const content = document.createElement('div')
     content.className = 'gamepad-content'
-    Util.setStyles(content, {
+    DomUtil.setStyles(content, {
       width: '230px',
       height: '150px',
     })

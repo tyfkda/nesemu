@@ -1,6 +1,7 @@
 import WindowManager from '../wnd/window_manager'
 import Wnd from '../wnd/wnd'
 
+import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
 import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst'
 import {disassemble} from '../nes/disasm'
@@ -39,7 +40,7 @@ export class FpsWnd extends Wnd {
     super(wndMgr, 80, 48, 'Fps')
 
     const content = document.createElement('div')
-    Util.setStyles(content, {
+    DomUtil.setStyles(content, {
       width: '80px',
       height: '48px',
     })
@@ -91,14 +92,14 @@ export class ScreenWnd extends Wnd {
 
     this.fullscreenBase = document.createElement('div')
     this.fullscreenBase.className = 'full-size'
-    Util.setStyles(this.fullscreenBase, {
+    DomUtil.setStyles(this.fullscreenBase, {
       position: 'relative',
       overflow: 'hidden',
     })
     this.setContent(this.fullscreenBase)
 
     this.canvasHolder = document.createElement('div')
-    Util.setStyles(this.canvasHolder, {
+    DomUtil.setStyles(this.canvasHolder, {
       transitionDuration: '0.1s',
       transitionProperty: 'width, height',
     })
@@ -155,7 +156,7 @@ export class ScreenWnd extends Wnd {
         } else {
           height = (width * (HEIGHT / WIDTH)) | 0
         }
-        Util.setStyles(this.fullscreenBase, {
+        DomUtil.setStyles(this.fullscreenBase, {
           width: `${width}px`,
           height: `${height}px`,
           margin: 'auto',
@@ -163,7 +164,7 @@ export class ScreenWnd extends Wnd {
         this.contentHolder.style.backgroundColor = 'black'
         this.updateContentSize(width, height)
       } else {
-        Util.setStyles(this.fullscreenBase, {
+        DomUtil.setStyles(this.fullscreenBase, {
           width: '',
           height: '',
           margin: '',
@@ -198,7 +199,7 @@ export class ScreenWnd extends Wnd {
     const h = !this.hideEdge ? height : (height * (HEIGHT / (HEIGHT - EDGE * 2))) | 0
     const left = !this.hideEdge ? 0 : -(w * EDGE / WIDTH) | 0
     const top = !this.hideEdge ? 0 : -(h * EDGE / HEIGHT) | 0
-    Util.setStyles(this.canvasHolder, {
+    DomUtil.setStyles(this.canvasHolder, {
       position: 'absolute',
       width: `${w}px`,
       height: `${h}px`,
@@ -381,7 +382,7 @@ export class ScreenWnd extends Wnd {
 
   private setScaler(scaler: Scaler): void {
     this.scaler = scaler
-    Util.removeAllChildren(this.canvasHolder)
+    DomUtil.removeAllChildren(this.canvasHolder)
     this.canvasHolder.appendChild(scaler.getCanvas())
   }
 
@@ -464,7 +465,7 @@ export class PaletWnd extends Wnd {
     const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
     const root = document.createElement('div')
     root.className = 'clearfix'
-    Util.setStyles(root, {
+    DomUtil.setStyles(root, {
       width: `${UNIT * W}px`,
       height: `${UNIT * H}px`,
     })
@@ -474,7 +475,7 @@ export class PaletWnd extends Wnd {
     for (let i = 0; i < H; ++i) {
       const line = document.createElement('div')
       line.className = 'pull-left clearfix'
-      Util.setStyles(line, {
+      DomUtil.setStyles(line, {
         width: `${UNIT * W}px`,
         height: `${UNIT}px`,
         backgroundColor: 'black',
@@ -484,7 +485,7 @@ export class PaletWnd extends Wnd {
       for (let j = 0; j < W / 4; ++j) {
         const group = document.createElement('div')
         group.className = 'pull-left clearfix'
-        Util.setStyles(group, {
+        DomUtil.setStyles(group, {
           width: `${UNIT * 4}px`,
           height: `${UNIT}px`,
           cursor: 'pointer',
@@ -498,7 +499,7 @@ export class PaletWnd extends Wnd {
         for (let k = 0; k < 4; ++k) {
           const box = document.createElement('div')
           box.className = 'pull-left'
-          Util.setStyles(box, {
+          DomUtil.setStyles(box, {
             width: `${UNIT - 1}px`,
             height: `${UNIT - 1}px`,
             marginRight: '1px',
@@ -539,17 +540,17 @@ export class NameTableWnd extends Wnd {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = width
     canvas.height = height
-    Util.setStyles(canvas, {
+    DomUtil.setStyles(canvas, {
       width: `${width}px`,
       height: `${height}px`,
     })
     canvas.className = 'pixelated'
-    Util.clearCanvas(canvas)
+    DomUtil.clearCanvas(canvas)
 
     this.setContent(canvas)
     this.canvas = canvas
 
-    this.context = Util.getCanvasContext2d(this.canvas)
+    this.context = DomUtil.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
 
     this.subscription = this.stream
@@ -591,12 +592,12 @@ export class PatternTableWnd extends Wnd {
     const canvas = document.createElement('canvas') as HTMLCanvasElement
     canvas.width = 256
     canvas.height = 128
-    Util.setStyles(canvas, {
+    DomUtil.setStyles(canvas, {
       width: '256px',
       height: '128px',
     })
     canvas.className = 'pixelated'
-    Util.clearCanvas(canvas)
+    DomUtil.clearCanvas(canvas)
     return canvas
   }
 
@@ -608,7 +609,7 @@ export class PatternTableWnd extends Wnd {
     this.setContent(canvas)
     this.canvas = canvas
 
-    this.context = Util.getCanvasContext2d(this.canvas)
+    this.context = DomUtil.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
 
     this.subscription = this.stream
@@ -696,7 +697,7 @@ export class RegisterWnd extends Wnd {
       { name: 'cycle' },
     ]
     const table = document.createElement('table')
-    Util.setStyles(table, {
+    DomUtil.setStyles(table, {
       fontSize: '10px',
       width: '100%',
     })
@@ -800,7 +801,7 @@ export class TraceWnd extends Wnd {
     const root = document.createElement('div')
     const textarea = document.createElement('textarea')
     textarea.className = 'fixed-font'
-    Util.setStyles(textarea, {
+    DomUtil.setStyles(textarea, {
       fontSize: '14px',
       width: '100%',
       height: '160px',
@@ -867,7 +868,7 @@ export class ControlWnd extends Wnd {
 
   private createElement(): HTMLElement {
     const root = document.createElement('div')
-    Util.setStyles(root, {
+    DomUtil.setStyles(root, {
       width: '256px',
       height: '32px',
     })

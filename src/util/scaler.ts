@@ -1,5 +1,5 @@
+import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
-import Util from '../util/util'
 
 const WIDTH = 256
 const HEIGHT = 240
@@ -9,10 +9,10 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
   canvas.className = 'full-size'
   canvas.width = width
   canvas.height = height
-  Util.setStyles(canvas, {
+  DomUtil.setStyles(canvas, {
     display: 'block',
   })
-  Util.clearCanvas(canvas)
+  DomUtil.clearCanvas(canvas)
   return canvas
 }
 
@@ -26,7 +26,7 @@ export abstract class Scaler {
   public abstract render(nes: Nes): void
 
   public reset(): void {
-    Util.clearCanvas(this.canvas)
+    DomUtil.clearCanvas(this.canvas)
   }
 }
 
@@ -38,7 +38,7 @@ export class IdentityScaler extends Scaler {
     super()
 
     this.canvas = createCanvas(WIDTH, HEIGHT)
-    this.context = Util.getCanvasContext2d(this.canvas)
+    this.context = DomUtil.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
 
     this.canvas.classList.add('pixelated')
@@ -59,7 +59,7 @@ export class ScanlineScaler extends Scaler {
     super()
 
     this.canvas = createCanvas(WIDTH, HEIGHT * 2)
-    this.context = Util.getCanvasContext2d(this.canvas)
+    this.context = DomUtil.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
 
     this.orgImageData = new ImageData(WIDTH, HEIGHT)

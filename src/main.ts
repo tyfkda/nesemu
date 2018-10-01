@@ -1,6 +1,7 @@
 ///<reference path="./decl/patch.d.ts" />
 
 import {App} from './app/app'
+import DomUtil from './util/dom_util'
 import {JsApp} from './app/js_powered_app'
 import {GamepadManager, GamepadWnd} from './util/gamepad_manager'
 import StorageUtil from './util/storage_util'
@@ -33,7 +34,7 @@ class Main {
     if (!(window.File && window.FileReader && window.FileList && window.Blob))
       return
 
-    Util.handleFileDrop(this.root, (files, x, y) => this.createAppFromFiles(files, x, y))
+    DomUtil.handleFileDrop(this.root, (files, x, y) => this.createAppFromFiles(files, x, y))
 
     document.getElementById('drop-desc').style.display = ''
   }
@@ -68,7 +69,7 @@ class Main {
       if (ext === 'js') {
         // Skip, because already processed.
       } else if (ext === 'zip') {
-        promise = Util.loadFile(file)
+        promise = DomUtil.loadFile(file)
           .then(binary => {
             const zip = new JSZip()
             return zip.loadAsync(binary)
@@ -84,7 +85,7 @@ class Main {
             return Promise.reject('No .nes file included')
           })
       } else if (kTargetExts.indexOf(ext) >= 0) {
-        promise = Util.loadFile(file)
+        promise = DomUtil.loadFile(file)
           .then(binary => Promise.resolve({type: ext, binary, fileName: file.name}))
       } else {
         promise = Promise.reject(`Unsupported ext: ${file.name}`)
