@@ -1,3 +1,15 @@
+declare function btoa(str: string): string
+declare function atob(str: string): string
+
+const _btoa = typeof btoa !== 'undefined' ? btoa : (function btoa(str: string | Buffer): string {
+  const buffer = (str instanceof Buffer) ? str : Buffer.from(str.toString(), 'binary')
+  return buffer.toString('base64')
+})
+
+const _atob = typeof atob !== 'undefined' ? atob : (function atob(str: string): string {
+  return new Buffer(str, 'base64').toString('binary')
+})
+
 export default class Util {
   public static hex(x: number, order: number = 2): string {
     const s = x.toString(16)
@@ -23,14 +35,12 @@ export default class Util {
 
   public static convertUint8ArrayToBase64String(src: Uint8Array): string {
     const s = Array.from(src).map(x => String.fromCharCode(x)).join('')
-    // return new Buffer(s).toString('base64')  // node.js
-    return btoa(s)
+    return _btoa(s)
   }
 
   public static convertBase64StringToUint8Array(src: string): Uint8Array {
-    // const decoded = new Buffer(s, 'base64').toString('ascii')  // node.js
-    const decoded = atob(src)
-    const array = new Array(decoded.length)
+    const decoded = _atob(src)
+    const array = new Array<number>(decoded.length)
     for (let i = 0; i < decoded.length; ++i)
       array[i] = decoded.charCodeAt(i)
     return new Uint8Array(array)
