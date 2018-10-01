@@ -2,8 +2,10 @@ declare function __non_webpack_require__(fn: string)
 
 const fs = __non_webpack_require__('fs')
 
+import * as JSZip from 'jszip'
 import {Nes} from '../../src/nes/nes'
 import {PadValue} from '../../src/nes/apu'
+import Util from '../../src/util/util'
 
 const KEY_X = 27
 const KEY_Z = 29
@@ -140,16 +142,39 @@ function createMyApp() {
   return new MyApp()
 }
 
+function run(fileName: string) {
+  // TODO: Use util.promisify
+  new Promise(
+    (resolve, reject) => {
+      fs.readFile(fileName, (err: any, data: Buffer) => err ? reject(err) : resolve(data))
+    })
+    .then((data: Buffer) => {
+      if (Util.getExt(fileName).toLowerCase() !== 'zip')
+        return Promise.resolve(data)
+
+      const zip = new JSZip()
+      return zip.loadAsync(data)
+        .then((loadedZip: JSZip) => {
+          for (let fn of Object.keys(loadedZip.files)) {
+            if (Util.getExt(fn).toLowerCase() === 'nes')
+              return loadedZip.files[fn].async('uint8array')
+          }
+          return Promise.reject('No .nes file included')
+        })
+    })
+    .then((romData: Buffer) => {
+      const myApp = createMyApp()
+      myApp.run(romData)
+    })
+    .catch((error: any) => {
+      console.error(error)
+      process.exit(1)
+    })
+}
+
 if (process.argv.length < 3) {
   console.error('ROMFILE')
   process.exit(1)
 }
 
-fs.readFile(process.argv[2], (err, data) => {
-  if (err) {
-    throw err
-  }
-
-  const myApp = createMyApp()
-  myApp.run(data)
-})
+run(process.argv[2])
