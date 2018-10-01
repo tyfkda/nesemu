@@ -1,5 +1,7 @@
 // CPU: MOS 6502
 
+declare var window: any
+
 import {Addressing, OpType, kInstTable} from './inst'
 import {Bus} from './bus'
 import Util from '../util/util'
@@ -99,7 +101,7 @@ export class Cpu {
   private stepLogs: string[] = []
 
   constructor(private bus: Bus) {
-    this.$DEBUG = !!window.$DEBUG  // Accessing global variable!!!
+    this.$DEBUG = typeof window !== 'undefined' && !!window.$DEBUG  // Accessing global variable!!!
 
     this.a = this.x = this.y = this.s = 0
   }
