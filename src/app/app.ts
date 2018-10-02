@@ -323,7 +323,8 @@ export class App {
       this.nes.setPadStatus(i, pad)
     }
 
-    let et = this.wndMgr.getKeyPressing(this.screenWnd, KeyCode.SHIFT) ? elapsedTime * 3 : elapsedTime
+    let et = (this.wndMgr.getKeyPressing(this.screenWnd, KeyCode.SHIFT)
+              ? elapsedTime * 4 : elapsedTime)
     et = Math.min(et, MAX_ELAPSED_TIME)
     const cycles = (CPU_HZ * et / 1000) | 0
     this.nes.runCycles(cycles)
@@ -338,9 +339,10 @@ export class App {
     for (let ch = 0; ch < count; ++ch) {
       const volume = this.nes.getSoundVolume(ch)
       this.audioManager.setChannelVolume(ch, volume)
-      if (volume > 0)
+      if (volume > 0) {
         this.audioManager.setChannelFrequency(ch, this.nes.getSoundFrequency(ch))
         this.audioManager.setChannelDutyRatio(ch, this.nes.getSoundDutyRatio(ch))
+      }
     }
   }
 

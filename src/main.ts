@@ -36,7 +36,9 @@ class Main {
 
     DomUtil.handleFileDrop(this.root, (files, x, y) => this.createAppFromFiles(files, x, y))
 
-    document.getElementById('drop-desc').style.display = ''
+    const dropDesc = document.getElementById('drop-desc')
+    if (dropDesc)
+      dropDesc.style.display = ''
   }
 
   private createAppFromFiles(files: FileList, x: number, y: number): void {
@@ -76,10 +78,10 @@ class Main {
           })
           .then((loadedZip: JSZip) => {
             for (let fileName of Object.keys(loadedZip.files)) {
-              const ext = Util.getExt(fileName).toLowerCase()
-              if (kTargetExts.indexOf(ext) >= 0) {
+              const ext2 = Util.getExt(fileName).toLowerCase()
+              if (kTargetExts.indexOf(ext2) >= 0) {
                 return loadedZip.files[fileName].async('uint8array')
-                  .then(unzipped => Promise.resolve({type: ext, binary: unzipped, fileName}))
+                  .then(unzipped => Promise.resolve({type: ext2, binary: unzipped, fileName}))
               }
             }
             return Promise.reject('No .nes file included')

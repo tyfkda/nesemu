@@ -1,12 +1,12 @@
 declare function btoa(str: string): string
 declare function atob(str: string): string
 
-const _btoa = typeof btoa !== 'undefined' ? btoa : (function btoa(str: string | Buffer): string {
+const _btoa = typeof btoa !== 'undefined' ? btoa : (function(str: string | Buffer): string {
   const buffer = (str instanceof Buffer) ? str : Buffer.from(str.toString(), 'binary')
   return buffer.toString('base64')
 })
 
-const _atob = typeof atob !== 'undefined' ? atob : (function atob(str: string): string {
+const _atob = typeof atob !== 'undefined' ? atob : (function(str: string): string {
   return new Buffer(str, 'base64').toString('binary')
 })
 
