@@ -345,6 +345,7 @@ export class App {
       }
     }
   }
+  }
 
   protected muteAudio(): void {
     const n = this.audioManager.getChannelCount()
