@@ -30,6 +30,10 @@ export class Mapper003 extends Mapper {
 }
 
 export class Mapper185 extends Mapper003  {
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper185(options)
+  }
+
   constructor(options: MapperOptions) {
     super(options)
     options.ppu.writePpuDirect(0x0000, 1)  // For "Mighty bomb jack(J)"
