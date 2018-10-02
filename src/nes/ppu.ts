@@ -574,7 +574,7 @@ export class Ppu {
         if ((h.ppuCtrl & SPRITE_SIZE) === 0)
           sprChrStart = (h.ppuCtrl & SPRITE_PATTERN_TABLE_ADDRESS) << 9
         const x0 = (h.ppuMask & SHOW_SPRITE_LEFT_8PX) ? 0 : 8
-        this.renderSprite2(hline0, hline1, x0, h.chrBankOffset, sprChrStart)
+        this.renderSprite(hline0, hline1, x0, h.chrBankOffset, sprChrStart)
       }
     }
 
@@ -763,8 +763,8 @@ export class Ppu {
     return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
   }
 
-  private renderSprite2(hline0: number, hline1: number, x0: number,
-                        chrBankOffset: number[], chrStart: Address): void
+  private renderSprite(hline0: number, hline1: number, x0: number,
+                       chrBankOffset: number[], chrStart: Address): void
   {
     const W = 8
     const LINE_WIDTH = Const.WIDTH
