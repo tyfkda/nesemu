@@ -71,7 +71,6 @@ function buildWhenModified(glob, buildFunc) {
 }
 
 gulp.task('reload', (done) => {
-  console.log('reload')
   browserSync.reload()
   done()
 })
