@@ -7,6 +7,8 @@ import {Nes} from '../../src/nes/nes'
 import {PadValue} from '../../src/nes/apu'
 import Util from '../../src/util/util'
 
+import {audio as SDLAudio} from 'node-sdl2/lib/audio'
+
 const KEY_X = 27
 const KEY_Z = 29
 const ARROW_RIGHT = 79
@@ -30,7 +32,9 @@ const kScanCode2PadValue: {[key: number]: number} = {
 
 function createMyApp() {
   const NS = __non_webpack_require__('node-sdl2')
-  const App = NS.app
+  const SDL = NS.require('SDL')
+  const SDL_audio = NS.require('SDL_audio')
+  const App = NS.createAppWithFlags(SDL.SDL_InitFlags.SDL_INIT_EVERYTHING)
   const Window = NS.window
 
   const SDL_TEXTUREACCESS_STREAMING = 1
@@ -62,6 +66,9 @@ function createMyApp() {
 
     private nes: Nes
     private pad = 0
+
+    private audio: SDLAudio
+    private counter = 0
 
     constructor() {
       this.win = new Window({
@@ -95,6 +102,31 @@ function createMyApp() {
       this.nes = Nes.create()
       this.nes.setVblankCallback((leftV) => { this.onVblank(leftV) })
       this.nes.reset()
+
+      this.audio = NS.audio.create()
+      this.counter = 0
+      const options = {
+        freq: 48000,
+        channels: 1,
+        format: SDL_audio.SDL_AudioFormatFlag.AUDIO_F32,
+      }
+      this.audio.openAudioDevice(options, (arrayBuffer: ArrayBuffer) => {
+        const unitSize = 4
+        const n = (arrayBuffer.byteLength / unitSize) | 0
+
+        const hz = 440
+        const waveLength = (this.audio.spec.freq / hz) | 0
+        const halfWaveLength = (waveLength / 2) | 0
+        const array = new Float32Array(arrayBuffer)
+        let c = this.counter
+        for (let i = 0; i < n; ++i) {
+          if (c >= waveLength)
+            c = (c % waveLength) | 0
+          array[i] = c < halfWaveLength ? 1.0 : -1.0
+          c = (c + 1) | 0
+        }
+        this.counter = c
+      })
     }
 
     public run(romData: Buffer): void {
@@ -136,8 +168,6 @@ function createMyApp() {
       this.win.render.present()
     }
   }
-
-  //const myApp = new MyApp()
 
   return new MyApp()
 }
