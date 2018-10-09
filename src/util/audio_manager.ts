@@ -134,7 +134,6 @@ class PulseChannel extends OscillatorChannel {
 
     const delay = context.createDelay()
     oscillator.connect(delay)
-    this.delay = delay
     delay.connect(this.gainNode)
     this.delay = delay
 
@@ -167,19 +166,18 @@ export class AudioManager {
   private channels = new Array<SoundChannel>()
   private masterVolume: number = 0
 
-  private static setUp() {
+  private static setUp(audioContextClass: any) {
     if (AudioManager.initialized)
       return
     AudioManager.initialized = true
 
-    const contextClass = window.AudioContext || window.webkitAudioContext
-    if (contextClass == null)
+    if (audioContextClass == null)
       return
-    AudioManager.context = new contextClass()
+    AudioManager.context = new audioContextClass() as AudioContext
   }
 
-  constructor() {
-    AudioManager.setUp()
+  constructor(audioContextClass: any) {
+    AudioManager.setUp(audioContextClass)
 
     this.masterVolume = 1.0
   }
