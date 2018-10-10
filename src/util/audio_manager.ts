@@ -45,8 +45,6 @@ abstract class OscillatorChannel extends SoundChannel {
 
     this.oscillator = context.createOscillator()
     this.setupOscillator(this.oscillator, context)
-    // this.oscillator.connect(this.gainNode)
-    // this.gainNode.connect(context.destination)
   }
 
   public start(): void {
