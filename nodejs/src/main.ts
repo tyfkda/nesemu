@@ -6,6 +6,11 @@ import * as JSZip from 'jszip'
 import {Nes} from '../../src/nes/nes'
 import {PadValue} from '../../src/nes/apu'
 import Util from '../../src/util/util'
+import {AudioManager} from '../../src/util/audio_manager'
+
+import {AudioContext} from './audio_context'
+
+const DEFAULT_MASTER_VOLUME = 0.125
 
 const KEY_X = 27
 const KEY_Z = 29
@@ -30,7 +35,8 @@ const kScanCode2PadValue: {[key: number]: number} = {
 
 function createMyApp() {
   const NS = __non_webpack_require__('node-sdl2')
-  const App = NS.app
+  const SDL = NS.require('SDL')
+  const App = NS.createAppWithFlags(SDL.SDL_InitFlags.SDL_INIT_EVERYTHING)
   const Window = NS.window
 
   const SDL_TEXTUREACCESS_STREAMING = 1
@@ -63,6 +69,8 @@ function createMyApp() {
     private nes: Nes
     private pad = 0
 
+    private audioManager = new AudioManager(AudioContext)
+
     constructor() {
       this.win = new Window({
         title: TITLE,
@@ -93,8 +101,6 @@ function createMyApp() {
         256, 240, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING)
 
       this.nes = Nes.create()
-      this.nes.setVblankCallback((leftV) => { this.onVblank(leftV) })
-      this.nes.reset()
     }
 
     public run(romData: Buffer): void {
@@ -102,6 +108,9 @@ function createMyApp() {
       if (result !== true)
         throw result
       this.nes.reset()
+
+      this.setupAudioManager()
+      this.nes.setVblankCallback((leftV) => { this.onVblank(leftV) })
 
       this.prevTime = Date.now()
       setInterval(() => {
@@ -123,7 +132,7 @@ function createMyApp() {
     private onVblank(leftV: number) {
       if (leftV < 1)
         this.render()
-      //this.updateAudio()
+      this.updateAudio()
     }
 
     private render(): void {
@@ -135,9 +144,29 @@ function createMyApp() {
 
       this.win.render.present()
     }
-  }
 
-  //const myApp = new MyApp()
+    private setupAudioManager() {
+      this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
+      const channelTypes = this.nes.getSoundChannelTypes()
+      for (const type of channelTypes) {
+        this.audioManager.addChannel(type)
+      }
+    }
+
+    private updateAudio(): void {
+      const audioManager = this.audioManager
+      const nes = this.nes
+      const count = audioManager.getChannelCount()
+      for (let ch = 0; ch < count; ++ch) {
+        const volume = nes.getSoundVolume(ch)
+        audioManager.setChannelVolume(ch, volume)
+        if (volume > 0) {
+          audioManager.setChannelFrequency(ch, nes.getSoundFrequency(ch))
+          audioManager.setChannelDutyRatio(ch, nes.getSoundDutyRatio(ch))
+        }
+      }
+    }
+  }
 
   return new MyApp()
 }

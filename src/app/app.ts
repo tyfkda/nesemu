@@ -21,7 +21,7 @@ export class App {
   protected isBlur = false
   protected rafId: number|null  // requestAnimationFrame
   protected nes: Nes
-  protected audioManager = new AudioManager()
+  protected audioManager: AudioManager
   protected stream = new AppEvent.Stream()
   protected subscription: Pubsub.Subscription
 
@@ -110,6 +110,11 @@ export class App {
     if (result !== true)
       return result
 
+    const contextClass = window.AudioContext || window.webkitAudioContext
+    //if (contextClass == null)
+    //  return
+
+    this.audioManager = new AudioManager(contextClass)
     this.setupAudioManager()
 
     this.nes.reset()
@@ -335,13 +340,14 @@ export class App {
   }
 
   protected updateAudio(): void {
-    const count = this.audioManager.getChannelCount()
+    const audioManager = this.audioManager
+    const count = audioManager.getChannelCount()
     for (let ch = 0; ch < count; ++ch) {
       const volume = this.nes.getSoundVolume(ch)
-      this.audioManager.setChannelVolume(ch, volume)
+      audioManager.setChannelVolume(ch, volume)
       if (volume > 0) {
-        this.audioManager.setChannelFrequency(ch, this.nes.getSoundFrequency(ch))
-        this.audioManager.setChannelDutyRatio(ch, this.nes.getSoundDutyRatio(ch))
+        audioManager.setChannelFrequency(ch, this.nes.getSoundFrequency(ch))
+        audioManager.setChannelDutyRatio(ch, this.nes.getSoundDutyRatio(ch))
       }
     }
   }
