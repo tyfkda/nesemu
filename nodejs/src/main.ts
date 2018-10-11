@@ -36,21 +36,10 @@ const kScanCode2PadValue: {[key: number]: number} = {
 function createMyApp() {
   const NS = __non_webpack_require__('node-sdl2')
   const SDL = NS.require('SDL')
+  const SDL_render = NS.require('SDL_render')
+  const SDL_pixels = NS.require('SDL_pixels')
   const App = NS.createAppWithFlags(SDL.SDL_InitFlags.SDL_INIT_EVERYTHING)
   const Window = NS.window
-
-  const SDL_TEXTUREACCESS_STREAMING = 1
-
-  const SDL_PIXELTYPE_PACKED32 = 6
-  const SDL_PACKEDORDER_ABGR = 7
-  const SDL_PACKEDLAYOUT_8888 = 6
-  const SDL_DEFINE_PIXELFORMAT = (type, order, layout, bits, bytes) => {
-    return ((1 << 28) | ((type) << 24) | ((order) << 20) | ((layout) << 16) |
-            ((bits) << 8) | ((bytes) << 0))
-  }
-
-  const SDL_PIXELFORMAT_ABGR8888 = SDL_DEFINE_PIXELFORMAT(SDL_PIXELTYPE_PACKED32, SDL_PACKEDORDER_ABGR,
-                                                          SDL_PACKEDLAYOUT_8888, 32, 4)
 
   const WIDTH = 256
   const HEIGHT = 240
@@ -98,7 +87,7 @@ function createMyApp() {
       })
 
       this.texture = this.win.render.createTexture(
-        256, 240, SDL_PIXELFORMAT_ABGR8888, SDL_TEXTUREACCESS_STREAMING)
+        256, 240, SDL_pixels.PixelFormat.ABGR8888, SDL_render.SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING)
 
       this.nes = Nes.create()
     }
