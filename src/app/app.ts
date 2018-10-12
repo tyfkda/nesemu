@@ -165,7 +165,8 @@ export class App {
       return
     this.isBlur = true
     // this.cancelLoopAnimation()
-    this.audioManager.setMasterVolume(0)
+    if (this.audioManager)
+      this.audioManager.setMasterVolume(0)
   }
 
   public onFocus() {
@@ -173,7 +174,8 @@ export class App {
       return
     this.isBlur = false
     // this.startLoopAnimation()
-    this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
+    if (this.audioManager)
+      this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
   }
 
   public createPaletWnd(): boolean {
@@ -276,7 +278,8 @@ export class App {
   protected cleanUp() {
     this.cancelLoopAnimation()
     this.destroying = true
-    this.audioManager.release()
+    if (this.audioManager)
+      this.audioManager.release()
 
     this.subscription.unsubscribe()
   }

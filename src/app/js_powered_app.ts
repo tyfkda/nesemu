@@ -7,7 +7,7 @@ import {Bus} from '../nes/bus'
 import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
 import {Ppu} from '../nes/ppu'
-import {ScreenWnd, RegisterWnd} from './ui'
+import {ScreenWnd} from './ui'
 import Util from '../util/util'
 import WindowManager from '../wnd/window_manager'
 
@@ -173,12 +173,6 @@ class JsScreenWnd extends ScreenWnd {
             },
           },
           {
-            label: 'Registers',
-            click: () => {
-              this.app.createRegisterWnd()
-            },
-          },
-          {
             label: 'Control',
             click: () => {
               this.app.createControlWnd()
@@ -187,41 +181,6 @@ class JsScreenWnd extends ScreenWnd {
         ],
       },
     ])
-  }
-}
-
-export class JsRegisterWnd extends RegisterWnd {
-  public constructor(wndMgr: WindowManager, private jsNes: JsNes, stream: AppEvent.Stream) {
-    super(wndMgr, jsNes, stream)
-
-    const content = this.createContent()
-    this.setContent(content)
-
-    this.subscription = this.stream
-      .subscribe(type => {
-        switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.close()
-          break
-        case AppEvent.Type.RESET:
-        case AppEvent.Type.STEP:
-        case AppEvent.Type.PAUSE:
-        case AppEvent.Type.BREAK_POINT:
-          this.updateStatus()
-          break
-        }
-      })
-  }
-
-  public updateStatus(): void {
-    const regs = this.jsNes.jsCpu.getRegs()
-    this.valueElems[0].value = regs[5].toString()
-    this.valueElems[1].value = Util.hex(regs[0], 2)
-    this.valueElems[2].value = Util.hex(regs[1], 2)
-    this.valueElems[3].value = Util.hex(regs[2], 2)
-    this.valueElems[4].value = Util.hex(regs[3], 2)
-    this.valueElems[5].value = Util.hex(regs[4], 2)
-    // this.valueElems[6].value = String(this.nes.cycleCount)
   }
 }
 
@@ -335,26 +294,12 @@ export class JsApp extends App {
         ppu.clearVBlank()
         this.jsNes.update()
         // this.updateAudio()
+        ppu.setHcount(240)
         ppu.setVBlank()
       }
       this.jsScreenWnd.render()
 
       this.stream.triggerRender()
     }
-  }
-
-  public createRegisterWnd(): boolean {
-    if (this.hasRegisterWnd)
-      return false
-    const registerWnd = new JsRegisterWnd(this.wndMgr, this.jsNes, this.stream)
-    this.wndMgr.add(registerWnd)
-    registerWnd.setPos(410, 500)
-    registerWnd.setCallback(action => {
-      if (action === 'close') {
-        this.hasRegisterWnd = false
-      }
-    })
-
-    return this.hasRegisterWnd = true
   }
 }
