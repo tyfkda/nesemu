@@ -41,13 +41,13 @@ NES emulator written in TypeScript.
 
 ### Set up
 
-```
+```bash
 $ npm install
 ```
 
 ### Build (automatically)
 
-```
+```bash
 $ npm start
 ```
 
@@ -56,7 +56,7 @@ $ npm start
 
 ### Release
 
-```
+```bash
 $ npm run release
 ```
 
