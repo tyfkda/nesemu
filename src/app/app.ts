@@ -308,7 +308,7 @@ export class App {
       const elapsedTime = curTime - lastTime
       lastTime = curTime
 
-      this.loop(elapsedTime)
+      this.update(elapsedTime)
       this.stream.triggerEndCalc()
       this.rafId = requestAnimationFrame(loopFn)
     }
@@ -322,7 +322,7 @@ export class App {
     this.rafId = null
   }
 
-  protected loop(elapsedTime: number): void {
+  protected update(elapsedTime: number): void {
     if (this.nes.getCpu().isPaused())
       return
 

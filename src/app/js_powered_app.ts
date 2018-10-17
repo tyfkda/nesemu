@@ -269,7 +269,7 @@ export class JsApp extends App {
       const elapsedTime = curTime - lastTime
       lastTime = curTime
 
-      this.loop(elapsedTime)
+      this.update(elapsedTime)
       // this.stream.triggerEndCalc()
       this.rafId = requestAnimationFrame(loopFn)
     }
@@ -283,7 +283,7 @@ export class JsApp extends App {
     this.rafId = null
   }
 
-  protected loop(elapsedTime: number): void {
+  protected update(elapsedTime: number): void {
     for (let i = 0; i < 2; ++i) {
       const pad =  this.wndMgr.getPadStatus(this.screenWnd, i)
       this.nes.setPadStatus(i, pad)
