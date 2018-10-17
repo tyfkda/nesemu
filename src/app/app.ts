@@ -331,9 +331,10 @@ export class App {
       this.nes.setPadStatus(i, pad)
     }
 
-    let et = (this.wndMgr.getKeyPressing(this.screenWnd, KeyCode.SHIFT)
-              ? elapsedTime * 4 : elapsedTime)
-    et = Math.min(et, MAX_ELAPSED_TIME)
+    let et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
+    et = (this.wndMgr.getKeyPressing(this.screenWnd, KeyCode.SHIFT)
+          ? et * 4 : et)
+
     const cycles = (CPU_HZ * et / 1000) | 0
     this.nes.runCycles(cycles)
   }

@@ -6,6 +6,7 @@ import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
 import {Bus} from '../nes/bus'
 import DomUtil from '../util/dom_util'
+import {KeyCode} from '../util/key_code'
 import {Nes} from '../nes/nes'
 import {Ppu} from '../nes/ppu'
 import {ScreenWnd} from './ui'
@@ -296,6 +297,10 @@ export class JsApp extends App {
       frameCount = MAX_FRAME_COUNT
       this.leftTime = 0
     }
+
+    frameCount = (this.wndMgr.getKeyPressing(this.screenWnd, KeyCode.SHIFT)
+                  ? frameCount * 4 : frameCount)
+
     if (frameCount > 0) {
       const ppu = this.jsNes.getPpu()
       for (let i = 0; i < frameCount; ++i) {
