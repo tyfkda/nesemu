@@ -3,6 +3,7 @@
 
 import {App} from './app'
 import {AppEvent} from './app_event'
+import {AudioManager} from '../util/audio_manager'
 import {Bus} from '../nes/bus'
 import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
@@ -236,6 +237,13 @@ export class JsApp extends App {
     this.cancelLoopAnimation()
     this.jsNes.setFile(file)
       .then(() => {
+        const contextClass = window.AudioContext || window.webkitAudioContext
+        //if (contextClass == null)
+        //  return
+
+        this.audioManager = new AudioManager(contextClass)
+        this.setupAudioManager()
+
         this.startLoopAnimation()
       })
   }
@@ -293,7 +301,7 @@ export class JsApp extends App {
       for (let i = 0; i < frameCount; ++i) {
         ppu.clearVBlank()
         this.jsNes.update()
-        // this.updateAudio()
+        this.updateAudio()
         ppu.setHcount(240)
         ppu.setVBlank()
       }

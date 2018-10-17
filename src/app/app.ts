@@ -361,7 +361,7 @@ export class App {
       this.audioManager.setChannelVolume(ch, 0)
   }
 
-  private setupAudioManager() {
+  protected setupAudioManager() {
     this.audioManager.release()
 
     this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
