@@ -83,6 +83,12 @@ class GamePad {
   private tmp = new Uint8Array(2)
 
   public setStatus(no: number, status: Byte): void {
+    // Prevent simultaneous pressing on LR and UD.
+    const LR = PadValue.L | PadValue.R, UD = PadValue.U | PadValue.D
+    if ((status & LR) === LR)
+      status &= ~LR
+    if ((status & UD) === UD)
+      status &= ~UD
     this.status[no] = status
   }
 
