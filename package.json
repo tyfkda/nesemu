@@ -45,7 +45,7 @@
     "babel-loader": "~8.0.2",
     "babel-preset-env": "~1.7.0",
     "babel-preset-es2015": "~6.24.1",
-    "browser-sync": "~2.24.7",
+    "browser-sync": "~2.26.3",
     "clone": "~2.1.2",
     "del": "~3.0.0",
     "gulp": "~4.0.0",
