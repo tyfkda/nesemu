@@ -84,13 +84,13 @@ class Main {
                   .then(unzipped => Promise.resolve({type: ext2, binary: unzipped, fileName}))
               }
             }
-            return Promise.reject('No .nes file included')
+            return Promise.reject(`No .nes file included: ${file.name}`)
           })
       } else if (kTargetExts.indexOf(ext) >= 0) {
         promise = DomUtil.loadFile(file)
           .then(binary => Promise.resolve({type: ext, binary, fileName: file.name}))
       } else {
-        promise = Promise.reject(`Unsupported ext: ${file.name}`)
+        promise = Promise.reject(`Unsupported file: ${file.name}`)
       }
       if (promise)
         promises.push(promise)
@@ -111,6 +111,9 @@ class Main {
             y += 16
           })
         }
+      })
+      .catch((e: Error) => {
+        this.wndMgr.showSnackbar(e.toString())
       })
   }
 
