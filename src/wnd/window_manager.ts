@@ -72,12 +72,13 @@ export default class WindowManager {
 
   public async showSnackbar(message: string, option: any = {}) {
     const wait = option.wait || 3000
+    const type = option.type || 'danger'
 
     const div = document.createElement('div')
     div.className = 'snackbar-container'
     div.style.zIndex = '10000'
     const box = document.createElement('div')
-    box.className = 'snackbar-box'
+    box.className = `snackbar-box ${type}`
     div.appendChild(box)
     const text = document.createTextNode(message)
     box.appendChild(text)

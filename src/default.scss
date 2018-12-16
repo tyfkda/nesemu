@@ -202,11 +202,23 @@ $BUTTON_HEIGHT: 6px;
 .snackbar-box {
   width: 80%;
   margin: 0 auto;
-  background-color: #f33;
   border-radius: 5px;
   text-align: center;
   line-height: 32px;
   color: #eee;
   font-size: .8em;
   box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.snackbar-box.success {
+  background-color: #28a645;
+}
+
+.snackbar-box.warning {
+  background-color: #ffc108;
+  color: black;
+}
+
+.snackbar-box.danger {
+  background-color: #db3545;
 }
