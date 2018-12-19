@@ -239,37 +239,35 @@ export default class Wnd {
           bottom: rect.bottom - prect.top,
         }
 
-        const dragMove = (event2: MouseEvent) => {
-          let [x, y] = this.getMousePosIn(event2, this.root.parentNode as HTMLElement)
-          x = Util.clamp(x, -dragOfsX, window.innerWidth - dragOfsX)
-          y = Util.clamp(y, -dragOfsY, window.innerHeight - dragOfsY)
-          box[param.horz] = x + dragOfsX
-          box[param.vert] = y + dragOfsY
+        DomUtil.setMouseDragListener({
+          move: (event2: MouseEvent) => {
+            let [x, y] = this.getMousePosIn(event2, this.root.parentNode as HTMLElement)
+            x = Util.clamp(x, -dragOfsX, window.innerWidth - dragOfsX)
+            y = Util.clamp(y, -dragOfsY, window.innerHeight - dragOfsY)
+            box[param.horz] = x + dragOfsX
+            box[param.vert] = y + dragOfsY
 
-          let width = box.right - box.left - 2  // For border width.
-          let height = box.bottom - box.top - 2
-          if (width < MIN_WIDTH) {
-            box[param.horz] -= (MIN_WIDTH - width) * (param.horz === 'left' ? 1 : -1)
-          }
-          if (height < MIN_HEIGHT) {
-            box[param.vert] -= (MIN_HEIGHT - height) * (param.vert === 'top' ? 1 : -1)
-          }
-          DomUtil.setStyles(this.root, {
-            width: `${box.right - box.left -  2}px`,
-            height: `${box.bottom - box.top - 2}px`,
-            left: `${box.left}px`,
-            top: `${box.top}px`,
-          })
-          this.callback('resize', width, height - Wnd.TITLEBAR_HEIGHT)
-        }
-        const dragFinish = (_event2: MouseEvent) => {
-          document.removeEventListener('mousemove', dragMove)
-          document.removeEventListener('mouseup', dragFinish)
-          this.root.style['transition-property'] = null
-        }
+            let width = box.right - box.left - 2  // For border width.
+            let height = box.bottom - box.top - 2
+            if (width < MIN_WIDTH) {
+              box[param.horz] -= (MIN_WIDTH - width) * (param.horz === 'left' ? 1 : -1)
+            }
+            if (height < MIN_HEIGHT) {
+              box[param.vert] -= (MIN_HEIGHT - height) * (param.vert === 'top' ? 1 : -1)
+            }
+            DomUtil.setStyles(this.root, {
+              width: `${box.right - box.left -  2}px`,
+              height: `${box.bottom - box.top - 2}px`,
+              left: `${box.left}px`,
+              top: `${box.top}px`,
+            })
+            this.callback('resize', width, height - Wnd.TITLEBAR_HEIGHT)
+          },
+          up: (_event2: MouseEvent) => {
+            this.root.style['transition-property'] = null
+          },
+        })
 
-        document.addEventListener('mousemove', dragMove)
-        document.addEventListener('mouseup', dragFinish)
         this.wndMgr.moveToTop(this)
 
         this.root.style['transition-property'] = 'none'  // To change size immediately.
@@ -307,23 +305,18 @@ export default class Wnd {
       const dragOfsX = -mx
       const dragOfsY = -my
       const winSize = this.getWindowSize()
-      const dragMove = (event2: MouseEvent) => {
-        let [x, y] = this.getMousePosIn(event2, this.root.parentNode as HTMLElement)
-        x = Util.clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
-        y = Util.clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
+      DomUtil.setMouseDragListener({
+        move: (event2: MouseEvent) => {
+          let [x, y] = this.getMousePosIn(event2, this.root.parentNode as HTMLElement)
+          x = Util.clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
+          y = Util.clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
 
-        DomUtil.setStyles(this.root, {
-          left: `${x + dragOfsX}px`,
-          top: `${y + dragOfsY}px`,
-        })
-      }
-      const dragFinish = (_event2: MouseEvent) => {
-        document.removeEventListener('mousemove', dragMove)
-        document.removeEventListener('mouseup', dragFinish)
-      }
-
-      document.addEventListener('mousemove', dragMove)
-      document.addEventListener('mouseup', dragFinish)
+          DomUtil.setStyles(this.root, {
+            left: `${x + dragOfsX}px`,
+            top: `${y + dragOfsY}px`,
+          })
+        },
+      })
       return true
     })
     return titleBar

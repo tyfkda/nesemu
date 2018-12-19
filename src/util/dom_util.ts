@@ -83,4 +83,42 @@ export default class DomUtil {
     })
     elem.click()
   }
+
+  // Register mouse drag event listener.
+  public static setMouseDragListener(mouseMove: any, mouseUp?: any, useCapture?: boolean) {
+    let mouseLeave: Function|null = null
+    let mouseLeaveTarget: HTMLElement|null = null
+    if (typeof mouseMove === 'object') {
+      const option = mouseMove
+      mouseMove = option.move
+      mouseUp = option.up
+      mouseLeave = option.leave
+      useCapture = option.useCapture
+
+      mouseLeaveTarget = (mouseLeave == null ? null : option.leaveTarget || document)
+    }
+
+    const unlisten = () => {
+      document.removeEventListener('mousemove', mouseMove, useCapture)
+      document.removeEventListener('mouseup', mouseUpDelegate, useCapture)
+      if (mouseLeaveDelegate && mouseLeaveTarget)
+        mouseLeaveTarget.removeEventListener('mouseleave', mouseLeaveDelegate, useCapture)
+    }
+
+    const mouseUpDelegate = ($event) => {
+      if (mouseUp)
+        mouseUp($event)
+      unlisten()
+    }
+
+    const mouseLeaveDelegate = (mouseLeave == null ? null : ($event) => {
+      if (mouseLeave && mouseLeave($event))
+        unlisten()
+    })
+
+    document.addEventListener('mousemove', mouseMove, useCapture)
+    document.addEventListener('mouseup', mouseUpDelegate, useCapture)
+    if (mouseLeaveDelegate && mouseLeaveTarget)
+      mouseLeaveTarget.addEventListener('mouseleave', mouseLeaveDelegate, useCapture)
+  }
 }
