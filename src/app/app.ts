@@ -14,7 +14,7 @@ import * as Pubsub from '../util/pubsub'
 
 const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
-const DEFAULT_MASTER_VOLUME = 0.125
+export const DEFAULT_MASTER_VOLUME = 0.125
 
 export class Option {
   public title?: string
@@ -41,6 +41,8 @@ export class App {
   protected hasRegisterWnd = false
   protected hasTraceWnd = false
   protected hasCtrlWnd = false
+
+  protected volume = 1
 
   public static create(wndMgr: WindowManager, option: Option): App {
     return new App(wndMgr, option)
@@ -110,6 +112,11 @@ export class App {
         break
       }
     })
+  }
+
+  public setVolume(vol: number): void {
+    this.volume = vol
+    this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
   }
 
   public loadRom(romData: Uint8Array): boolean|string {
@@ -182,7 +189,7 @@ export class App {
     this.isBlur = false
     // this.startLoopAnimation()
     if (this.audioManager)
-      this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
+      this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
   }
 
   public createPaletWnd(): boolean {
@@ -372,7 +379,7 @@ export class App {
   protected setupAudioManager() {
     this.audioManager.release()
 
-    this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
+    this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
     const channelTypes = this.nes.getSoundChannelTypes()
     for (const type of channelTypes) {
       this.audioManager.addChannel(type)

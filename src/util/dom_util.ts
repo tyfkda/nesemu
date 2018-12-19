@@ -121,4 +121,12 @@ export default class DomUtil {
     if (mouseLeaveDelegate && mouseLeaveTarget)
       mouseLeaveTarget.addEventListener('mouseleave', mouseLeaveDelegate, useCapture)
   }
+
+  public static getMousePosIn(event: MouseEvent, elem: HTMLElement): [number, number] {
+    const rect = elem.getBoundingClientRect()
+    const scrollLeft = document.body.scrollLeft
+    const scrollTop = document.body.scrollTop
+    return [event.pageX - rect.left - scrollLeft,
+            event.pageY - rect.top - scrollTop]
+  }
 }

@@ -1,7 +1,7 @@
 // JS-powered NES
 // Run JavaScript code, instead of 6502 CPU.
 
-import {App, Option} from './app'
+import {App, Option, DEFAULT_MASTER_VOLUME} from './app'
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
 import {Bus} from '../nes/bus'
@@ -244,6 +244,7 @@ export class JsApp extends App {
 
         this.audioManager = new AudioManager(contextClass)
         this.setupAudioManager()
+        this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
 
         this.startLoopAnimation()
       })

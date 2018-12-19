@@ -16,15 +16,21 @@ window.requestAnimationFrame = (function() {
           window.webkitRequestAnimationFrame || window.msRequestAnimationFrame)
 })()
 
+const KEY_VOLUME = 'volume'
+
 class Main {
   private wndMgr: WindowManager
   private apps: App[] = []
+  private volume = 1
 
   constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
 
+    this.volume = Util.clamp(StorageUtil.getFloat(KEY_VOLUME, 1), 0, 1)
+
     this.setUpFileDrop()
     this.setUpGamePadLink()
+    this.setUpVolumeLink()
     this.setUpOpenRomLink()
     this.setUpBlur()
   }
@@ -135,6 +141,7 @@ class Main {
       app.close()
       return
     }
+    app.setVolume(this.volume)
     this.apps.push(app)
   }
 
@@ -157,6 +164,79 @@ class Main {
     gamepadText.addEventListener('click', () => {
       const gamepadWnd = new GamepadWnd(this.wndMgr)
       this.wndMgr.add(gamepadWnd)
+    })
+  }
+
+  private setUpVolumeLink(): void {
+    const volumeText = document.getElementById('volume')
+    const sliderContainer = document.getElementById('volume-slider-container')
+    const slider = document.getElementById('volume-slider')
+    if (volumeText == null || sliderContainer == null || slider == null)
+      return
+
+    let dragging = false
+    let leave = false
+    sliderContainer.addEventListener('mousedown', (event) => {
+      dragging = true
+      const sliderHeight = (slider.parentNode as HTMLElement).getBoundingClientRect().height
+      const updateSlider = (event2) => {
+        const [, y] = DomUtil.getMousePosIn(event2, slider.parentNode as HTMLElement)
+        const height = Util.clamp(sliderHeight - y, 0, sliderHeight)
+        slider.style.height = `${height}px`
+        this.volume = height / sliderHeight
+        this.apps.forEach(app => {
+          app.setVolume(this.volume)
+        })
+      }
+      DomUtil.setMouseDragListener({
+        move: updateSlider,
+        up: (_event2) => {
+          dragging = false
+          if (leave)
+            hideSlider()
+          this.volume = Math.round(this.volume * 100) / 100
+          StorageUtil.put(KEY_VOLUME, this.volume)
+        },
+      })
+      updateSlider(event)
+    })
+
+    const showSlider = () => {
+      const prect = volumeText.getBoundingClientRect() as DOMRect
+      const w = parseInt(sliderContainer.style.width || '0', 10)
+      const h = parseInt(sliderContainer.style.height || '0', 10)
+      DomUtil.setStyles(sliderContainer, {
+        display: 'inherit',
+        top: `${Math.round(prect.y - h)}px`,
+        left: `${Math.round(prect.x + (prect.width - w) / 2)}px`,
+      })
+      const sliderHeight = (slider.parentNode as HTMLElement).getBoundingClientRect().height
+      slider.style.height = `${this.volume * sliderHeight}px`
+    }
+    const hideSlider = () => {
+      DomUtil.setStyles(sliderContainer, {
+        display: 'none',
+      })
+    }
+    const toggleSlider = () => {
+      if (sliderContainer.style.display === 'none')
+        showSlider()
+      else
+        hideSlider()
+    }
+
+    volumeText.addEventListener('click', toggleSlider)
+    volumeText.addEventListener('mouseenter', () => {
+      showSlider()
+    })
+
+    sliderContainer.addEventListener('mouseenter', (_event) => {
+      leave = false
+    })
+    sliderContainer.addEventListener('mouseleave', (_event) => {
+      leave = true
+      if (!dragging)
+        hideSlider()
     })
   }
 

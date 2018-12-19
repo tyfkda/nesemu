@@ -227,7 +227,7 @@ export default class Wnd {
       resizeBox.addEventListener('mousedown', (event) => {
         event.stopPropagation()
         event.preventDefault()
-        const [mx, my] = this.getMousePosIn(event, resizeBox)
+        const [mx, my] = DomUtil.getMousePosIn(event, resizeBox)
         const dragOfsX = param.horz === 'left' ? -mx : W - mx
         const dragOfsY = param.vert === 'top' ? -my : W - my
         const rect = this.root.getBoundingClientRect()
@@ -241,7 +241,7 @@ export default class Wnd {
 
         DomUtil.setMouseDragListener({
           move: (event2: MouseEvent) => {
-            let [x, y] = this.getMousePosIn(event2, this.root.parentNode as HTMLElement)
+            let [x, y] = DomUtil.getMousePosIn(event2, this.root.parentNode as HTMLElement)
             x = Util.clamp(x, -dragOfsX, window.innerWidth - dragOfsX)
             y = Util.clamp(y, -dragOfsY, window.innerHeight - dragOfsY)
             box[param.horz] = x + dragOfsX
@@ -301,13 +301,13 @@ export default class Wnd {
 
       // Move window position with dragging.
       event.preventDefault()
-      let [mx, my] = this.getMousePosIn(event, this.root)
+      let [mx, my] = DomUtil.getMousePosIn(event, this.root)
       const dragOfsX = -mx
       const dragOfsY = -my
       const winSize = this.getWindowSize()
       DomUtil.setMouseDragListener({
         move: (event2: MouseEvent) => {
-          let [x, y] = this.getMousePosIn(event2, this.root.parentNode as HTMLElement)
+          let [x, y] = DomUtil.getMousePosIn(event2, this.root.parentNode as HTMLElement)
           x = Util.clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
           y = Util.clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
 
@@ -375,13 +375,5 @@ export default class Wnd {
       this.callback('closeMenu')
     }
     document.addEventListener('click', onClickOther, true)
-  }
-
-  private getMousePosIn(event: MouseEvent, elem: HTMLElement) {
-    const rect = elem.getBoundingClientRect()
-    const scrollLeft = document.body.scrollLeft
-    const scrollTop = document.body.scrollTop
-    return [event.pageX - rect.left - scrollLeft,
-            event.pageY - rect.top - scrollTop]
   }
 }
