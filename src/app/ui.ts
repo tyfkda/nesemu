@@ -674,8 +674,16 @@ export class RegisterWnd extends Wnd {
     this.valueElems[2].value = Util.hex(regs.x, 2)
     this.valueElems[3].value = Util.hex(regs.y, 2)
     this.valueElems[4].value = Util.hex(regs.s, 2)
-    this.valueElems[5].value = Util.hex(regs.p, 2)
+    this.valueElems[5].value = RegisterWnd.createPregStr(regs.p)
     this.valueElems[6].value = String(this.nes.getCycleCount())
+  }
+
+  private static createPregStr(p): string {
+    const chrs = 'NV_BDIZC'
+    const ss = new Array<string>(8)
+    for (let i = 0; i < 8; ++i)
+      ss[i] = ((p & (0x80 >> i)) !== 0) ? chrs[i] : '.'
+    return ss.join('')
   }
 
   public close(): void {
