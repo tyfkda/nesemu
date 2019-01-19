@@ -239,8 +239,8 @@ export class JsApp extends App {
     this.jsNes.setFile(file)
       .then(() => {
         const contextClass = window.AudioContext || window.webkitAudioContext
-        //if (contextClass == null)
-        //  return
+        // if (contextClass == null)
+        //   return
 
         this.audioManager = new AudioManager(contextClass)
         this.setupAudioManager()

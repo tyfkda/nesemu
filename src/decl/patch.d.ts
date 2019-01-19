@@ -22,6 +22,7 @@ interface Window {
 interface Document {
   fullScreen: Function
   mozFullScreen: Function
+  webkitIsFullScreen: Function
 }
 
 interface HTMLElement {

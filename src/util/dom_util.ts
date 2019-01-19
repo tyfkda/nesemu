@@ -35,19 +35,23 @@ export default class DomUtil {
                                onDropped: (files: FileList, x: number, y: number) => void): void
   {
     function onDrop(event: DragEvent) {
-      event.stopPropagation()
-      event.preventDefault()
-      const files = event.dataTransfer.files
-      if (files.length > 0) {
-        onDropped(files, event.pageX, event.pageY)
+      if (event.dataTransfer) {
+        event.stopPropagation()
+        event.preventDefault()
+        const files = event.dataTransfer.files
+        if (files.length > 0) {
+          onDropped(files, event.pageX, event.pageY)
+        }
       }
       return false
     }
 
     function onDragOver(event: DragEvent) {
-      event.stopPropagation()
-      event.preventDefault()
-      event.dataTransfer.dropEffect = 'copy'
+      if (event.dataTransfer) {
+        event.stopPropagation()
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'copy'
+      }
       return false
     }
 

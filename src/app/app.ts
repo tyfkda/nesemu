@@ -125,8 +125,8 @@ export class App {
       return result
 
     const contextClass = window.AudioContext || window.webkitAudioContext
-    //if (contextClass == null)
-    //  return
+    // if (contextClass == null)
+    //   return
 
     this.audioManager = new AudioManager(contextClass)
     this.setupAudioManager()

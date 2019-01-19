@@ -644,6 +644,14 @@ export class RegisterWnd extends Wnd {
   protected valueElems = new Array<HTMLInputElement>()
   protected subscription: Pubsub.Subscription
 
+  private static createPregStr(p): string {
+    const chrs = 'NV_BDIZC'
+    const ss = new Array<string>(8)
+    for (let i = 0; i < 8; ++i)
+      ss[i] = ((p & (0x80 >> i)) !== 0) ? chrs[i] : '.'
+    return ss.join('')
+  }
+
   public constructor(wndMgr: WindowManager, protected nes: Nes, protected stream: AppEvent.Stream) {
     super(wndMgr, 100, 160, 'Regs')
 
@@ -676,14 +684,6 @@ export class RegisterWnd extends Wnd {
     this.valueElems[4].value = Util.hex(regs.s, 2)
     this.valueElems[5].value = RegisterWnd.createPregStr(regs.p)
     this.valueElems[6].value = String(this.nes.getCycleCount())
-  }
-
-  private static createPregStr(p): string {
-    const chrs = 'NV_BDIZC'
-    const ss = new Array<string>(8)
-    for (let i = 0; i < 8; ++i)
-      ss[i] = ((p & (0x80 >> i)) !== 0) ? chrs[i] : '.'
-    return ss.join('')
   }
 
   public close(): void {
