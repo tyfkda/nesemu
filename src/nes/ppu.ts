@@ -466,6 +466,8 @@ export class Ppu {
       } else {
         this.scrollTemp = ((this.scrollTemp & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
                            ((value & 0x07) << 12))
+        if (this.hcount >= Const.HEIGHT)
+          this.addHevent(HEVENTTYPE.SCROLL_CURR, this.scrollTemp)
       }
       this.latch = 1 - this.latch
       break
