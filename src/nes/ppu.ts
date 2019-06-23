@@ -117,7 +117,23 @@ class HEvents {
   }
 
   public add(hcount: number, type: HEVENTTYPE, value: number, index: number = -1): void {
-    if (this.countNext >= this.eventsNext.length) {
+    const n = this.countNext
+    // Search an event which has same type at the hcount.
+    for (let i = n; --i >= 0; ) {
+      const hevent = this.eventsNext[i]
+      if (hevent.hcount !== hcount)
+        break
+      if (hevent.type === type && hevent.index === index) {
+        // Move to the last
+        for (let j = i; ++j < n; )
+          this.eventsNext[j - 1] = this.eventsNext[j]
+        this.eventsNext[n - 1] = hevent
+        hevent.value = value
+        return
+      }
+    }
+
+    if (n >= this.eventsNext.length) {
       const hevent: HEvent = {
         type,
         value,
@@ -126,7 +142,7 @@ class HEvents {
       }
       this.eventsNext.push(hevent)
     } else {
-      const hevent = this.eventsNext[this.countNext]
+      const hevent = this.eventsNext[n]
       hevent.type = type
       hevent.value = value
       hevent.index = index
