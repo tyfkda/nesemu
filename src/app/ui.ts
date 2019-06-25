@@ -47,6 +47,7 @@ export class FpsWnd extends Wnd {
     this.setContent(content)
 
     this.stats = new Stats()
+    this.stats.domElement.style.position = ''
     content.appendChild(this.stats.domElement)
 
     this.subscription = this.stream
