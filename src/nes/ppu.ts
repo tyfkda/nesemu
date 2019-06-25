@@ -306,6 +306,7 @@ export class Ppu {
   private hstatusBak: HStatus = new HStatus()
 
   private scrollTemp: Word = 0
+  private scrollLatch: Word = 0
 
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
 
@@ -449,6 +450,7 @@ export class Ppu {
       {
         this.incScrollCounter()
         this.scrollTemp = (this.scrollTemp & ~0x0c00) | ((value & BASE_NAMETABLE_ADDRESS) << 10)
+        this.scrollLatch = this.scrollTemp
         // At dot 257 of each scanline:
         const scrollCurr = (this.hstatus.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
         // this.scrollCurr = scrollCurr
@@ -475,6 +477,7 @@ export class Ppu {
       this.incScrollCounter()
       if (this.latch === 0) {
         this.scrollTemp = (this.scrollTemp & ~0x001f) | (value >> 3)
+        this.scrollLatch = this.scrollTemp
         this.addHevent(HEVENTTYPE.SCROLL_FINE_X, value & 7)
         // At dot 257 of each scanline:
         const scrollCurr = (this.hstatus.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
@@ -482,6 +485,7 @@ export class Ppu {
       } else {
         this.scrollTemp = ((this.scrollTemp & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
                            ((value & 0x07) << 12))
+        this.scrollLatch = this.scrollTemp
         if (this.hcount >= Const.HEIGHT)
           this.addHevent(HEVENTTYPE.SCROLL_CURR, this.scrollTemp)
       }
@@ -490,9 +494,11 @@ export class Ppu {
     case PPUADDR:
       if (this.latch === 0) {
         this.scrollTemp = (this.scrollTemp & ~0x7f00) | ((value & 0x3f) << 8)
+        this.scrollLatch = this.scrollTemp
         this.ppuAddr = value
       } else {
         this.scrollTemp = (this.scrollTemp & ~0x00ff) | value
+        this.scrollLatch = this.scrollTemp
         this.ppuAddr = this.scrollTemp
 
         this.addHevent(HEVENTTYPE.SCROLL_CURR, this.scrollTemp)
@@ -537,7 +543,7 @@ export class Ppu {
   public clearVBlank(): void {
     this.regs[PPUSTATUS] &= ~(VBLANK | SPRITE0HIT)
 
-    this.addHevent(HEVENTTYPE.SCROLL_CURR, this.scrollTemp)
+    this.addHevent(HEVENTTYPE.SCROLL_CURR, this.scrollLatch)
   }
 
   public interruptEnable(): boolean {
