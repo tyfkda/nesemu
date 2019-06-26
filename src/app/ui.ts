@@ -113,7 +113,7 @@ export class ScreenWnd extends Wnd {
       .subscribe(type => {
         switch (type) {
         case AppEvent.Type.RENDER:
-          this.scaler.render(this.nes)
+          this.render()
           break
         case AppEvent.Type.SCREEN_SHOT:
           takeScreenshot(this.wndMgr, this)
@@ -184,6 +184,10 @@ export class ScreenWnd extends Wnd {
       this.subscription.unsubscribe()
     this.stream.triggerDestroy()
     super.close()
+  }
+
+  public render(): void {
+    this.scaler.render(this.nes)
   }
 
   protected setClientScale(scale: number): Wnd {
@@ -391,6 +395,8 @@ export class ScreenWnd extends Wnd {
     this.scaler = scaler
     DomUtil.removeAllChildren(this.canvasHolder)
     this.canvasHolder.appendChild(scaler.getCanvas())
+
+    this.render()
   }
 
   private createFpsWnd(): void {
