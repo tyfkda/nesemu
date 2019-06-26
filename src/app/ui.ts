@@ -5,7 +5,7 @@ import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
 import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst'
 import {disassemble} from '../nes/disasm'
-import {Scaler, IdentityScaler, ScanlineScaler} from '../util/scaler'
+import {Scaler, IdentityScaler, ScanlineScaler, EpxScaler} from '../util/scaler'
 import Util from '../util/util'
 
 import {App} from './app'
@@ -316,6 +316,12 @@ export class ScreenWnd extends Wnd {
             label: 'Scanline',
             click: () => {
               this.setScaler(new ScanlineScaler())
+            },
+          },
+          {
+            label: 'Epx',
+            click: () => {
+              this.setScaler(new EpxScaler())
             },
           },
         ],
