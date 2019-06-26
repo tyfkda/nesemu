@@ -16,7 +16,8 @@ import * as Stats from 'stats-js'
 
 const WIDTH = 256 | 0
 const HEIGHT = 240 | 0
-const EDGE = 8 | 0
+const HEDGE = 0 | 0
+const VEDGE = 8 | 0
 
 function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const img = document.createElement('img') as HTMLImageElement
@@ -84,7 +85,7 @@ export class ScreenWnd extends Wnd {
   constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,
               protected stream: AppEvent.Stream)
   {
-    super(wndMgr, (WIDTH - EDGE * 2) * 2, (HEIGHT - EDGE * 2) * 2 + Wnd.MENUBAR_HEIGHT, 'NES')
+    super(wndMgr, (WIDTH - HEDGE * 2) * 2, (HEIGHT - VEDGE * 2) * 2 + Wnd.MENUBAR_HEIGHT, 'NES')
     if (app == null || nes == null || stream == null)
       return
 
@@ -124,8 +125,8 @@ export class ScreenWnd extends Wnd {
         }
       })
 
-    this.contentWidth = (WIDTH - EDGE * 2) * 2
-    this.contentHeight = (HEIGHT - EDGE * 2) * 2
+    this.contentWidth = (WIDTH - HEDGE * 2) * 2
+    this.contentHeight = (HEIGHT - VEDGE * 2) * 2
     this.updateContentSize(this.contentWidth, this.contentHeight)
   }
 
@@ -191,8 +192,8 @@ export class ScreenWnd extends Wnd {
   }
 
   protected setClientScale(scale: number): Wnd {
-    const w = ((WIDTH - (this.hideEdge ? EDGE * 2 : 0)) * scale) | 0
-    const h = ((HEIGHT - (this.hideEdge ? EDGE * 2 : 0)) * scale) | 0
+    const w = ((WIDTH - (this.hideEdge ? HEDGE * 2 : 0)) * scale) | 0
+    const h = ((HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)) * scale) | 0
     return this.setClientSize(w, h)
   }
 
@@ -200,10 +201,10 @@ export class ScreenWnd extends Wnd {
     if (!this.fullscreenBase)
       return
 
-    const w = !this.hideEdge ? width : (width * (WIDTH / (WIDTH - EDGE * 2))) | 0
-    const h = !this.hideEdge ? height : (height * (HEIGHT / (HEIGHT - EDGE * 2))) | 0
-    const left = !this.hideEdge ? 0 : -(w * EDGE / WIDTH) | 0
-    const top = !this.hideEdge ? 0 : -(h * EDGE / HEIGHT) | 0
+    const w = !this.hideEdge ? width : (width * (WIDTH / (WIDTH - HEDGE * 2))) | 0
+    const h = !this.hideEdge ? height : (height * (HEIGHT / (HEIGHT - VEDGE * 2))) | 0
+    const left = !this.hideEdge ? 0 : -(w * HEDGE / WIDTH) | 0
+    const top = !this.hideEdge ? 0 : -(h * VEDGE / HEIGHT) | 0
     DomUtil.setStyles(this.canvasHolder, {
       position: 'absolute',
       width: `${w}px`,
@@ -280,8 +281,8 @@ export class ScreenWnd extends Wnd {
             click: () => {
               const rect = this.contentHolder.getBoundingClientRect()
               let cWidth = rect.width, cHeight = rect.height
-              const w = WIDTH - (this.hideEdge ? EDGE * 2 : 0)
-              const h = HEIGHT - (this.hideEdge ? EDGE * 2 : 0)
+              const w = WIDTH - (this.hideEdge ? HEDGE * 2 : 0)
+              const h = HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)
               const ratio = w / h
               if (cWidth / cHeight >= ratio)
                 cWidth = cHeight * ratio
