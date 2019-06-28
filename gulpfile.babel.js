@@ -147,6 +147,7 @@ gulp.task('server', () => {
       baseDir: DEST_DIR,
       index: 'index.html',
     },
+    open: false,
   })
 })
 
