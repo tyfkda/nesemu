@@ -224,6 +224,43 @@ export class Mapper088 extends Mapper004 {
   }
 }
 
+const kMirrorModeTable95 = [
+  MirrorMode.SINGLE0, MirrorMode.REVERSE_HORZ,
+  MirrorMode.HORZ, MirrorMode.SINGLE1,
+]
+
+export class Mapper095 extends Mapper004 {
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper095(options)
+  }
+
+  constructor(protected options: MapperOptions) {
+    super(options)
+
+    // Select
+    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+      if ((adr & 1) === 0) {
+        this.bankSelect = value & 7
+      } else {
+        const reg = this.bankSelect & 0x07
+        if (reg < 6) {  // CHR
+          this.regs[reg] = value & 0x3f
+          this.setChrBank(0x00)
+
+          if (reg === 0 || reg === 1) {
+            const n1 = (this.regs[0] >> 5) & 1
+            const n2 = (this.regs[1] >> 4) & 2
+            this.options.ppu.setMirrorMode(kMirrorModeTable95[n2 | n1])
+          }
+        } else {  // PRG
+          this.regs[reg] = value & 0x1f
+          this.setPrgBank(0x00)
+        }
+      }
+    })
+  }
+}
+
 export class Mapper118 extends Mapper004 {
   public static create(options: MapperOptions): Mapper {
     return new Mapper118(options)
