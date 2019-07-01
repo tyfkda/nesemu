@@ -83,79 +83,88 @@ interface HEvent {
   index: number
 }
 
-class HEvents {
-  private count = 0
-  private countNext = 0
-  private events = new Array<HEvent>()
-  private eventsNext = new Array<HEvent>()
+class HEventBuf {
+  public count = 0
+  public events = new Array<HEvent>()
 
   public clear(): void {
     this.count = 0
-    this.countNext = 0
-  }
-
-  public swap(): void {
-    // Add sentinel: Ensure that current frame has an event at hline 240.
-    this.add(Const.HEIGHT, HEventType.DUMMY, 0)
-
-    const tmp = this.events
-    this.events = this.eventsNext
-    this.count = this.countNext
-    this.eventsNext = tmp
-    this.countNext = 0
-
-    this.add(0, HEventType.DUMMY, 0)  // Ensure that next frame has an event at hline 0.
-  }
-
-  public getCount(): number {
-    return this.count - 1  // Last one is sentinel, so -1
-  }
-
-  public getEvent(index: number): any {
-    return this.events[index]
-  }
-
-  public getCountNext(): number {
-    return this.countNext
-  }
-
-  public getEventNext(index: number): any {
-    return this.eventsNext[index]
   }
 
   public add(hcount: number, type: HEventType, value: number, index: number = -1): void {
-    const n = this.countNext
+    const n = this.count
     // Search an event which has same type at the hcount.
     for (let i = n; --i >= 0; ) {
-      const hevent = this.eventsNext[i]
+      const hevent = this.events[i]
       if (hevent.hcount !== hcount)
         break
       if (hevent.type === type && hevent.index === index) {
         // Move to the last
         for (let j = i; ++j < n; )
-          this.eventsNext[j - 1] = this.eventsNext[j]
-        this.eventsNext[n - 1] = hevent
+          this.events[j - 1] = this.events[j]
+        this.events[n - 1] = hevent
         hevent.value = value
         return
       }
     }
 
-    if (n >= this.eventsNext.length) {
+    if (n >= this.events.length) {
       const hevent: HEvent = {
         type,
         value,
         index,
         hcount,
       }
-      this.eventsNext.push(hevent)
+      this.events.push(hevent)
     } else {
-      const hevent = this.eventsNext[n]
+      const hevent = this.events[n]
       hevent.type = type
       hevent.value = value
       hevent.index = index
       hevent.hcount = hcount
     }
-    ++this.countNext
+    ++this.count
+  }
+}
+
+class HEvents {
+  private renderBuf = new HEventBuf()
+  private nextBuf = new HEventBuf()
+
+  public clear(): void {
+    this.renderBuf.clear()
+    this.nextBuf.clear()
+  }
+
+  public swap(): void {
+    // Add sentinel: Ensure that current frame has an event at hline 240.
+    this.nextBuf.add(Const.HEIGHT, HEventType.DUMMY, 0)
+
+    const tmp = this.renderBuf
+    this.renderBuf = this.nextBuf
+    this.nextBuf = tmp
+    this.nextBuf.clear()
+
+    this.nextBuf.add(0, HEventType.DUMMY, 0)  // Ensure that next frame has an event at hline 0.
+  }
+
+  public getCount(): number {
+    return this.renderBuf.count - 1  // Last one is sentinel, so -1
+  }
+
+  public getEvent(index: number): HEvent {
+    return this.renderBuf.events[index]
+  }
+
+  public getLastHcount(): number {
+    const n = this.nextBuf.count
+    if (n <= 0)
+      return -1
+    return this.nextBuf.events[n - 1].hcount
+  }
+
+  public add(hcount: number, type: HEventType, value: number, index: number = -1): void {
+    this.nextBuf.add(hcount, type, value, index)
   }
 }
 
@@ -898,12 +907,11 @@ export class Ppu {
   }
 
   private incScrollCounter(): void {
-    const n = this.hevents.getCountNext()
-    if (n <= 0)
+    const lastHcount = this.hevents.getLastHcount()
+    if (lastHcount < 0)
       return
-    const h = this.hevents.getEventNext(n - 1)
     const hcount = this.hcount < Const.HEIGHT - 1 ? this.hcount + 1 : 0
-    const dy = hcount - h.hcount
+    const dy = hcount - lastHcount
     if (dy <= 0)
       return
 
