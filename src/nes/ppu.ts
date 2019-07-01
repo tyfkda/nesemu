@@ -337,6 +337,27 @@ class HStatus {
   }
 }
 
+class HStatusMgr {
+  public current = new HStatus()
+  public lastFrame = new HStatus()
+  public save = new HStatus()
+
+  public reset() {
+    this.current.reset()
+    this.lastFrame.reset()
+    this.save.reset()
+  }
+
+  public swap() {
+    // Move save to lastFrame,
+    // and keep current status into save as a next frame's start status.
+    const tmp = this.lastFrame
+    this.lastFrame = this.save
+    this.save = tmp
+    this.save.copy(this.current)
+  }
+}
+
 export class Ppu {
   private chrData = new Uint8Array(0)
   private regs = new Uint8Array(REGISTER_COUNT)
@@ -348,9 +369,7 @@ export class Ppu {
   private ppuAddr: Address = 0
   private bufferedValue: Byte = 0
   private hevents = new HEvents()
-  private hstatus: HStatus = new HStatus()
-  private hstatusPrev: HStatus = new HStatus()
-  private hstatusBak: HStatus = new HStatus()
+  private hstatusMgr = new HStatusMgr()
 
   private scrollTemp: Word = 0
   private scrollLatch: Word = 0
@@ -370,9 +389,7 @@ export class Ppu {
     this.latch = 0
     this.bufferedValue = 0
     this.hevents.clear()
-    this.hstatus.reset()
-    this.hstatusPrev.reset()
-    this.hstatusBak.reset()
+    this.hstatusMgr.reset()
     this.offscreen.fill(0)
 
     for (let i = 0; i < 16 * 2; ++i)
@@ -413,10 +430,9 @@ export class Ppu {
         this.vram[i + 0x2000] = vramHigh[i]
     }
 
-    this.hstatus.mirrorModeBit = saveData.mirrorModeBit  // TODO: Confirm status restoration
-    this.hstatus.set(HEventType.PPU_CTRL, this.regs[PpuReg.CTRL], -1)
-    this.hstatus.set(HEventType.PPU_MASK, this.regs[PpuReg.MASK], -1)
-    this.hstatus.set(HEventType.MIRROR_MODE_BIT, kMirrorModeBitTable[this.mirrorMode], -1)
+    this.hstatusMgr.current.set(HEventType.PPU_CTRL, this.regs[PpuReg.CTRL], -1)
+    this.hstatusMgr.current.set(HEventType.PPU_MASK, this.regs[PpuReg.MASK], -1)
+    this.hstatusMgr.current.set(HEventType.MIRROR_MODE_BIT, kMirrorModeBitTable[this.mirrorMode], -1)
   }
 
   public setChrData(chrData: Uint8Array): void {
@@ -466,12 +482,12 @@ export class Ppu {
     case PpuReg.DATA:
       {
         const ppuAddr = this.ppuAddr
-        const addr = getPpuAddr(ppuAddr, this.hstatus.mirrorModeBit)
+        const addr = getPpuAddr(ppuAddr, this.hstatusMgr.current.mirrorModeBit)
         if (PALET_ADR <= addr && addr <= PALET_END_ADR) {
           result = this.readPpuDirect(addr)  // Palette read shouldn't be buffered like other VRAM
           // Palette read should also read VRAM into read buffer
           this.bufferedValue = this.readPpuDirect(getPpuAddr(ppuAddr - 0x1000,
-                                                             this.hstatus.mirrorModeBit))
+                                                             this.hstatusMgr.current.mirrorModeBit))
         } else {
           result = this.bufferedValue
           this.bufferedValue = this.readPpuDirect(addr)
@@ -499,7 +515,7 @@ export class Ppu {
         this.scrollTemp = (this.scrollTemp & ~0x0c00) | ((value & BASE_NAMETABLE_ADDRESS) << 10)
         this.scrollLatch = this.scrollTemp
         // At dot 257 of each scanline:
-        const scrollCurr = (this.hstatus.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
+        const scrollCurr = (this.hstatusMgr.current.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
         // this.scrollCurr = scrollCurr
         // if (this.hcount >= 280 && this.hcount < 304) {
         //   this.scrollCurr = (this.scrollCurr & ~0x7be0) | (this.scrollTemp & 0x7be0)
@@ -527,7 +543,7 @@ export class Ppu {
         this.scrollLatch = this.scrollTemp
         this.addHevent(HEventType.SCROLL_FINE_X, value & 7)
         // At dot 257 of each scanline:
-        const scrollCurr = (this.hstatus.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
+        const scrollCurr = (this.hstatusMgr.current.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
         this.addHevent(HEventType.SCROLL_CURR, scrollCurr)
       } else {
         this.scrollTemp = ((this.scrollTemp & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
@@ -554,7 +570,7 @@ export class Ppu {
       break
     case PpuReg.DATA:
       {
-        const addr = getPpuAddr(this.ppuAddr, this.hstatus.mirrorModeBit)
+        const addr = getPpuAddr(this.ppuAddr, this.hstatusMgr.current.mirrorModeBit)
         this.vram[addr] = value
         this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PpuReg.CTRL])
       }
@@ -579,12 +595,7 @@ export class Ppu {
 
     this.hevents.swap()
 
-    // Move hstatusBak to hstatusPrev,
-    // and keep current status into hstatusBak as a next start status.
-    const tmp = this.hstatusPrev
-    this.hstatusPrev = this.hstatusBak
-    this.hstatusBak = tmp
-    this.hstatusBak.copy(this.hstatus)
+    this.hstatusMgr.swap()
   }
 
   public clearVBlank(): void {
@@ -609,7 +620,7 @@ export class Ppu {
   }
 
   public render(pixels: Uint8Array|Uint8ClampedArray): void {
-    const h = this.hstatusPrev
+    const h = this.hstatusMgr.lastFrame
     const n = this.hevents.getCount()
     let sprChrStart = 0
     for (let i = 0; i < n; ++i) {
@@ -688,7 +699,7 @@ export class Ppu {
     if (addr >= 0x2000) {
       this.vram[addr] = value
     } else {
-      const bankOffset = this.hstatus.chrBankOffset[(addr >> 10) & 7]
+      const bankOffset = this.hstatusMgr.current.chrBankOffset[(addr >> 10) & 7]
       this.chrData[(addr & 0x3ff) + bankOffset] = value
     }
   }
@@ -696,7 +707,7 @@ export class Ppu {
   public dumpVram(start: Address, count: number): void {
     const mem = new Array<Byte>()
     for (let i = 0; i < count; ++i) {
-      mem.push(this.vram[getPpuAddr(start + i, this.hstatus.mirrorModeBit)])
+      mem.push(this.vram[getPpuAddr(start + i, this.hstatusMgr.current.mirrorModeBit)])
     }
 
     for (let i = 0; i < count; i += 16) {
@@ -723,7 +734,7 @@ export class Ppu {
       for (let bx = 0; bx < Const.WIDTH / W; ++bx) {
         const ax = bx & 31
 
-        const nameTable = getNameTable(0, bx, by, this.hstatus.mirrorModeBit) + nameTableOffset
+        const nameTable = getNameTable(0, bx, by, this.hstatusMgr.current.mirrorModeBit) + nameTableOffset
         const name = vram[nameTable + ax + (ay << 5)]
         const chridx = name * 16 + chrStart
         const palShift = (ax & 2) + ((ay & 2) << 1)
@@ -732,7 +743,7 @@ export class Ppu {
         const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
 
         for (let py = 0; py < W; ++py)
-          pattern[py] = getBgPat(this.chrData, chridx, py, this.hstatus.chrBankOffset)
+          pattern[py] = getBgPat(this.chrData, chridx, py, this.hstatusMgr.current.chrBankOffset)
         this.render8x8Chip(pixels, (by * W + startY) * lineWidth + bx * W + startX,
                            pattern, paletHigh, clearR, clearG, clearB, lineWidth)
       }
@@ -888,7 +899,7 @@ export class Ppu {
 
     for (let py = 0; py < h; ++py) {
       const ppy = flipVert ? (h - 1) - py : py
-      const pat = getSpritePat(this.chrData, chridx, ppy, false, this.hstatus.chrBankOffset)
+      const pat = getSpritePat(this.chrData, chridx, ppy, false, this.hstatusMgr.current.chrBankOffset)
       if (pat !== 0)
         return py
     }
@@ -897,7 +908,7 @@ export class Ppu {
 
   private addHevent(type: HEventType, value: number, index: number = -1): void {
     // Apply immediately to the current state.
-    if (!this.hstatus.set(type, value, index))
+    if (!this.hstatusMgr.current.set(type, value, index))
       return
 
     let hcount = this.hcount + 1
@@ -927,14 +938,14 @@ export class Ppu {
     }
 
     this.scrollTemp = inc(this.scrollTemp)
-    this.addHevent(HEventType.SCROLL_CURR, inc(this.hstatus.scrollCurr))
+    this.addHevent(HEventType.SCROLL_CURR, inc(this.hstatusMgr.current.scrollCurr))
   }
 
   private readPpuDirect(addr: Address): Byte {
     if (addr >= 0x2000) {
       return this.vram[addr]
     } else {
-      const bankOffset = this.hstatus.chrBankOffset[(addr >> 10) & 7]
+      const bankOffset = this.hstatusMgr.current.chrBankOffset[(addr >> 10) & 7]
       return this.chrData[(addr & 0x3ff) + bankOffset]
     }
   }
