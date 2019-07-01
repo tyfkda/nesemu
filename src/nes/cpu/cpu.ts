@@ -3,9 +3,9 @@
 declare var window: any
 
 import {Addressing, OpType, kInstTable} from './inst'
-import {Bus} from './bus'
-import Util from '../util/util'
-import {Address, Byte, Word} from './types'
+import {Bus} from '../bus'
+import Util from '../../util/util'
+import {Address, Byte, Word} from '../types'
 
 import {disasm} from './disasm'
 

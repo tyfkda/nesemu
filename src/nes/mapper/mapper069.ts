@@ -1,7 +1,7 @@
 // Sunsoft FME-7
 
 import {Mapper, MapperOptions} from './mapper'
-import {MirrorMode} from '../ppu'
+import {MirrorMode} from '../ppu/types'
 
 const kMirrorTable = [
   MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1,

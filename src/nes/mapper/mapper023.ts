@@ -2,7 +2,7 @@
 // http://wiki.nesdev.com/w/index.php/INES_Mapper_023
 
 import {Mapper, MapperOptions} from './mapper'
-import {MirrorMode} from '../ppu'
+import {MirrorMode} from '../ppu/types'
 import Util from '../../util/util'
 
 const IRQ_ENABLE_AFTER = 1 << 0

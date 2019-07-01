@@ -1,7 +1,7 @@
 // MMC3
 
 import {Mapper, MapperOptions} from './mapper'
-import {MirrorMode} from '../ppu'
+import {MirrorMode} from '../ppu/types'
 import Util from '../../util/util'
 
 const VRETURN = 262

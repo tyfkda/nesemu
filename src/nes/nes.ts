@@ -3,8 +3,9 @@
 import {Apu, ChannelType} from './apu'
 import {Bus} from './bus'
 import {kColors} from './const'
-import {Cpu} from './cpu'
-import {Ppu, MirrorMode} from './ppu'
+import {Cpu} from './cpu/cpu'
+import {MirrorMode} from './ppu/types'
+import {Ppu} from './ppu/ppu'
 import Util from '../util/util'
 
 import {Mapper, PrgBankController} from './mapper/mapper'

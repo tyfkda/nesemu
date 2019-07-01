@@ -1,7 +1,7 @@
 // AxROM
 
 import {Mapper, MapperOptions} from './mapper'
-import {MirrorMode} from '../ppu'
+import {MirrorMode} from '../ppu/types'
 
 const kMirrorTable = [MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 

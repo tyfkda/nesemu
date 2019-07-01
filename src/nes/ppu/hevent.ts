@@ -1,6 +1,6 @@
 // Horizontal line event, used in PPU.
 
-import {Const} from './const'
+import {Const} from '../const'
 
 export const enum HEventType {
   DUMMY,

@@ -1,7 +1,7 @@
 // VRC1
 
 import {Mapper, MapperOptions} from './mapper'
-import {MirrorMode} from '../ppu'
+import {MirrorMode} from '../ppu/types'
 
 export class Mapper075 extends Mapper {
   public static create(options: MapperOptions): Mapper {

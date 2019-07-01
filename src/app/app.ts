@@ -1,5 +1,5 @@
 import {Nes} from '../nes/nes'
-import {MirrorMode} from '../nes/ppu'
+import {MirrorMode} from '../nes/ppu/types'
 
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'

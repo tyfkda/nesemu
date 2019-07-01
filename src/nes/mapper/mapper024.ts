@@ -3,7 +3,7 @@
 
 import {ChannelType} from '../../nes/apu'
 import {Mapper, MapperOptions} from './mapper'
-import {MirrorMode} from '../ppu'
+import {MirrorMode} from '../ppu/types'
 import Util from '../../util/util'
 
 const IRQ_ENABLE_AFTER = 1 << 0

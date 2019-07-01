@@ -3,10 +3,11 @@
 // PPU scrolling
 // https://wiki.nesdev.com/w/index.php/PPU_scrolling
 
-import {Const, kColors, kStaggered, kFlipXBits} from './const'
-import {Address, Byte, Word} from './types'
+import {Const, kColors, kStaggered, kFlipXBits} from '../const'
+import {Address, Byte, Word} from '../types'
 import {HEventType, HEvents, HStatusMgr} from './hevent'
-import Util from '../util/util'
+import {MirrorMode} from './types'
+import Util from '../../util/util'
 
 const REGISTER_COUNT = 8
 const VRAM_SIZE = 0x4000
@@ -58,14 +59,6 @@ const FLIP_VERT = 0x80
 // Palette
 const PALET_ADR = 0x3f00
 const PALET_END_ADR = 0x3fff
-
-export const enum MirrorMode {
-  HORZ = 0,
-  VERT = 1,
-  SINGLE0 = 2,
-  SINGLE1 = 3,
-  REVERSE_HORZ = 4,
-}
 
 const kMirrorModeBitTable = [0x50, 0x44, 0x00, 0x55, 0x05]
 

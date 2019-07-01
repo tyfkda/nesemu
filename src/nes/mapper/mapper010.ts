@@ -1,7 +1,7 @@
 // MMC4 (FxROM)
 
 import {Mapper, MapperOptions} from './mapper'
-import {MirrorMode} from '../ppu'
+import {MirrorMode} from '../ppu/types'
 
 export class Mapper010 extends Mapper {
   public static create(options: MapperOptions): Mapper {

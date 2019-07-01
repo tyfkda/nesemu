@@ -1,6 +1,6 @@
-import {Cpu} from '../../src/nes/cpu'
-import {Bus} from '../../src/nes/bus'
-import {Address, Byte} from '../../src/nes/types'
+import {Cpu} from '../../../src/nes/cpu/cpu'
+import {Bus} from '../../../src/nes/bus'
+import {Address, Byte} from '../../../src/nes/types'
 
 class MappedBus extends Bus {
   constructor(m: {[key: number]: Byte}) {

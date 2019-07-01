@@ -3,8 +3,8 @@ import Wnd from '../wnd/wnd'
 
 import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
-import {Addressing, Instruction, OpType, kInstTable} from '../nes/inst'
-import {disassemble} from '../nes/disasm'
+import {Addressing, Instruction, OpType, kInstTable} from '../nes/cpu/inst'
+import {disassemble} from '../nes/cpu/disasm'
 import {Scaler, IdentityScaler, ScanlineScaler, EpxScaler} from '../util/scaler'
 import Util from '../util/util'
 

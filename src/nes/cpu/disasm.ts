@@ -1,6 +1,6 @@
 import {Addressing, Instruction, OpType, kInstTable, kIllegalInstruction} from './inst'
-import {Bus} from './bus'
-import Util from '../util/util'
+import {Bus} from '../bus'
+import Util from '../../util/util'
 
 export const kOpcode: {[key: number]: string} = {
   [OpType.LDA]: 'LDA',

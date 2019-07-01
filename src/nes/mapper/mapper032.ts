@@ -1,7 +1,7 @@
 // Irem's G-101
 
 import {Mapper, MapperOptions} from './mapper'
-import {MirrorMode} from '../ppu'
+import {MirrorMode} from '../ppu/types'
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ]
 
