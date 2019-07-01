@@ -11,8 +11,18 @@ const REGISTER_COUNT = 8
 const VRAM_SIZE = 0x4000
 const OAM_SIZE = 0x0100
 
+const enum PpuReg {
+  CTRL,    // $2000
+  MASK,    // $2001
+  STATUS,  // $2002
+  OAMADDR, // $2003
+  OAMDATA, // $2004
+  SCROLL,  // $2005
+  ADDR,    // $2006
+  DATA,    // $2007
+}
+
 // PPUCTRL ($2000)
-const PPUCTRL = 0x00
 const VINT_ENABLE = 0x80  // V: 1=Trigger NMI when VBLANK start
 const SPRITE_SIZE = 0x20
 const BG_PATTERN_TABLE_ADDRESS = 0x10
@@ -21,28 +31,24 @@ const INCREMENT_MODE = 0x04  // I: 1=+32, 0=+1
 const BASE_NAMETABLE_ADDRESS = 0x03
 
 // PPUMASK ($2001)
-const PPUMASK = 0x01
 const SHOW_SPRITE = 0x10
 const SHOW_BG = 0x08
 const SHOW_SPRITE_LEFT_8PX = 0x04
 const SHOW_BG_LEFT_8PX = 0x02
 
 // PPUSTATUS ($2002)
-const PPUSTATUS = 0x02
 const VBLANK = 0x80
 const SPRITE0HIT = 0x40
 const SPRITE_OVERFLOW = 0x20
 
 // OAMADDR ($2003)
-const OAMADDR = 0x03
 
 // OAMDATA ($2004)
-const OAMDATA = 0x04
 const MAX_SPRITE = 64
 
-const PPUSCROLL = 0x05  // $2005
-const PPUADDR = 0x06  // $2006
-const PPUDATA = 0x07  // $2007
+// PPUSCROLL ($2005)
+// PPUADDR ($2006)
+// PPUDATA ($2007)
 
 // Sprite
 const FLIP_HORZ = 0x40
@@ -368,8 +374,8 @@ export class Ppu {
     }
 
     this.hstatus.mirrorModeBit = saveData.mirrorModeBit  // TODO: Confirm status restoration
-    this.hstatus.set(HEVENTTYPE.PPU_CTRL, this.regs[PPUCTRL], -1)
-    this.hstatus.set(HEVENTTYPE.PPU_MASK, this.regs[PPUMASK], -1)
+    this.hstatus.set(HEVENTTYPE.PPU_CTRL, this.regs[PpuReg.CTRL], -1)
+    this.hstatus.set(HEVENTTYPE.PPU_MASK, this.regs[PpuReg.MASK], -1)
     this.hstatus.set(HEVENTTYPE.MIRROR_MODE_BIT, kMirrorModeBitTable[this.mirrorMode], -1)
   }
 
@@ -409,15 +415,15 @@ export class Ppu {
 
   public read(reg: number): Byte {
     let result = this.regs[reg]
-    switch (reg) {
-    case PPUSTATUS:
-      this.regs[PPUSTATUS] &= ~VBLANK
+    switch (reg as PpuReg) {
+    case PpuReg.STATUS:
+      this.regs[PpuReg.STATUS] &= ~VBLANK
       this.latch = 0
       break
-    case OAMDATA:
-      result = this.oam[this.regs[OAMADDR]]
+    case PpuReg.OAMDATA:
+      result = this.oam[this.regs[PpuReg.OAMADDR]]
       break
-    case PPUDATA:
+    case PpuReg.DATA:
       {
         const ppuAddr = this.ppuAddr
         const addr = getPpuAddr(ppuAddr, this.hstatus.mirrorModeBit)
@@ -430,7 +436,7 @@ export class Ppu {
           result = this.bufferedValue
           this.bufferedValue = this.readPpuDirect(addr)
         }
-        this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
+        this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PpuReg.CTRL])
       }
       break
     default:
@@ -440,14 +446,14 @@ export class Ppu {
   }
 
   public write(reg: number, value: Byte): void {
-    if (reg === PPUSTATUS) {
+    if (reg === PpuReg.STATUS) {
       value &= ~(VBLANK | SPRITE0HIT | SPRITE_OVERFLOW)
     }
 
     this.regs[reg] = value
 
-    switch (reg) {
-    case PPUCTRL:
+    switch (reg as PpuReg) {
+    case PpuReg.CTRL:
       {
         this.incScrollCounter()
         this.scrollTemp = (this.scrollTemp & ~0x0c00) | ((value & BASE_NAMETABLE_ADDRESS) << 10)
@@ -459,22 +465,22 @@ export class Ppu {
         //   this.scrollCurr = (this.scrollCurr & ~0x7be0) | (this.scrollTemp & 0x7be0)
         // }
 
-        this.addHevent(HEVENTTYPE.PPU_CTRL, this.regs[PPUCTRL])
+        this.addHevent(HEVENTTYPE.PPU_CTRL, this.regs[PpuReg.CTRL])
         this.addHevent(HEVENTTYPE.SCROLL_CURR, scrollCurr)
       }
       break
-    case PPUMASK:
+    case PpuReg.MASK:
       this.incScrollCounter()
-      this.addHevent(HEVENTTYPE.PPU_MASK, this.regs[PPUMASK])
+      this.addHevent(HEVENTTYPE.PPU_MASK, this.regs[PpuReg.MASK])
       break
-    case OAMDATA:
+    case PpuReg.OAMDATA:
       {
-        const oamAddr = this.regs[OAMADDR]
+        const oamAddr = this.regs[PpuReg.OAMADDR]
         this.oam[oamAddr] = value
-        this.regs[OAMADDR] = (oamAddr + 1) & 0xff
+        this.regs[PpuReg.OAMADDR] = (oamAddr + 1) & 0xff
       }
       break
-    case PPUSCROLL:
+    case PpuReg.SCROLL:
       this.incScrollCounter()
       if (this.latch === 0) {
         this.scrollTemp = (this.scrollTemp & ~0x001f) | (value >> 3)
@@ -492,7 +498,7 @@ export class Ppu {
       }
       this.latch = 1 - this.latch
       break
-    case PPUADDR:
+    case PpuReg.ADDR:
       if (this.latch === 0) {
         this.scrollTemp = (this.scrollTemp & ~0x7f00) | ((value & 0x3f) << 8)
         this.scrollLatch = this.scrollTemp
@@ -506,11 +512,11 @@ export class Ppu {
       }
       this.latch = 1 - this.latch
       break
-    case PPUDATA:
+    case PpuReg.DATA:
       {
         const addr = getPpuAddr(this.ppuAddr, this.hstatus.mirrorModeBit)
         this.vram[addr] = value
-        this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PPUCTRL])
+        this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PpuReg.CTRL])
       }
       break
     default:
@@ -520,7 +526,7 @@ export class Ppu {
 
   public copyWithDma(array: Uint8Array, start: Address): void {
     const dst = this.oam
-    let j = this.regs[OAMADDR]
+    let j = this.regs[PpuReg.OAMADDR]
     for (let i = 0; i < 256; ++i) {
       dst[j] = array[start + i]
       j = (j + 1) & 255
@@ -529,7 +535,7 @@ export class Ppu {
   }
 
   public setVBlank(): void {
-    this.regs[PPUSTATUS] = this.regs[PPUSTATUS] | VBLANK
+    this.regs[PpuReg.STATUS] = this.regs[PpuReg.STATUS] | VBLANK
 
     this.hevents.swap()
 
@@ -542,18 +548,18 @@ export class Ppu {
   }
 
   public clearVBlank(): void {
-    this.regs[PPUSTATUS] &= ~(VBLANK | SPRITE0HIT)
+    this.regs[PpuReg.STATUS] &= ~(VBLANK | SPRITE0HIT)
 
     this.addHevent(HEVENTTYPE.SCROLL_CURR, this.scrollLatch)
   }
 
   public interruptEnable(): boolean {
-    return (this.regs[PPUCTRL] & VINT_ENABLE) !== 0
+    return (this.regs[PpuReg.CTRL] & VINT_ENABLE) !== 0
   }
 
   public getSpritePatternTableAddress(): Address {
-    if ((this.regs[PPUCTRL] & SPRITE_SIZE) === 0)
-      return ((this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
+    if ((this.regs[PpuReg.CTRL] & SPRITE_SIZE) === 0)
+      return ((this.regs[PpuReg.CTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
     return 0
   }
 
@@ -590,8 +596,8 @@ export class Ppu {
         const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
         const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
 
-        this.doRenderBg(scrollX, scrollY, baseNameTable, hline0, hline1, x0,
-                        h.chrBankOffset, h.mirrorModeBit, bgChrStart)
+        this.renderBg(scrollX, scrollY, baseNameTable, hline0, hline1, x0,
+                      h.chrBankOffset, h.mirrorModeBit, bgChrStart)
       }
 
       // Sprite
@@ -610,7 +616,7 @@ export class Ppu {
                        colorGroups: Uint8Array): void
   {
     const W = 8
-    const invert = (this.regs[PPUCTRL] & SPRITE_PATTERN_TABLE_ADDRESS) === 0 ? 1 : 0
+    const invert = (this.regs[PpuReg.CTRL] & SPRITE_PATTERN_TABLE_ADDRESS) === 0 ? 1 : 0
 
     for (let i = 0; i < 2; ++i) {
       const b = i ^ invert
@@ -664,7 +670,7 @@ export class Ppu {
                           startX: number, startY: number, nameTableOffset: number): void
   {
     const W = 8
-    const chrStart = getBgPatternTableAddress(this.regs[PPUCTRL])
+    const chrStart = getBgPatternTableAddress(this.regs[PpuReg.CTRL])
     const vram = this.vram
     const paletTable = PALET_ADR
 
@@ -727,9 +733,9 @@ export class Ppu {
     return this.chrData === this.vram
   }
 
-  private doRenderBg(scrollX: number, scrollY: number,
-                     baseNameTable: Address, hline0: number, hline1: number, x0: number,
-                     chrBankOffset: number[], mirrorModeBit: number, chrStart: Address): void
+  private renderBg(scrollX: number, scrollY: number,
+                   baseNameTable: Address, hline0: number, hline1: number, x0: number,
+                   chrBankOffset: number[], mirrorModeBit: number, chrStart: Address): void
   {
     const W = 8
     const LINE_WIDTH = Const.WIDTH
@@ -785,7 +791,7 @@ export class Ppu {
   }
 
   private isSprite8x16(): boolean {
-    return (this.regs[PPUCTRL] & SPRITE_SIZE) !== 0
+    return (this.regs[PpuReg.CTRL] & SPRITE_SIZE) !== 0
   }
 
   private renderSprite(hline0: number, hline1: number, x0: number,
@@ -862,8 +868,8 @@ export class Ppu {
   }
 
   private checkSprite0Hit(hcount: number): void {
-    if ((this.regs[PPUSTATUS] & SPRITE0HIT) !== 0 ||
-        (this.regs[PPUMASK] & (SHOW_BG | SHOW_SPRITE)) !== (SHOW_BG | SHOW_SPRITE))
+    if ((this.regs[PpuReg.STATUS] & SPRITE0HIT) !== 0 ||
+        (this.regs[PpuReg.MASK] & (SHOW_BG | SHOW_SPRITE)) !== (SHOW_BG | SHOW_SPRITE))
       return
 
     const sprite0y = this.oam[0]
@@ -877,7 +883,7 @@ export class Ppu {
     if (dy < 0 || hcount !== sprite0y + dy)
       return
 
-    this.regs[PPUSTATUS] |= SPRITE0HIT
+    this.regs[PpuReg.STATUS] |= SPRITE0HIT
   }
 
   private getNonEmptySprite0Line(): number {
