@@ -7,7 +7,7 @@ import {GamepadManager, GamepadWnd} from './util/gamepad_manager'
 import StorageUtil from './util/storage_util'
 import Util from './util/util'
 import WindowManager from './wnd/window_manager'
-import './nes/polyfill'
+import './util/polyfill'
 import * as JSZip from 'jszip'
 
 // Request Animation Frame
