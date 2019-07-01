@@ -3,8 +3,9 @@
 // PPU scrolling
 // https://wiki.nesdev.com/w/index.php/PPU_scrolling
 
-import {Const, kColors, kStaggered, kFlipXBits} from '../const'
+import {Const} from '../const'
 import {Address, Byte, Word} from '../types'
+import {kColors, kStaggered, kFlipXBits} from './const'
 import {HEventType, HEvents, HStatusMgr} from './hevent'
 import {MirrorMode} from './types'
 import Util from '../../util/util'
@@ -172,6 +173,13 @@ export class Ppu {
   private scrollLatch: Word = 0
 
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
+
+  public static getPaletColorString(col: number): string {
+    const r = kColors[col * 3]
+    const g = kColors[col * 3 + 1]
+    const b = kColors[col * 3 + 2]
+    return `rgb(${r},${g},${b})`
+  }
 
   constructor() {
     this.reset()

@@ -2,7 +2,6 @@
 
 import {Apu, ChannelType} from './apu'
 import {Bus} from './bus'
-import {kColors} from './const'
 import {Cpu} from './cpu/cpu'
 import {MirrorMode} from './ppu/types'
 import {Ppu} from './ppu/ppu'
@@ -72,10 +71,7 @@ export class Nes implements PrgBankController {
   }
 
   public static getPaletColorString(col: number): string {
-    const r = kColors[col * 3]
-    const g = kColors[col * 3 + 1]
-    const b = kColors[col * 3 + 2]
-    return `rgb(${r},${g},${b})`
+    return Ppu.getPaletColorString(col)
   }
 
   constructor() {
