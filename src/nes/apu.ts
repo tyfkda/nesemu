@@ -30,6 +30,7 @@ export const enum ChannelType {
   TRIANGLE,
   SAWTOOTH,
   NOISE,
+  DMC,
 }
 
 const BASE = 0x4000
@@ -46,11 +47,14 @@ const LENGTH_COUNTER_HALT_TRI = 0x80
 const ENVELOPE_LOOP = 0x20
 const CPU_CLOCK = 1789773  // Hz
 
-const CHANNEL_COUNT = 4
+const DMC_IRQ_ENABLE = 0x80
+
+const CHANNEL_COUNT = 5
 const CH_PULSE1 = 0
 const CH_PULSE2 = 1
 const CH_TRIANGLE = 2
 const CH_NOISE = 3
+const CH_DMC = 4
 
 const REG_STATUS = 0
 const REG_SWEEP = 1
@@ -62,6 +66,7 @@ export const kChannelTypes: ChannelType[] = [
   ChannelType.PULSE,
   ChannelType.TRIANGLE,
   ChannelType.NOISE,
+  ChannelType.DMC,
 ]
 
 const kLengthTable = [
@@ -122,8 +127,9 @@ class Channel {
   public getVolume(): number { return 0 }
   public getFrequency(): number { return 0 }
   public getDutyRatio(): number { return 0.5 }
-  public stop() {
-    this.stopped = true
+  public setEnable(value: boolean) {
+    if (!value)
+      this.stopped = true
   }
   public update(): void {}
 
@@ -389,6 +395,85 @@ class NoiseChannel extends Channel {
   }
 }
 
+class DmcChannel extends Channel {
+  private regsLengthCounter = 1
+  private dmaLengthCounter = 0
+
+  public constructor(private triggerIrq: () => void) {
+    super()
+  }
+
+  public setEnable(value: boolean) {
+    this.stopped = !value
+    if (value) {
+      if (this.dmaLengthCounter === 0) {
+        this.dmaLengthCounter = this.regsLengthCounter
+      }
+    } else {
+      this.dmaLengthCounter = 0
+    }
+  }
+
+  public write(reg: number, value: Byte) {
+    super.write(reg, value)
+
+    switch (reg) {
+    case REG_TIMER_H:  // Set length.
+      this.regsLengthCounter = ((value << 4) + 1) * 8
+      this.stopped = false
+      break
+    default:
+      break
+    }
+  }
+
+  public getVolume(): number {
+    if (this.stopped)
+      return 0
+
+    let v = this.regs[REG_STATUS]
+    if ((v & CONSTANT_VOLUME) !== 0)
+      return (v & 15) / 15
+    return 1
+  }
+
+  public getFrequency(): number {
+    const period = this.regs[REG_TIMER_L] & 15
+    return kNoiseFrequencies[period]
+  }
+
+  public update() {
+    if (this.stopped)
+      return
+  }
+
+  public onHblank(_hcount: number): void {
+    this.updateLength()
+  }
+
+  private updateLength(): void {
+    if (this.stopped)
+      return
+
+    let l = this.dmaLengthCounter
+    if (l <= 0) {
+      l = 0
+      if ((this.regs[0] & 0x40) === 0) {
+        this.stopped = true
+        if ((this.regs[0] & DMC_IRQ_ENABLE) !== 0)
+          this.triggerIrq()
+      } else {
+        l = this.regsLengthCounter
+      }
+    } else {
+      l -= 1
+      if (l < 0)
+        l = 0
+    }
+    this.dmaLengthCounter = l
+  }
+}
+
 // ================================================================
 // Apu
 export class Apu {
@@ -403,6 +488,7 @@ export class Apu {
     this.channels[CH_PULSE2] = new PulseChannel()
     this.channels[CH_TRIANGLE] = new TriangleChannel()
     this.channels[CH_NOISE] = new NoiseChannel()
+    this.channels[CH_DMC] = new DmcChannel(triggerIrq)
   }
 
   public getChannelTypes(): ChannelType[] {
@@ -458,7 +544,7 @@ export class Apu {
 
     this.regs[reg] = value
 
-    if (reg < 0x10) {  // Sound
+    if (reg < 0x14) {  // Sound
       const ch = reg >> 2
       const r = reg & 3
       this.channels[ch].write(r, value)
@@ -467,10 +553,8 @@ export class Apu {
     switch (reg) {
     case STATUS_REG:
       this.dmcInterrupt = 0  // Writing to this register clears the DMC interrupt flag.
-      for (let ch = 0; ch < CHANNEL_COUNT; ++ch) {
-        if ((value & (1 << ch)) === 0)
-          this.channels[ch].stop()
-      }
+      for (let ch = 0; ch < CHANNEL_COUNT; ++ch)
+        this.channels[ch].setEnable((value & (1 << ch)) !== 0)
       break
     case PAD1_REG:  // Pad status. bit0 = Controller shift register strobe
       if ((value & 1) === 0) {
@@ -501,6 +585,8 @@ export class Apu {
   }
 
   public onHblank(hcount: number): void {
+    (this.channels[CH_DMC] as DmcChannel).onHblank(hcount)
+
     switch (hcount) {
     case VBLANK_START:
       this.channels.forEach(channel => { channel.update() })

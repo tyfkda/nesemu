@@ -146,6 +146,12 @@ class PulseChannel extends OscillatorChannel {
   }
 }
 
+class DmcChannel extends OscillatorChannel {
+  protected setupOscillator(_oscillator: OscillatorNode, _context: AudioContext) {
+    // TODO: Implement
+  }
+}
+
 function createSoundChannel(context: AudioContext, type: ChannelType): SoundChannel {
   switch (type) {
   case ChannelType.PULSE:
@@ -156,6 +162,8 @@ function createSoundChannel(context: AudioContext, type: ChannelType): SoundChan
     return new NoiseChannel(context)
   case ChannelType.SAWTOOTH:
     return new SawtoothChannel(context)
+  case ChannelType.DMC:
+    return new DmcChannel(context)
   }
 }
 
