@@ -70,6 +70,7 @@ export const kColors: number[] = [
   0, 0, 0,
 ]
 
+// Insert 0 between each bits: abcdefgh -> 0a0b0c0d0e0f0g0h
 export const kStaggered: Uint16Array = (() => {
   const NBIT = 8
   const N = 1 << NBIT
@@ -86,7 +87,8 @@ export const kStaggered: Uint16Array = (() => {
   return array
 })()
 
-export const kFlipBits: Uint8Array = (() => {
+// Flip 8 bits horizontally: abcdefgh -> hgfedcba
+export const kFlipXBits: Uint8Array = (() => {
   const NBIT = 8
   const N = 1 << NBIT
   const array = new Uint8Array(N)

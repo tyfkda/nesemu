@@ -3,7 +3,7 @@
 // PPU scrolling
 // https://wiki.nesdev.com/w/index.php/PPU_scrolling
 
-import {Const, kColors, kStaggered, kFlipBits} from './const'
+import {Const, kColors, kStaggered, kFlipXBits} from './const'
 import {Address, Byte, Word} from './types'
 import Util from '../util/util'
 
@@ -66,7 +66,7 @@ export const enum MirrorMode {
   REVERSE_HORZ = 4,
 }
 
-const enum HEVENTTYPE {
+const enum HEventType {
   DUMMY,
   PPU_CTRL,
   PPU_MASK,
@@ -77,7 +77,7 @@ const enum HEVENTTYPE {
 }
 
 interface HEvent {
-  type: HEVENTTYPE
+  type: HEventType
   hcount: number
   value: number
   index: number
@@ -96,7 +96,7 @@ class HEvents {
 
   public swap(): void {
     // Add sentinel: Ensure that current frame has an event at hline 240.
-    this.add(Const.HEIGHT, HEVENTTYPE.DUMMY, 0)
+    this.add(Const.HEIGHT, HEventType.DUMMY, 0)
 
     const tmp = this.events
     this.events = this.eventsNext
@@ -104,7 +104,7 @@ class HEvents {
     this.eventsNext = tmp
     this.countNext = 0
 
-    this.add(0, HEVENTTYPE.DUMMY, 0)  // Ensure that next frame has an event at hline 0.
+    this.add(0, HEventType.DUMMY, 0)  // Ensure that next frame has an event at hline 0.
   }
 
   public getCount(): number {
@@ -123,7 +123,7 @@ class HEvents {
     return this.eventsNext[index]
   }
 
-  public add(hcount: number, type: HEVENTTYPE, value: number, index: number = -1): void {
+  public add(hcount: number, type: HEventType, value: number, index: number = -1): void {
     const n = this.countNext
     // Search an event which has same type at the hcount.
     for (let i = n; --i >= 0; ) {
@@ -222,8 +222,8 @@ function getSpritePat(chrData: Uint8Array, chridx: number, py: number, flipHorz:
   let patHi = chrData[p + 8]
   let patLo = chrData[p]
   if (flipHorz) {
-    patHi = kFlipBits[patHi]
-    patLo = kFlipBits[patLo]
+    patHi = kFlipXBits[patHi]
+    patLo = kFlipXBits[patLo]
   }
   return kStaggered[patLo] | (kStaggered[patHi] << 1)
 }
@@ -286,36 +286,36 @@ class HStatus {
     this.scrollFineX = h.scrollFineX
   }
 
-  public set(type: HEVENTTYPE, value: number, index: number): boolean {
+  public set(type: HEventType, value: number, index: number): boolean {
     switch (type) {
-    case HEVENTTYPE.DUMMY:
+    case HEventType.DUMMY:
       break
-    case HEVENTTYPE.PPU_CTRL:
+    case HEventType.PPU_CTRL:
       if (this.ppuCtrl === value)
         return false
       this.ppuCtrl = value
       break
-    case HEVENTTYPE.PPU_MASK:
+    case HEventType.PPU_MASK:
       if (this.ppuMask === value)
         return false
       this.ppuMask = value
       break
-    case HEVENTTYPE.CHR_BANK_OFFSET:
+    case HEventType.CHR_BANK_OFFSET:
       if (this.chrBankOffset[index] === value)
         return false
       this.chrBankOffset[index] = value
       break
-    case HEVENTTYPE.MIRROR_MODE_BIT:
+    case HEventType.MIRROR_MODE_BIT:
       if (this.mirrorModeBit === value)
         return false
       this.mirrorModeBit = value
       break
-    case HEVENTTYPE.SCROLL_CURR:
+    case HEventType.SCROLL_CURR:
       if (this.scrollCurr === value)
         return false
       this.scrollCurr = value
       break
-    case HEVENTTYPE.SCROLL_FINE_X:
+    case HEventType.SCROLL_FINE_X:
       if (this.scrollFineX === value)
         return false
       this.scrollFineX = value
@@ -405,9 +405,9 @@ export class Ppu {
     }
 
     this.hstatus.mirrorModeBit = saveData.mirrorModeBit  // TODO: Confirm status restoration
-    this.hstatus.set(HEVENTTYPE.PPU_CTRL, this.regs[PpuReg.CTRL], -1)
-    this.hstatus.set(HEVENTTYPE.PPU_MASK, this.regs[PpuReg.MASK], -1)
-    this.hstatus.set(HEVENTTYPE.MIRROR_MODE_BIT, kMirrorModeBitTable[this.mirrorMode], -1)
+    this.hstatus.set(HEventType.PPU_CTRL, this.regs[PpuReg.CTRL], -1)
+    this.hstatus.set(HEventType.PPU_MASK, this.regs[PpuReg.MASK], -1)
+    this.hstatus.set(HEventType.MIRROR_MODE_BIT, kMirrorModeBitTable[this.mirrorMode], -1)
   }
 
   public setChrData(chrData: Uint8Array): void {
@@ -429,7 +429,7 @@ export class Ppu {
     const offset = (value << 10) & (max - 1)
 
     this.incScrollCounter()
-    this.addHevent(HEVENTTYPE.CHR_BANK_OFFSET, offset, bank)
+    this.addHevent(HEventType.CHR_BANK_OFFSET, offset, bank)
   }
 
   public getMirrorMode(): MirrorMode {
@@ -441,7 +441,7 @@ export class Ppu {
     const bit = kMirrorModeBitTable[mode]
 
     this.incScrollCounter()
-    this.addHevent(HEVENTTYPE.MIRROR_MODE_BIT, bit)
+    this.addHevent(HEventType.MIRROR_MODE_BIT, bit)
   }
 
   public read(reg: number): Byte {
@@ -496,13 +496,13 @@ export class Ppu {
         //   this.scrollCurr = (this.scrollCurr & ~0x7be0) | (this.scrollTemp & 0x7be0)
         // }
 
-        this.addHevent(HEVENTTYPE.PPU_CTRL, this.regs[PpuReg.CTRL])
-        this.addHevent(HEVENTTYPE.SCROLL_CURR, scrollCurr)
+        this.addHevent(HEventType.PPU_CTRL, this.regs[PpuReg.CTRL])
+        this.addHevent(HEventType.SCROLL_CURR, scrollCurr)
       }
       break
     case PpuReg.MASK:
       this.incScrollCounter()
-      this.addHevent(HEVENTTYPE.PPU_MASK, this.regs[PpuReg.MASK])
+      this.addHevent(HEventType.PPU_MASK, this.regs[PpuReg.MASK])
       break
     case PpuReg.OAMDATA:
       {
@@ -516,16 +516,16 @@ export class Ppu {
       if (this.latch === 0) {
         this.scrollTemp = (this.scrollTemp & ~0x001f) | (value >> 3)
         this.scrollLatch = this.scrollTemp
-        this.addHevent(HEVENTTYPE.SCROLL_FINE_X, value & 7)
+        this.addHevent(HEventType.SCROLL_FINE_X, value & 7)
         // At dot 257 of each scanline:
         const scrollCurr = (this.hstatus.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
-        this.addHevent(HEVENTTYPE.SCROLL_CURR, scrollCurr)
+        this.addHevent(HEventType.SCROLL_CURR, scrollCurr)
       } else {
         this.scrollTemp = ((this.scrollTemp & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
                            ((value & 0x07) << 12))
         this.scrollLatch = this.scrollTemp
         if (this.hcount >= Const.HEIGHT)
-          this.addHevent(HEVENTTYPE.SCROLL_CURR, this.scrollTemp)
+          this.addHevent(HEventType.SCROLL_CURR, this.scrollTemp)
       }
       this.latch = 1 - this.latch
       break
@@ -539,7 +539,7 @@ export class Ppu {
         this.scrollLatch = this.scrollTemp
         this.ppuAddr = this.scrollTemp
 
-        this.addHevent(HEVENTTYPE.SCROLL_CURR, this.scrollTemp)
+        this.addHevent(HEventType.SCROLL_CURR, this.scrollTemp)
       }
       this.latch = 1 - this.latch
       break
@@ -581,7 +581,7 @@ export class Ppu {
   public clearVBlank(): void {
     this.regs[PpuReg.STATUS] &= ~(VBLANK | SPRITE0HIT)
 
-    this.addHevent(HEVENTTYPE.SCROLL_CURR, this.scrollLatch)
+    this.addHevent(HEventType.SCROLL_CURR, this.scrollLatch)
   }
 
   public interruptEnable(): boolean {
@@ -886,7 +886,7 @@ export class Ppu {
     return -1
   }
 
-  private addHevent(type: HEVENTTYPE, value: number, index: number = -1): void {
+  private addHevent(type: HEventType, value: number, index: number = -1): void {
     // Apply immediately to the current state.
     if (!this.hstatus.set(type, value, index))
       return
@@ -919,7 +919,7 @@ export class Ppu {
     }
 
     this.scrollTemp = inc(this.scrollTemp)
-    this.addHevent(HEVENTTYPE.SCROLL_CURR, inc(this.hstatus.scrollCurr))
+    this.addHevent(HEventType.SCROLL_CURR, inc(this.hstatus.scrollCurr))
   }
 
   private readPpuDirect(addr: Address): Byte {
