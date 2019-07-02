@@ -202,10 +202,14 @@ class PulseChannel extends Channel {
     let v = this.regs[REG_STATUS]
     if ((v & LENGTH_COUNTER_HALT) !== 0)
       return
-    let l = this.lengthCounter - 4
+    let l = this.lengthCounter
     if (l <= 0) {
       l = 0
       this.stopped = true
+    } else {
+      l -= 4
+      if (l < 0)
+        l = 0
     }
     this.lengthCounter = l
   }
@@ -315,10 +319,14 @@ class TriangleChannel extends Channel {
     let v = this.regs[REG_STATUS]
     if ((v & LENGTH_COUNTER_HALT_TRI) !== 0)
       return
-    let l = this.lengthCounter - 4
+    let l = this.lengthCounter
     if (l <= 0) {
       l = 0
       this.stopped = true
+    } else {
+      l -= 4
+      if (l <= 0)
+        l = 0
     }
     this.lengthCounter = l
   }
@@ -366,12 +374,16 @@ class NoiseChannel extends Channel {
     let v = this.regs[REG_STATUS]
     if ((v & LENGTH_COUNTER_HALT) !== 0)
       return
-    let l = this.lengthCounter - 1
+    let l = this.lengthCounter
     if (l <= 0) {
       l = 0
       if ((this.regs[2] & 0x80) === 0) {
         this.stopped = true
       }
+    } else {
+      l -= 1
+      if (l < 0)
+        l = 0
     }
     this.lengthCounter = l
   }
