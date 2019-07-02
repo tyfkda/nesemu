@@ -172,6 +172,7 @@ export class Ppu {
 
   private scrollTemp: Word = 0
   private scrollLatch: Word = 0
+  private hclipZero = false
 
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
 
@@ -402,6 +403,8 @@ export class Ppu {
     this.hevents.swap()
 
     this.hstatusMgr.swap()
+
+    this.hclipZero = true
   }
 
   public clearVBlank(): void {
@@ -423,6 +426,9 @@ export class Ppu {
   public setHcount(hcount: number) {
     this.hcount = hcount
     this.checkSprite0Hit(hcount)
+
+    if (this.hclipZero && hcount < Const.HEIGHT)
+      this.hclipZero = false
   }
 
   public render(pixels: Uint8Array|Uint8ClampedArray): void {
@@ -726,8 +732,12 @@ export class Ppu {
       return
 
     let hcount = this.hcount + 1
-    if (hcount >= Const.HEIGHT)
-      hcount = 0
+    if (hcount >= Const.HEIGHT) {
+      if (this.hclipZero)
+        hcount = 0
+      else
+        hcount = Const.HEIGHT
+    }
     this.hevents.add(hcount, type, value, index)
   }
 
