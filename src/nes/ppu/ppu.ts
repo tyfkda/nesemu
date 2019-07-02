@@ -73,14 +73,14 @@ const SPRITE_MASK = 0x80
 const kSpritePriorityMask = [SPRITE_MASK, 0xff]
 
 function getNameTable(baseNameTable: Address, bx: number, by: number,
-                      mirrorModeBit: number): Address
+                      mirrorModeBit: Byte): Address
 {
   const page = (((bx >> 5) & 1) + (((by / 30) & 1) << 1)) ^ baseNameTable  // 0~3
   const m = (mirrorModeBit << (10 - (page << 1))) & 0x0c00
-  return 0x2000 + m
+  return (0x2000 + m) | 0
 }
 
-function getPpuAddr(adr: Address, mirrorModeBit: number): Address {
+function getPpuAddr(adr: Address, mirrorModeBit: Byte): Address {
   adr &= 0x3fff
   if (0x3000 <= adr && adr < 0x3f00)
     adr -= 0x1000  // Map 0x3000~3eff to 0x2000~
@@ -571,42 +571,49 @@ export class Ppu {
 
   private renderBg(scrollX: number, scrollY: number,
                    baseNameTable: Address, hline0: number, hline1: number, x0: number,
-                   chrBankOffset: number[], mirrorModeBit: number, chrStart: Address): void
+                   chrBankOffset: number[], mirrorModeBit: Byte, chrStart: Address): void
   {
+    scrollX |= 0
+    scrollY |= 0
+    hline0 |= 0
+    hline1 |= 0
+    x0 |= 0
+    mirrorModeBit |= 0
+
     const W = 8
-    const LINE_WIDTH = Const.WIDTH
+    const LINE_WIDTH = Const.WIDTH | 0
     const vram = this.vram
     const offscreen = this.offscreen
 
     if (scrollY >= 240)
-      scrollY = (scrollY - 256)
+      scrollY = (scrollY - 256) | 0
 
+    const fineX = scrollX & 7
+    const coarseX = scrollX >> 3
     for (let yy = hline0; yy < hline1; ++yy) {
       const yyy = yy - hline0 + scrollY
       const by = ((yyy >> 3) + 60) % 60
       const ay = by % 30
 
       for (let bbx = 0; bbx < Const.WIDTH / W + 1; ++bbx) {
-        const bx = (bbx + (scrollX >> 3)) & 63
+        const bx = (bbx + coarseX) & 63
         const ax = bx & 31
 
-        const nameTable = getNameTable(baseNameTable, bx, by, mirrorModeBit)
+        const nameTable = getNameTable(baseNameTable, bx, by, mirrorModeBit) | 0
         const name = vram[nameTable + ax + (ay << 5)]
-        const chridx = name * 16 + chrStart
+        const chridx = (name << 4) + chrStart
         const palShift = (ax & 2) + ((ay & 2) << 1)
         const atrBlk = (ax >> 2) + ((ay << 1) & 0x0f8)
-        const attributeTable = nameTable + 0x3c0
-        const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
+        const attributeTable = (nameTable + 0x3c0) | 0
+        const paletHigh = (((vram[attributeTable + atrBlk] >> palShift) & 3) << 2) | 0
 
-        const px0 = bbx * W - (scrollX & 7)
-        const pxStart = Math.max(x0 - px0, 0)
-        const pxEnd = Math.min(Const.WIDTH - px0, W)
-        let pat = getBgPat(this.chrData, chridx, yyy & 7, chrBankOffset)
-        pat = (pat << (pxStart * 2)) & 0xffff
+        const px0 = (bbx * W - fineX) | 0
+        const pxStart = Math.max(x0 - px0, 0) | 0
+        const pxEnd = Math.min(Const.WIDTH - px0, W) | 0
+        const pat = getBgPat(this.chrData, chridx, yyy & 7, chrBankOffset)
         for (let px = pxStart; px < pxEnd; ++px) {
-          const xx = px + px0
-          let pal = pat >> 14  // & 3
-          pat = (pat << 2) & 0xffff
+          const xx = (px + px0) | 0
+          let pal = ((pat >> ((W - 1) * 2 - (px << 1))) & 3) | 0
           if (pal !== 0)
             pal |= paletHigh
 
