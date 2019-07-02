@@ -38,6 +38,7 @@ const SHOW_SPRITE = 0x10
 const SHOW_BG = 0x08
 const SHOW_SPRITE_LEFT_8PX = 0x04
 const SHOW_BG_LEFT_8PX = 0x02
+const GREYSCALE = 0x01
 
 // PPUSTATUS ($2002)
 const VBLANK = 0x80
@@ -140,14 +141,14 @@ function clearBg(offscreen: Uint8Array, hline0: number, hline1: number, x: numbe
 }
 
 function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8ClampedArray,
-                               vram: Uint8Array): void
+                               greyscale: boolean, vram: Uint8Array): void
 {
-  const paletTable: Address = PALET_ADR
   const n = Const.WIDTH * Const.HEIGHT
   let index = 0
+  const colorMask = greyscale ? 0x20 : 0x3f
   for (let i = 0; i < n; ++i) {
     const pal = offscreen[i] & 0x1f
-    const col = vram[paletTable + pal] & 0x3f
+    const col = vram[PALET_ADR + pal] & colorMask
     const c = col * 3
     pixels[index + 0] = kColors[c]
     pixels[index + 1] = kColors[c + 1]
@@ -465,7 +466,8 @@ export class Ppu {
       }
     }
 
-    copyOffscreenToPixels(this.offscreen, pixels, this.vram)
+    const greyscale = (this.regs[PpuReg.MASK] & GREYSCALE) !== 0
+    copyOffscreenToPixels(this.offscreen, pixels, greyscale, this.vram)
   }
 
   public renderPattern(pixels: Uint8ClampedArray, lineWidth: number,
