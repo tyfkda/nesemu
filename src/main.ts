@@ -1,6 +1,7 @@
 ///<reference path="./decl/patch.d.ts" />
 
 import {App} from './app/app'
+import {GlobalPaletWnd} from './app/other_wnd'
 import DomUtil from './util/dom_util'
 import {JsApp} from './app/js_powered_app'
 import {GamepadManager, GamepadWnd} from './util/gamepad_manager'
@@ -23,6 +24,7 @@ class Main {
   private apps: App[] = []
   private volume = 1
   private gamepadWnd: GamepadWnd|null = null
+  private globalPaletWnd: GlobalPaletWnd|null = null
 
   constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
@@ -30,6 +32,7 @@ class Main {
     this.volume = Util.clamp(StorageUtil.getFloat(KEY_VOLUME, 1), 0, 1)
 
     this.setUpFileDrop()
+    this.setUpPaletLink()
     this.setUpGamePadLink()
     this.setUpVolumeLink()
     this.setUpOpenRomLink()
@@ -150,6 +153,23 @@ class Main {
     const index = this.apps.indexOf(app)
     if (index >= 0)
       this.apps.splice(index, 1)
+  }
+
+  private setUpPaletLink(): void {
+    const text = document.getElementById('palet')
+    if (text == null)
+      return
+
+    text.addEventListener('click', () => {
+      if (this.globalPaletWnd == null) {
+        this.globalPaletWnd = new GlobalPaletWnd(this.wndMgr, () => {
+          this.globalPaletWnd = null
+        })
+        this.wndMgr.add(this.globalPaletWnd)
+      } else {
+        this.wndMgr.moveToTop(this.globalPaletWnd)
+      }
+    })
   }
 
   private setUpGamePadLink(): void {

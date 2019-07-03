@@ -3,6 +3,7 @@ import Wnd from '../wnd/wnd'
 
 import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
+import {kColors} from '../nes/ppu/const'
 
 import {AppEvent} from './app_event'
 
@@ -60,7 +61,7 @@ export class PaletWnd extends Wnd {
   private selected = new Uint8Array(PaletWnd.H)
 
   constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
-    super(wndMgr, 128, 16, 'Palette')
+    super(wndMgr, PaletWnd.W * PaletWnd.UNIT, PaletWnd.H * PaletWnd.UNIT, 'Palette')
 
     const {root, boxes, groups} = this.createDom()
     this.setContent(root)
@@ -292,5 +293,73 @@ export class PatternTableWnd extends Wnd {
 
     this.nes.renderPatternTable(this.imageData.data, this.imageData.width, buf)
     this.context.putImageData(this.imageData, 0, 0)
+  }
+}
+
+export class GlobalPaletWnd extends Wnd {
+  private static UNIT = 12
+  private static W = 16
+  private static H = 4
+
+  private boxes: HTMLElement[]
+
+  constructor(wndMgr: WindowManager, private onClose?: () => void) {
+    super(wndMgr,
+          GlobalPaletWnd.W * GlobalPaletWnd.UNIT, GlobalPaletWnd.H * GlobalPaletWnd.UNIT,
+          'Global palette')
+
+    const {root, boxes} = this.createDom()
+    this.setContent(root)
+    this.boxes = boxes
+
+    // Set colors
+    const n = this.boxes.length
+    for (let i = 0; i < n; ++i) {
+      const r = kColors[i * 3 + 0]
+      const g = kColors[i * 3 + 1]
+      const b = kColors[i * 3 + 2]
+      this.boxes[i].style.backgroundColor = `rgb(${r},${g},${b})`
+    }
+  }
+
+  public close(): void {
+    if (this.onClose != null)
+      this.onClose()
+    super.close()
+  }
+
+  private createDom(): {root: HTMLElement, boxes: HTMLElement[]} {
+    const UNIT = GlobalPaletWnd.UNIT, W = GlobalPaletWnd.W, H = GlobalPaletWnd.H
+    const root = document.createElement('div')
+    root.className = 'clearfix'
+    DomUtil.setStyles(root, {
+      width: `${UNIT * W}px`,
+      height: `${UNIT * H}px`,
+    })
+
+    const boxes = new Array<HTMLElement>(W * H)
+    for (let i = 0; i < H; ++i) {
+      const line = document.createElement('div')
+      line.className = 'pull-left clearfix'
+      DomUtil.setStyles(line, {
+        width: `${UNIT * W}px`,
+        height: `${UNIT}px`,
+        backgroundColor: 'black',
+      })
+      root.appendChild(line)
+
+      for (let j = 0; j < W; ++j) {
+        const box = document.createElement('div')
+        box.className = 'pull-left'
+        DomUtil.setStyles(box, {
+          width: `${UNIT - 1}px`,
+          height: `${UNIT - 1}px`,
+          marginRight: '1px',
+        })
+        boxes[j + i * W] = box
+        line.appendChild(box)
+      }
+    }
+    return {root, boxes}
   }
 }
