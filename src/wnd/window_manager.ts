@@ -44,6 +44,8 @@ export default class WindowManager {
     this.root.addEventListener('keyup', this.onKeyUp)
 
     this.root.focus()
+
+    this.setUpBlur()
   }
 
   public getPadStatus(wnd: Wnd, i: number): number {
@@ -167,5 +169,14 @@ export default class WindowManager {
       wnd.setTop(i === 0)
       setWindowZIndex(wnd, i, n)
     }
+  }
+
+  private setUpBlur(): void {
+    window.addEventListener('blur', () => {
+      for (let key of Object.keys(this.pressingKeys)) {
+        delete this.pressingKeys[key]
+      }
+      this.padKeyHandler.clearAll()
+    })
   }
 }
