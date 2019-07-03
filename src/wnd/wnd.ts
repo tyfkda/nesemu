@@ -227,6 +227,8 @@ export default class Wnd {
       resizeBox.addEventListener('mousedown', (event) => {
         event.stopPropagation()
         event.preventDefault()
+        if (event.button !== 0)
+          return false
         const [mx, my] = DomUtil.getMousePosIn(event, resizeBox)
         const dragOfsX = param.horz === 'left' ? -mx : W - mx
         const dragOfsY = param.vert === 'top' ? -my : W - my
