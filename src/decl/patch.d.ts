@@ -14,6 +14,7 @@ interface Window {
 
   Gamepad: any
 
+  app: any
   nes: any
   jsNes: any
   $DEBUG: boolean

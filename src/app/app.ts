@@ -53,7 +53,7 @@ export class App {
       return
 
     this.nes = Nes.create()
-    window.nes = this.nes  // Put nes into global.
+    window.app = this  // Put app into global.
     this.nes.setVblankCallback((leftV) => { this.onVblank(leftV) })
     this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
 
