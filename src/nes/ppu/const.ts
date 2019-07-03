@@ -1,4 +1,4 @@
-export const kColors: number[] = [
+export const kColors = Uint8Array.from([
   124, 124, 124,
   0, 0, 252,
   0, 0, 188,
@@ -63,7 +63,7 @@ export const kColors: number[] = [
   248, 216, 248,
   0, 0, 0,
   0, 0, 0,
-]
+])
 
 // Insert 0 between each bits: abcdefgh -> 0a0b0c0d0e0f0g0h
 export const kStaggered: Uint16Array = (() => {

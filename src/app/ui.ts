@@ -418,13 +418,6 @@ export class PaletWnd extends Wnd {
   private subscription: Pubsub.Subscription
   private selected = new Uint8Array(PaletWnd.H)
 
-  private static getPalet(nes: Nes, buf: Uint8Array): void {
-    const ppu = nes.getPpu()
-    const n = PaletWnd.W * PaletWnd.H
-    for (let i = 0; i < n; ++i)
-      buf[i] = ppu.getPalet(i)
-  }
-
   constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
     super(wndMgr, 128, 16, 'Palette')
 
@@ -463,16 +456,29 @@ export class PaletWnd extends Wnd {
 
   private render(): void {
     const tmp = this.tmp
-    PaletWnd.getPalet(this.nes, tmp)
+    this.getPalet(tmp)
 
+    const colorTable = this.nes.getPaletColorTable()
     const n = PaletWnd.W * PaletWnd.H
     for (let i = 0; i < n; ++i) {
       const c = tmp[i]
       if (c === this.palet[i])
         continue
       this.palet[i] = c
-      this.boxes[i].style.backgroundColor = Nes.getPaletColorString(c)
+
+      const j = c * 3
+      const r = colorTable[j + 0]
+      const g = colorTable[j + 1]
+      const b = colorTable[j + 2]
+      this.boxes[i].style.backgroundColor = `rgb(${r},${g},${b})`
     }
+  }
+
+  private getPalet(buf: Uint8Array): void {
+    const ppu = this.nes.getPpu()
+    const n = PaletWnd.W * PaletWnd.H
+    for (let i = 0; i < n; ++i)
+      buf[i] = ppu.getPalet(i)
   }
 
   private createDom(): {root: HTMLElement, boxes: HTMLElement[], groups: HTMLElement[]} {

@@ -176,13 +176,6 @@ export class Ppu {
 
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
 
-  public static getPaletColorString(col: number): string {
-    const r = kColors[col * 3]
-    const g = kColors[col * 3 + 1]
-    const b = kColors[col * 3 + 2]
-    return `rgb(${r},${g},${b})`
-  }
-
   constructor() {
     this.reset()
   }
