@@ -185,6 +185,10 @@ export default class Wnd {
   public addResizeBox() {
     this.root.classList.add('resizable')
 
+    this.addTitleButton(this.titleBar, 'maximize', () => {
+      this.maximize()
+    })
+
     const W = 8
 
     const table: {styleParams: {[key: string]: string}, horz: 'left'|'right', vert: 'top'|'bottom'}[] = [
@@ -273,9 +277,17 @@ export default class Wnd {
         this.wndMgr.moveToTop(this)
 
         this.root.style['transition-property'] = 'none'  // To change size immediately.
+        return true
       })
       this.root.appendChild(resizeBox)
     })
+  }
+
+  protected maximize() {
+    this.setPos(0, 0)
+    const width = window.innerWidth - 2  // -2 for border size
+    const height = window.innerHeight - Wnd.TITLEBAR_HEIGHT - (this.menuBar != null ? Wnd.MENUBAR_HEIGHT : 0) - 2
+    this.setClientSize(width, height)
   }
 
   private createRoot(): HTMLElement {
@@ -292,10 +304,11 @@ export default class Wnd {
     const titleBar = document.createElement('div')
     titleBar.className = 'title-bar clearfix'
 
+    this.titleElem = this.addTitle(titleBar, title)
+
     this.addTitleButton(titleBar, 'close', () => {
       this.close()
     })
-    this.titleElem = this.addTitle(titleBar, title)
 
     titleBar.addEventListener('mousedown', (event) => {
       if (event.button !== 0)
@@ -329,6 +342,7 @@ export default class Wnd {
   {
     const button = document.createElement('div')
     button.className = `${className} btn`
+    button.title = className
     button.addEventListener('click', clickCallback)
     button.addEventListener('mousedown', (event) => {
       event.preventDefault()

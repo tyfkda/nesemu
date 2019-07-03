@@ -33,6 +33,14 @@ function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   return imgWnd
 }
 
+function fitAspectRatio(width: number, height: number, ratio: number): [number, number] {
+  if (width / height >= ratio)
+    width = height * ratio
+  else
+    height = width / ratio
+  return [width, height]
+}
+
 export class FpsWnd extends Wnd {
   private subscription: Pubsub.Subscription
   private stats: Stats
@@ -279,25 +287,7 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Adjust aspect ratio',
             click: () => {
-              const rect = this.contentHolder.getBoundingClientRect()
-              let cWidth = rect.width, cHeight = rect.height
-              const w = WIDTH - (this.hideEdge ? HEDGE * 2 : 0)
-              const h = HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)
-              const ratio = w / h
-              if (cWidth / cHeight >= ratio)
-                cWidth = cHeight * ratio
-              else
-                cHeight = cWidth / ratio
-              this.setClientSize(cWidth, cHeight)
-            },
-          },
-          {
-            label: 'Max',
-            click: () => {
-              this.setPos(0, 0)
-              const width = window.innerWidth - 2  // -2 for border size
-              const height = window.innerHeight - Wnd.TITLEBAR_HEIGHT - Wnd.MENUBAR_HEIGHT - 2
-              this.setClientSize(width, height)
+              this.adjustAspectRatio()
             },
           },
           {
@@ -385,6 +375,28 @@ export class ScreenWnd extends Wnd {
         ],
       },
     ])
+  }
+
+  protected maximize() {
+    const winWidth = window.innerWidth
+    const winHeight = window.innerHeight
+    const maxWidth = winWidth - 2  // -2 for border size
+    const maxHeight = winHeight - Wnd.TITLEBAR_HEIGHT - Wnd.MENUBAR_HEIGHT - 2
+
+    const w = WIDTH - (this.hideEdge ? HEDGE * 2 : 0)
+    const h = HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)
+    const [width, height] = fitAspectRatio(maxWidth, maxHeight, w / h)
+
+    this.setPos((winWidth - (width + 2)) / 2, (winHeight - (height + Wnd.TITLEBAR_HEIGHT + Wnd.MENUBAR_HEIGHT + 2)) / 2)
+    this.setClientSize(width, height)
+  }
+
+  private adjustAspectRatio() {
+    const rect = this.contentHolder.getBoundingClientRect()
+    const w = WIDTH - (this.hideEdge ? HEDGE * 2 : 0)
+    const h = HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)
+    const [width, height] = fitAspectRatio(rect.width, rect.height, w / h)
+    this.setClientSize(width, height)
   }
 
   private toggleEdge() {
