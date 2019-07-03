@@ -158,6 +158,8 @@ export class ScreenWnd extends Wnd {
   }
 
   public setClientSize(width: number, height: number): Wnd {
+    width = Math.round(width)
+    height = Math.round(height)
     super.setClientSize(width, height)
     this.contentWidth = width
     this.contentHeight = height
@@ -396,11 +398,13 @@ export class ScreenWnd extends Wnd {
     const maxWidth = winWidth - 2  // -2 for border size
     const maxHeight = winHeight - Wnd.TITLEBAR_HEIGHT - Wnd.MENUBAR_HEIGHT - 2
 
-    const w = WIDTH - (this.hideEdge ? HEDGE * 2 : 0)
-    const h = HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)
+    const w = Math.round(WIDTH - (this.hideEdge ? HEDGE * 2 : 0))
+    const h = Math.round(HEIGHT - (this.hideEdge ? VEDGE * 2 : 0))
     const [width, height] = fitAspectRatio(maxWidth, maxHeight, w / h)
 
-    this.setPos((winWidth - (width + 2)) / 2, (winHeight - (height + Wnd.TITLEBAR_HEIGHT + Wnd.MENUBAR_HEIGHT + 2)) / 2)
+    const x = (winWidth - (width + 2)) / 2
+    const y = (winHeight - (height + Wnd.TITLEBAR_HEIGHT + Wnd.MENUBAR_HEIGHT + 2)) / 2
+    this.setPos(Math.round(x), Math.round(y))
     this.setClientSize(width, height)
   }
 

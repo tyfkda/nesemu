@@ -260,10 +260,10 @@ export default class Wnd {
               box[param.vert] -= (MIN_HEIGHT - height) * (param.vert === 'top' ? 1 : -1)
             }
             DomUtil.setStyles(this.root, {
-              width: `${box.right - box.left -  2}px`,
-              height: `${box.bottom - box.top - 2}px`,
-              left: `${box.left}px`,
-              top: `${box.top}px`,
+              width: `${Math.round(box.right - box.left -  2)}px`,
+              height: `${Math.round(box.bottom - box.top - 2)}px`,
+              left: `${Math.round(box.left)}px`,
+              top: `${Math.round(box.top)}px`,
             })
             this.onEvent('resize', {width, height: height - Wnd.TITLEBAR_HEIGHT})
           },
@@ -326,8 +326,8 @@ export default class Wnd {
           y = Util.clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
 
           DomUtil.setStyles(this.root, {
-            left: `${x + dragOfsX}px`,
-            top: `${y + dragOfsY}px`,
+            left: `${Math.round(x + dragOfsX)}px`,
+            top: `${Math.round(y + dragOfsY)}px`,
           })
         },
       })
