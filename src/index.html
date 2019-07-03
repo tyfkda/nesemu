@@ -15,14 +15,15 @@
     <div id="nesroot" style="position:absolute; width:100%; height:100%; overflow:hidden"
          tabindex="0">
       <div style="position:absolute; right:8px; bottom:8px; font-size:small">
-        <label for="rom-file" style="color:gray; cursor:pointer">
+        <label class="base-clickable" for="rom-file">
           Open<input type="file" id="rom-file" style="display:none" />
         </label
         ><span>&nbsp;</span
-        ><span id="gamepad" style="color:gray; cursor:pointer">Gamepad</span>
+        ><span id="gamepad" class="base-clickable">Gamepad</span>
         <span id="volume" style="color:gray">Volume</span>
         <a href="https://github.com/tyfkda/nesemu" target="_blank"
-           style="text-decoration:none; color:gray">About</a>
+           class="base-clickable"
+           style="text-decoration:none">About</a>
       </div>
 
       <div id="volume-slider-container"

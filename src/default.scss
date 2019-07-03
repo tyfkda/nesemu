@@ -161,6 +161,14 @@ $RESIZABLE_RADIUS: 8px;
   box-sizing: content-box;
 }
 
+.base-clickable {
+  color: gray;
+  cursor: pointer;
+}
+.base-clickable:hover {
+  color: black;
+}
+
 .gamepad-content {
   position: relative;
   border: 5px solid #8C001E;
