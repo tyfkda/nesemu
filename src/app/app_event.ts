@@ -9,7 +9,6 @@ export namespace AppEvent {
     RESET,
     LOAD_ROM,
     BREAK_POINT,
-    SCREEN_SHOT,
     DESTROY,
     START_CALC,
     END_CALC,
@@ -30,9 +29,6 @@ export namespace AppEvent {
     }
     public triggerReset() {
       this.next(Type.RESET)
-    }
-    public triggerScreenShot() {
-      this.next(Type.SCREEN_SHOT)
     }
     public triggerLoadRom() {
       this.next(Type.LOAD_ROM)

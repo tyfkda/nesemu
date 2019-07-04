@@ -124,9 +124,6 @@ export class ScreenWnd extends Wnd {
         case AppEvent.Type.RENDER:
           this.render()
           break
-        case AppEvent.Type.SCREEN_SHOT:
-          takeScreenshot(this.wndMgr, this)
-          break
         case AppEvent.Type.RESET:
           this.scaler.reset()
           break
@@ -870,7 +867,7 @@ export class ControlWnd extends Wnd {
   private subscription: Pubsub.Subscription
 
   public constructor(wndMgr: WindowManager, private stream: AppEvent.Stream) {
-    super(wndMgr, 256, 32, 'Control')
+    super(wndMgr, 192, 32, 'Control')
 
     const content = this.createElement()
     this.setContent(content)
@@ -938,13 +935,6 @@ export class ControlWnd extends Wnd {
       this.stream.triggerReset()
     })
     root.appendChild(resetBtn)
-
-    const captureBtn = document.createElement('button') as HTMLButtonElement
-    captureBtn.innerText = 'Capture'
-    captureBtn.addEventListener('click', () => {
-      this.stream.triggerScreenShot()
-    })
-    root.appendChild(captureBtn)
 
     return root
   }
