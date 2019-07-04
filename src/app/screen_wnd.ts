@@ -7,7 +7,6 @@ import {Scaler, NearestNeighborScaler, ScanlineScaler, EpxScaler} from '../util/
 
 import {App} from './app'
 import {AppEvent} from './app_event'
-import {FpsWnd} from './other_wnd'
 
 import * as Pubsub from '../util/pubsub'
 
@@ -343,7 +342,7 @@ export class ScreenWnd extends Wnd {
           {
             label: 'FPS',
             click: () => {
-              this.createFpsWnd()
+              this.app.createFpsWnd()
             },
           },
         ],
@@ -388,10 +387,5 @@ export class ScreenWnd extends Wnd {
 
     if (!initial)
       this.render()
-  }
-
-  private createFpsWnd(): void {
-    const fpsWnd = new FpsWnd(this.wndMgr, this.stream)
-    this.wndMgr.add(fpsWnd)
   }
 }

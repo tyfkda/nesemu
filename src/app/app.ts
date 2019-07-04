@@ -5,7 +5,7 @@ import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
 import {KeyCode} from '../util/key_code'
 import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
-import {PaletWnd, NameTableWnd, PatternTableWnd} from './other_wnd'
+import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd} from './other_wnd'
 import {ScreenWnd} from './screen_wnd'
 import StorageUtil from '../util/storage_util'
 import Util from '../util/util'
@@ -33,6 +33,7 @@ export const enum AppWndType {
   REGISTER,
   TRACE,
   CONTROL,
+  FPS,
 }
 
 export class App {
@@ -243,7 +244,6 @@ export class App {
     this.wndMgr.add(traceWnd)
     traceWnd.setPos(0, 500)
     this.wndMap[AppWndType.TRACE] = traceWnd
-
     return true
   }
 
@@ -254,7 +254,6 @@ export class App {
     this.wndMgr.add(registerWnd)
     registerWnd.setPos(410, 500)
     this.wndMap[AppWndType.REGISTER] = registerWnd
-
     return true
   }
 
@@ -265,7 +264,15 @@ export class App {
     this.wndMgr.add(ctrlWnd)
     ctrlWnd.setPos(520, 500)
     this.wndMap[AppWndType.CONTROL] = ctrlWnd
+    return true
+  }
 
+  public createFpsWnd(): boolean {
+    if (this.wndMap[AppWndType.FPS] != null)
+      return false
+    const fpsWnd = new FpsWnd(this.wndMgr, this.stream)
+    this.wndMgr.add(fpsWnd)
+    this.wndMap[AppWndType.FPS] = fpsWnd
     return true
   }
 
