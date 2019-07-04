@@ -1,4 +1,5 @@
 import * as Pubsub from '../util/pubsub'
+import Wnd from '../wnd/wnd'
 
 export namespace AppEvent {
   export const enum Type {
@@ -7,11 +8,12 @@ export namespace AppEvent {
     PAUSE,
     STEP,
     RESET,
-    LOAD_ROM,
     BREAK_POINT,
-    DESTROY,
     START_CALC,
     END_CALC,
+    OPEN_MENU,
+    CLOSE_MENU,
+    CLOSE_WND,
   }
 
   export class Stream extends Pubsub.Subject<Type> {
@@ -30,14 +32,8 @@ export namespace AppEvent {
     public triggerReset() {
       this.next(Type.RESET)
     }
-    public triggerLoadRom() {
-      this.next(Type.LOAD_ROM)
-    }
     public triggerBreakPoint() {
       this.next(Type.BREAK_POINT)
-    }
-    public triggerDestroy() {
-      this.next(Type.DESTROY)
     }
 
     public triggerStartCalc() {
@@ -45,6 +41,15 @@ export namespace AppEvent {
     }
     public triggerEndCalc() {
       this.next(Type.END_CALC)
+    }
+    public triggerOpenMenu() {
+      this.next(Type.OPEN_MENU)
+    }
+    public triggerCloseMenu() {
+      this.next(Type.CLOSE_MENU)
+    }
+    public triggerCloseWnd(wnd: Wnd) {
+      this.next(Type.CLOSE_WND, wnd)
     }
   }
 }

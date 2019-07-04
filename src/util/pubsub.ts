@@ -2,7 +2,7 @@ export interface Subscription {
   unsubscribe(): void
 }
 
-export interface Callback<Type> { (param: Type): void }
+export interface Callback<Type> { (type: Type, param?: any): void }
 
 function compactArray(array: any[]): void {
   let n = 0
@@ -16,6 +16,7 @@ function compactArray(array: any[]): void {
 export class Subject<Type> {
   private subscribers = new Array<Callback<Type>|null>()
   private anyRemoved = false
+  private nestCount = 0
 
   public subscribe(callback: Callback<Type>): Subscription {
     this.subscribers.push(callback)
@@ -30,12 +31,14 @@ export class Subject<Type> {
     }
   }
 
-  public next(arg: Type): void {
+  public next(type: Type, param?: any): void {
+    ++this.nestCount
     for (let s of this.subscribers)
       if (s != null)
-        s(arg)
+        s(type, param)
 
-    if (this.anyRemoved) {
+    --this.nestCount
+    if (this.nestCount === 0 && this.anyRemoved) {
       compactArray(this.subscribers)
       this.anyRemoved = false
     }

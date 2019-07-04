@@ -49,7 +49,6 @@ export default class Wnd {
   public static TITLEBAR_HEIGHT = 12
   public static MENUBAR_HEIGHT = 12
 
-  protected callback: Function
   protected contentHolder: HTMLElement
   private root: HTMLElement
   private titleBar: HTMLElement
@@ -62,7 +61,6 @@ export default class Wnd {
   public constructor(protected wndMgr: WindowManager, width: number, height: number,
                      title: string)
   {
-    this.callback = () => {}
     this.root = this.createRoot()
     this.root.className = 'wnd'
     this.root.style.position = 'absolute'
@@ -119,9 +117,7 @@ export default class Wnd {
     return { width, height }
   }
 
-  public setCallback(callback: (action: string, ...args: any[]) => void): Wnd {
-    this.callback = callback
-    return this
+  protected onEvent(_action: string, _param?: any): any {
   }
 
   public setFocus(): Wnd {
@@ -158,8 +154,8 @@ export default class Wnd {
       itemElem.style.height = '100%'
       itemElem.addEventListener('click', (_event) => {
         if ('submenu' in menuItem) {
+          this.onEvent('openMenu')
           this.openSubmenu(menuItem, itemElem)
-          this.callback('openMenu')
         }
       })
       this.menuBar.appendChild(itemElem)
@@ -176,7 +172,7 @@ export default class Wnd {
   }
 
   public close(): void {
-    if (this.callback('close') === false)
+    if (this.onEvent('close') === false)
       return  // Cancel close
     this.wndMgr.remove(this)
     // this.root = null
@@ -245,6 +241,8 @@ export default class Wnd {
           bottom: rect.bottom - prect.top,
         }
 
+        this.onEvent('resize-begin')
+
         DomUtil.setMouseDragListener({
           move: (event2: MouseEvent) => {
             let [x, y] = DomUtil.getMousePosIn(event2, this.root.parentNode as HTMLElement)
@@ -267,10 +265,11 @@ export default class Wnd {
               left: `${box.left}px`,
               top: `${box.top}px`,
             })
-            this.callback('resize', width, height - Wnd.TITLEBAR_HEIGHT)
+            this.onEvent('resize', {width, height: height - Wnd.TITLEBAR_HEIGHT})
           },
           up: (_event2: MouseEvent) => {
             this.root.style['transition-property'] = null
+            this.onEvent('resize-end')
           },
         })
 
@@ -388,7 +387,7 @@ export default class Wnd {
       if (subItemHolder.parentNode != null)
         subItemHolder.parentNode.removeChild(subItemHolder)
       document.removeEventListener('click', onClickOther, true)
-      this.callback('closeMenu')
+      this.onEvent('closeMenu')
     }
     document.addEventListener('click', onClickOther, true)
   }

@@ -1,7 +1,7 @@
 // JS-powered NES
 // Run JavaScript code, instead of 6502 CPU.
 
-import {App, Option, DEFAULT_MASTER_VOLUME} from './app'
+import {App, AppWndType, Option, DEFAULT_MASTER_VOLUME} from './app'
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
 import {Bus} from '../nes/bus'
@@ -201,30 +201,10 @@ export class JsApp extends App {
       this.jsScreenWnd.setTitle(option.title as string)
 
     this.subscription = this.stream
-      .subscribe(type => {
-        switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.cleanUp()
-          if (option.onClosed)
-            option.onClosed(this)
-          break
-        case AppEvent.Type.RUN:
-          this.jsNes.jsCpu.pause(false)
-          break
-        case AppEvent.Type.PAUSE:
-          this.jsNes.jsCpu.pause(true)
-          break
-        case AppEvent.Type.STEP:
-          this.jsNes.step()
-          break
-        case AppEvent.Type.RESET:
-          this.jsNes.reset()
-          break
-        }
-      })
+      .subscribe((type, param?) => this.handleAppEvent(type, param))
 
     this.nes = this.jsNes
-    this.screenWnd = this.jsScreenWnd
+    this.wndMap[AppWndType.SCREEN] = this.screenWnd = this.jsScreenWnd
 
     const size = this.screenWnd.getWindowSize()
     let x = Util.clamp((option.centerX || 0) - size.width / 2,
@@ -232,6 +212,25 @@ export class JsApp extends App {
     let y = Util.clamp((option.centerY || 0) - size.height / 2,
                        0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
+  }
+
+  protected handleAppEvent(type: AppEvent.Type, param?: any) {
+    switch (type) {
+    case AppEvent.Type.RUN:
+      this.jsNes.jsCpu.pause(false)
+      break
+    case AppEvent.Type.PAUSE:
+      this.jsNes.jsCpu.pause(true)
+      break
+    case AppEvent.Type.STEP:
+      this.jsNes.step()
+      break
+    case AppEvent.Type.RESET:
+      this.jsNes.reset()
+      break
+    default:
+      return super.handleAppEvent(type, param)
+    }
   }
 
   public setFile(file: File): void {
