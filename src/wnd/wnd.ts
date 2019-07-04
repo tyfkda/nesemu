@@ -158,7 +158,7 @@ export default class Wnd {
       itemElem.style.height = '100%'
       itemElem.addEventListener('click', (_event) => {
         if ('submenu' in menuItem) {
-          this.addSubmenu(menuItem, itemElem)
+          this.openSubmenu(menuItem, itemElem)
           this.callback('openMenu')
         }
       })
@@ -360,7 +360,7 @@ export default class Wnd {
     return titleElem
   }
 
-  private addSubmenu(menuItem: any, itemElem: HTMLElement) {
+  private openSubmenu(menuItem: any, itemElem: HTMLElement) {
     const subItemHolder = document.createElement('div')
     subItemHolder.className = 'menu-subitem-holder'
     subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)

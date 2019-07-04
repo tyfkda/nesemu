@@ -39,7 +39,7 @@ export abstract class Scaler {
   }
 }
 
-export class IdentityScaler extends Scaler {
+export class NearestNeighborScaler extends Scaler {
   private context: CanvasRenderingContext2D
   private imageData: ImageData
 

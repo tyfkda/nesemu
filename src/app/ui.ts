@@ -5,7 +5,7 @@ import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
 import {Addressing, Instruction, OpType, kInstTable} from '../nes/cpu/inst'
 import {disassemble} from '../nes/cpu/disasm'
-import {Scaler, IdentityScaler, ScanlineScaler, EpxScaler} from '../util/scaler'
+import {Scaler, NearestNeighborScaler, ScanlineScaler, EpxScaler} from '../util/scaler'
 import Util from '../util/util'
 
 import {App} from './app'
@@ -115,7 +115,7 @@ export class ScreenWnd extends Wnd {
     })
     this.fullscreenBase.appendChild(this.canvasHolder)
 
-    this.setScaler(new IdentityScaler())
+    this.setScaler(new NearestNeighborScaler())
     this.addResizeBox()
 
     this.subscription = this.stream
@@ -302,9 +302,9 @@ export class ScreenWnd extends Wnd {
         label: 'Scaler',
         submenu: [
           {
-            label: 'Normal',
+            label: 'Nearest',
             click: () => {
-              this.setScaler(new IdentityScaler())
+              this.setScaler(new NearestNeighborScaler())
             },
           },
           {
