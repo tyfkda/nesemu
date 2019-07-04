@@ -12,6 +12,8 @@ export namespace AppEvent {
     DESTROY,
     START_CALC,
     END_CALC,
+    OPEN_MENU,
+    CLOSE_MENU,
   }
 
   export class Stream extends Pubsub.Subject<Type> {
@@ -45,6 +47,12 @@ export namespace AppEvent {
     }
     public triggerEndCalc() {
       this.next(Type.END_CALC)
+    }
+    public triggerOpenMenu() {
+      this.next(Type.OPEN_MENU)
+    }
+    public triggerCloseMenu() {
+      this.next(Type.CLOSE_MENU)
     }
   }
 }

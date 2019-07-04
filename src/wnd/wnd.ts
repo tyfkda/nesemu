@@ -119,7 +119,7 @@ export default class Wnd {
     return { width, height }
   }
 
-  public setCallback(callback: (action: string, ...args: any[]) => void): Wnd {
+  public setCallback(callback: (action: string, param?: any) => void): Wnd {
     this.callback = callback
     return this
   }
@@ -158,8 +158,8 @@ export default class Wnd {
       itemElem.style.height = '100%'
       itemElem.addEventListener('click', (_event) => {
         if ('submenu' in menuItem) {
-          this.openSubmenu(menuItem, itemElem)
           this.callback('openMenu')
+          this.openSubmenu(menuItem, itemElem)
         }
       })
       this.menuBar.appendChild(itemElem)
@@ -245,6 +245,8 @@ export default class Wnd {
           bottom: rect.bottom - prect.top,
         }
 
+        this.callback('resize-begin')
+
         DomUtil.setMouseDragListener({
           move: (event2: MouseEvent) => {
             let [x, y] = DomUtil.getMousePosIn(event2, this.root.parentNode as HTMLElement)
@@ -267,10 +269,11 @@ export default class Wnd {
               left: `${box.left}px`,
               top: `${box.top}px`,
             })
-            this.callback('resize', width, height - Wnd.TITLEBAR_HEIGHT)
+            this.callback('resize', {width, height: height - Wnd.TITLEBAR_HEIGHT})
           },
           up: (_event2: MouseEvent) => {
             this.root.style['transition-property'] = null
+            this.callback('resize-end')
           },
         })
 

@@ -80,6 +80,13 @@ export class App {
         case AppEvent.Type.RESET:
           this.nes.reset()
           break
+        case AppEvent.Type.OPEN_MENU:
+          this.cancelLoopAnimation()
+          this.muteAudio()
+          break
+        case AppEvent.Type.CLOSE_MENU:
+          this.startLoopAnimation()
+          break
         }
       })
 
@@ -94,24 +101,6 @@ export class App {
     let y = Util.clamp((option.centerY || 0) - size.height / 2,
                        0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
-
-    this.screenWnd.setCallback((action, ...args) => {
-      switch (action) {
-      case 'resize':
-        {
-          const [width, height] = args
-          this.screenWnd.onResized(width, height)
-        }
-        break
-      case 'openMenu':
-        this.cancelLoopAnimation()
-        this.muteAudio()
-        break
-      case 'closeMenu':
-        this.startLoopAnimation()
-        break
-      }
-    })
   }
 
   public setVolume(vol: number): void {
