@@ -134,24 +134,25 @@ export class ScreenWnd extends Wnd {
     this.contentWidth = (WIDTH - HEDGE * 2) * 2
     this.contentHeight = (HEIGHT - VEDGE * 2) * 2
     this.updateContentSize(this.contentWidth, this.contentHeight)
-
-    this.setCallback((action, param?) => {
-      switch (action) {
-      case 'resize':
-        {
-          const {width, height} = param
-          this.onResized(width, height)
-        }
-        break
-      case 'openMenu':
-        this.stream.triggerOpenMenu()
-        break
-      case 'closeMenu':
-        this.stream.triggerCloseMenu()
-        break
-      }
-    })
   }
+
+  protected onEvent(action: string, param?: any): any {
+    switch (action) {
+    case 'resize':
+      {
+        const {width, height} = param
+        this.onResized(width, height)
+      }
+      break
+    case 'openMenu':
+      this.stream.triggerOpenMenu()
+      break
+    case 'closeMenu':
+      this.stream.triggerCloseMenu()
+      break
+    }
+  }
+
 
   public onResized(width: number, height: number): void {
     this.contentWidth = width
