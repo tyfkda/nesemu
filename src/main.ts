@@ -178,6 +178,8 @@ class Main {
     let leave = false
     let leaveTimeout: number = -1
     sliderContainer.addEventListener('mousedown', (event) => {
+      if (event.button !== 0)
+        return
       dragging = true
       const sliderHeight = (slider.parentNode as HTMLElement).getBoundingClientRect().height
       const updateSlider = (event2) => {
