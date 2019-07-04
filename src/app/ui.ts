@@ -76,6 +76,7 @@ export class FpsWnd extends Wnd {
   }
 
   public close(): void {
+    this.stream.triggerCloseWnd(this)
     this.subscription.unsubscribe()
     super.close()
   }
@@ -205,6 +206,7 @@ export class ScreenWnd extends Wnd {
   public close(): void {
     if (this.subscription != null)
       this.subscription.unsubscribe()
+    this.stream.triggerCloseWnd(this)
     this.stream.triggerDestroy()
     super.close()
   }
@@ -478,6 +480,7 @@ export class PaletWnd extends Wnd {
   }
 
   public close(): void {
+    this.stream.triggerCloseWnd(this)
     this.subscription.unsubscribe()
     super.close()
   }
@@ -616,6 +619,7 @@ export class NameTableWnd extends Wnd {
   }
 
   public close(): void {
+    this.stream.triggerCloseWnd(this)
     this.subscription.unsubscribe()
     super.close()
   }
@@ -675,6 +679,7 @@ export class PatternTableWnd extends Wnd {
   }
 
   public close(): void {
+    this.stream.triggerCloseWnd(this)
     this.subscription.unsubscribe()
     super.close()
   }
@@ -735,6 +740,7 @@ export class RegisterWnd extends Wnd {
   }
 
   public close(): void {
+    this.stream.triggerCloseWnd(this)
     this.subscription.unsubscribe()
     super.close()
   }
@@ -847,6 +853,7 @@ export class TraceWnd extends Wnd {
   }
 
   public close(): void {
+    this.stream.triggerCloseWnd(this)
     this.subscription.unsubscribe()
     super.close()
   }
@@ -916,6 +923,7 @@ export class ControlWnd extends Wnd {
   }
 
   public close(): void {
+    this.stream.triggerCloseWnd(this)
     this.subscription.unsubscribe()
     super.close()
   }

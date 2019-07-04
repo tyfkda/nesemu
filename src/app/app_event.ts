@@ -1,4 +1,5 @@
 import * as Pubsub from '../util/pubsub'
+import Wnd from '../wnd/wnd'
 
 export namespace AppEvent {
   export const enum Type {
@@ -14,6 +15,7 @@ export namespace AppEvent {
     END_CALC,
     OPEN_MENU,
     CLOSE_MENU,
+    CLOSE_WND,
   }
 
   export class Stream extends Pubsub.Subject<Type> {
@@ -53,6 +55,9 @@ export namespace AppEvent {
     }
     public triggerCloseMenu() {
       this.next(Type.CLOSE_MENU)
+    }
+    public triggerCloseWnd(wnd: Wnd) {
+      this.next(Type.CLOSE_WND, wnd)
     }
   }
 }

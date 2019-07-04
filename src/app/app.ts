@@ -9,6 +9,7 @@ import {ScreenWnd, PaletWnd, NameTableWnd, PatternTableWnd,
 import StorageUtil from '../util/storage_util'
 import Util from '../util/util'
 import WindowManager from '../wnd/window_manager'
+import Wnd from '../wnd/wnd'
 
 import * as Pubsub from '../util/pubsub'
 
@@ -23,6 +24,15 @@ export class Option {
   public onClosed?: (app: App) => void
 }
 
+const enum AppWndType {
+  PALET,
+  NAME,
+  PATTERN,
+  REGISTER,
+  TRACE,
+  CONTROL,
+}
+
 export class App {
   protected destroying = false
   protected isBlur = false
@@ -34,13 +44,7 @@ export class App {
 
   protected title: string
   protected screenWnd: ScreenWnd
-  protected paletWnd: PaletWnd|null = null
-  protected hasNameTableWnd = false
-  protected hasPatternTableWnd = false
-
-  protected hasRegisterWnd = false
-  protected hasTraceWnd = false
-  protected hasCtrlWnd = false
+  protected wndMap: {[key: number]: Wnd} = {}
 
   protected volume = 1
 
@@ -58,7 +62,7 @@ export class App {
     this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
 
     this.subscription = this.stream
-      .subscribe(type => {
+      .subscribe((type, param) => {
         switch (type) {
         case AppEvent.Type.DESTROY:
           this.cleanUp()
@@ -87,10 +91,19 @@ export class App {
         case AppEvent.Type.CLOSE_MENU:
           this.startLoopAnimation()
           break
+        case AppEvent.Type.CLOSE_WND:
+          {
+            const wnd = param as Wnd
+            const key = Object.keys(this.wndMap).find(key => this.wndMap[key] === wnd)
+            if (key != null)
+              delete this.wndMap[key]
+          }
+          break
         }
       })
 
-    this.screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
+    const screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
+    this.screenWnd = screenWnd
     this.wndMgr.add(this.screenWnd)
     this.title = (option.title as string) || 'NES'
     this.screenWnd.setTitle(this.title)
@@ -182,42 +195,34 @@ export class App {
   }
 
   public createPaletWnd(): boolean {
-    if (this.paletWnd != null)
+    if (this.wndMap[AppWndType.PALET] != null)
       return false
     const paletWnd = new PaletWnd(this.wndMgr, this.nes, this.stream)
     this.wndMgr.add(paletWnd)
     paletWnd.setPos(520, 0)
-    paletWnd.setCallback(action => {
-      if (action === 'close') {
-        this.paletWnd = null
-      }
-    })
-    this.paletWnd = paletWnd
+    this.wndMap[AppWndType.PALET] = paletWnd
     return true
   }
 
   public createNameTableWnd(): boolean {
-    if (this.hasNameTableWnd)
+    if (this.wndMap[AppWndType.NAME] != null)
       return false
     const nameTableWnd = new NameTableWnd(this.wndMgr, this.nes, this.stream,
                                           this.nes.getPpu().getMirrorMode() === MirrorMode.HORZ)
     this.wndMgr.add(nameTableWnd)
     nameTableWnd.setPos(520, 40)
-    nameTableWnd.setCallback(action => {
-      if (action === 'close') {
-        this.hasNameTableWnd = false
-      }
-    })
-    return this.hasNameTableWnd = true
+    this.wndMap[AppWndType.NAME] = nameTableWnd
+    return true
   }
 
   public createPatternTableWnd(): boolean {
-    if (this.hasPatternTableWnd)
+    if (this.wndMap[AppWndType.PATTERN] != null)
       return false
 
+    const paletWnd = this.wndMap[AppWndType.PALET] as PaletWnd
     const getSelectedPalets = (buf: Uint8Array) => {
-      if (this.paletWnd != null)
-        this.paletWnd.getSelectedPalets(buf)
+      if (paletWnd != null)
+        paletWnd.getSelectedPalets(buf)
       else
         buf[0] = buf[1] = 0
     }
@@ -225,57 +230,41 @@ export class App {
                                                 getSelectedPalets)
     this.wndMgr.add(patternTableWnd)
     patternTableWnd.setPos(520, 300)
-    patternTableWnd.setCallback(action => {
-      if (action === 'close') {
-        this.hasPatternTableWnd = false
-      }
-    })
-    return this.hasPatternTableWnd = true
+    this.wndMap[AppWndType.PATTERN] = patternTableWnd
+    return true
   }
 
   public createTraceWnd(): boolean {
-    if (this.hasTraceWnd)
+    if (this.wndMap[AppWndType.TRACE] != null)
       return false
     const traceWnd = new TraceWnd(this.wndMgr, this.nes, this.stream)
     this.wndMgr.add(traceWnd)
     traceWnd.setPos(0, 500)
-    traceWnd.setCallback(action => {
-      if (action === 'close') {
-        this.hasTraceWnd = false
-      }
-    })
+    this.wndMap[AppWndType.TRACE] = traceWnd
 
-    return this.hasTraceWnd = true
+    return true
   }
 
   public createRegisterWnd(): boolean {
-    if (this.hasRegisterWnd)
+    if (this.wndMap[AppWndType.REGISTER] != null)
       return false
     const registerWnd = new RegisterWnd(this.wndMgr, this.nes, this.stream)
     this.wndMgr.add(registerWnd)
     registerWnd.setPos(410, 500)
-    registerWnd.setCallback(action => {
-      if (action === 'close') {
-        this.hasRegisterWnd = false
-      }
-    })
+    this.wndMap[AppWndType.REGISTER] = registerWnd
 
-    return this.hasRegisterWnd = true
+    return true
   }
 
   public createControlWnd(): boolean {
-    if (this.hasCtrlWnd)
+    if (this.wndMap[AppWndType.CONTROL] != null)
       return false
     const ctrlWnd = new ControlWnd(this.wndMgr, this.stream)
     this.wndMgr.add(ctrlWnd)
     ctrlWnd.setPos(520, 500)
-    ctrlWnd.setCallback(action => {
-      if (action === 'close') {
-        this.hasCtrlWnd = false
-      }
-    })
+    this.wndMap[AppWndType.CONTROL] = ctrlWnd
 
-    return this.hasCtrlWnd = true
+    return true
   }
 
   protected cleanUp() {
