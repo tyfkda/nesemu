@@ -102,9 +102,12 @@ class Main {
         promises.push(promise)
     }
     Promise.all(promises)
+      .catch((e: Error) => {
+        this.wndMgr.showSnackbar(e.toString())
+      })
       .then(results => {
         const typeMap: {[key: string]: Array<any>} = {}
-        results.forEach(result => {
+        ;(results as {type: string, binary: Uint8Array, fileName: string}[]).forEach(result => {
           if (!typeMap[result.type])
             typeMap[result.type] = []
           typeMap[result.type].push(result)
@@ -117,9 +120,6 @@ class Main {
             y += 16
           })
         }
-      })
-      .catch((e: Error) => {
-        this.wndMgr.showSnackbar(e.toString())
       })
   }
 
