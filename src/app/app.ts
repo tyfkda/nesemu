@@ -24,7 +24,8 @@ export class Option {
   public onClosed?: (app: App) => void
 }
 
-const enum AppWndType {
+export const enum AppWndType {
+  SCREEN = 1,
   PALET,
   NAME,
   PATTERN,
@@ -52,7 +53,7 @@ export class App {
     return new App(wndMgr, option)
   }
 
-  constructor(protected wndMgr: WindowManager, option: Option, noDefault?: boolean) {
+  constructor(protected wndMgr: WindowManager, protected option: Option, noDefault?: boolean) {
     if (noDefault)
       return
 
@@ -62,48 +63,10 @@ export class App {
     this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
 
     this.subscription = this.stream
-      .subscribe((type, param) => {
-        switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.cleanUp()
-          if (option.onClosed)
-            option.onClosed(this)
-          break
-        case AppEvent.Type.RENDER:
-          break
-        case AppEvent.Type.RUN:
-          this.nes.getCpu().pause(false)
-          break
-        case AppEvent.Type.PAUSE:
-          this.nes.getCpu().pause(true)
-          this.muteAudio()
-          break
-        case AppEvent.Type.STEP:
-          this.nes.step(0)
-          break
-        case AppEvent.Type.RESET:
-          this.nes.reset()
-          break
-        case AppEvent.Type.OPEN_MENU:
-          this.cancelLoopAnimation()
-          this.muteAudio()
-          break
-        case AppEvent.Type.CLOSE_MENU:
-          this.startLoopAnimation()
-          break
-        case AppEvent.Type.CLOSE_WND:
-          {
-            const wnd = param as Wnd
-            const key = Object.keys(this.wndMap).find(key => this.wndMap[key] === wnd)
-            if (key != null)
-              delete this.wndMap[key]
-          }
-          break
-        }
-      })
+      .subscribe((type, param?) => this.handleAppEvent(type, param))
 
     const screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
-    this.screenWnd = screenWnd
+    this.wndMap[AppWndType.SCREEN] = this.screenWnd = screenWnd
     this.wndMgr.add(this.screenWnd)
     this.title = (option.title as string) || 'NES'
     this.screenWnd.setTitle(this.title)
@@ -114,6 +77,45 @@ export class App {
     let y = Util.clamp((option.centerY || 0) - size.height / 2,
                        0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
+  }
+
+  protected handleAppEvent(type: AppEvent.Type, param?: any) {
+    switch (type) {
+    case AppEvent.Type.RENDER:
+      break
+    case AppEvent.Type.RUN:
+      this.nes.getCpu().pause(false)
+      break
+    case AppEvent.Type.PAUSE:
+      this.nes.getCpu().pause(true)
+      this.muteAudio()
+      break
+    case AppEvent.Type.STEP:
+      this.nes.step(0)
+      break
+    case AppEvent.Type.RESET:
+      this.nes.reset()
+      break
+    case AppEvent.Type.OPEN_MENU:
+      this.cancelLoopAnimation()
+      this.muteAudio()
+      break
+    case AppEvent.Type.CLOSE_MENU:
+      this.startLoopAnimation()
+      break
+    case AppEvent.Type.CLOSE_WND:
+      {
+        const wnd = param as Wnd
+        const key = Object.keys(this.wndMap).find(key => this.wndMap[key] === wnd)
+        if (key != null) {
+          delete this.wndMap[key]
+          if (parseInt(key) === AppWndType.SCREEN) {
+            this.destroy()
+          }
+        }
+      }
+      break
+    }
   }
 
   public setVolume(vol: number): void {
@@ -136,7 +138,6 @@ export class App {
     this.nes.reset()
     this.nes.getCpu().pause(false)
     this.screenWnd.getContentHolder().focus()
-    this.stream.triggerLoadRom()
 
     this.startLoopAnimation()
 
@@ -265,6 +266,15 @@ export class App {
     this.wndMap[AppWndType.CONTROL] = ctrlWnd
 
     return true
+  }
+
+  protected destroy() {
+    for (let wnd of Object.values(this.wndMap))
+      wnd.close()
+
+    this.cleanUp()
+    if (this.option.onClosed)
+      this.option.onClosed(this)
   }
 
   protected cleanUp() {

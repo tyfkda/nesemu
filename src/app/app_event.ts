@@ -8,9 +8,7 @@ export namespace AppEvent {
     PAUSE,
     STEP,
     RESET,
-    LOAD_ROM,
     BREAK_POINT,
-    DESTROY,
     START_CALC,
     END_CALC,
     OPEN_MENU,
@@ -34,14 +32,8 @@ export namespace AppEvent {
     public triggerReset() {
       this.next(Type.RESET)
     }
-    public triggerLoadRom() {
-      this.next(Type.LOAD_ROM)
-    }
     public triggerBreakPoint() {
       this.next(Type.BREAK_POINT)
-    }
-    public triggerDestroy() {
-      this.next(Type.DESTROY)
     }
 
     public triggerStartCalc() {

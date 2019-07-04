@@ -62,9 +62,6 @@ export class FpsWnd extends Wnd {
     this.subscription = this.stream
       .subscribe(type => {
         switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.close()
-          break
         case AppEvent.Type.START_CALC:
           this.stats.begin()
           break
@@ -208,7 +205,6 @@ export class ScreenWnd extends Wnd {
     if (this.subscription != null)
       this.subscription.unsubscribe()
     this.stream.triggerCloseWnd(this)
-    this.stream.triggerDestroy()
     super.close()
   }
 
@@ -461,9 +457,6 @@ export class PaletWnd extends Wnd {
     this.subscription = this.stream
       .subscribe(type => {
         switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.close()
-          break
         case AppEvent.Type.RENDER:
           this.render()
           break
@@ -608,9 +601,6 @@ export class NameTableWnd extends Wnd {
     this.subscription = this.stream
       .subscribe(type => {
         switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.close()
-          break
         case AppEvent.Type.RENDER:
           this.render()
           break
@@ -668,9 +658,6 @@ export class PatternTableWnd extends Wnd {
     this.subscription = this.stream
       .subscribe(type => {
         switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.close()
-          break
         case AppEvent.Type.RENDER:
           this.render()
           break
@@ -715,9 +702,6 @@ export class RegisterWnd extends Wnd {
     this.subscription = this.stream
       .subscribe(type => {
         switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.close()
-          break
         case AppEvent.Type.RESET:
         case AppEvent.Type.STEP:
         case AppEvent.Type.PAUSE:
@@ -813,9 +797,6 @@ export class TraceWnd extends Wnd {
     this.subscription = this.stream
       .subscribe(type => {
         switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.close()
-          break
         case AppEvent.Type.RESET:
           this.reset()
           // Fall through.
@@ -903,9 +884,6 @@ export class ControlWnd extends Wnd {
     this.subscription = this.stream
       .subscribe(type => {
         switch (type) {
-        case AppEvent.Type.DESTROY:
-          this.close()
-          break
         case AppEvent.Type.RUN:
           this.updateState(false)
           break
