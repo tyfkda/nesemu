@@ -237,3 +237,27 @@ $BUTTON_HEIGHT: 6px;
 .snackbar-box.danger {
   background-color: #db3545;
 }
+
+.volume-text {
+  color: gray;
+}
+
+.volume-text.active {
+  color: black;
+}
+
+.volume-slider-container {
+  position: absolute;
+  background-color: black;
+  border:3px solid  black;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+
+.volume-slider {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background-color: #0ff;
+}

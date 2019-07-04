@@ -176,6 +176,7 @@ class Main {
 
     let dragging = false
     let leave = false
+    let leaveTimeout: number = -1
     sliderContainer.addEventListener('mousedown', (event) => {
       dragging = true
       const sliderHeight = (slider.parentNode as HTMLElement).getBoundingClientRect().height
@@ -212,26 +213,32 @@ class Main {
       })
       const sliderHeight = (slider.parentNode as HTMLElement).getBoundingClientRect().height
       slider.style.height = `${this.volume * sliderHeight}px`
+
+      volumeText.classList.add('active')
     }
     const hideSlider = () => {
       DomUtil.setStyles(sliderContainer, {
         display: 'none',
       })
-    }
-    const toggleSlider = () => {
-      if (sliderContainer.style.display === 'none')
-        showSlider()
-      else
-        hideSlider()
+
+      volumeText.classList.remove('active')
     }
 
-    volumeText.addEventListener('click', toggleSlider)
     volumeText.addEventListener('mouseenter', () => {
       showSlider()
+    })
+    volumeText.addEventListener('mouseleave', () => {
+      leaveTimeout = window.setTimeout(() => {
+        hideSlider()
+      }, 10)
     })
 
     sliderContainer.addEventListener('mouseenter', (_event) => {
       leave = false
+      if (leaveTimeout !== -1) {
+        clearTimeout(leaveTimeout)
+        leaveTimeout = -1
+      }
     })
     sliderContainer.addEventListener('mouseleave', (_event) => {
       leave = true
