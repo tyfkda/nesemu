@@ -9,7 +9,7 @@ import DomUtil from '../util/dom_util'
 import {KeyCode} from '../util/key_code'
 import {Nes} from '../nes/nes'
 import {Ppu} from '../nes/ppu/ppu'
-import {ScreenWnd} from './ui'
+import {ScreenWnd} from './screen_wnd'
 import Util from '../util/util'
 import WindowManager from '../wnd/window_manager'
 
