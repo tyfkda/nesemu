@@ -402,11 +402,13 @@ export class ScreenWnd extends Wnd {
   }
 
   private setScaler(scaler: Scaler): void {
+    const initial = this.scaler == null
     this.scaler = scaler
     DomUtil.removeAllChildren(this.canvasHolder)
     this.canvasHolder.appendChild(scaler.getCanvas())
 
-    this.render()
+    if (!initial)
+      this.render()
   }
 
   private createFpsWnd(): void {
