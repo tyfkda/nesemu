@@ -15,6 +15,26 @@ const HEIGHT = 240 | 0
 const HEDGE = 0 | 0
 const VEDGE = 8 | 0
 
+const enum MenuType {
+  FILE,
+  VIEW,
+  SCALER,
+  DEBUG,
+}
+
+const enum ViewMenuType {
+  SCALE_1x1,
+  SCALE_2x2,
+  ADJUST_ASPECT_RATIO,
+  FULLSCREEN,
+}
+
+const enum ScalerType {
+  NEAREST,
+  SCANLINE,
+  EPX,
+}
+
 function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const img = document.createElement('img') as HTMLImageElement
   const title = String(Date.now())
@@ -45,6 +65,8 @@ export class ScreenWnd extends Wnd {
   private hideEdge = true
   private contentWidth = 0  // Content size, except fullscreen
   private contentHeight = 0
+  private menuItems: any
+  private scalerType = ScalerType.NEAREST
 
   constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,
               protected stream: AppEvent.Stream)
@@ -71,7 +93,7 @@ export class ScreenWnd extends Wnd {
     })
     this.fullscreenBase.appendChild(this.canvasHolder)
 
-    this.setScaler(new NearestNeighborScaler())
+    this.setScaler(ScalerType.NEAREST)
     this.addResizeBox()
 
     this.subscription = this.stream
@@ -100,10 +122,10 @@ export class ScreenWnd extends Wnd {
       }
       break
     case 'openMenu':
-      this.stream.triggerOpenMenu()
+      this.onOpenMenu()
       break
     case 'closeMenu':
-      this.stream.triggerCloseMenu()
+      this.onCloseMenu()
       break
     }
   }
@@ -196,7 +218,7 @@ export class ScreenWnd extends Wnd {
   }
 
   protected setUpMenuBar(): void {
-    this.addMenuBar([
+    this.menuItems = [
       {
         label: 'File',
         submenu: [
@@ -277,19 +299,19 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Nearest',
             click: () => {
-              this.setScaler(new NearestNeighborScaler())
+              this.setScaler(ScalerType.NEAREST)
             },
           },
           {
             label: 'Scanline',
             click: () => {
-              this.setScaler(new ScanlineScaler())
+              this.setScaler(ScalerType.SCANLINE)
             },
           },
           {
             label: 'Epx',
             click: () => {
-              this.setScaler(new EpxScaler())
+              this.setScaler(ScalerType.EPX)
             },
           },
         ],
@@ -347,7 +369,33 @@ export class ScreenWnd extends Wnd {
           },
         ],
       },
-    ])
+    ]
+    this.addMenuBar(this.menuItems)
+  }
+
+  protected onOpenMenu() {
+    const rect = this.contentHolder.getBoundingClientRect()
+    const w = (WIDTH - (this.hideEdge ? HEDGE * 2 : 0)) | 0
+    const h = (HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)) | 0
+
+    const viewMenu = this.menuItems[MenuType.VIEW].submenu
+    viewMenu[ViewMenuType.SCALE_1x1].checked =
+      Math.abs(rect.width - w) < 0.5 && Math.abs(rect.height - h) < 0.5
+    viewMenu[ViewMenuType.SCALE_2x2].checked =
+      Math.abs(rect.width - w * 2) < 0.5 && Math.abs(rect.height - h * 2) < 0.5
+    viewMenu[ViewMenuType.ADJUST_ASPECT_RATIO].disabled =
+      Math.abs(rect.width / rect.height - w / h) < 0.005
+
+    const scalerMenu = this.menuItems[MenuType.SCALER].submenu
+    for (let i = 0; i < scalerMenu.length; ++i) {
+      scalerMenu[i].checked = this.scalerType === i
+    }
+
+    this.stream.triggerOpenMenu()
+  }
+
+  protected onCloseMenu() {
+    this.stream.triggerCloseMenu()
   }
 
   protected maximize() {
@@ -379,11 +427,24 @@ export class ScreenWnd extends Wnd {
     this.updateContentSize(this.contentHolder.offsetWidth, this.contentHolder.offsetHeight)
   }
 
-  private setScaler(scaler: Scaler): void {
+  private setScaler(type: ScalerType): void {
     const initial = this.scaler == null
-    this.scaler = scaler
+    if (this.scalerType === type && !initial)
+      return
+    this.scalerType = type
+    switch (type) {
+    case ScalerType.NEAREST:
+      this.scaler = new NearestNeighborScaler()
+      break
+    case ScalerType.SCANLINE:
+      this.scaler = new ScanlineScaler()
+      break
+    case ScalerType.EPX:
+      this.scaler = new EpxScaler()
+      break
+    }
     DomUtil.removeAllChildren(this.canvasHolder)
-    this.canvasHolder.appendChild(scaler.getCanvas())
+    this.canvasHolder.appendChild(this.scaler.getCanvas())
 
     if (!initial)
       this.render()

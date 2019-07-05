@@ -363,16 +363,30 @@ export default class Wnd {
     const subItemHolder = document.createElement('div')
     subItemHolder.className = 'menu-subitem-holder'
     subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
-    menuItem.submenu.forEach((submenuItem: {label: string, click?: () => void}) => {
+    menuItem.submenu.forEach((submenuItem: {label: string, checked: boolean, disabled: boolean, click?: () => void}) => {
+      const submenuRow = document.createElement('div')
+      submenuRow.className = 'submenu-row clearfix'
+
+      if (submenuItem.checked) {
+        const checked = document.createElement('div')
+        checked.className = 'submenu-check'
+        submenuRow.appendChild(checked)
+      }
+
       const subItemElem = document.createElement('div')
-      subItemElem.className = 'menu-item'
       subItemElem.innerText = submenuItem.label
-      subItemElem.addEventListener('click', (event) => {
-        event.stopPropagation()
-        if (submenuItem.click)
-          submenuItem.click()
-      })
-      subItemHolder.appendChild(subItemElem)
+      if (submenuItem.disabled) {
+        subItemElem.className = 'menu-item disabled'
+      } else {
+        subItemElem.className = 'menu-item'
+        subItemElem.addEventListener('click', (event) => {
+          event.stopPropagation()
+          if (submenuItem.click)
+            submenuItem.click()
+        })
+      }
+      submenuRow.appendChild(subItemElem)
+      subItemHolder.appendChild(submenuRow)
     })
     this.root.appendChild(subItemHolder)
 

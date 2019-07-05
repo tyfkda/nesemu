@@ -158,6 +158,13 @@ $RESIZABLE_RADIUS: 8px;
 .menu-item:hover {
   background-color: #eee;
 }
+.menu-item.disabled {
+  color: gray;
+}
+.menu-item.disabled:hover {
+  background-color: transparent;
+  cursor: default;
+}
 
 .menu-subitem-holder {
   position: absolute;
@@ -166,6 +173,19 @@ $RESIZABLE_RADIUS: 8px;
   font-size: 10px;
   border: 1px solid #888;
   box-sizing: content-box;
+}
+
+.submenu-row {
+  position: relative;
+
+  .submenu-check {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+  .submenu-check:after {
+    content: '✓';
+  }
 }
 
 .base-clickable {
