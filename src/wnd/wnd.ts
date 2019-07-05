@@ -147,18 +147,55 @@ export default class Wnd {
     this.menuBar.className = 'menu-bar'
     this.menuBar.style.zIndex = String(Z_MENUBAR)
 
-    menu.forEach((menuItem: any) => {
+    const itemElems: HTMLElement[] = []
+    let activeSubmenuIndex = -1
+    let submenuHandler: any
+
+    const onClose = () => {
+      activeSubmenuIndex = -1
+      submenuHandler = null
+      this.onEvent('closeMenu')
+    }
+
+    const showSubmenu = (index: number) => {
+      const menuItem = menu[index]
+      if (!('submenu' in menuItem) || activeSubmenuIndex === index)
+        return
+
+      if (submenuHandler != null) {
+        submenuHandler.close()
+      }
+
+      const itemElem = itemElems[index]
+      activeSubmenuIndex = index
+      submenuHandler = this.openSubmenu(menuItem, itemElem, onClose)
+    }
+
+    menu.forEach((menuItem: any, index: number) => {
       const itemElem = document.createElement('div')
       itemElem.className = 'menu-item pull-left'
       itemElem.innerText = menuItem.label
       itemElem.style.height = '100%'
-      itemElem.addEventListener('click', (_event) => {
+      itemElem.addEventListener('click', (event) => {
+        event.stopPropagation()
         if ('submenu' in menuItem) {
-          this.onEvent('openMenu')
-          this.openSubmenu(menuItem, itemElem)
+          if (activeSubmenuIndex < 0) {
+            this.onEvent('openMenu')
+            showSubmenu(index)
+          } else {
+            submenuHandler.close()
+            onClose()
+          }
         }
       })
       this.menuBar.appendChild(itemElem)
+      itemElems.push(itemElem)
+
+      itemElem.addEventListener('mouseenter', (_event) => {
+        if (activeSubmenuIndex >= 0 && activeSubmenuIndex !== index && 'submenu' in menuItem) {
+          showSubmenu(index)
+        }
+      })
     })
     upper.appendChild(this.menuBar)
 
@@ -361,7 +398,7 @@ export default class Wnd {
     return titleElem
   }
 
-  private openSubmenu(menuItem: any, itemElem: HTMLElement) {
+  private openSubmenu(menuItem: any, itemElem: HTMLElement, onClose?: Function): any {
     const subItemHolder = document.createElement('div')
     subItemHolder.className = 'menu-subitem-holder'
     subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
@@ -381,8 +418,7 @@ export default class Wnd {
         subItemElem.className = 'menu-item disabled'
       } else {
         subItemElem.className = 'menu-item'
-        subItemElem.addEventListener('click', (event) => {
-          event.stopPropagation()
+        subItemElem.addEventListener('click', (_event) => {
           if (submenuItem.click)
             submenuItem.click()
         })
@@ -398,13 +434,22 @@ export default class Wnd {
       top: `${rect.bottom}px`,
     })
 
-    // To handle earlier than menu open, pass useCapture=true
-    const onClickOther = (_event: MouseEvent) => {
+    const close = () => {
       if (subItemHolder.parentNode != null)
         subItemHolder.parentNode.removeChild(subItemHolder)
-      document.removeEventListener('click', onClickOther, true)
-      this.onEvent('closeMenu')
+      document.removeEventListener('click', onClickOther)
     }
-    document.addEventListener('click', onClickOther, true)
+
+    // To handle earlier than menu open, pass useCapture=true
+    const onClickOther = (_event: MouseEvent) => {
+      close()
+      if (onClose != null)
+        onClose()
+    }
+    document.addEventListener('click', onClickOther /*, true*/)
+
+    return {
+      close,
+    }
   }
 }
