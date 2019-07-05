@@ -21,13 +21,13 @@ NES emulator written in TypeScript.
 
 ## Control
 
-| NES      | Keyboard   |
-|----------|------------|
-| Pad      | Cursor key |
-| A button | X key      |
-| B button | Z key      |
-| Start    | Enter      |
-| Select   | Space      |
+| NES      | Keyboard(1P) | (2P)        |
+|----------|--------------|-------------|
+| Pad      | Arrow key    | I,J,K,L key |
+| A button | X key        | W key       |
+| B button | Z key        | Q key       |
+| Start    | Enter        | O key       |
+| Select   | Space        | P key       |
 
   * You can also use a gamepad
 
@@ -61,3 +61,8 @@ $ npm run release
 ```
 
 * Files are generated in `release`
+
+
+### Reference
+
+  * [Nesdev wiki](https://wiki.nesdev.com/w/index.php/Nesdev_Wiki)
