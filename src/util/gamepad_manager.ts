@@ -171,7 +171,7 @@ export class GamepadWnd extends Wnd {
   private buttons: HTMLElement[]
   private selectedButton: HTMLElement|null = null
 
-  public constructor(wndMgr: WindowManager) {
+  public constructor(wndMgr: WindowManager, private onClose?: () => void) {
     super(wndMgr, 230, 150, 'Gamepad config')
     const content = document.createElement('div')
     content.className = 'gamepad-content'
@@ -206,6 +206,8 @@ export class GamepadWnd extends Wnd {
 
   public close(): void {
     this.destroying = true
+    if (this.onClose != null)
+      this.onClose()
     super.close()
   }
 

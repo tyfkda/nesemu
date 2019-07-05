@@ -22,6 +22,7 @@ class Main {
   private wndMgr: WindowManager
   private apps: App[] = []
   private volume = 1
+  private gamepadWnd: GamepadWnd|null = null
 
   constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
@@ -162,8 +163,14 @@ class Main {
     }
 
     gamepadText.addEventListener('click', () => {
-      const gamepadWnd = new GamepadWnd(this.wndMgr)
-      this.wndMgr.add(gamepadWnd)
+      if (this.gamepadWnd == null) {
+        this.gamepadWnd = new GamepadWnd(this.wndMgr, () => {
+          this.gamepadWnd = null
+        })
+        this.wndMgr.add(this.gamepadWnd)
+      } else {
+        this.wndMgr.moveToTop(this.gamepadWnd)
+      }
     })
   }
 
