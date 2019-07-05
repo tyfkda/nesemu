@@ -292,7 +292,7 @@ export class Ppu {
           result = this.bufferedValue
           this.bufferedValue = this.readPpuDirect(addr)
         }
-        this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PpuReg.CTRL])
+        this.ppuAddr = incPpuAddr(ppuAddr, this.regs[PpuReg.CTRL])
       }
       break
     default:
@@ -349,7 +349,7 @@ export class Ppu {
         this.scrollTemp = ((this.scrollTemp & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
                            ((value & 0x07) << 12))
         this.scrollLatch = this.scrollTemp
-        if (this.hcount >= Const.HEIGHT)
+        if (this.hclipZero)
           this.addHevent(HEventType.SCROLL_CURR, this.scrollTemp)
       }
       this.latch = 1 - this.latch
@@ -358,7 +358,6 @@ export class Ppu {
       if (this.latch === 0) {
         this.scrollTemp = (this.scrollTemp & ~0x7f00) | ((value & 0x3f) << 8)
         this.scrollLatch = this.scrollTemp
-        this.ppuAddr = value
       } else {
         this.scrollTemp = (this.scrollTemp & ~0x00ff) | value
         this.scrollLatch = this.scrollTemp
