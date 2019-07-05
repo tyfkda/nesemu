@@ -222,12 +222,12 @@ export class App {
     if (this.wndMap[AppWndType.PATTERN] != null)
       return false
 
-    const paletWnd = this.wndMap[AppWndType.PALET] as PaletWnd
-    const getSelectedPalets = (buf: Uint8Array) => {
-      if (paletWnd != null)
-        paletWnd.getSelectedPalets(buf)
-      else
-        buf[0] = buf[1] = 0
+    const getSelectedPalets = (buf: Uint8Array): boolean => {
+      const paletWnd = this.wndMap[AppWndType.PALET] as PaletWnd
+      if (paletWnd == null)
+        return false
+      paletWnd.getSelectedPalets(buf)
+      return true
     }
     const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes, this.stream,
                                                 getSelectedPalets)

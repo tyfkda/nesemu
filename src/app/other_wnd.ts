@@ -259,7 +259,7 @@ export class PatternTableWnd extends Wnd {
   }
 
   public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream,
-                     private getSelectedPalets: (buf: Uint8Array) => void) {
+                     private getSelectedPalets: (buf: Uint8Array) => boolean) {
     super(wndMgr, 256, 128, 'PatternTable')
 
     const canvas = PatternTableWnd.createCanvas()
