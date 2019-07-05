@@ -210,8 +210,8 @@ export default class Wnd {
       },
     ]
 
-    const MIN_WIDTH = 64
-    const MIN_HEIGHT = 24 + Wnd.TITLEBAR_HEIGHT
+    const MIN_WIDTH = 80
+    const MIN_HEIGHT = 60 + Wnd.TITLEBAR_HEIGHT
 
     table.forEach(param => {
       const resizeBox = document.createElement('div')
@@ -255,9 +255,11 @@ export default class Wnd {
             let height = box.bottom - box.top - 2
             if (width < MIN_WIDTH) {
               box[param.horz] -= (MIN_WIDTH - width) * (param.horz === 'left' ? 1 : -1)
+              width = MIN_WIDTH
             }
             if (height < MIN_HEIGHT) {
               box[param.vert] -= (MIN_HEIGHT - height) * (param.vert === 'top' ? 1 : -1)
+              height = MIN_HEIGHT
             }
             DomUtil.setStyles(this.root, {
               width: `${Math.round(box.right - box.left -  2)}px`,
