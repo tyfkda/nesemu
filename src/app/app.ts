@@ -108,10 +108,10 @@ export class App {
     case AppEvent.Type.CLOSE_WND:
       {
         const wnd = param as Wnd
-        const key = Object.keys(this.wndMap).find(key => this.wndMap[key] === wnd)
+        const key = Object.keys(this.wndMap).find(k => this.wndMap[k] === wnd)
         if (key != null) {
           delete this.wndMap[key]
-          if (parseInt(key) === AppWndType.SCREEN) {
+          if (parseInt(key, 10) === AppWndType.SCREEN) {
             this.destroy()
           }
         }

@@ -224,7 +224,7 @@ export default class Wnd {
 
     const W = 8
 
-    const table: {styleParams: {[key: string]: string}, horz: 'left'|'right', vert: 'top'|'bottom'}[] = [
+    const table: any[] = [
       {
         styleParams: { right: '-1px', bottom: '-1px', cursor: 'nwse-resize' },
         horz: 'right',
@@ -323,8 +323,9 @@ export default class Wnd {
 
   protected maximize() {
     this.setPos(0, 0)
+    const menubarHeight = this.menuBar != null ? Wnd.MENUBAR_HEIGHT : 0
     const width = window.innerWidth - 2  // -2 for border size
-    const height = window.innerHeight - Wnd.TITLEBAR_HEIGHT - (this.menuBar != null ? Wnd.MENUBAR_HEIGHT : 0) - 2
+    const height = window.innerHeight - (Wnd.TITLEBAR_HEIGHT + menubarHeight) - 2
     this.setClientSize(width, height)
   }
 
@@ -402,7 +403,7 @@ export default class Wnd {
     const subItemHolder = document.createElement('div')
     subItemHolder.className = 'menu-subitem-holder'
     subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
-    menuItem.submenu.forEach((submenuItem: {label: string, checked: boolean, disabled: boolean, click?: () => void}) => {
+    menuItem.submenu.forEach((submenuItem) => {
       const submenuRow = document.createElement('div')
       submenuRow.className = 'submenu-row clearfix'
 

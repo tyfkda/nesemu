@@ -110,7 +110,8 @@ function getBgPatternTableAddress(ppuCtrl: Byte): Address {
   return (ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
 }
 
-function getBgPat(chrData: Uint8Array, chridx: number, py: number, chrBankOffset: number[]): number {
+function getBgPat(chrData: Uint8Array, chridx: number, py: number, chrBankOffset: number[]): number
+{
   const idx = chridx + py
   const bank = (idx >> 10) & 7
   const p = chrBankOffset[bank] + (idx & 0x03ff)
@@ -235,7 +236,8 @@ export class Ppu {
 
     this.hstatusMgr.current.set(HEventType.PPU_CTRL, this.regs[PpuReg.CTRL], -1)
     this.hstatusMgr.current.set(HEventType.PPU_MASK, this.regs[PpuReg.MASK], -1)
-    this.hstatusMgr.current.set(HEventType.MIRROR_MODE_BIT, kMirrorModeBitTable[this.mirrorMode], -1)
+    this.hstatusMgr.current.set(HEventType.MIRROR_MODE_BIT,
+                                kMirrorModeBitTable[this.mirrorMode], -1)
   }
 
   public setChrData(chrData: Uint8Array): void {
@@ -318,7 +320,8 @@ export class Ppu {
         this.scrollTemp = (this.scrollTemp & ~0x0c00) | ((value & BASE_NAMETABLE_ADDRESS) << 10)
         this.scrollLatch = this.scrollTemp
         // At dot 257 of each scanline:
-        const scrollCurr = (this.hstatusMgr.current.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
+        const scrollCurr = ((this.hstatusMgr.current.scrollCurr & ~0x041f) |
+                            (this.scrollTemp & 0x041f))
         // this.scrollCurr = scrollCurr
         // if (this.hcount >= 280 && this.hcount < 304) {
         //   this.scrollCurr = (this.scrollCurr & ~0x7be0) | (this.scrollTemp & 0x7be0)
@@ -346,7 +349,8 @@ export class Ppu {
         this.scrollLatch = this.scrollTemp
         this.addHevent(HEventType.SCROLL_FINE_X, value & 7)
         // At dot 257 of each scanline:
-        const scrollCurr = (this.hstatusMgr.current.scrollCurr & ~0x041f) | (this.scrollTemp & 0x041f)
+        const scrollCurr = ((this.hstatusMgr.current.scrollCurr & ~0x041f) |
+                            (this.scrollTemp & 0x041f))
         this.addHevent(HEventType.SCROLL_CURR, scrollCurr)
       } else {
         this.scrollTemp = ((this.scrollTemp & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
@@ -542,7 +546,8 @@ export class Ppu {
       for (let bx = 0; bx < Const.WIDTH / W; ++bx) {
         const ax = bx & 31
 
-        const nameTable = getNameTable(0, bx, by, this.hstatusMgr.current.mirrorModeBit) + nameTableOffset
+        const nameTable = (getNameTable(0, bx, by, this.hstatusMgr.current.mirrorModeBit) +
+                           nameTableOffset)
         const name = vram[nameTable + ax + (ay << 5)]
         const chridx = name * 16 + chrStart
         const palShift = (ax & 2) + ((ay & 2) << 1)
@@ -717,7 +722,8 @@ export class Ppu {
 
     for (let py = 0; py < h; ++py) {
       const ppy = flipVert ? (h - 1) - py : py
-      const pat = getSpritePat(this.chrData, chridx, ppy, false, this.hstatusMgr.current.chrBankOffset)
+      const pat = getSpritePat(this.chrData, chridx, ppy, false,
+                               this.hstatusMgr.current.chrBankOffset)
       if (pat !== 0)
         return py
     }
