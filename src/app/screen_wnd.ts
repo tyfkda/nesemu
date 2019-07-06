@@ -22,6 +22,15 @@ const enum MenuType {
   DEBUG,
 }
 
+const enum FileMenuType {
+  PAUSE,
+  RESET,
+  SCREENSHOT,
+  SAVE,
+  LOAD,
+  QUIT,
+}
+
 const enum ViewMenuType {
   SCALE_1x1,
   SCALE_2x2,
@@ -247,7 +256,10 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Save',
             click: () => {
-              this.app.saveData()
+              if (this.app.saveData()) {
+                const fileMenu = this.menuItems[MenuType.FILE].submenu
+                fileMenu[FileMenuType.LOAD].disabled = false
+              }
             },
           },
           {
@@ -377,6 +389,11 @@ export class ScreenWnd extends Wnd {
     const rect = this.contentHolder.getBoundingClientRect()
     const w = (WIDTH - (this.hideEdge ? HEDGE * 2 : 0)) | 0
     const h = (HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)) | 0
+
+    const fileMenu = this.menuItems[MenuType.FILE].submenu
+    if (!('disabled' in fileMenu[FileMenuType.LOAD])) {
+      fileMenu[FileMenuType.LOAD].disabled = !this.app.hasSaveData()
+    }
 
     const viewMenu = this.menuItems[MenuType.VIEW].submenu
     viewMenu[ViewMenuType.SCALE_1x1].checked =

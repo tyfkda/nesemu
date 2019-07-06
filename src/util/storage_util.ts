@@ -28,6 +28,11 @@ export default class StorageUtil {
     keyPrefix = prefix
   }
 
+  public static hasKey(key: string): boolean {
+    const k = getKey(key)
+    return storage.getItem(k) != null
+  }
+
   // Get string value.
   public static get(key: string, defaultValue: string): string {
     const k = getKey(key)

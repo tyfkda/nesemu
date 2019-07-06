@@ -159,12 +159,16 @@ export class App {
     this.screenWnd.close()
   }
 
-  public saveData() {
+  public saveData(): boolean {
     const saveData = this.nes.save()
-    StorageUtil.putObject(this.title, saveData)
+    return StorageUtil.putObject(this.title, saveData)
   }
 
-  public loadData() {
+  public hasSaveData(): boolean {
+    return StorageUtil.hasKey(this.title)
+  }
+
+  public loadData(): any {
     const saveData = StorageUtil.getObject(this.title, null)
     if (saveData) {
       try {
