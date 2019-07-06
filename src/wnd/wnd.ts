@@ -46,8 +46,8 @@ function createHorizontalSplitter(parent: HTMLElement, upperHeight: number) {
 }
 
 export default class Wnd {
-  public static TITLEBAR_HEIGHT = 12
-  public static MENUBAR_HEIGHT = 12
+  public static TITLEBAR_HEIGHT = 14
+  public static MENUBAR_HEIGHT = 14
 
   protected contentHolder: HTMLElement
   private root: HTMLElement
@@ -431,7 +431,7 @@ export default class Wnd {
     const rect = getOffsetRect(this.root, itemElem)
     DomUtil.setStyles(subItemHolder, {
       left: `${rect.left - 1}px`,  // For border size
-      top: `${rect.bottom}px`,
+      top: `${rect.bottom - 1}px`,
     })
 
     const close = () => {

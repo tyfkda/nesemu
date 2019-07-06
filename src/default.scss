@@ -103,7 +103,6 @@ body {
       left: 0;
       right: 0;
       height: 100%;
-      margin-top: -1px;
       height: 12px;
       color: #444;
       font-size: 10px;
@@ -124,10 +123,6 @@ body {
     overflow: hidden;
     background-color: #ccc;
     font-size: 10px;
-
-    .menu-item {
-      margin-top: -1px;
-    }
   }
 }
 .wnd.top {
