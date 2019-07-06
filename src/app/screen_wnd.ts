@@ -44,6 +44,11 @@ const enum ScalerType {
   EPX,
 }
 
+const enum DebugMenuType {
+  EDGE,
+  SPRITE_FLICKER,
+}
+
 function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const img = document.createElement('img') as HTMLImageElement
   const title = String(Date.now())
@@ -338,6 +343,12 @@ export class ScreenWnd extends Wnd {
             },
           },
           {
+            label: 'Sprite flicker',
+            click: () => {
+              this.toggleSpriteFlicker()
+            },
+          },
+          {
             label: 'Palette',
             click: () => {
               this.app.createPaletWnd()
@@ -408,6 +419,11 @@ export class ScreenWnd extends Wnd {
       scalerMenu[i].checked = this.scalerType === i
     }
 
+    const ppu = this.nes.getPpu()
+    const debugMenu = this.menuItems[MenuType.DEBUG].submenu
+    debugMenu[DebugMenuType.EDGE].checked = !this.hideEdge
+    debugMenu[DebugMenuType.SPRITE_FLICKER].checked = !ppu.suppressSpriteFlicker
+
     this.stream.triggerOpenMenu()
   }
 
@@ -442,6 +458,11 @@ export class ScreenWnd extends Wnd {
   private toggleEdge() {
     this.hideEdge = !this.hideEdge
     this.updateContentSize(this.contentHolder.offsetWidth, this.contentHolder.offsetHeight)
+  }
+
+  private toggleSpriteFlicker() {
+    const ppu = this.nes.getPpu()
+    ppu.suppressSpriteFlicker = !ppu.suppressSpriteFlicker
   }
 
   private setScaler(type: ScalerType): void {
