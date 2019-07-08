@@ -113,7 +113,7 @@ export class Nes implements PrgBankController {
     this.cpu.deleteAllBreakPoints()
 
     this.setMemoryMap()
-    const romHash = md5(Array.from<number>(romData))
+    const romHash = md5(romData)
     this.mapper = this.createMapper(this.mapperNo, romHash)
 
     return true

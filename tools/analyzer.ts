@@ -1,5 +1,3 @@
-///<reference path="../src/decl/es2017.string.d.ts" />
-
 import * as fs from 'fs'
 
 import {Addressing, Instruction, OpType, kInstTable} from '../src/nes/cpu/inst'

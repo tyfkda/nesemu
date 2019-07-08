@@ -1,5 +1,3 @@
-///<reference path="./decl/patch.d.ts" />
-
 import {App} from './app/app'
 import {GlobalPaletWnd} from './app/other_wnd'
 import DomUtil from './util/dom_util'

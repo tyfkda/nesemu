@@ -40,7 +40,6 @@
     "@babel/preset-env": "~7.5.0",
     "@babel/register": "~7.4.4",
     "@types/jest": "~24.0.15",
-    "@types/md5": "~2.1.33",
     "@types/node": "~12.0.12",
     "argv": "~0.0.2",
     "babel-jest": "~24.8.0",
@@ -70,7 +69,7 @@
   "dependencies": {
     "core-js": "~3.1.4",
     "jszip": "~3.2.2",
-    "md5": "~2.2.1",
+    "md5": "git+https://github.com/pvorb/node-md5.git#master",
     "stats-js": "~1.0.1"
   }
 }
