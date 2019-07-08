@@ -40,9 +40,9 @@ const RELEASE_ASSETS_DIR = `${RELEASE_DIR}/assets`
 
 function convertHtml(buildTarget, dest) {
   return gulp.src([SRC_HTML_FILES,
-            '!' + SRC_HTML_DIR + '/**/_*.html'])
+                   '!' + SRC_HTML_DIR + '/**/_*.html'])
     .pipe(plumber())
-    .pipe(ejs({buildTarget: buildTarget}))
+    .pipe(ejs({buildTarget}))
     .pipe(htmlmin({
       collapseWhitespace: true,
       removeComments: true,
@@ -92,8 +92,7 @@ gulp.task('ts', () => {
   const config = clone(webpackConfig)
   config.mode = 'development'
   config.devtool = '#cheap-module-source-map'
-  return gulp.src([`${SRC_TS_DIR}/main.ts`,
-                   `${SRC_TS_DIR}/lib.ts`])
+  return gulp.src([`${SRC_TS_DIR}/main.ts`])
     .pipe(plumber())
     .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(ASSETS_DIR))
@@ -104,7 +103,7 @@ gulp.task('watch-ts', () => {
   config.mode = 'development'
   config.watch = true
   config.devtool = '#cheap-module-source-map'
-  gulp.src(SRC_TS_FILES)
+  gulp.src(SRC_TS_FILES, {base: SRC_TS_DIR})
     .pipe(plumber())
     .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(ASSETS_DIR))
@@ -124,8 +123,10 @@ gulp.task('watch-sass', () => {
 })
 
 gulp.task('lint', () => {
-  return lint([`${SRC_TS_DIR}/**/*.ts`,
+  return lint([SRC_TS_FILES,
+               SRC_TEST_FILES,
                `!${SRC_TS_DIR}/lib.ts`])
+
 })
 
 gulp.task('watch-lint', () => {
@@ -200,11 +201,10 @@ gulp.task('release', gulp.series('build', () => {
   // Build HTML for release.
   convertHtml('release', RELEASE_DIR)
 
-  // Concatenate ts into single 'assets/main.ts' file.
+  // Concatenate TypeScript into single 'assets/main.ts' file.
   const config = clone(webpackConfig)
   delete config.output.sourceMapFilename
   return gulp.src(`${SRC_TS_DIR}/main.ts`)
-    .pipe(plumber())
     .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(RELEASE_ASSETS_DIR))
 }))

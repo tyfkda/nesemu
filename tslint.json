@@ -78,7 +78,6 @@
       true,
       "allow-new"
     ],
-    "no-use-before-declare": true,
     "no-var-keyword": true,
     "no-var-requires": true,
     "object-literal-sort-keys": false,
