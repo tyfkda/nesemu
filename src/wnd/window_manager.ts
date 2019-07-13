@@ -2,7 +2,7 @@ import DomUtil from '../util/dom_util'
 import {GamepadManager} from '../util/gamepad_manager'
 import {KeyCode} from '../util/key_code'
 import {PadKeyHandler} from '../util/pad_key_handler'
-import Wnd from './wnd'
+import {Wnd} from './wnd'
 
 const BASE_PRIORITY = 100
 

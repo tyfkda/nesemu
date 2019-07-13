@@ -1,5 +1,5 @@
 import WindowManager from '../wnd/window_manager'
-import Wnd from '../wnd/wnd'
+import {Wnd, WndEvent} from '../wnd/wnd'
 
 import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
@@ -14,6 +14,8 @@ const WIDTH = 256 | 0
 const HEIGHT = 240 | 0
 const HEDGE = 0 | 0
 const VEDGE = 8 | 0
+
+const TRANSITION_DURATION = '0.1s'
 
 const enum MenuType {
   FILE,
@@ -101,10 +103,7 @@ export class ScreenWnd extends Wnd {
     this.setContent(this.fullscreenBase)
 
     this.canvasHolder = document.createElement('div')
-    DomUtil.setStyles(this.canvasHolder, {
-      transitionDuration: '0.1s',
-      transitionProperty: 'width, height',
-    })
+    this.canvasHolder.style.transitionDuration = TRANSITION_DURATION
     this.fullscreenBase.appendChild(this.canvasHolder)
 
     this.setScaler(ScalerType.NEAREST)
@@ -127,18 +126,24 @@ export class ScreenWnd extends Wnd {
     this.updateContentSize(this.contentWidth, this.contentHeight)
   }
 
-  protected onEvent(action: string, param?: any): any {
-    switch (action) {
-    case 'resize':
+  protected onEvent(event: WndEvent, param?: any): any {
+    switch (event) {
+    case WndEvent.RESIZE_BEGIN:
+      this.canvasHolder.style.transitionDuration = '0s'
+      break
+    case WndEvent.RESIZE_END:
+      this.canvasHolder.style.transitionDuration = TRANSITION_DURATION
+      break
+    case WndEvent.RESIZE:
       {
         const {width, height} = param
         this.onResized(width, height)
       }
       break
-    case 'openMenu':
+    case WndEvent.OPEN_MENU:
       this.onOpenMenu()
       break
-    case 'closeMenu':
+    case WndEvent.CLOSE_MENU:
       this.onCloseMenu()
       break
     }

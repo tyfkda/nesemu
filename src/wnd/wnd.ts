@@ -45,7 +45,16 @@ function createHorizontalSplitter(parent: HTMLElement, upperHeight: number) {
   return [upper, lower]
 }
 
-export default class Wnd {
+export const enum WndEvent {
+  CLOSE,
+  OPEN_MENU,
+  CLOSE_MENU,
+  RESIZE_BEGIN,
+  RESIZE,
+  RESIZE_END,
+}
+
+export class Wnd {
   public static TITLEBAR_HEIGHT = 14
   public static MENUBAR_HEIGHT = 14
 
@@ -117,7 +126,7 @@ export default class Wnd {
     return { width, height }
   }
 
-  protected onEvent(_action: string, _param?: any): any {
+  protected onEvent(_event: WndEvent, _param?: any): any {
   }
 
   public setFocus(): Wnd {
@@ -154,7 +163,7 @@ export default class Wnd {
     const onClose = () => {
       activeSubmenuIndex = -1
       submenuHandler = null
-      this.onEvent('closeMenu')
+      this.onEvent(WndEvent.CLOSE_MENU)
     }
 
     const showSubmenu = (index: number) => {
@@ -180,7 +189,7 @@ export default class Wnd {
         event.stopPropagation()
         if ('submenu' in menuItem) {
           if (activeSubmenuIndex < 0) {
-            this.onEvent('openMenu')
+            this.onEvent(WndEvent.OPEN_MENU)
             showSubmenu(index)
           } else {
             submenuHandler.close()
@@ -209,7 +218,7 @@ export default class Wnd {
   }
 
   public close(): void {
-    if (this.onEvent('close') === false)
+    if (this.onEvent(WndEvent.CLOSE) === false)
       return  // Cancel close
     this.wndMgr.remove(this)
     // this.root = null
@@ -278,7 +287,7 @@ export default class Wnd {
           bottom: rect.bottom - prect.top,
         }
 
-        this.onEvent('resize-begin')
+        this.onEvent(WndEvent.RESIZE_BEGIN)
 
         DomUtil.setMouseDragListener({
           move: (event2: MouseEvent) => {
@@ -304,11 +313,11 @@ export default class Wnd {
               left: `${Math.round(box.left)}px`,
               top: `${Math.round(box.top)}px`,
             })
-            this.onEvent('resize', {width, height: height - Wnd.TITLEBAR_HEIGHT})
+            this.onEvent(WndEvent.RESIZE, {width, height: height - Wnd.TITLEBAR_HEIGHT})
           },
           up: (_event2: MouseEvent) => {
             this.root.style['transition-property'] = null
-            this.onEvent('resize-end')
+            this.onEvent(WndEvent.RESIZE_END)
           },
         })
 
