@@ -57,10 +57,10 @@ export default class Cpu {
   // Status register [NVRBDIZC], 0|1 as a boolean
   private negative = 0
   private overflow = 0
+  private reservedFlag = 0
   private breakmode = 0
   private decimal = 0
   private irqBlocked = 0
-  private reservedFlag = 0
   private zero = 0
   private carry = 0
 
@@ -76,14 +76,15 @@ export default class Cpu {
   constructor(private bus: IBus) {
     this.a = this.x = this.y = this.s = 0
     this.pc = 0
+
+    this.negative = this.overflow = this.decimal = this.zero = this.carry = 0
+    this.irqBlocked = this.breakmode = this.reservedFlag = 1
   }
 
   public reset(): void {
     this.s = (this.s - 3) & 0xff
     this.pc = this.read16(VEC_RESET)
-
-    this.negative = this.overflow = this.decimal = this.zero = this.carry = 0
-    this.irqBlocked = this.breakmode = 1
+    this.irqBlocked = 1
   }
 
   public getRegs(): Regs {

@@ -132,7 +132,6 @@ export default class Nes implements PrgBankController {
   }
 
   public load(saveData: any): void {
-    this.reset()
     this.cpu.load(saveData.cpu)
     this.ppu.load(saveData.ppu)
     this.apu.load(saveData.apu)
@@ -141,7 +140,6 @@ export default class Nes implements PrgBankController {
   }
 
   public reset(): void {
-    this.ram.fill(0xff)
     this.cpu.reset()
     this.ppu.reset()
     this.apu.reset()
