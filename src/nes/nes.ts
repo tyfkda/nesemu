@@ -59,7 +59,6 @@ export class Nes implements PrgBankController {
   protected apu: Apu
   protected cycleCount = 0
 
-  protected mapperNo = 0
   protected mapper: Mapper
   private prgRom = new Uint8Array(0)
   private vblankCallback: (leftV: number) => void
@@ -83,8 +82,8 @@ export class Nes implements PrgBankController {
     this.vblankCallback = (_leftV) => {}
     this.breakPointCallback = () => {}
 
-    this.mapperNo = 0
-    this.mapper = this.createMapper(this.mapperNo)
+    const mapperNo = 0
+    this.mapper = this.createMapper(mapperNo)
   }
 
   public getBus(): Bus { return this.bus }
@@ -103,9 +102,9 @@ export class Nes implements PrgBankController {
   public setRomData(romData: Uint8Array): boolean|string {
     if (!isRomValid(romData))
       return 'Invalid format'
-    this.mapperNo = getMapperNo(romData)
-    if (!(this.mapperNo in kMapperTable))
-      return `Mapper ${this.mapperNo} not supported`
+    const mapperNo = getMapperNo(romData)
+    if (!(mapperNo in kMapperTable))
+      return `Mapper ${mapperNo} not supported`
 
     this.prgRom = loadPrgRom(romData)
     this.ppu.setChrData(loadChrRom(romData))
@@ -114,7 +113,7 @@ export class Nes implements PrgBankController {
 
     this.setMemoryMap()
     const romHash = md5(romData)
-    this.mapper = this.createMapper(this.mapperNo, romHash)
+    this.mapper = this.createMapper(mapperNo, romHash)
 
     return true
   }
