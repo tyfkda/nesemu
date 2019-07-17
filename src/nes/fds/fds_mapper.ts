@@ -9,6 +9,7 @@ import {Mapper, MapperOptions} from '../mapper/mapper'
 import {MirrorMode} from '../ppu/types'
 import {Util} from '../../util/util'
 import {IChannel, WaveType} from '../apu'
+import { IBus } from '../cpu/ibus'
 
 export const RAM_SIZE = 0xe000 - 0x6000
 
@@ -117,6 +118,7 @@ export class FdsMapper extends Mapper {
   private regs = new Uint8Array(16)
   private diskSideImages = new Array<Uint8Array>()
   private image?: Uint8Array
+  private side = 0
 
   private headPointer = 0
   private irqCounter = 0
@@ -130,14 +132,20 @@ export class FdsMapper extends Mapper {
 
   private audio = new FdsAudio()
 
-  public constructor(private biosData: Uint8Array, options: MapperOptions) {
+  public constructor(private biosData: Uint8Array, options: MapperOptions, private bus: IBus) {
     super(options)
 
     this.options.setChrData(Uint8Array.from([]))
     this.options.setMirrorMode(MirrorMode.HORZ)
 
     // BIOS ROM
-    this.options.setReadMemory(0xe000, 0xffff, adr => this.biosData[adr - 0xe000])
+    this.options.setReadMemory(0xe000, 0xffff, adr => {
+      if (adr === 0xe445) {
+        this.detectRequestingSide()
+      }
+
+      return this.biosData[adr - 0xe000]
+    })
 
     // PRG RAM
     this.ram.fill(0xbf)
@@ -167,7 +175,8 @@ export class FdsMapper extends Mapper {
       image = new Uint8Array(image.buffer, 16)
     }
     this.diskSideImages = loadFdsImage(image)
-    this.image = this.diskSideImages[0]
+    this.side = 0
+    this.image = this.diskSideImages[this.side]
     return true
   }
 
@@ -300,6 +309,9 @@ export class FdsMapper extends Mapper {
         return val
       }
     case Read.READ_DATA:
+if (this.headPointer === 0) {
+  console.log(`READ_DATA: 0`)
+}
       {
         const result = this.readData
         this.transferComplete = false
@@ -397,5 +409,41 @@ export class FdsMapper extends Mapper {
     if (this.headPointer >= this.image!.length) {
       this.regs[Reg.FDS_CTRL] &= ~FdsCtrl.MOTOR_ON
     }
+  }
+
+  private detectRequestingSide() {
+    const bufferAddr = this.bus.read8(0) | (this.bus.read8(1) << 8)
+console.log(`Read 0xe445: (0x00)=${Util.hex(bufferAddr, 4)}`)
+    const buffer = new Uint8Array(10)
+    for (let i = 0; i < 10; ++i) {
+      if (bufferAddr + i !== 0xe445) {
+        buffer[i] = this.bus.read8(bufferAddr + i)
+      } else {
+        buffer[i] = 0
+      }
+    }
+console.log(Array.from(buffer).map(x => Util.hex(x, 2)).join(' '))
+
+    const OFFSET = 15
+    let matchCount = 0
+    let matchedSide = -1
+    for (let i = 0; i < this.diskSideImages.length; ++i) {
+      const header = this.diskSideImages[i]
+      let match = true
+console.log(`${i}: ${Array.from(Array(buffer.length).keys()).map(j => Util.hex(header[j + 15]))}`)
+      for (let j = 0; j < buffer.length; ++j) {
+        if (buffer[j] !== header[j + OFFSET] && buffer[j] !== 0xff) {
+          match = false
+          break
+        }
+      }
+      if (match) {
+        ++matchCount
+        matchedSide = i
+      }
+    }
+console.log(`Match: #${matchCount}, ${matchedSide}`)
+    // if (matchCount === 1) {
+    // }
   }
 }

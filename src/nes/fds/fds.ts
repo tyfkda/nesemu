@@ -49,7 +49,7 @@ export class Fds implements Peripheral {
       setChrData: ppu.setChrData.bind(ppu),
       writePpuDirect: ppu.writePpuDirect.bind(ppu),
       setPeripheral: this.nes.setPeripheral.bind(this.nes),
-    })
+    }, bus)
     this.nes.setMapper(this.mapper)
 
     {
