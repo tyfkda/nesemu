@@ -169,6 +169,10 @@ export class Mapper020 extends Mapper {
     return true
   }
 
+  public getSideCount(): number {
+    return this.diskSideImages.length
+  }
+
   public onHblank(_hcount: number): void {
     if ((this.regs[IRQ_CTRL] & IRQ_CTRL_ENABLED) !== 0 &&
         (this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) !== 0) {

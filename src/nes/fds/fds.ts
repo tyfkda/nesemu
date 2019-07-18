@@ -28,6 +28,10 @@ export class Fds implements PrgBankController {
     return true
   }
 
+  public getSideCount(): number {
+    return this.mapper.getSideCount()
+  }
+
   public eject() {
     this.mapper.eject()
   }

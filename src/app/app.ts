@@ -4,6 +4,7 @@ import {MirrorMode} from '../nes/ppu/types'
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
 import {Fds} from '../nes/fds/fds'
+import {FdsCtrlWnd} from './fds_ctrl_wnd'
 import {KeyCode} from '../util/key_code'
 import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
 import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd} from './other_wnd'
@@ -170,7 +171,13 @@ export class App {
   public setDiskImage(diskData: Uint8Array): boolean {
     if (this.fds == null)
       return false
-    return this.fds.setImage(diskData)
+    const result = this.fds.setImage(diskData)
+    if (result) {
+      const ctrlWnd = new FdsCtrlWnd(this.wndMgr, this.fds)
+      this.wndMgr.add(ctrlWnd)
+      this.wndMgr.moveToTop(this.screenWnd)
+    }
+    return result
   }
 
   public close(): void {
