@@ -20,6 +20,8 @@ const KEY_VOLUME = 'volume'
 class Main {
   private wndMgr: WindowManager
   private apps: App[] = []
+  private diskBios: any = null
+  private uninsertedApp: App|null = null
   private volume = 1
   private gamepadWnd: GamepadWnd|null = null
   private globalPaletWnd: GlobalPaletWnd|null = null
@@ -68,7 +70,7 @@ class Main {
       this.apps.push(jsApp)
     }
 
-    const kTargetExts = ['nes']
+    const kTargetExts = ['nes', 'bin', 'fds']
 
     // Unzip and flatten.
     const promises = new Array<Promise<any>>()
@@ -114,10 +116,35 @@ class Main {
             typeMap[result.type] = []
           typeMap[result.type].push(result)
         })
+        // .bin: Disk BIOS
+        if (typeMap.bin) {
+          this.diskBios = typeMap.bin[0].binary
+          if (!typeMap.fds) {  // Boot disk system without inserting disk.
+            this.uninsertedApp = this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
+          }
+        }
         // Load .nes files.
         if (typeMap.nes) {
           typeMap.nes.forEach(file => {
             this.createAppFromRom(file.binary, file.fileName, x, y)
+            x += 16
+            y += 16
+          })
+        }
+        // Load .fds
+        if (typeMap.fds) {
+          if (this.diskBios == null) {
+            this.wndMgr.showSnackbar('.fds needs BIOS file (.bin) for Disk System')
+            return
+          }
+
+          typeMap.fds.forEach(file => {
+            if (this.uninsertedApp != null) {
+              this.uninsertedApp.setDiskImage(file.binary)
+              this.uninsertedApp = null
+            } else {
+              this.bootDiskImage(this.diskBios, file.binary, file.fileName, x, y)
+            }
             x += 16
             y += 16
           })
@@ -145,6 +172,29 @@ class Main {
     }
     app.setVolume(this.volume)
     this.apps.push(app)
+  }
+
+  private bootDiskImage(biosData: Uint8Array, diskImage: Uint8Array|null, name: string,
+                        x: number, y: number): App
+  {
+    const m = name.match(/^(.*?)\s*\(.*\)\.\w*$/)
+    const title = m ? m[1] : name
+    const option = {
+      title,
+      centerX: x,
+      centerY: y,
+      onClosed: (_app) => {
+        this.removeApp(_app)
+      },
+    }
+
+    const app = App.create(this.wndMgr, option)
+    app.bootDiskBios(biosData)
+    app.setVolume(this.volume)
+    if (diskImage != null)
+      app.setDiskImage(diskImage)
+    this.apps.push(app)
+    return app
   }
 
   private removeApp(app: App): void {

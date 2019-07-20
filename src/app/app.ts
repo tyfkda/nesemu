@@ -3,6 +3,8 @@ import {MirrorMode} from '../nes/ppu/types'
 
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
+import {Fds} from '../nes/fds/fds'
+import {FdsCtrlWnd} from './fds_ctrl_wnd'
 import {KeyCode} from '../util/key_code'
 import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
 import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd} from './other_wnd'
@@ -48,6 +50,8 @@ export class App {
   protected title: string
   protected screenWnd: ScreenWnd
   protected wndMap: {[key: number]: Wnd} = {}
+
+  protected fds?: Fds
 
   protected volume = 1
 
@@ -130,11 +134,6 @@ export class App {
     if (result !== true)
       return result
 
-    const contextClass = window.AudioContext || window.webkitAudioContext
-    // if (contextClass == null)
-    //   return
-
-    this.audioManager = new AudioManager(contextClass)
     this.setupAudioManager()
 
     this.nes.reset()
@@ -153,6 +152,32 @@ export class App {
     }
 
     return true
+  }
+
+  public bootDiskBios(biosData: Uint8Array): boolean {
+    this.fds = new Fds(biosData, this.nes)
+
+    this.setupAudioManager()
+
+    this.nes.reset()
+    this.nes.getCpu().pause(false)
+    this.screenWnd.getContentHolder().focus()
+
+    this.startLoopAnimation()
+
+    return true
+  }
+
+  public setDiskImage(diskData: Uint8Array): boolean {
+    if (this.fds == null)
+      return false
+    const result = this.fds.setImage(diskData)
+    if (result) {
+      const ctrlWnd = new FdsCtrlWnd(this.wndMgr, this.fds)
+      this.wndMgr.add(ctrlWnd)
+      this.wndMgr.moveToTop(this.screenWnd)
+    }
+    return result
   }
 
   public close(): void {
@@ -377,7 +402,15 @@ export class App {
   }
 
   protected setupAudioManager() {
-    this.audioManager.release()
+    if (this.audioManager == null) {
+      const contextClass = window.AudioContext || window.webkitAudioContext
+      //if (contextClass == null)
+      //  return
+
+      this.audioManager = new AudioManager(contextClass)
+    } else {
+      this.audioManager.release()
+    }
 
     this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
     const channelTypes = this.nes.getSoundChannelTypes()
