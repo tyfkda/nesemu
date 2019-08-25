@@ -402,6 +402,9 @@ export class ScreenWnd extends Wnd {
   }
 
   protected onOpenMenu() {
+    if (this.menuItems == null)
+      return
+
     const rect = this.contentHolder.getBoundingClientRect()
     const w = (WIDTH - (this.hideEdge ? HEDGE * 2 : 0)) | 0
     const h = (HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)) | 0
