@@ -18,9 +18,9 @@
   "author": "tyfkda",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tyfkda/FrontendTemplate"
+    "url": "https://github.com/tyfkda/nesemu"
   },
-  "license": "Unlicense",
+  "license": "MIT",
   "jest": {
     "transform": {
       "^.+\\.tsx?$": "ts-jest"
