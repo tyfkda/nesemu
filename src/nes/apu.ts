@@ -510,7 +510,9 @@ export class Apu {
   }
 
   public load(saveData: any): void {
-    this.regs = Util.convertBase64StringToUint8Array(saveData.regs)
+    const regs = Util.convertBase64StringToUint8Array(saveData.regs)
+    for (let i = 0; i < regs.length; ++i)
+      this.write(i + BASE, regs[i])
   }
 
   public read(adr: Address): Byte {
