@@ -3,7 +3,7 @@ import {Wnd} from '../wnd/wnd'
 
 import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
-import {kColors} from '../nes/ppu/const'
+import {kPaletColors} from '../nes/ppu/const'
 
 import {AppEvent} from './app_event'
 
@@ -106,9 +106,9 @@ export class PaletWnd extends Wnd {
       this.palet[i] = c
 
       const j = c * 3
-      const r = kColors[j + 0]
-      const g = kColors[j + 1]
-      const b = kColors[j + 2]
+      const r = kPaletColors[j + 0]
+      const g = kPaletColors[j + 1]
+      const b = kPaletColors[j + 2]
       this.boxes[i].style.backgroundColor = `rgb(${r},${g},${b})`
     }
   }
@@ -314,9 +314,9 @@ export class GlobalPaletWnd extends Wnd {
     // Set colors
     const n = this.boxes.length
     for (let i = 0; i < n; ++i) {
-      const r = kColors[i * 3 + 0]
-      const g = kColors[i * 3 + 1]
-      const b = kColors[i * 3 + 2]
+      const r = kPaletColors[i * 3 + 0]
+      const g = kPaletColors[i * 3 + 1]
+      const b = kPaletColors[i * 3 + 2]
       this.boxes[i].style.backgroundColor = `rgb(${r},${g},${b})`
     }
   }

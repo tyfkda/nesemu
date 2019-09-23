@@ -5,7 +5,7 @@
 
 import {Const} from '../const'
 import {Address, Byte, Word} from '../types'
-import {kColors, kStaggered, kFlipXBits} from './const'
+import {kPaletColors, kStaggered, kFlipXBits} from './const'
 import {HEventType, HEvents, HStatusMgr} from './hevent'
 import {MirrorMode} from './types'
 import Util from '../../util/util'
@@ -152,9 +152,9 @@ function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8Cl
     const pal = offscreen[i] & 0x1f
     const col = vram[PALET_ADR + pal] & colorMask
     const c = col * 3
-    pixels[index + 0] = kColors[c]
-    pixels[index + 1] = kColors[c + 1]
-    pixels[index + 2] = kColors[c + 2]
+    pixels[index + 0] = kPaletColors[c]
+    pixels[index + 1] = kPaletColors[c + 1]
+    pixels[index + 2] = kPaletColors[c + 2]
     index += 4
   }
 }
@@ -174,9 +174,9 @@ function render8x8Chip(
       if (pal !== 0) {
         const col = ppu.getPalet(paletHigh | pal)
         const c = col * 3
-        r = kColors[c]
-        g = kColors[c + 1]
-        b = kColors[c + 2]
+        r = kPaletColors[c]
+        g = kPaletColors[c + 1]
+        b = kPaletColors[c + 2]
       }
 
       const index = (py * lineWidth + px + startOffset) * 4
@@ -524,9 +524,9 @@ export class Ppu {
           }
 
           const col0 = this.getPalet(paletHigh)
-          const clearR = kColors[col0 * 3 + 0]
-          const clearG = kColors[col0 * 3 + 1]
-          const clearB = kColors[col0 * 3 + 2]
+          const clearR = kPaletColors[col0 * 3 + 0]
+          const clearG = kPaletColors[col0 * 3 + 1]
+          const clearB = kPaletColors[col0 * 3 + 2]
           render8x8Chip(this, pixels, (by * W) * lineWidth + bx * W + startX,
                         pattern, paletHigh, clearR, clearG, clearB, lineWidth)
         }
@@ -563,9 +563,9 @@ export class Ppu {
     const vram = this.vram
 
     const clearColor = this.getPalet(0)  // Universal background color
-    const clearR = kColors[clearColor * 3 + 0]
-    const clearG = kColors[clearColor * 3 + 1]
-    const clearB = kColors[clearColor * 3 + 2]
+    const clearR = kPaletColors[clearColor * 3 + 0]
+    const clearG = kPaletColors[clearColor * 3 + 1]
+    const clearB = kPaletColors[clearColor * 3 + 2]
     const pattern = new Uint16Array(W)
 
     for (let by = 0; by < Const.HEIGHT / W; ++by) {

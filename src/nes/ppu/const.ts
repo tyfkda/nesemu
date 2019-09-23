@@ -1,4 +1,4 @@
-export const kColors = Uint8Array.from([
+export const kPaletColors = Uint8Array.from([
   124, 124, 124,
   0, 0, 252,
   0, 0, 188,
