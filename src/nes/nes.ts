@@ -206,18 +206,6 @@ export class Nes implements PrgBankController {
     this.ppu.render(pixels)
   }
 
-  public renderNameTable1(pixels: Uint8ClampedArray, lineWidth: number,
-                          startX: number, startY: number, page: number): void
-  {
-    this.ppu.renderNameTable1(pixels, lineWidth, startX, startY, page << 10)
-  }
-
-  public renderPatternTable(pixels: Uint8ClampedArray, lineWidth: number,
-                            colorGroups: Uint8Array): void
-  {
-    this.ppu.renderPattern(pixels, lineWidth, colorGroups)
-  }
-
   public setPrgBank(bank: number, page: number): void {
     this.prgBank[bank] = page << 13
   }

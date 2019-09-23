@@ -239,8 +239,10 @@ export class App {
   public createNameTableWnd(): boolean {
     if (this.wndMap[AppWndType.NAME] != null)
       return false
-    const nameTableWnd = new NameTableWnd(this.wndMgr, this.nes, this.stream,
-                                          this.nes.getPpu().getMirrorMode() === MirrorMode.HORZ)
+
+    const ppu = this.nes.getPpu()
+    const nameTableWnd = new NameTableWnd(this.wndMgr, ppu, this.stream,
+                                          ppu.getMirrorMode() === MirrorMode.HORZ)
     this.wndMgr.add(nameTableWnd)
     nameTableWnd.setPos(520, 40)
     this.wndMap[AppWndType.NAME] = nameTableWnd
@@ -258,7 +260,7 @@ export class App {
       paletWnd.getSelectedPalets(buf)
       return true
     }
-    const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes, this.stream,
+    const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes.getPpu(), this.stream,
                                                 getSelectedPalets)
     this.wndMgr.add(patternTableWnd)
     patternTableWnd.setPos(520, 300)

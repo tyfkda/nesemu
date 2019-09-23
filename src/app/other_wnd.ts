@@ -3,6 +3,7 @@ import {Wnd} from '../wnd/wnd'
 
 import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
+import {Ppu} from '../nes/ppu/ppu'
 import {kPaletColors} from '../nes/ppu/const'
 
 import {AppEvent} from './app_event'
@@ -179,7 +180,7 @@ export class PaletWnd extends Wnd {
 }
 
 export class NameTableWnd extends Wnd {
-  private nes: Nes
+  private ppu: Ppu
   private stream: AppEvent.Stream
   private vert: boolean
   private canvas: HTMLCanvasElement
@@ -187,12 +188,12 @@ export class NameTableWnd extends Wnd {
   private imageData: ImageData
   private subscription: Pubsub.Subscription
 
-  public constructor(wndMgr: WindowManager, nes: Nes, stream: AppEvent.Stream,
+  public constructor(wndMgr: WindowManager, ppu: Ppu, stream: AppEvent.Stream,
                      vert: boolean) {
     const width = 256 * (vert ? 1 : 2)
     const height = 240 * (vert ? 2 : 1)
     super(wndMgr, width, height, 'NameTable')
-    this.nes = nes
+    this.ppu = ppu
     this.stream = stream
     this.vert = vert
 
@@ -232,8 +233,8 @@ export class NameTableWnd extends Wnd {
   private render(): void {
     const page1X = this.vert ? 0 : 256
     const page1Y = this.vert ? 240 : 0
-    this.nes.renderNameTable1(this.imageData.data, this.imageData.width, 0, 0, 0)
-    this.nes.renderNameTable1(this.imageData.data, this.imageData.width, page1X, page1Y, 1)
+    this.ppu.renderNameTable1(this.imageData.data, this.imageData.width, 0, 0, 0)
+    this.ppu.renderNameTable1(this.imageData.data, this.imageData.width, page1X, page1Y, 1)
     this.context.putImageData(this.imageData, 0, 0)
   }
 }
@@ -258,7 +259,7 @@ export class PatternTableWnd extends Wnd {
     return canvas
   }
 
-  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream,
+  public constructor(wndMgr: WindowManager, private ppu: Ppu, private stream: AppEvent.Stream,
                      private getSelectedPalets: (buf: Uint8Array) => boolean) {
     super(wndMgr, 256, 128, 'PatternTable')
 
@@ -290,7 +291,7 @@ export class PatternTableWnd extends Wnd {
     const buf = this.buf
     this.getSelectedPalets(buf)
 
-    this.nes.renderPatternTable(this.imageData.data, this.imageData.width, buf)
+    this.ppu.renderPatternTable(this.imageData.data, this.imageData.width, buf)
     this.context.putImageData(this.imageData, 0, 0)
   }
 }

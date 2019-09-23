@@ -503,8 +503,8 @@ export class Ppu {
     copyOffscreenToPixels(this.offscreen, pixels, greyscale, this.vram)
   }
 
-  public renderPattern(pixels: Uint8ClampedArray, lineWidth: number,
-                       colorGroups: Uint8Array): void
+  public renderPatternTable(pixels: Uint8ClampedArray, lineWidth: number,
+                            colorGroups: Uint8Array): void
   {
     const W = 8
     const invert = (this.regs[PpuReg.CTRL] & SPRITE_PATTERN_TABLE_ADDRESS) === 0 ? 1 : 0
@@ -556,8 +556,10 @@ export class Ppu {
   }
 
   public renderNameTable1(pixels: Uint8ClampedArray, lineWidth: number,
-                          startX: number, startY: number, nameTableOffset: number): void
+                          startX: number, startY: number, page: number): void
   {
+    const nameTableOffset = page << 10
+
     const W = 8
     const chrStart = getBgPatternTableAddress(this.regs[PpuReg.CTRL])
     const vram = this.vram
