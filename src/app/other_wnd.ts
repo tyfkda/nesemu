@@ -98,7 +98,6 @@ export class PaletWnd extends Wnd {
     const tmp = this.tmp
     this.getPalet(tmp)
 
-    const colorTable = this.nes.getPaletColorTable()
     const n = PaletWnd.W * PaletWnd.H
     for (let i = 0; i < n; ++i) {
       const c = tmp[i]
@@ -107,9 +106,9 @@ export class PaletWnd extends Wnd {
       this.palet[i] = c
 
       const j = c * 3
-      const r = colorTable[j + 0]
-      const g = colorTable[j + 1]
-      const b = colorTable[j + 2]
+      const r = kColors[j + 0]
+      const g = kColors[j + 1]
+      const b = kColors[j + 2]
       this.boxes[i].style.backgroundColor = `rgb(${r},${g},${b})`
     }
   }

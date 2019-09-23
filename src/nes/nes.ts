@@ -4,7 +4,6 @@ import {Apu, ChannelType} from './apu'
 import {Bus} from './bus'
 import {Cpu} from './cpu/cpu'
 import {MirrorMode} from './ppu/types'
-import {kColors} from './ppu/const'
 import {Ppu} from './ppu/ppu'
 import {Address, Byte} from './types'
 import Util from '../util/util'
@@ -69,10 +68,6 @@ export class Nes implements PrgBankController {
 
   public static create(): Nes {
     return new Nes()
-  }
-
-  public getPaletColorTable(): Uint8Array {
-    return kColors
   }
 
   constructor() {
