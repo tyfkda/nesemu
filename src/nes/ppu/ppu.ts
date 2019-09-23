@@ -159,6 +159,34 @@ function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8Cl
   }
 }
 
+// No clipping, debug purpose.
+function render8x8Chip(
+  ppu: Ppu, pixels: Uint8ClampedArray, startOffset: number,
+  pattern: Uint16Array, paletHigh: number,
+  clearR: number, clearG: number, clearB: number, lineWidth: number)
+{
+  const W = 8
+  for (let py = 0; py < W; ++py) {
+    const pat = pattern[py]
+    for (let px = 0; px < W; ++px) {
+      const pal = (pat >> ((W - 1) * 2 - (px << 1))) & 3
+      let r = clearR, g = clearG, b = clearB
+      if (pal !== 0) {
+        const col = ppu.getPalet(paletHigh | pal)
+        const c = col * 3
+        r = kColors[c]
+        g = kColors[c + 1]
+        b = kColors[c + 2]
+      }
+
+      const index = (py * lineWidth + px + startOffset) * 4
+      pixels[index + 0] = r
+      pixels[index + 1] = g
+      pixels[index + 2] = b
+    }
+  }
+}
+
 export class Ppu {
   public suppressSpriteFlicker = true
 
@@ -499,9 +527,8 @@ export class Ppu {
           const clearR = kColors[col0 * 3 + 0]
           const clearG = kColors[col0 * 3 + 1]
           const clearB = kColors[col0 * 3 + 2]
-          this.render8x8Chip(pixels, (by * W) * lineWidth + bx * W + startX,
-                             pattern, paletHigh,
-                             clearR, clearG, clearB, lineWidth)
+          render8x8Chip(this, pixels, (by * W) * lineWidth + bx * W + startX,
+                        pattern, paletHigh, clearR, clearG, clearB, lineWidth)
         }
       }
     }
@@ -557,8 +584,8 @@ export class Ppu {
 
         for (let py = 0; py < W; ++py)
           pattern[py] = getBgPat(this.chrData, chridx, py, this.hstatusMgr.current.chrBankOffset)
-        this.render8x8Chip(pixels, (by * W + startY) * lineWidth + bx * W + startX,
-                           pattern, paletHigh, clearR, clearG, clearB, lineWidth)
+        render8x8Chip(this, pixels, (by * W + startY) * lineWidth + bx * W + startX,
+                      pattern, paletHigh, clearR, clearG, clearB, lineWidth)
       }
     }
   }
@@ -775,34 +802,6 @@ export class Ppu {
     } else {
       const bankOffset = this.hstatusMgr.current.chrBankOffset[(addr >> 10) & 7]
       return this.chrData[(addr & 0x3ff) + bankOffset]
-    }
-  }
-
-  // No clipping, debug purpose.
-  private render8x8Chip(
-    pixels: Uint8ClampedArray, startOffset: number,
-    pattern: Uint16Array, paletHigh: number,
-    clearR: number, clearG: number, clearB: number, lineWidth: number)
-  {
-    const W = 8
-    for (let py = 0; py < W; ++py) {
-      const pat = pattern[py]
-      for (let px = 0; px < W; ++px) {
-        const pal = (pat >> ((W - 1) * 2 - (px << 1))) & 3
-        let r = clearR, g = clearG, b = clearB
-        if (pal !== 0) {
-          const col = this.getPalet(paletHigh | pal)
-          const c = col * 3
-          r = kColors[c]
-          g = kColors[c + 1]
-          b = kColors[c + 2]
-        }
-
-        const index = (py * lineWidth + px + startOffset) * 4
-        pixels[index + 0] = r
-        pixels[index + 1] = g
-        pixels[index + 2] = b
-      }
     }
   }
 }
