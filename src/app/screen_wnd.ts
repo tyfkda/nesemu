@@ -372,6 +372,12 @@ export class ScreenWnd extends Wnd {
             },
           },
           {
+            label: 'Audio',
+            click: () => {
+              this.app.createAudioWnd()
+            },
+          },
+          {
             label: 'Trace',
             click: () => {
               this.app.createTraceWnd()

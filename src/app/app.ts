@@ -7,7 +7,7 @@ import {Fds} from '../nes/fds/fds'
 import {FdsCtrlWnd} from './fds_ctrl_wnd'
 import {KeyCode} from '../util/key_code'
 import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
-import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd} from './other_wnd'
+import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd, AudioWnd} from './other_wnd'
 import {ScreenWnd} from './screen_wnd'
 import StorageUtil from '../util/storage_util'
 import Util from '../util/util'
@@ -32,6 +32,7 @@ export const enum AppWndType {
   PALET,
   NAME,
   PATTERN,
+  AUDIO,
   REGISTER,
   TRACE,
   CONTROL,
@@ -265,6 +266,15 @@ export class App {
     this.wndMgr.add(patternTableWnd)
     patternTableWnd.setPos(520, 300)
     this.wndMap[AppWndType.PATTERN] = patternTableWnd
+    return true
+  }
+
+  public createAudioWnd(): boolean {
+    if (this.wndMap[AppWndType.AUDIO] != null)
+      return false
+    const wnd = new AudioWnd(this.wndMgr, this.nes, this.stream)
+    this.wndMgr.add(wnd)
+    this.wndMap[AppWndType.AUDIO] = wnd
     return true
   }
 
