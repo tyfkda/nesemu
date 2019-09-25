@@ -10,6 +10,12 @@ const IRQ_ENABLE_AFTER = 1 << 0
 const IRQ_ENABLE = 1 << 1
 const IRQ_MODE = 1 << 2
 
+const CH_ENABLE = 1 << 7
+
+const FREQCTL_HALT = 1 << 0
+const FREQCTL_16X  = 1 << 1
+const FREQCTL_256X = 1 << 2
+
 const CPU_CLOCK = 1789773  // Hz
 const VBLANK_START = 241
 
@@ -29,7 +35,7 @@ const kChannelTypes: ChannelType[] = [
 ]
 
 class Channel {
-  protected regs = new Array<number>(4)
+  protected regs = new Uint8Array(4)
 
   public write(reg: number, value: number) {
     this.regs[reg] = value
@@ -38,18 +44,26 @@ class Channel {
   public update() {}
   public getVolume(): number { return 0 }
   public getFrequency(): number { return 0 }
+  public getDutyRatio(): number { return 0.5 }
 }
 
 class PulseChannel extends Channel {
   public getVolume(): number {
-    if ((this.regs[2] & 0x80) === 0)
+    if ((this.regs[2] & CH_ENABLE) === 0)
       return 0
-    return (this.regs[0] & 15) / 15
+    return (this.regs[0] & 15) / (15 * 2)
   }
 
   public getFrequency(): number {
     const f = this.regs[1] | ((this.regs[2] & 0x0f) << 8)
     return ((CPU_CLOCK / 16) / (f + 1)) | 0
+  }
+
+  public getDutyRatio(): number {
+    if (this.regs[0] & 0x80)
+      return 1
+    else
+      return (((this.regs[0] >> 4) & 7) + 1) / 8
   }
 }
 
@@ -62,7 +76,7 @@ class SawToothChannel extends Channel {
     switch (reg) {
     case 2:
       this.count = 0
-      if ((value & 0x80) === 0) {
+      if ((value & CH_ENABLE) === 0) {
         this.acc = 0
       }
       break
@@ -70,8 +84,8 @@ class SawToothChannel extends Channel {
   }
 
   public update() {
-    if ((this.regs[2] & 0x80) !== 0) {
-      this.acc += (this.regs[0] & 0x3f) * 2
+    if ((this.regs[2] & CH_ENABLE) !== 0) {
+      this.acc += this.regs[0] & 0x3f
       if (this.acc >= 256) {
         this.acc -= 256
         this.count = 0
@@ -88,10 +102,10 @@ class SawToothChannel extends Channel {
   }
 
   public getVolume(): number {
-    if ((this.regs[2] & 0x80) === 0)
+    if ((this.regs[2] & CH_ENABLE) === 0)
       return 0
-    // return (this.acc >> (8 - 3)) / 0x1f
-    return 1
+    // TODO: Use distorted wave.
+    return Math.min((this.regs[0] & 0x3f) * (6 / 255), 1)
   }
 
   public getFrequency(): number {
@@ -253,7 +267,7 @@ class Mapper024Base extends Mapper {
   }
 
   public getSoundVolume(channel: number): number {
-    const halt = (this.frequencyScaling & 0x01) !== 0
+    const halt = (this.frequencyScaling & FREQCTL_HALT) !== 0
     if (halt)
       return 0
     return this.channels[channel].getVolume()
@@ -261,11 +275,15 @@ class Mapper024Base extends Mapper {
 
   public getSoundFrequency(channel: number): number {
     let f = this.channels[channel].getFrequency()
-    if ((this.frequencyScaling & 0x02) !== 0)
-      f *= 16
-    if ((this.frequencyScaling & 0x04) !== 0)
+    if ((this.frequencyScaling & FREQCTL_256X) !== 0)
       f *= 256
+    else if ((this.frequencyScaling & FREQCTL_16X) !== 0)
+      f *= 16
     return f
+  }
+
+  public getSoundDutyRatio(channel: number): number {
+    return this.channels[channel].getDutyRatio()
   }
 
   private setPrgBank(prgBank: number) {
