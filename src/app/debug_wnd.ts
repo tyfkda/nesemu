@@ -6,6 +6,7 @@ import {Nes} from '../nes/nes'
 import {Addressing, Instruction, OpType, kInstTable} from '../nes/cpu/inst'
 import {disassemble} from '../nes/cpu/disasm'
 import {Util} from '../util/util'
+import {WndEvent} from '../wnd/types'
 
 import {AppEvent} from './app_event'
 
@@ -98,6 +99,183 @@ export class RegisterWnd extends Wnd {
     }
     root.appendChild(table)
     return root
+  }
+}
+
+export class RamWnd extends Wnd {
+  private static RAM_SIZE = 0x800
+  private static MARGIN = 4
+  private static LINE_HEIGHT = 14
+  private static COL_NO_CHANGE = ''
+  private static COL_CHANGED = '#c22'
+
+  private subscription: Pubsub.Subscription
+  private contentRoot: HTMLElement
+  private cells: Array<HTMLElement>
+  private memBuf1: Uint8Array = new Uint8Array(RamWnd.RAM_SIZE)
+  private memBuf2: Uint8Array = new Uint8Array(RamWnd.RAM_SIZE)
+  private dirty = false
+  private visibleStartAdr = 0
+  private visibleEndAdr = 0
+
+  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
+    super(wndMgr, 420, 236, 'Ram')
+
+    const {root, contentRoot, cells} = this.createContent()
+    this.setContent(root)
+    this.contentRoot = contentRoot
+    this.cells = cells
+
+    this.addResizeBox()
+    this.updateStatus()
+
+    this.subscription = this.stream
+      .subscribe(type => {
+        switch (type) {
+        case AppEvent.Type.PAUSE:
+        case AppEvent.Type.STEP:
+        case AppEvent.Type.BREAK_POINT:
+          this.updateStatus()
+          this.render(0, RamWnd.RAM_SIZE)
+          break
+        case AppEvent.Type.RESET:
+        case AppEvent.Type.RUN:
+        case AppEvent.Type.RENDER:
+          this.updateStatus()
+          this.render()
+          break
+        }
+      })
+
+    this.dirty = true
+    this.contentRoot.addEventListener('scroll', _ => {
+      if (this.nes.getCpu().isPaused()) {
+        this.updateVisibleArea()
+        this.render()
+      } else {
+        this.dirty = true
+      }
+    })
+  }
+
+  public onEvent(event: WndEvent, _param?: any): any {
+    switch (event) {
+    case WndEvent.RESIZE_END:
+      this.updateVisibleArea()
+      this.dirty = false
+      break
+    default:
+      break
+    }
+  }
+
+  private updateStatus(): void {
+    const bus = this.nes.getBus()
+    const prev = this.memBuf1
+    const curr = this.memBuf2
+    for (let i = 0; i < RamWnd.RAM_SIZE; ++i)
+      curr[i] = bus.read8(i)
+    this.memBuf1 = curr
+    this.memBuf2 = prev
+  }
+
+  private render(startAdr: number = this.visibleStartAdr, endAdr: number = this.visibleEndAdr): void {
+    if (this.dirty) {
+      this.updateVisibleArea()
+      this.dirty = false
+    }
+
+    const curr = this.memBuf1
+    const prev = this.memBuf2
+
+    for (let i = startAdr|0, end = endAdr|0 ; i < end; ++i) {
+      const cell = this.cells[i]
+      const x = curr[i]
+      const hh = Util.hex(x, 2)
+      if (cell.innerText !== hh)
+        cell.innerText = hh
+      const bg = x === prev[i] ? RamWnd.COL_NO_CHANGE : RamWnd.COL_CHANGED
+      if (cell.style.backgroundColor !== bg)
+        cell.style.backgroundColor = bg
+    }
+  }
+
+  private updateVisibleArea(): void {
+    const rc = this.contentHolder.getBoundingClientRect()
+    const top = this.contentRoot.scrollTop
+    const start = Math.floor((top - RamWnd.MARGIN) / RamWnd.LINE_HEIGHT) | 0
+    const end = Math.floor((top + rc.height - RamWnd.MARGIN) / RamWnd.LINE_HEIGHT) | 0
+    this.visibleStartAdr = Util.clamp(start * 16, 0, RamWnd.RAM_SIZE)
+    this.visibleEndAdr = Util.clamp((end + 1) * 16, 0, RamWnd.RAM_SIZE)
+  }
+
+  public close(): void {
+    this.stream.triggerCloseWnd(this)
+    this.subscription.unsubscribe()
+    super.close()
+  }
+
+  private createContent(): {root: HTMLElement; contentRoot: HTMLElement; cells: Array<HTMLSpanElement>} {
+    const root = document.createElement('div')
+    root.className = 'ramwnd full-size fixed-font'
+
+    const top = document.createElement('div')
+    DomUtil.setStyles(top, {
+      position: 'absolute',
+      top: 0,
+      height: `${RamWnd.LINE_HEIGHT}px`,
+      left: 0,
+      right: 0,
+      overflow: 'hidden',
+      margin: `0 ${RamWnd.MARGIN}px`,
+      color: '#0ff',
+    })
+    const columns1 = [...Array(8)].map((_, i) => `+${i.toString(16)}`).join(' ')
+    const columns2 = [...Array(8)].map((_, i) => `+${(i + 8).toString(16)}`).join(' ')
+    top.appendChild(document.createTextNode(`ADDR: ${columns1}\u00a0\u00a0${columns2}`))
+
+    const contentRoot = document.createElement('div')
+    DomUtil.setStyles(contentRoot, {
+      position: 'absolute',
+      top: `${RamWnd.LINE_HEIGHT}px`,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      overflowY: 'scroll',
+      userSelect: 'all',
+    })
+
+    const scroll = document.createElement('div')
+    DomUtil.setStyles(scroll, {
+      overflowX: 'hidden',
+      margin: `0 ${RamWnd.MARGIN}px ${RamWnd.MARGIN}px ${RamWnd.MARGIN}px`,
+      whiteSpace: 'nowrap',
+    })
+
+    const lineDivs = new Array<HTMLElement>()
+    const cells = new Array<HTMLElement>()
+    for (let i = 0; i < RamWnd.RAM_SIZE / 16; ++i) {
+      const line = document.createElement('div')
+      DomUtil.setStyles(line, {
+        height: `${RamWnd.LINE_HEIGHT}px`,
+      })
+      scroll.appendChild(line)
+      lineDivs.push(line)
+      line.appendChild(document.createTextNode(`${Util.hex(i * 16, 4)}: `))
+      for (let j = 0; j < 16; ++j) {
+        if (j > 0)
+          line.appendChild(document.createTextNode(j === 8 ? '\u00a0\u00a0' : ' '))
+        const cell = document.createElement('span')
+        cell.innerText = '00'
+        line.appendChild(cell)
+        cells.push(cell)
+      }
+    }
+
+    contentRoot.appendChild(scroll)
+    root.appendChild(top)
+    root.appendChild(contentRoot)
+    return {root, contentRoot, cells}
   }
 }
 

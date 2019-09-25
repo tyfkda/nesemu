@@ -459,3 +459,16 @@ $BUTTON_HEIGHT: 6px;
     background-color: red;
   }
 }
+
+.ramwnd {
+  font-size: 12px;
+  background-color: black;
+  color: white;
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  div::selection, span::selection {
+    background-color: #0c0;
+    color: black;
+  }
+}
