@@ -12,7 +12,7 @@ import {AppEvent} from './app_event'
 import {PadBit, PadValue} from '../nes/apu'
 import {PadKeyHandler} from '../util/pad_key_handler'
 import {GamepadManager} from '../util/gamepad_manager'
-import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
+import {RegisterWnd, RamWnd, TraceWnd, ControlWnd} from './debug_wnd'
 import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd, AudioWnd} from './other_wnd'
 import {Fds} from '../nes/fds/fds'
 import {FdsCtrlWnd} from './fds_ctrl_wnd'
@@ -35,6 +35,7 @@ const enum WndType {
   PATTERN,
   AUDIO,
   REGISTER,
+  RAM,
   TRACE,
   CONTROL,
   FPS,
@@ -534,6 +535,12 @@ export class ScreenWnd extends Wnd {
             },
           },
           {
+            label: 'Ram',
+            click: () => {
+              this.createRamWnd()
+            },
+          },
+          {
             label: 'Control',
             click: () => {
               this.createControlWnd()
@@ -616,6 +623,15 @@ export class ScreenWnd extends Wnd {
       wnd.setPos(410, 500)
       return wnd
     })
+  }
+
+  protected createRamWnd(): boolean {
+    if (this.wndMap[WndType.RAM] != null)
+      return false
+    const wnd = new RamWnd(this.wndMgr, this.nes, this.stream)
+    this.wndMgr.add(wnd)
+    this.wndMap[WndType.RAM] = wnd
+    return true
   }
 
   protected createControlWnd(): boolean {

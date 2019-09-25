@@ -101,6 +101,94 @@ export class RegisterWnd extends Wnd {
   }
 }
 
+export class RamWnd extends Wnd {
+  private static RAM_SIZE = 0x800
+
+  private subscription: Pubsub.Subscription
+  private lineDivs: Array<HTMLElement>
+
+  public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
+    super(wndMgr, 420, 236, 'Ram')
+
+    const {root, lineDivs} = this.createContent()
+    this.setContent(root)
+    this.lineDivs = lineDivs
+
+    this.addResizeBox()
+    this.reset()
+
+    this.subscription = this.stream
+      .subscribe(type => {
+        switch (type) {
+        case AppEvent.Type.RESET:
+          this.reset()
+          // Fall through.
+        case AppEvent.Type.STEP:
+        case AppEvent.Type.PAUSE:
+        case AppEvent.Type.BREAK_POINT:
+        case AppEvent.Type.RENDER:
+          this.updateStatus()
+          break
+        }
+      })
+  }
+
+  public reset(): void {
+    this.updateStatus()
+  }
+
+  public updateStatus(): void {
+    const bus = this.nes.getBus()
+    const mem = new Array<number>(16)
+    for (let i = 0, n = RamWnd.RAM_SIZE / 16; i < n; ++i) {
+      const adr = i * 16
+      for (let j = 0; j < 16; ++j)
+        mem[j] = bus.read8(adr + j)
+      const t = `${Util.hex(adr, 4)}: ${mem.map(x => Util.hex(x, 2)).join(' ')}`
+      this.lineDivs[i].innerText = t
+    }
+  }
+
+  public close(): void {
+    this.stream.triggerCloseWnd(this)
+    this.subscription.unsubscribe()
+    super.close()
+  }
+
+  private createContent(): {root: HTMLElement, lineDivs: Array<HTMLElement>} {
+    const root = document.createElement('div')
+    root.className = 'full-size'
+    DomUtil.setStyles(root, {
+      fontSize: '12px',
+      backgroundColor: 'black',
+      color: 'white',
+      overflowX: 'hidden',
+      overflowY: 'auto',
+    })
+
+    const scroll = document.createElement('div')
+    scroll.className = 'fixed-font'
+    DomUtil.setStyles(scroll, {
+      overflowX: 'hidden',
+      margin: '4px',
+      whiteSpace: 'nowrap',
+    })
+
+    const lineDivs = new Array<HTMLElement>()
+    for (let i = 0; i < RamWnd.RAM_SIZE / 16; ++i) {
+      const line = document.createElement('div')
+      // DomUtil.setStyles(line, {
+      //   overflowX: 'hidden',
+      // })
+      scroll.appendChild(line)
+      lineDivs.push(line)
+    }
+
+    root.appendChild(scroll)
+    return {root, lineDivs}
+  }
+}
+
 const MAX_BYTES = 3
 const MAX_LINE = 100
 
