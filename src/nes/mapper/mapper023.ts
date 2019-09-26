@@ -1,6 +1,7 @@
 // VRC4e
 // http://wiki.nesdev.com/w/index.php/INES_Mapper_023
 
+import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
 import Util from '../../util/util'
@@ -168,7 +169,7 @@ class Mapper023Base extends Mapper {
       }
       if (c > 255) {
         c = this.irqLatch
-        this.options.cpu.requestIrq()
+        this.options.cpu.requestIrq(IrqType.EXTERNAL)
       }
       this.irqCounter = c
     }

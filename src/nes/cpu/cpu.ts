@@ -9,6 +9,12 @@ import {Address, Byte, Word} from '../types'
 
 import {disasm} from './disasm'
 
+export const enum IrqType {
+  APU,
+  EXTERNAL,
+  FDS,
+}
+
 const CARRY_BIT = 0
 const ZERO_BIT = 1
 const IRQBLK_BIT = 2
@@ -69,7 +75,7 @@ export class Cpu {
   private watchRead: any = {}
   private watchWrite: any = {}
   private paused = false
-  private irqDetected = false
+  private irqRequest = 0
 
   private $DEBUG: boolean
   private stepLogs: string[] = []
@@ -147,13 +153,17 @@ export class Cpu {
     this.irqBlocked = 1
   }
 
-  public requestIrq(): void {
-    this.irqDetected = true
+  public requestIrq(type: IrqType): void {
+    this.irqRequest |= 1 << type
+  }
+
+  public clearIrqRequest(type: IrqType) {
+    this.irqRequest &= ~(1 << type)
   }
 
   public step(): number {
-    if (this.irqDetected && this.irqBlocked === 0) {
-      this.irqDetected = false
+    if (this.irqRequest !== 0 && this.irqBlocked === 0) {
+      this.irqRequest = 0
       this.handleIrq()
     }
 

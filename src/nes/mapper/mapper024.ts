@@ -2,6 +2,7 @@
 // http://wiki.nesdev.com/w/index.php/VRC6
 
 import {ChannelType} from '../../nes/apu'
+import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
 import Util from '../../util/util'
@@ -188,6 +189,7 @@ class Mapper024Base extends Mapper {
           if ((this.irqControl & IRQ_ENABLE) !== 0) {
             this.irqCounter = this.irqLatch
           }
+          this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
           break
         case 2:  // IRQ Acknowledge
           // Copy to enable
@@ -253,7 +255,7 @@ class Mapper024Base extends Mapper {
       }
       if (c >= 255) {
         c = this.irqLatch
-        this.options.cpu.requestIrq()
+        this.options.cpu.requestIrq(IrqType.EXTERNAL)
       }
       this.irqCounter = c
     }

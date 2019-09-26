@@ -1,6 +1,7 @@
 // VRC3
 // http://wiki.nesdev.com/w/index.php/VRC3
 
+import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import Util from '../../util/util'
 
@@ -94,7 +95,7 @@ export class Mapper073 extends Mapper {
       this.irqCounter -= 185  // TODO: Calculate.
       if (this.irqCounter < 0) {
         this.irqCounter = 0
-        this.options.cpu.requestIrq()
+        this.options.cpu.requestIrq(IrqType.EXTERNAL)
       }
     }
   }

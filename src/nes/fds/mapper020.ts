@@ -3,6 +3,7 @@
 // https://wiki.nesdev.com/w/index.php/FDS_BIOS
 
 import {Address, Byte} from '../types'
+import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from '../mapper/mapper'
 import {Nes} from '../nes'
 import {MirrorMode} from '../ppu/types'
@@ -178,7 +179,7 @@ export class Mapper020 extends Mapper {
         (this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) !== 0) {
       this.irqCounter -= 185  // TODO: Calculate
       if (this.irqCounter <= 0) {
-        this.options.cpu.requestIrq()
+        this.options.cpu.requestIrq(IrqType.EXTERNAL)
         this.timerIrqOccurred = true
 console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, nextCounter=${(this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]}`)
         if ((this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0) {
@@ -228,7 +229,7 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
         this.transferComplete = true
         this.readData = diskData
         if (needIrq) {
-          this.options.cpu.requestIrq()
+          this.options.cpu.requestIrq(IrqType.FDS)
         }
       //}
 

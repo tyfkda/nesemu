@@ -1,5 +1,6 @@
 // MMC3
 
+import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
 import Util from '../../util/util'
@@ -132,7 +133,7 @@ export class Mapper004 extends Mapper {
     // in order for the countdown to occur.
     if ((this.options.ppu.getReg(1) & 0x18) !== 0) {
       if (--this.irqHlineCounter === 0 && this.irqHlineEnable) {
-        this.options.cpu.requestIrq()
+        this.options.cpu.requestIrq(IrqType.EXTERNAL)
       }
     }
 

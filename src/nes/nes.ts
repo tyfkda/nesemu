@@ -2,7 +2,7 @@
 
 import {Apu, ChannelType} from './apu'
 import {Bus} from './bus'
-import {Cpu} from './cpu/cpu'
+import {Cpu, IrqType} from './cpu/cpu'
 import {MirrorMode} from './ppu/types'
 import {Ppu} from './ppu/ppu'
 import {Address, Byte} from './types'
@@ -74,7 +74,7 @@ export class Nes implements PrgBankController {
     this.bus = new Bus()
     this.cpu = new Cpu(this.bus)
     this.ppu = new Ppu()
-    this.apu = new Apu(() => { this.cpu.requestIrq() })
+    this.apu = new Apu(() => { this.cpu.requestIrq(IrqType.APU) })
     this.vblankCallback = (_leftV) => {}
     this.breakPointCallback = () => {}
 

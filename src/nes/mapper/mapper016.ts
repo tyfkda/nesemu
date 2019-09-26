@@ -1,5 +1,6 @@
 // Bandai FCG board
 
+import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
 import Util from '../../util/util'
@@ -98,7 +99,7 @@ export class Mapper016 extends Mapper {
       this.irqCounter -= 115
       if (this.irqCounter <= 0) {
         this.irqCounter += this.irqValue
-        this.options.cpu.requestIrq()
+        this.options.cpu.requestIrq(IrqType.EXTERNAL)
       }
     }
   }
