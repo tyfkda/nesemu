@@ -13,6 +13,8 @@ import {kMapperTable} from './mapper/mapper_table'
 
 import * as md5 from 'md5'
 
+const CPU_HZ = 1789773
+
 const RAM_SIZE = 0x0800
 
 const VBLANK_START = 241
@@ -153,7 +155,8 @@ export class Nes implements PrgBankController {
     this.apu.setPadStatus(no, status)
   }
 
-  public runCycles(cycles: number): number {
+  public runMilliseconds(msec: number): number {
+    const cycles = (msec * (CPU_HZ / 1000)) | 0
     try {
       let leftCycles = cycles
       while (leftCycles > 0) {

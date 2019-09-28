@@ -16,7 +16,6 @@ import {Wnd} from '../wnd/wnd'
 
 import * as Pubsub from '../util/pubsub'
 
-const CPU_HZ = 1789773
 const MAX_ELAPSED_TIME = 1000 / 15
 export const DEFAULT_MASTER_VOLUME = 0.125
 
@@ -386,8 +385,7 @@ export class App {
     et = (this.wndMgr.getKeyPressing(this.screenWnd, KeyCode.SHIFT)
           ? et * 4 : et)
 
-    const cycles = (CPU_HZ * et / 1000) | 0
-    this.nes.runCycles(cycles)
+    this.nes.runMilliseconds(et)
   }
 
   protected render(): void {

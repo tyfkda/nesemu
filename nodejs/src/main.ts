@@ -46,7 +46,6 @@ function createMyApp() {
 
   const TITLE = 'Nesemu'
 
-  const CPU_HZ = 1789773
   const MAX_ELAPSED_TIME = 1000 / 15
 
   class MyApp {
@@ -114,8 +113,7 @@ function createMyApp() {
       this.nes.setPadStatus(0, this.pad)
 
       let et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
-      const cycles = (CPU_HZ * et / 1000) | 0
-      this.nes.runCycles(cycles)
+      this.nes.runMilliseconds(et)
     }
 
     private onVblank(leftV: number) {
