@@ -71,13 +71,14 @@ export class Cpu {
   private carry = 0
 
   private pc: Address  // Program counter
+  private irqRequest = 0
+
+  // For debug
+  private $DEBUG: boolean
   private breakPoints: any = {}
   private watchRead: any = {}
   private watchWrite: any = {}
   private paused = false
-  private irqRequest = 0
-
-  private $DEBUG: boolean
   private stepLogs: string[] = []
 
   constructor(private bus: Bus) {
