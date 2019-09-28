@@ -1,7 +1,7 @@
 // CPU: MOS 6502
 
 import {Addressing, OpType, kInstTable} from './inst'
-import {Bus} from '../bus'
+import {IBus} from './ibus'
 import Util from '../../util/util'
 import {Address, Byte, Word} from '../types'
 
@@ -73,7 +73,7 @@ export class Cpu {
   private watchWrite: any = {}
   private paused = false
 
-  constructor(private bus: Bus) {
+  constructor(private bus: IBus) {
     this.a = this.x = this.y = this.s = 0
     this.pc = 0
   }

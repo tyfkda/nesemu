@@ -1,23 +1,19 @@
 import {Cpu} from '../../../src/nes/cpu/cpu'
-import {Bus} from '../../../src/nes/bus'
+import {IBus} from '../../../src/nes/cpu/ibus'
 import {Address, Byte} from '../../../src/nes/types'
 
-class MappedBus extends Bus {
-  constructor(m: {[key: number]: Byte}) {
-    super()
-    this.setReadMemory(0x8000, 0xffff, (adr: Address) => m[adr])
-    this.setWriteMemory(0x8000, 0xffff, (adr: Address, value: Byte) => { m[adr] = value })
+class MappedBus implements IBus {
+  constructor(private m: {[key: number]: Byte}) {
+  }
+
+  public read8(adr: Address): Byte {
+    return this.m[adr]
+  }
+
+  public write8(adr: Address, value: Byte): void {
+    this.m[adr] = value
   }
 }
-
-//class MockedBus extends Bus {
-//  constructor(reader: (adr: Address) => Byte,
-//              writer: (adr: Address, value: Byte) => void) {
-//    super()
-//    this.setReadMemory(0x8000, 0xffff, (adr: Address) => reader(adr))
-//    this.setWriteMemory(0x8000, 0xffff, (adr: Address, value: Byte) => { writer(adr, value) })
-//  }
-//}
 
 describe('cpu', () => {
   it('resets PC from VECTOR', () => {

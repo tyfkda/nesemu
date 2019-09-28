@@ -1,5 +1,5 @@
 import {Addressing, Instruction, OpType, kInstTable, kIllegalInstruction} from './inst'
-import {Bus} from '../bus'
+import {IBus} from './ibus'
 import Util from '../../util/util'
 
 export const kOpcode: {[key: number]: string} = {
@@ -129,7 +129,7 @@ export function disassemble(inst: Instruction, mem: Uint8Array, start: number, p
 
 const tmpmem = new Uint8Array(3)
 const bins = new Array<string>(3)
-export function disasm(bus: Bus, pc: number): string {
+export function disasm(bus: IBus, pc: number): string {
   const op = bus.read8(pc)
   const inst = kInstTable[op] || kIllegalInstruction
   for (let i = 0; i < inst.bytes; ++i) {
