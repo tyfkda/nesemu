@@ -416,6 +416,7 @@ export class ScreenWnd extends Wnd {
     const h = (HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)) | 0
 
     const fileMenu = this.menuItems[MenuType.FILE].submenu
+    fileMenu[FileMenuType.PAUSE].checked = this.nes.getCpu().isPaused()
     if (!('disabled' in fileMenu[FileMenuType.LOAD])) {
       fileMenu[FileMenuType.LOAD].disabled = !this.app.hasSaveData()
     }
