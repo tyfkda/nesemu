@@ -25,10 +25,10 @@ export class Mapper010 extends Mapper {
       }
     })
     // TODO: Implement latch to switch CHR bank.
-    this.options.bus.setWriteMemory(0xe000, 0xf000, (adr, value) => {
-      if (adr >= 0xf000)
-        this.options.ppu.setMirrorMode((value & 1) === 0 ? MirrorMode.VERT : MirrorMode.HORZ)
-    })
+    //this.options.bus.setWriteMemory(0xe000, 0xf000, (adr, value) => {
+    //  if (adr >= 0xf000)
+    //    this.options.ppu.setMirrorMode((value & 1) === 0 ? MirrorMode.VERT : MirrorMode.HORZ)
+    //})
 
     // PRG RAM
     const ram = new Uint8Array(0x2000)
