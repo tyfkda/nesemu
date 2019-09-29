@@ -15,7 +15,7 @@ const VRAM_SIZE = 0x4000
 const OAM_SIZE = 0x0100
 const MAX_SPRITE_ON_SCANLINE = 8
 
-const enum PpuReg {
+export const enum PpuReg {
   CTRL,    // $2000
   MASK,    // $2001
   STATUS,  // $2002
@@ -35,8 +35,8 @@ const INCREMENT_MODE = 0x04  // I: 1=+32, 0=+1
 const BASE_NAMETABLE_ADDRESS = 0x03
 
 // PPUMASK ($2001)
-const SHOW_SPRITE = 0x10
-const SHOW_BG = 0x08
+export const SHOW_SPRITE = 0x10
+export const SHOW_BG = 0x08
 const SHOW_SPRITE_LEFT_8PX = 0x04
 const SHOW_BG_LEFT_8PX = 0x02
 const GREYSCALE = 0x01

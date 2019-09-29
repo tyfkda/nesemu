@@ -1,6 +1,7 @@
 // MMC3
 
 import {IrqType} from '../cpu/cpu'
+import {PpuReg, SHOW_SPRITE, SHOW_BG} from '../ppu/ppu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
 import Util from '../../util/util'
@@ -131,7 +132,7 @@ export class Mapper004 extends Mapper {
     // http://bobrost.com/nes/files/mmc3irqs.txt
     // Note: BGs OR sprites MUST be enabled in $2001 (bits 3 and 4)
     // in order for the countdown to occur.
-    if ((this.options.ppu.getReg(1) & 0x18) !== 0) {
+    if ((this.options.ppu.getReg(PpuReg.MASK) & (SHOW_SPRITE | SHOW_BG)) !== 0) {
       if (--this.irqHlineCounter === 0 && this.irqHlineEnable) {
         this.options.cpu.requestIrq(IrqType.EXTERNAL)
       }
