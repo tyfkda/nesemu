@@ -143,14 +143,14 @@ function clearBg(offscreen: Uint8Array, hline0: number, hline1: number, x: numbe
 }
 
 function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8ClampedArray,
-                               greyscale: boolean, vram: Uint8Array): void
+                               greyscale: boolean, palet: Uint8Array): void
 {
   const n = Const.WIDTH * Const.HEIGHT
   let index = 0
   const colorMask = greyscale ? 0x20 : 0x3f
   for (let i = 0; i < n; ++i) {
     const pal = offscreen[i] & 0x1f
-    const col = vram[PALET_ADR + pal] & colorMask
+    const col = palet[pal] & colorMask
     const c = col * 3
     pixels[index + 0] = kPaletColors[c]
     pixels[index + 1] = kPaletColors[c + 1]
@@ -166,13 +166,14 @@ function render8x8Chip(
   clearR: number, clearG: number, clearB: number, lineWidth: number)
 {
   const W = 8
+  const palet = ppu.getPaletTable()
   for (let py = 0; py < W; ++py) {
     const pat = pattern[py]
     for (let px = 0; px < W; ++px) {
       const pal = (pat >> ((W - 1) * 2 - (px << 1))) & 3
       let r = clearR, g = clearG, b = clearB
       if (pal !== 0) {
-        const col = ppu.getPalet(paletHigh | pal)
+        const col = palet[paletHigh | pal] & 0x3f
         const c = col * 3
         r = kPaletColors[c]
         g = kPaletColors[c + 1]
@@ -192,7 +193,8 @@ export class Ppu {
 
   private chrData = new Uint8Array(0)
   private regs = new Uint8Array(REGISTER_COUNT)
-  private vram = new Uint8Array(VRAM_SIZE)
+  private vram: Uint8Array
+  private palet: Uint8Array
   private oam = new Uint8Array(OAM_SIZE)  // Object Attribute Memory
   private mirrorMode = MirrorMode.VERT
   private hcount = 0
@@ -209,6 +211,11 @@ export class Ppu {
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
 
   constructor() {
+    // `palet` is part of `vram`, and shares its content using ArrayBuffer.
+    const vramBuffer = new ArrayBuffer(VRAM_SIZE)
+    this.vram = new Uint8Array(vramBuffer)
+    this.palet = new Uint8Array(vramBuffer, PALET_ADR)
+
     this.reset()
   }
 
@@ -225,7 +232,7 @@ export class Ppu {
     this.offscreen.fill(0)
 
     for (let i = 0; i < 16 * 2; ++i)
-      this.vram[PALET_ADR + i] = kInitialPalette[i]
+      this.palet[i] = kInitialPalette[i]
   }
 
   public save(): object {
@@ -491,7 +498,7 @@ export class Ppu {
     }
 
     const greyscale = (this.regs[PpuReg.MASK] & GREYSCALE) !== 0
-    copyOffscreenToPixels(this.offscreen, pixels, greyscale, this.vram)
+    copyOffscreenToPixels(this.offscreen, pixels, greyscale, this.palet)
   }
 
   public renderPatternTable(pixels: Uint8ClampedArray, lineWidth: number,
@@ -514,7 +521,7 @@ export class Ppu {
                            kStaggered[this.readPpuDirect(idx)])
           }
 
-          const col0 = this.getPalet(paletHigh)
+          const col0 = this.palet[paletHigh] & 0x3f
           const clearR = kPaletColors[col0 * 3 + 0]
           const clearG = kPaletColors[col0 * 3 + 1]
           const clearB = kPaletColors[col0 * 3 + 2]
@@ -543,7 +550,7 @@ export class Ppu {
     const chrStart = getBgPatternTableAddress(this.regs[PpuReg.CTRL])
     const vram = this.vram
 
-    const clearColor = this.getPalet(0)  // Universal background color
+    const clearColor = this.palet[0] & 0x3f  // Universal background color
     const clearR = kPaletColors[clearColor * 3 + 0]
     const clearG = kPaletColors[clearColor * 3 + 1]
     const clearB = kPaletColors[clearColor * 3 + 2]
@@ -571,8 +578,8 @@ export class Ppu {
     }
   }
 
-  public getPalet(pal: number): number {
-    return this.vram[PALET_ADR + (pal & 31)] & 0x3f
+  public getPaletTable(): Readonly<Uint8Array> {
+    return this.palet
   }
 
   public getReg(index: number): Byte {

@@ -118,8 +118,9 @@ export class PaletWnd extends Wnd {
   private getPalet(buf: Uint8Array): void {
     const ppu = this.nes.getPpu()
     const n = PaletWnd.W * PaletWnd.H
+    const paletTable = ppu.getPaletTable()
     for (let i = 0; i < n; ++i)
-      buf[i] = ppu.getPalet(i)
+      buf[i] = paletTable[i] & 0x3f
   }
 
   private createDom(): {root: HTMLElement, boxes: HTMLElement[], groups: HTMLElement[]} {
