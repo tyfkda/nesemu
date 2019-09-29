@@ -444,12 +444,6 @@ export class Ppu {
     return (this.regs[PpuReg.CTRL] & VINT_ENABLE) !== 0
   }
 
-  public getSpritePatternTableAddress(): Address {
-    if ((this.regs[PpuReg.CTRL] & SPRITE_SIZE) === 0)
-      return ((this.regs[PpuReg.CTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
-    return 0
-  }
-
   public setHcount(hcount: number) {
     this.hcount = hcount
     this.checkSprite0Hit(hcount)
@@ -757,6 +751,12 @@ export class Ppu {
         return py
     }
     return -1
+  }
+
+  private getSpritePatternTableAddress(): Address {
+    if ((this.regs[PpuReg.CTRL] & SPRITE_SIZE) === 0)
+      return ((this.regs[PpuReg.CTRL] & SPRITE_PATTERN_TABLE_ADDRESS) << 9)
+    return 0
   }
 
   private addHevent(type: HEventType, value: number, index: number = -1): void {
