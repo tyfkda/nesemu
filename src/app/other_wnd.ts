@@ -5,6 +5,7 @@ import {ChannelType} from '../nes/apu'
 import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
 import {Ppu} from '../nes/ppu/ppu'
+import {PpuDebug} from '../nes/ppu/ppu_debug'
 import {kPaletColors} from '../nes/ppu/const'
 
 import {AppEvent} from './app_event'
@@ -235,8 +236,8 @@ export class NameTableWnd extends Wnd {
   private render(): void {
     const page1X = this.vert ? 0 : 256
     const page1Y = this.vert ? 240 : 0
-    this.ppu.renderNameTable1(this.imageData.data, this.imageData.width, 0, 0, 0)
-    this.ppu.renderNameTable1(this.imageData.data, this.imageData.width, page1X, page1Y, 1)
+    PpuDebug.renderNameTable1(this.ppu, this.imageData.data, this.imageData.width, 0, 0, 0)
+    PpuDebug.renderNameTable1(this.ppu, this.imageData.data, this.imageData.width, page1X, page1Y, 1)
     this.context.putImageData(this.imageData, 0, 0)
   }
 }
@@ -293,7 +294,7 @@ export class PatternTableWnd extends Wnd {
     const buf = this.buf
     this.getSelectedPalets(buf)
 
-    this.ppu.renderPatternTable(this.imageData.data, this.imageData.width, buf)
+    PpuDebug.renderPatternTable(this.ppu, this.imageData.data, this.imageData.width, buf)
     this.context.putImageData(this.imageData, 0, 0)
   }
 }

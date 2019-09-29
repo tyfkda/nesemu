@@ -30,7 +30,7 @@ export const enum PpuReg {
 const VINT_ENABLE = 0x80  // V: 1=Trigger NMI when VBLANK start
 const SPRITE_SIZE = 0x20
 const BG_PATTERN_TABLE_ADDRESS = 0x10
-const SPRITE_PATTERN_TABLE_ADDRESS = 0x08
+export const SPRITE_PATTERN_TABLE_ADDRESS = 0x08
 const INCREMENT_MODE = 0x04  // I: 1=+32, 0=+1
 const BASE_NAMETABLE_ADDRESS = 0x03
 
@@ -73,12 +73,25 @@ const kInitialPalette = Uint8Array.from([
 const SPRITE_MASK = 0x80
 const kSpritePriorityMask = Uint8Array.from([SPRITE_MASK, 0xff])
 
-function getNameTable(baseNameTable: Address, bx: number, by: number,
-                      mirrorModeBit: Byte): Address
+export function getNameTable(baseNameTable: Address, bx: number, by: number,
+                             mirrorModeBit: Byte): Address
 {
   const page = (((bx >> 5) & 1) + (((by / 30) & 1) << 1)) ^ baseNameTable  // 0~3
   const m = (mirrorModeBit << (10 - (page << 1))) & 0x0c00
   return (0x2000 + m) | 0
+}
+
+export function getBgPatternTableAddress(ppuCtrl: Byte): Address {
+  return (ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
+}
+
+export function getBgPat(chrData: Readonly<Uint8Array>, chridx: number, py: number,
+                         chrBankOffset: number[]): number
+{
+  const idx = chridx + py
+  const bank = (idx >> 10) & 7
+  const p = chrBankOffset[bank] + (idx & 0x03ff)
+  return kStaggered[chrData[p]] | (kStaggered[chrData[p + 8]] << 1)
 }
 
 function getPpuAddr(adr: Address, mirrorModeBit: Byte): Address {
@@ -104,18 +117,6 @@ function getPpuAddr(adr: Address, mirrorModeBit: Byte): Address {
 function incPpuAddr(ppuAddr: Address, ppuCtrl: Byte): Address {
   const add = ((ppuCtrl & INCREMENT_MODE) !== 0) ? 32 : 1
   return (ppuAddr + add) & (VRAM_SIZE - 1)
-}
-
-function getBgPatternTableAddress(ppuCtrl: Byte): Address {
-  return (ppuCtrl & BG_PATTERN_TABLE_ADDRESS) << 8
-}
-
-function getBgPat(chrData: Uint8Array, chridx: number, py: number, chrBankOffset: number[]): number
-{
-  const idx = chridx + py
-  const bank = (idx >> 10) & 7
-  const p = chrBankOffset[bank] + (idx & 0x03ff)
-  return kStaggered[chrData[p]] | (kStaggered[chrData[p + 8]] << 1)
 }
 
 function getSpritePat(chrData: Uint8Array, chridx: number, py: number, flipHorz: boolean,
@@ -156,35 +157,6 @@ function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8Cl
     pixels[index + 1] = kPaletColors[c + 1]
     pixels[index + 2] = kPaletColors[c + 2]
     index += 4
-  }
-}
-
-// No clipping, debug purpose.
-function render8x8Chip(
-  ppu: Ppu, pixels: Uint8ClampedArray, startOffset: number,
-  pattern: Uint16Array, paletHigh: number,
-  clearR: number, clearG: number, clearB: number, lineWidth: number)
-{
-  const W = 8
-  const palet = ppu.getPaletTable()
-  for (let py = 0; py < W; ++py) {
-    const pat = pattern[py]
-    for (let px = 0; px < W; ++px) {
-      const pal = (pat >> ((W - 1) * 2 - (px << 1))) & 3
-      let r = clearR, g = clearG, b = clearB
-      if (pal !== 0) {
-        const col = palet[paletHigh | pal] & 0x3f
-        const c = col * 3
-        r = kPaletColors[c]
-        g = kPaletColors[c + 1]
-        b = kPaletColors[c + 2]
-      }
-
-      const index = (py * lineWidth + px + startOffset) * 4
-      pixels[index + 0] = r
-      pixels[index + 1] = g
-      pixels[index + 2] = b
-    }
   }
 }
 
@@ -501,33 +473,6 @@ export class Ppu {
     copyOffscreenToPixels(this.offscreen, pixels, greyscale, this.palet)
   }
 
-  public renderPatternTable(pixels: Uint8ClampedArray, lineWidth: number,
-                            colorGroups: Uint8Array): void
-  {
-    const W = 8
-    const invert = (this.regs[PpuReg.CTRL] & SPRITE_PATTERN_TABLE_ADDRESS) === 0 ? 1 : 0
-    const pattern = new Uint16Array(W)
-
-    for (let i = 0; i < 2; ++i) {
-      const b = i ^ invert
-      const paletHigh = ((colorGroups[b] << 2) | (b << 4)) | 0
-      const col0 = this.palet[paletHigh] & 0x3f
-      const clearR = kPaletColors[col0 * 3 + 0]
-      const clearG = kPaletColors[col0 * 3 + 1]
-      const clearB = kPaletColors[col0 * 3 + 2]
-      const startX = i * (W * 16)
-      for (let by = 0; by < 16; ++by) {
-        for (let bx = 0; bx < 16; ++bx) {
-          const chridx = (bx + by * 16 + i * 256) * 16
-          for (let py = 0; py < W; ++py)
-            pattern[py] = getBgPat(this.chrData, chridx, py, this.hstatusMgr.current.chrBankOffset)
-          render8x8Chip(this, pixels, (by * W) * lineWidth + bx * W + startX,
-                        pattern, paletHigh, clearR, clearG, clearB, lineWidth)
-        }
-      }
-    }
-  }
-
   public writePpuDirect(addr: Address, value: Byte): void {
     if (addr >= 0x2000) {
       this.vram[addr] = value
@@ -537,42 +482,6 @@ export class Ppu {
     }
   }
 
-  public renderNameTable1(pixels: Uint8ClampedArray, lineWidth: number,
-                          startX: number, startY: number, page: number): void
-  {
-    const nameTableOffset = page << 10
-
-    const W = 8
-    const chrStart = getBgPatternTableAddress(this.regs[PpuReg.CTRL])
-    const vram = this.vram
-
-    const clearColor = this.palet[0] & 0x3f  // Universal background color
-    const clearR = kPaletColors[clearColor * 3 + 0]
-    const clearG = kPaletColors[clearColor * 3 + 1]
-    const clearB = kPaletColors[clearColor * 3 + 2]
-    const pattern = new Uint16Array(W)
-
-    for (let by = 0; by < Const.HEIGHT / W; ++by) {
-      const ay = by % 30
-      for (let bx = 0; bx < Const.WIDTH / W; ++bx) {
-        const ax = bx & 31
-
-        const nameTable = (getNameTable(0, bx, by, this.hstatusMgr.current.mirrorModeBit) +
-                           nameTableOffset)
-        const name = vram[nameTable + ax + (ay << 5)]
-        const chridx = name * 16 + chrStart
-        const palShift = (ax & 2) + ((ay & 2) << 1)
-        const atrBlk = (ax >> 2) + ((ay << 1) & 0x0f8)
-        const attributeTable = nameTable + 0x3c0
-        const paletHigh = ((vram[attributeTable + atrBlk] >> palShift) & 3) << 2
-
-        for (let py = 0; py < W; ++py)
-          pattern[py] = getBgPat(this.chrData, chridx, py, this.hstatusMgr.current.chrBankOffset)
-        render8x8Chip(this, pixels, (by * W + startY) * lineWidth + bx * W + startX,
-                      pattern, paletHigh, clearR, clearG, clearB, lineWidth)
-      }
-    }
-  }
 
   public getPaletTable(): Readonly<Uint8Array> {
     return this.palet
@@ -580,6 +489,18 @@ export class Ppu {
 
   public getRegs(): Readonly<Uint8Array> {
     return this.regs
+  }
+
+  public getVram(): Readonly<Uint8Array> {
+    return this.vram
+  }
+
+  public getChrData(): Readonly<Uint8Array> {
+    return this.chrData
+  }
+
+  public getHStatusMgr(): HStatusMgr {
+    return this.hstatusMgr
   }
 
   private isChrRam(): boolean {
