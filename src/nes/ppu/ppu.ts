@@ -537,18 +537,6 @@ export class Ppu {
     }
   }
 
-  public dumpVram(start: Address, count: number): void {
-    const mem = new Array<Byte>()
-    for (let i = 0; i < count; ++i) {
-      mem.push(this.vram[getPpuAddr(start + i, this.hstatusMgr.current.mirrorModeBit)])
-    }
-
-    for (let i = 0; i < count; i += 16) {
-      const line = mem.splice(0, 16).map(x => Util.hex(x, 2)).join(' ')
-      console.log(`${Util.hex(start + i, 4)}: ${line}`)
-    }
-  }
-
   public renderNameTable1(pixels: Uint8ClampedArray, lineWidth: number,
                           startX: number, startY: number, page: number): void
   {
