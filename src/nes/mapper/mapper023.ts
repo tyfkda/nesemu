@@ -81,21 +81,26 @@ class Mapper023Base extends Mapper {
       if (0xc000 <= adr && adr <= 0xefff) {  // CHR Select 2...7
         const reg = mapping[adr & 0xff]
         let ofs = 0, hi = false
-        if (reg === 0) {
+        switch (reg) {
+        case 0:
           ofs = 0
-        } else if (reg === 2) {
+          break
+        case 2:
           ofs = 0
           hi = true
-        } else if (reg === 4) {
+          break
+        case 4:
           ofs = 1
-        } else if (reg === 6) {
+          break
+        case 6:
           ofs = 1
           hi = true
-        } else {
+          break
+        default:
           return
         }
         const bank = ((adr & 0x3000) >> 11) + 2 + ofs
-        let newValue
+        let newValue: number
         if (hi)
           newValue = (this.chrBank[bank] & ~0x1f0) | ((value & 0x1f) << 4)
         else
@@ -103,19 +108,26 @@ class Mapper023Base extends Mapper {
         this.setChrBankOffset(bank, newValue)
       } else {  // IRQ
         const reg = mapping[adr & 0xff]
-        if (reg === 0) {  // IRQ Latch: low 4 bits
+        switch (reg) {
+        case 0:  // IRQ Latch: low 4 bits
           this.irqLatch = (this.irqLatch & ~0x0f) | (value & 0x0f)
-        } else if (reg === 2) {  // IRQ Latch: high 4 bits
+          break
+        case 2:  // IRQ Latch: high 4 bits
           this.irqLatch = (this.irqLatch & ~0xf0) | ((value & 0x0f) << 4)
-        } else if (reg === 4) {  // IRQ Control
+          break
+        case 4:  // IRQ Control
           this.irqControl = value
           if ((this.irqControl & IRQ_ENABLE) !== 0) {
             this.irqCounter = this.irqLatch
           }
-        } else if (reg === 6) {  // IRQ Acknowledge
+          this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
+          break
+        case 6:  // IRQ Acknowledge
           // Copy to enable
           const ea = this.irqControl & IRQ_ENABLE_AFTER
-          this.irqControl = (this.irqControl & ~IRQ_ENABLE) | (ea << 1)
+          this.irqControl = (this.irqControl & ~IRQ_ENABLE) | (ea !== 0 ? IRQ_ENABLE : 0)
+          this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
+          break
         }
       }
     })
@@ -168,7 +180,7 @@ class Mapper023Base extends Mapper {
         c += 185  // TODO: Calculate.
       }
       if (c > 255) {
-        c = this.irqLatch
+        c = c - 256 + this.irqLatch
         this.options.cpu.requestIrq(IrqType.EXTERNAL)
       }
       this.irqCounter = c
