@@ -426,11 +426,8 @@ export class Ppu {
 
   public setVBlank(): void {
     this.regs[PpuReg.STATUS] = this.regs[PpuReg.STATUS] | VBLANK
-
     this.hevents.swap()
-
     this.hstatusMgr.swap()
-
     this.hclipZero = true
   }
 
