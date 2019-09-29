@@ -293,20 +293,24 @@ export class Ppu {
     switch (reg as PpuReg) {
     case PpuReg.CTRL:
       {
+        this.addHevent(HEventType.PPU_CTRL, this.regs[PpuReg.CTRL])
+
         this.incScrollCounter()
         this.scrollTemp = ((this.scrollTemp & ~0x0c00) |
                            ((value & PpuCtrlBit.BASE_NAMETABLE_ADDRESS) << 10))
         this.scrollLatch = this.scrollTemp
-        // At dot 257 of each scanline:
-        const scrollCurr = ((this.hstatusMgr.current.scrollCurr & ~0x041f) |
-                            (this.scrollTemp & 0x041f))
-        // this.scrollCurr = scrollCurr
-        // if (this.hcount >= 280 && this.hcount < 304) {
-        //   this.scrollCurr = (this.scrollCurr & ~0x7be0) | (this.scrollTemp & 0x7be0)
-        // }
 
-        this.addHevent(HEventType.PPU_CTRL, this.regs[PpuReg.CTRL])
-        this.addHevent(HEventType.SCROLL_CURR, scrollCurr)
+        if (!(this.regs[PpuReg.STATUS] & PpuStatusBit.VBLANK)) {
+          // At dot 257 of each scanline:
+          const scrollCurr = ((this.hstatusMgr.current.scrollCurr & ~0x041f) |
+                              (this.scrollTemp & 0x041f))
+          // this.scrollCurr = scrollCurr
+          // if (this.hcount >= 280 && this.hcount < 304) {
+          //   this.scrollCurr = (this.scrollCurr & ~0x7be0) | (this.scrollTemp & 0x7be0)
+          // }
+
+          this.addHevent(HEventType.SCROLL_CURR, scrollCurr)
+        }
       }
       break
     case PpuReg.MASK:
