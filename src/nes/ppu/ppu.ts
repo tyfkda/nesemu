@@ -511,20 +511,16 @@ export class Ppu {
     for (let i = 0; i < 2; ++i) {
       const b = i ^ invert
       const paletHigh = ((colorGroups[b] << 2) | (b << 4)) | 0
+      const col0 = this.palet[paletHigh] & 0x3f
+      const clearR = kPaletColors[col0 * 3 + 0]
+      const clearG = kPaletColors[col0 * 3 + 1]
+      const clearB = kPaletColors[col0 * 3 + 2]
       const startX = i * (W * 16)
       for (let by = 0; by < 16; ++by) {
         for (let bx = 0; bx < 16; ++bx) {
           const chridx = (bx + by * 16 + i * 256) * 16
-          for (let py = 0; py < W; ++py) {
-            const idx = chridx + py
-            pattern[py] = ((kStaggered[this.readPpuDirect(idx + 8)] << 1) |
-                           kStaggered[this.readPpuDirect(idx)])
-          }
-
-          const col0 = this.palet[paletHigh] & 0x3f
-          const clearR = kPaletColors[col0 * 3 + 0]
-          const clearG = kPaletColors[col0 * 3 + 1]
-          const clearB = kPaletColors[col0 * 3 + 2]
+          for (let py = 0; py < W; ++py)
+            pattern[py] = getBgPat(this.chrData, chridx, py, this.hstatusMgr.current.chrBankOffset)
           render8x8Chip(this, pixels, (by * W) * lineWidth + bx * W + startX,
                         pattern, paletHigh, clearR, clearG, clearB, lineWidth)
         }
