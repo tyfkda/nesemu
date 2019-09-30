@@ -429,45 +429,7 @@ export class Ppu {
   }
 
   public render(pixels: Uint8Array|Uint8ClampedArray): void {
-    const h = this.hstatusMgr.lastFrame
-    const n = this.hevents.getCount()
-    let sprChrStart = 0
-    for (let i = 0; i < n; ++i) {
-      const hevent = this.hevents.getEvent(i)
-      h.set(hevent.type, hevent.value, hevent.index)
-
-      const hline0 = hevent.hcount
-      const hline1 = this.hevents.getEvent(i + 1).hcount
-      if (hline0 >= hline1)
-        continue
-
-      // BG
-      if ((h.ppuMask & SHOW_BG) === 0) {
-        clearBg(this.offscreen, hline0, hline1, Const.WIDTH)
-      } else {
-        const baseNameTable = (h.scrollCurr & 0x0c00) >> 10
-        const bgChrStart = getBgPatternTableAddress(h.ppuCtrl)
-        let x0 = 0
-        if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0) {
-          x0 = 8
-          clearBg(this.offscreen, hline0, hline1, x0)
-        }
-
-        const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
-        const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
-
-        this.renderBg(scrollX, scrollY, baseNameTable, hline0, hline1, x0,
-                      h.chrBankOffset, h.mirrorModeBit, bgChrStart)
-      }
-
-      // Sprite
-      if ((h.ppuMask & SHOW_SPRITE) !== 0) {
-        if ((h.ppuCtrl & SPRITE_SIZE) === 0)
-          sprChrStart = (h.ppuCtrl & SPRITE_PATTERN_TABLE_ADDRESS) << 9
-        const x0 = (h.ppuMask & SHOW_SPRITE_LEFT_8PX) ? 0 : 8
-        this.renderSprite(hline0, hline1, x0, h.chrBankOffset, sprChrStart)
-      }
-    }
+    this.renderOffscreen(this.offscreen)
 
     const greyscale = (this.regs[PpuReg.MASK] & GREYSCALE) !== 0
     copyOffscreenToPixels(this.offscreen, pixels, greyscale, this.palet)
@@ -481,7 +443,6 @@ export class Ppu {
       this.chrData[(addr & 0x3ff) + bankOffset] = value
     }
   }
-
 
   public getPaletTable(): Readonly<Uint8Array> {
     return this.palet
@@ -507,7 +468,49 @@ export class Ppu {
     return this.chrData === this.vram
   }
 
-  private renderBg(scrollX: number, scrollY: number,
+  private renderOffscreen(offscreen: Uint8Array) {
+    const h = this.hstatusMgr.lastFrame
+    const n = this.hevents.getCount()
+    let sprChrStart = 0
+    for (let i = 0; i < n; ++i) {
+      const hevent = this.hevents.getEvent(i)
+      h.set(hevent.type, hevent.value, hevent.index)
+
+      const hline0 = hevent.hcount
+      const hline1 = this.hevents.getEvent(i + 1).hcount
+      if (hline0 >= hline1)
+        continue
+
+      // BG
+      if ((h.ppuMask & SHOW_BG) === 0) {
+        clearBg(offscreen, hline0, hline1, Const.WIDTH)
+      } else {
+        const baseNameTable = (h.scrollCurr & 0x0c00) >> 10
+        const bgChrStart = getBgPatternTableAddress(h.ppuCtrl)
+        let x0 = 0
+        if ((h.ppuMask & SHOW_BG_LEFT_8PX) === 0) {
+          x0 = 8
+          clearBg(offscreen, hline0, hline1, x0)
+        }
+
+        const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
+        const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
+
+        this.renderBg(offscreen, scrollX, scrollY, baseNameTable, hline0, hline1, x0,
+                      h.chrBankOffset, h.mirrorModeBit, bgChrStart)
+      }
+
+      // Sprite
+      if ((h.ppuMask & SHOW_SPRITE) !== 0) {
+        if ((h.ppuCtrl & SPRITE_SIZE) === 0)
+          sprChrStart = (h.ppuCtrl & SPRITE_PATTERN_TABLE_ADDRESS) << 9
+        const x0 = (h.ppuMask & SHOW_SPRITE_LEFT_8PX) ? 0 : 8
+        this.renderSprite(offscreen, hline0, hline1, x0, h.chrBankOffset, sprChrStart)
+      }
+    }
+  }
+
+  private renderBg(offscreen: Uint8Array, scrollX: number, scrollY: number,
                    baseNameTable: Address, hline0: number, hline1: number, x0: number,
                    chrBankOffset: number[], mirrorModeBit: Byte, chrStart: Address): void
   {
@@ -521,7 +524,6 @@ export class Ppu {
     const W = 8
     const LINE_WIDTH = Const.WIDTH | 0
     const vram = this.vram
-    const offscreen = this.offscreen
 
     if (scrollY >= 240)
       scrollY = (scrollY - 256) | 0
@@ -566,14 +568,13 @@ export class Ppu {
     return (this.regs[PpuReg.CTRL] & SPRITE_SIZE) !== 0
   }
 
-  private renderSprite(hline0: number, hline1: number, x0: number,
+  private renderSprite(offscreen: Uint8Array, hline0: number, hline1: number, x0: number,
                        chrBankOffset: number[], chrStart: Address): void
   {
     const W = 8
     const LINE_WIDTH = Const.WIDTH
     const PALET = 0x03
 
-    const offscreen = this.offscreen
     const oam = this.oam
     const isSprite8x16 = this.isSprite8x16()
     const sh = isSprite8x16 ? 16 : 8
