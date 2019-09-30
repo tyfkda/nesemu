@@ -582,8 +582,8 @@ export class Ppu {
     return this.palet
   }
 
-  public getReg(index: number): Byte {
-    return this.regs[index]
+  public getRegs(): Readonly<Uint8Array> {
+    return this.regs
   }
 
   private isChrRam(): boolean {
