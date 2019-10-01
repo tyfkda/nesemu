@@ -1,6 +1,7 @@
-import {Ppu, PpuReg} from './ppu'
+import {Ppu} from './ppu'
 import {getNameTable, getBgPatternTableAddress, getBgPat,
         SPRITE_PATTERN_TABLE_ADDRESS} from './ppu'
+import {PpuReg} from './types'
 import {Const} from '../const'
 import {kPaletColors} from './const'
 

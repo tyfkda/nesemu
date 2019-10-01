@@ -7,24 +7,13 @@ import {Const} from '../const'
 import {Address, Byte, Word} from '../types'
 import {kPaletColors, kStaggered, kFlipXBits} from './const'
 import {HEventType, HEvents, HStatusMgr} from './hevent'
-import {MirrorMode} from './types'
+import {MirrorMode, PpuReg} from './types'
 import Util from '../../util/util'
 
 const REGISTER_COUNT = 8
 const VRAM_SIZE = 0x4000
 const OAM_SIZE = 0x0100
 const MAX_SPRITE_ON_SCANLINE = 8
-
-export const enum PpuReg {
-  CTRL,    // $2000
-  MASK,    // $2001
-  STATUS,  // $2002
-  OAMADDR, // $2003
-  OAMDATA, // $2004
-  SCROLL,  // $2005
-  ADDR,    // $2006
-  DATA,    // $2007
-}
 
 // PPUCTRL ($2000)
 const VINT_ENABLE = 0x80  // V: 1=Trigger NMI when VBLANK start

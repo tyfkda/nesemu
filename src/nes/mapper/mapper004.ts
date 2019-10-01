@@ -1,9 +1,9 @@
 // MMC3
 
 import {IrqType} from '../cpu/cpu'
-import {PpuReg, SHOW_SPRITE, SHOW_BG} from '../ppu/ppu'
+import {SHOW_SPRITE, SHOW_BG} from '../ppu/ppu'
 import {Mapper, MapperOptions} from './mapper'
-import {MirrorMode} from '../ppu/types'
+import {MirrorMode, PpuReg} from '../ppu/types'
 import Util from '../../util/util'
 
 const VRETURN = 262
