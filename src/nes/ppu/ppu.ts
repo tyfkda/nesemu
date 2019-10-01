@@ -78,6 +78,17 @@ function incPpuAddr(ppuAddr: Address, ppuCtrl: Byte): Address {
   return (ppuAddr + add) & (VRAM_SIZE - 1)
 }
 
+function incScroll(t: number, dy: number): number {
+  let pageY = ((t >> 11) & 1) * 240
+  let y = ((t & 0x03e0) >> (5 - 3)) | ((t >> 12) & 7)
+  if (y >= 240)
+    y -= 256
+  const ny = pageY + y + dy
+  const p = (ny / 240) & 1
+  const sy = ny % 240
+  return (t & ~0x7be0) | ((sy & 0xf8) << (5 - 3)) | ((sy & 0x07) << 12) | (p << 11)
+}
+
 function getSpritePat(chrData: Uint8Array, chridx: number, py: number, flipHorz: boolean,
                       chrBankOffset: number[]): number
 {
@@ -654,19 +665,8 @@ export class Ppu {
     if (dy <= 0)
       return
 
-    const inc = (t: number) => {
-      let pageY = ((t >> 11) & 1) * 240
-      let y = ((t & 0x03e0) >> (5 - 3)) | ((t >> 12) & 7)
-      if (y >= 240)
-        y -= 256
-      const ny = pageY + y + dy
-      const p = (ny / 240) & 1
-      const sy = ny % 240
-      return (t & ~0x7be0) | ((sy & 0xf8) << (5 - 3)) | ((sy & 0x07) << 12) | (p << 11)
-    }
-
-    this.scrollTemp = inc(this.scrollTemp)
-    this.addHevent(HEventType.SCROLL_CURR, inc(this.hstatusMgr.current.scrollCurr))
+    this.scrollTemp = incScroll(this.scrollTemp, dy)
+    this.addHevent(HEventType.SCROLL_CURR, incScroll(this.hstatusMgr.current.scrollCurr, dy))
   }
 
   private readPpuDirect(addr: Address): Byte {
