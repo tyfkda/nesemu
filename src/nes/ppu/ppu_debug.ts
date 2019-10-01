@@ -1,7 +1,6 @@
 import {Ppu} from './ppu'
-import {getNameTable, getBgPatternTableAddress, getBgPat,
-        SPRITE_PATTERN_TABLE_ADDRESS} from './ppu'
-import {PpuReg} from './types'
+import {getNameTable, getBgPatternTableAddress, getBgPat} from './ppu'
+import {PpuReg, PpuCtrlBit} from './types'
 import {Const} from '../const'
 import {kPaletColors} from './const'
 
@@ -88,7 +87,7 @@ export class PpuDebug {
     const hstatusMgr = ppu.getHStatusMgr()
     const chrBankOffset = hstatusMgr.current.chrBankOffset
 
-    const invert = (regs[PpuReg.CTRL] & SPRITE_PATTERN_TABLE_ADDRESS) === 0 ? 1 : 0
+    const invert = (regs[PpuReg.CTRL] & PpuCtrlBit.SPRITE_PATTERN_TABLE_ADDRESS) === 0 ? 1 : 0
     const pattern = new Uint16Array(W)
 
     for (let i = 0; i < 2; ++i) {

@@ -1,9 +1,8 @@
 // MMC3
 
 import {IrqType} from '../cpu/cpu'
-import {SHOW_SPRITE, SHOW_BG} from '../ppu/ppu'
 import {Mapper, MapperOptions} from './mapper'
-import {MirrorMode, PpuReg} from '../ppu/types'
+import {MirrorMode, PpuReg, PpuMaskBit} from '../ppu/types'
 import Util from '../../util/util'
 
 const VRETURN = 262
@@ -133,7 +132,7 @@ export class Mapper004 extends Mapper {
     // Note: BGs OR sprites MUST be enabled in $2001 (bits 3 and 4)
     // in order for the countdown to occur.
     const regs = this.options.ppu.getRegs()
-    if ((regs[PpuReg.MASK] & (SHOW_SPRITE | SHOW_BG)) !== 0) {
+    if ((regs[PpuReg.MASK] & (PpuMaskBit.SHOW_SPRITE | PpuMaskBit.SHOW_BG)) !== 0) {
       if (--this.irqHlineCounter === 0 && this.irqHlineEnable) {
         this.options.cpu.requestIrq(IrqType.EXTERNAL)
       }
