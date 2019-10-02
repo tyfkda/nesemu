@@ -598,7 +598,7 @@ export class Ppu {
         (this.regs[PpuReg.MASK] & mask) !== mask)
       return
 
-    const sprite0y = this.oam[OamElem.Y]
+    const sprite0y = this.oam[OamElem.Y] + 1
     if (hcount < sprite0y || hcount >= sprite0y + 16)
       return
     const sprite0x = this.oam[OamElem.X]
