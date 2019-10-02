@@ -50,6 +50,13 @@ export const enum PpuStatusBit {
 // PPUDATA ($2007)
 
 // Sprite
+export const enum OamElem {
+  Y,
+  INDEX,
+  ATTR,
+  X,
+}
+
 export const enum OamAttrBit {
   FLIP_HORZ = 0x40,
   FLIP_VERT = 0x80,

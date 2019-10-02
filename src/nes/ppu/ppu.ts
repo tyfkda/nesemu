@@ -7,7 +7,7 @@ import {Const} from '../const'
 import {Address, Byte, Word} from '../types'
 import {kPaletColors, kStaggered, kFlipXBits} from './const'
 import {HEventType, HEvents, HStatusMgr} from './hevent'
-import {MirrorMode, PpuReg, PpuCtrlBit, PpuMaskBit, PpuStatusBit, OamAttrBit} from './types'
+import {MirrorMode, PpuReg, PpuCtrlBit, PpuMaskBit, PpuStatusBit, OamElem, OamAttrBit} from './types'
 import Util from '../../util/util'
 
 const REGISTER_COUNT = 8
@@ -553,15 +553,15 @@ export class Ppu {
     for (let h = hline0; h < hline1; ++h) {
       let n = 0
       for (let i = 0; i < MAX_SPRITE; ++i) {
-        const y = oam[i * 4] + 1
+        const y = oam[i * 4 + OamElem.Y] + 1
         if (h < y || h >= y + sh)
           continue
 
-        const oamIndex = oam[i * 4 + 1]
-        const attr = oam[i * 4 + 2]
+        const oamIndex = oam[i * 4 + OamElem.INDEX]
+        const attr = oam[i * 4 + OamElem.ATTR]
         const flipVert = (attr & OamAttrBit.FLIP_VERT) !== 0
         const flipHorz = (attr & OamAttrBit.FLIP_HORZ) !== 0
-        const x = oam[i * 4 + 3]
+        const x = oam[i * 4 + OamElem.X]
         const priorityMask = kSpritePriorityMask[(attr >> 5) & 1]
 
         const chridx = (isSprite8x16
@@ -598,10 +598,10 @@ export class Ppu {
         (this.regs[PpuReg.MASK] & mask) !== mask)
       return
 
-    const sprite0y = this.oam[0]
+    const sprite0y = this.oam[OamElem.Y]
     if (hcount < sprite0y || hcount >= sprite0y + 16)
       return
-    const sprite0x = this.oam[3]
+    const sprite0x = this.oam[OamElem.X]
     if (sprite0x >= 255)
       return
 
@@ -617,9 +617,8 @@ export class Ppu {
     const chrStart = this.getSpritePatternTableAddress()
     const isSprite8x16 = this.isSprite8x16()
     const h = isSprite8x16 ? 16 : 8
-    const i = 0
-    const index = oam[i * 4 + 1]
-    const attr = oam[i * 4 + 2]
+    const index = oam[OamElem.INDEX]
+    const attr = oam[OamElem.ATTR]
     const flipVert = (attr & OamAttrBit.FLIP_VERT) !== 0
     const chridx = (isSprite8x16
                     ? (index & 0xfe) * 16 + ((index & 1) << 12)
