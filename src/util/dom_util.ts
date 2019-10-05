@@ -21,8 +21,11 @@ export default class DomUtil {
     return new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onload = function(e) {
-        const binary = new Uint8Array((e.target as any).result)
-        resolve(binary)
+        const target = e.target as FileReader
+        if (target.result)
+          resolve(new Uint8Array(target.result as ArrayBuffer))
+        else
+          reject()
       }
       reader.onerror = function(_e) {
         reject(reader.error)
@@ -78,12 +81,14 @@ export default class DomUtil {
     a.click()
   }
 
-  public static chooseFile(callback: (files: any) => void) {
+  public static chooseFile(callback: (files: FileList) => void) {
     const elem = document.createElement('input')
     elem.setAttribute('type', 'file')
     elem.setAttribute('accept', '.sav, application/json')
     elem.addEventListener('change', function(event) {
-      callback((event.target as any).files)
+      const input = event.target as HTMLInputElement
+      if (input.files)
+        callback(input.files)
     })
     elem.click()
   }

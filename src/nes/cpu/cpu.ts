@@ -68,9 +68,9 @@ export class Cpu {
   private irqRequest = 0
 
   // For debug
-  private breakPoints: any = {}
-  private watchRead: any = {}
-  private watchWrite: any = {}
+  private breakPoints: {nmi?: boolean, [key: number]: boolean} = {}
+  private watchRead: {[key: number]: boolean} = {}
+  private watchWrite: {[key: number]: boolean} = {}
   private paused = false
 
   constructor(private bus: IBus) {

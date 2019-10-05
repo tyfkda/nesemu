@@ -1,5 +1,5 @@
 import WindowManager from '../wnd/window_manager'
-import {Wnd, WndEvent} from '../wnd/wnd'
+import {Wnd, WndEvent, MenuItemInfo} from '../wnd/wnd'
 
 import DomUtil from '../util/dom_util'
 import {Nes} from '../nes/nes'
@@ -81,7 +81,7 @@ export class ScreenWnd extends Wnd {
   private hideEdge = true
   private contentWidth = 0  // Content size, except fullscreen
   private contentHeight = 0
-  private menuItems: any
+  private menuItems: Array<MenuItemInfo>
   private scalerType = ScalerType.NEAREST
 
   constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,

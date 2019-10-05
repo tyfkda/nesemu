@@ -15,8 +15,8 @@ export default class WindowManager {
   private padKeyHandler = new PadKeyHandler()
   private pressingKeys: {[key: number]: boolean} = {}
 
-  private onKeyDown: (event: Event) => any
-  private onKeyUp: (event: Event) => any
+  private onKeyDown: (event: Event) => void
+  private onKeyUp: (event: Event) => void
 
   public constructor(private root: HTMLElement) {
     this.onKeyDown = (event: KeyboardEvent) => {

@@ -6,7 +6,6 @@ interface Window {
   FileReader: any
 
   mozRequestAnimationFrame: any
-  // webkitRequestAnimationFrame: any
   msRequestAnimationFrame: any
 
   AudioContext: any
@@ -14,9 +13,7 @@ interface Window {
 
   Gamepad: any
 
-  app: any
-  nes: any
-  jsNes: any
+  app: App
   $DEBUG: boolean
 }
 

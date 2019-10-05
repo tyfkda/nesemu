@@ -54,6 +54,18 @@ export const enum WndEvent {
   RESIZE_END,
 }
 
+export interface SubmenuItemInfo {
+  label: string,
+  click: () => void,
+  checked?: boolean,
+  disabled?: boolean,
+}
+
+export interface MenuItemInfo {
+  label: string,
+  submenu: Array<SubmenuItemInfo>,
+}
+
 export class Wnd {
   public static TITLEBAR_HEIGHT = 14
   public static MENUBAR_HEIGHT = 14
@@ -146,7 +158,7 @@ export class Wnd {
       this.root.classList.remove('top')
   }
 
-  public addMenuBar(menu: any): Wnd {
+  public addMenuBar(menu: Array<MenuItemInfo>): Wnd {
     const [upper, lower] = createHorizontalSplitter(this.root, Wnd.MENUBAR_HEIGHT)
     this.clientMarginHeight += Wnd.TITLEBAR_HEIGHT
     this.contentHolder.appendChild(upper)
@@ -158,11 +170,11 @@ export class Wnd {
 
     const itemElems: HTMLElement[] = []
     let activeSubmenuIndex = -1
-    let submenuHandler: any
+    let closeSubmenu: (() => void)|null
 
     const onClose = () => {
       activeSubmenuIndex = -1
-      submenuHandler = null
+      closeSubmenu = null
       this.onEvent(WndEvent.CLOSE_MENU)
     }
 
@@ -171,16 +183,15 @@ export class Wnd {
       if (!('submenu' in menuItem) || activeSubmenuIndex === index)
         return
 
-      if (submenuHandler != null) {
-        submenuHandler.close()
-      }
+      if (closeSubmenu != null)
+        closeSubmenu()
 
       const itemElem = itemElems[index]
       activeSubmenuIndex = index
-      submenuHandler = this.openSubmenu(menuItem, itemElem, onClose)
+      closeSubmenu = this.openSubmenu(menuItem, itemElem, onClose)
     }
 
-    menu.forEach((menuItem: any, index: number) => {
+    menu.forEach((menuItem: MenuItemInfo, index: number) => {
       const itemElem = document.createElement('div')
       itemElem.className = 'menu-item pull-left'
       itemElem.innerText = menuItem.label
@@ -192,7 +203,8 @@ export class Wnd {
             this.onEvent(WndEvent.OPEN_MENU)
             showSubmenu(index)
           } else {
-            submenuHandler.close()
+            if (closeSubmenu)
+              closeSubmenu()
             onClose()
           }
         }
@@ -233,7 +245,7 @@ export class Wnd {
 
     const W = 8
 
-    const table: any[] = [
+    const table = [
       {
         styleParams: { right: '-1px', bottom: '-1px', cursor: 'nwse-resize' },
         horz: 'right',
@@ -408,7 +420,9 @@ export class Wnd {
     return titleElem
   }
 
-  private openSubmenu(menuItem: any, itemElem: HTMLElement, onClose?: Function): any {
+  private openSubmenu(menuItem: MenuItemInfo, itemElem: HTMLElement,
+                      onClose?: () => void): () => void
+  {
     const subItemHolder = document.createElement('div')
     subItemHolder.className = 'menu-subitem-holder'
     subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
@@ -458,8 +472,6 @@ export class Wnd {
     }
     document.addEventListener('click', onClickOther /*, true*/)
 
-    return {
-      close,
-    }
+    return close
   }
 }

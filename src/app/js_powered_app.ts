@@ -194,7 +194,6 @@ export class JsApp extends App {
   constructor(wndMgr: WindowManager, option: Option) {
     super(wndMgr, option, true)
     this.jsNes = new JsNes()
-    window.jsNes = this.jsNes  // Put jsNes into global.
     this.jsScreenWnd = new JsScreenWnd(this.wndMgr, this, this.jsNes, this.stream)
     this.wndMgr.add(this.jsScreenWnd)
     if (option.title)

@@ -20,7 +20,7 @@ const KEY_VOLUME = 'volume'
 class Main {
   private wndMgr: WindowManager
   private apps: App[] = []
-  private diskBios: any = null
+  private diskBios: Uint8Array|null = null
   private uninsertedApp: App|null = null
   private volume = 1
   private gamepadWnd: GamepadWnd|null = null
@@ -118,7 +118,7 @@ class Main {
         })
         // .bin: Disk BIOS
         if (typeMap.bin) {
-          this.diskBios = typeMap.bin[0].binary
+          this.diskBios = typeMap.bin[0].binary as Uint8Array
           if (!typeMap.fds) {  // Boot disk system without inserting disk.
             this.uninsertedApp = this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
           }
@@ -133,7 +133,8 @@ class Main {
         }
         // Load .fds
         if (typeMap.fds) {
-          if (this.diskBios == null) {
+          const diskBios = this.diskBios
+          if (diskBios == null) {
             this.wndMgr.showSnackbar('.fds needs BIOS file (.bin) for Disk System')
             return
           }
@@ -143,7 +144,7 @@ class Main {
               this.uninsertedApp.setDiskImage(file.binary)
               this.uninsertedApp = null
             } else {
-              this.bootDiskImage(this.diskBios, file.binary, file.fileName, x, y)
+              this.bootDiskImage(diskBios, file.binary, file.fileName, x, y)
             }
             x += 16
             y += 16
@@ -325,17 +326,16 @@ class Main {
   }
 
   private setUpOpenRomLink(): void {
-    const romFile = document.getElementById('rom-file') as HTMLInputElement
-    romFile.addEventListener('change', () => {
-      if (!romFile.value)
+    const input = document.getElementById('rom-file') as HTMLInputElement
+    input.addEventListener('change', () => {
+      if (!input.value)
         return
-      const fileList = romFile.files
-      if (!fileList)
-        return
-      this.createAppFromFiles(fileList, 0, 0)
+      const fileList = input.files
+      if (fileList)
+        this.createAppFromFiles(fileList, 0, 0)
 
       // Clear.
-      romFile.value = ''
+      input.value = ''
     })
   }
 

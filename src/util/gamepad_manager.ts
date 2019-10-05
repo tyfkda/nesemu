@@ -129,12 +129,18 @@ export class GamepadManager {
 // ================================================
 // Config window.
 
+interface GamepadButtonOption {
+  width?: number
+  height?: number
+  type?: 'round'
+}
+
 interface GamepadButtonDef {
   x: number
   y: number
   name: string
   padbit: number
-  opt?: any
+  opt?: GamepadButtonOption
 }
 
 const kGamepadButtons: GamepadButtonDef[] = [
@@ -149,7 +155,7 @@ const kGamepadButtons: GamepadButtonDef[] = [
 ]
 
 function createButton(parent: HTMLElement, x: number, y: number, name: string,
-                      opt: any = {}): HTMLElement
+                      opt: GamepadButtonOption = {}): HTMLElement
 {
   const btn = document.createElement('div')
   btn.className = 'gamepad-btn'
