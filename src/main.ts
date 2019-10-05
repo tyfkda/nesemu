@@ -111,7 +111,7 @@ class Main {
       })
       .then(results => {
         const typeMap: {[key: string]: Array<any>} = {}
-        ;(results as {type: string, binary: Uint8Array, fileName: string}[]).forEach(result => {
+        ; (results as {type: string, binary: Uint8Array, fileName: string}[]).forEach(result => {
           if (!typeMap[result.type])
             typeMap[result.type] = []
           typeMap[result.type].push(result)

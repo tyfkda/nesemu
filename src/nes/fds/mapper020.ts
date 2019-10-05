@@ -27,7 +27,7 @@ const IRQ_CTRL_REPEAT  = 0 << 1
 const IRQ_CTRL_ENABLED = 1 << 1
 
 const MASTER_IO_ENABLE_DISK  = 1 << 0
-//const MASTER_IO_ENABLE_SOUND = 1 << 1
+// const MASTER_IO_ENABLE_SOUND = 1 << 1
 
 const FDS_CTRL_MOTOR_ON                    = 1 << 0
 const FDS_CTRL_TRANSFER_RESET              = 1 << 1
@@ -45,7 +45,7 @@ const DRIVE_STATUS_DISK_NOT_INSERTED = 1 << 0
 const DRIVE_STATUS_DISK_NOT_READY    = 1 << 1
 const DRIVE_STATUS_DISK_PROTECTED    = 1 << 2
 
-//const EXTERNAL_CONNECTOR_R_BATTERY_GOOD = 1 << 7
+// const EXTERNAL_CONNECTOR_R_BATTERY_GOOD = 1 << 7
 
 // Insert CRC info...
 function loadFdsImage(image: Uint8Array): Uint8Array[] {
@@ -107,7 +107,7 @@ export class Mapper020 extends Mapper {
   private transferComplete = false
   private endOfHead = true
   private scanningDisk = false
-  //private gapEnded = false
+  // private gapEnded = false
   private delay = 0
   private readData = 0
 
@@ -135,7 +135,7 @@ export class Mapper020 extends Mapper {
     this.readData = 0
     this.endOfHead = true
     this.scanningDisk = false
-    //this.gapEnded = false
+    // this.gapEnded = false
     this.delay = 0
   }
 
@@ -205,7 +205,7 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
       this.delay = 50000 / 10000  // ?
       this.endOfHead = false
       this.headPointer = 0
-      //this.gapEnded = false
+      // this.gapEnded = false
       return
     }
 
@@ -216,29 +216,29 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
 
       let needIrq = (this.regs[FDS_CTRL] & FDS_CTRL_ENABLE_IRQ_WHEN_DRIVE_READY) !== 0
 
-//console.log(`  read from disk: ${Util.hex(this.headPointer, 4)}: ${Util.hex(this.image[this.headPointer])}`)
+// console.log(`  read from disk: ${Util.hex(this.headPointer, 4)}: ${Util.hex(this.image[this.headPointer])}`)
       const diskData = this.image[this.headPointer]
-      //if ((this.regs[FDS_CTRL] & FDS_CTRL_READ_WRITE_START) === 0) {
-      //  this.gapEnded = false
-      //} else if (diskData !== 0 && !this.gapEnded) {
-      //  this.gapEnded = true
-      //  needIrq = false
-      //}
+      // if ((this.regs[FDS_CTRL] & FDS_CTRL_READ_WRITE_START) === 0) {
+      //   this.gapEnded = false
+      // } else if (diskData !== 0 && !this.gapEnded) {
+      //   this.gapEnded = true
+      //   needIrq = false
+      // }
 
-      //if (this.gapEnded) {
+      // if (this.gapEnded) {
         this.transferComplete = true
         this.readData = diskData
         if (needIrq) {
           this.options.cpu.requestIrq(IrqType.FDS)
         }
-      //}
+      // }
 
-      //++this.headPointer
-      //if (this.headPointer >= this.image.length) {
-      //  this.regs[FDS_CTRL] &= ~FDS_CTRL_MOTOR_ON
-      //} else {
-      //  this.delay = 150 //150  // ?
-      //}
+      // ++this.headPointer
+      // if (this.headPointer >= this.image.length) {
+      //   this.regs[FDS_CTRL] &= ~FDS_CTRL_MOTOR_ON
+      // } else {
+      //   this.delay = 150 //150  // ?
+      // }
     }
   }
 
@@ -249,12 +249,12 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
 
   public setSide(side: number) {
     this.image = this.diskSideImages[side % this.diskSideImages.length]
-    //this.reset()
+    // this.reset()
   }
 
   private readDiskReg(adr: Address): Byte {
     const reg = (adr - 0x4030) | 0
-//console.log(`read: ${Util.hex(adr, 4)}`)
+// console.log(`read: ${Util.hex(adr, 4)}`)
     switch (reg) {
     case DISK_STATUS:
       {
@@ -273,20 +273,20 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
         return val
       }
     case READ_DATA:
-//console.log(`READ_DATA: ${Util.hex(this.readData, 2)}, pointer=${Util.hex(this.headPointer, 4)}, CRC=${(this.regs[FDS_CTRL] & FDS_CTRL_CRC_CTRL) !== 0}`)
+// console.log(`READ_DATA: ${Util.hex(this.readData, 2)}, pointer=${Util.hex(this.headPointer, 4)}, CRC=${(this.regs[FDS_CTRL] & FDS_CTRL_CRC_CTRL) !== 0}`)
       {
         let result = 0
         if ((this.regs[FDS_CTRL] & FDS_CTRL_READ) !== 0) {
-          //if ((this.regs[FDS_CTRL] & FDS_CTRL_CRC_CTRL) === 0) {
+          // if ((this.regs[FDS_CTRL] & FDS_CTRL_CRC_CTRL) === 0) {
             result = this.readData
             ++this.headPointer
 
             if (this.headPointer >= (this.image as Uint8Array).length) {
               this.regs[FDS_CTRL] &= ~FDS_CTRL_MOTOR_ON
             }
-          //} else {
-          //  console.log('CRC')
-          //}
+          // } else {
+          //   console.log('CRC')
+          // }
         } else {
           console.log('READ_DATA with write')
         }
@@ -304,7 +304,7 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
         return val
       }
     case EXTERNAL_CONNECTOR_R:
-      //return EXTERNAL_CONNECTOR_R_BATTERY_GOOD | (this.regs[EXTERNAL_CONNECTOR_W] & 0x7f)
+      // return EXTERNAL_CONNECTOR_R_BATTERY_GOOD | (this.regs[EXTERNAL_CONNECTOR_W] & 0x7f)
       return this.regs[EXTERNAL_CONNECTOR_W]
     default:
       break
@@ -314,19 +314,19 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
 
   private writeDiskReg(adr: Address, value: Byte): void {
     const reg = (adr - 0x4020) | 0
-//console.log(`write: ${Util.hex(adr, 4)} = ${Util.hex(value)}`)
+// console.log(`write: ${Util.hex(adr, 4)} = ${Util.hex(value)}`)
     this.regs[reg] = value
 
     switch (reg) {
     case IRQ_CTRL:
-      //if ((this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) !== 0) {
+      // if ((this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) !== 0) {
         if ((value & IRQ_CTRL_ENABLED) !== 0) {
           this.irqCounter = (this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]
         } else {
           this.irqCounter = 0
           this.timerIrqOccurred = false
         }
-      //}
+      // }
       break
     case MASTER_IO_ENABLE:
       if ((value & MASTER_IO_ENABLE_DISK) === 0) {

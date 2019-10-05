@@ -414,8 +414,8 @@ export class App {
   protected setupAudioManager() {
     if (this.audioManager == null) {
       const contextClass = window.AudioContext || window.webkitAudioContext
-      //if (contextClass == null)
-      //  return
+      // if (contextClass == null)
+      //   return
 
       this.audioManager = new AudioManager(contextClass)
     } else {

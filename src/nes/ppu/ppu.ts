@@ -7,7 +7,8 @@ import {Const} from '../const'
 import {Address, Byte, Word} from '../types'
 import {kPaletColors, kStaggered, kFlipXBits} from './const'
 import {HEventType, HEvents, HStatusMgr} from './hevent'
-import {MirrorMode, PpuReg, PpuCtrlBit, PpuMaskBit, PpuStatusBit, OamElem, OamAttrBit} from './types'
+import {MirrorMode, PpuReg, PpuCtrlBit, PpuMaskBit, PpuStatusBit, OamElem,
+        OamAttrBit} from './types'
 import Util from '../../util/util'
 
 const REGISTER_COUNT = 8

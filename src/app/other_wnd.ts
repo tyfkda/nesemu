@@ -237,7 +237,8 @@ export class NameTableWnd extends Wnd {
     const page1X = this.vert ? 0 : 256
     const page1Y = this.vert ? 240 : 0
     PpuDebug.renderNameTable1(this.ppu, this.imageData.data, this.imageData.width, 0, 0, 0)
-    PpuDebug.renderNameTable1(this.ppu, this.imageData.data, this.imageData.width, page1X, page1Y, 1)
+    PpuDebug.renderNameTable1(this.ppu, this.imageData.data, this.imageData.width,
+                              page1X, page1Y, 1)
     this.context.putImageData(this.imageData, 0, 0)
   }
 }
@@ -446,7 +447,7 @@ export class AudioWnd extends Wnd {
     }
   }
 
-  private createDom(channelCount: number) : {root: HTMLElement, dots: HTMLElement[]} {
+  private createDom(channelCount: number): {root: HTMLElement, dots: HTMLElement[]} {
     const W = AudioWnd.W, H = AudioWnd.H
     const root = document.createElement('div')
     const width = W * AudioWnd.OCTAVE * 7
