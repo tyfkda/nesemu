@@ -353,8 +353,10 @@ export class Wnd {
   private createRoot(): HTMLElement {
     const root = document.createElement('div')
     root.addEventListener('mousedown', (event) => {
-      event.stopPropagation()
-      this.wndMgr.moveToTop(this)
+      if (event.button === 0) {
+        event.stopPropagation()
+        this.wndMgr.moveToTop(this)
+      }
       return false
     })
     return root
