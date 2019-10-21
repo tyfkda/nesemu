@@ -40,11 +40,11 @@ abstract class OscillatorChannel extends SoundChannel {
     }
   }
 
-  public constructor(context: AudioContext) {
+  public constructor(context: AudioContext, destination: AudioNode) {
     super(context)
 
     this.oscillator = context.createOscillator()
-    this.setupOscillator(this.oscillator, context)
+    this.setupOscillator(this.oscillator, context, destination)
   }
 
   public start(): void {
@@ -56,27 +56,31 @@ abstract class OscillatorChannel extends SoundChannel {
     this.oscillator.frequency.setValueAtTime(frequency, now)
   }
 
-  protected abstract setupOscillator(oscillator: OscillatorNode, context: AudioContext)
+  protected abstract setupOscillator(oscillator: OscillatorNode, context: AudioContext,
+                                     destination: AudioNode)
 }
 
 class TriangleChannel extends OscillatorChannel {
-  protected setupOscillator(oscillator: OscillatorNode, context: AudioContext) {
+  protected setupOscillator(oscillator: OscillatorNode, _context: AudioContext,
+                            destination: AudioNode) {
     oscillator.type = 'triangle'
     oscillator.connect(this.gainNode)
-    this.gainNode.connect(context.destination)
+    this.gainNode.connect(destination)
   }
 }
 
 class SawtoothChannel extends OscillatorChannel {
-  protected setupOscillator(oscillator: OscillatorNode, context: AudioContext) {
+  protected setupOscillator(oscillator: OscillatorNode, _context: AudioContext,
+                            destination: AudioNode) {
     oscillator.type = 'sawtooth'
     oscillator.connect(this.gainNode)
-    this.gainNode.connect(context.destination)
+    this.gainNode.connect(destination)
   }
 }
 
 class NoiseChannel extends OscillatorChannel {
-  protected setupOscillator(oscillator: OscillatorNode, context: AudioContext) {
+  protected setupOscillator(oscillator: OscillatorNode, context: AudioContext,
+                            destination: AudioNode) {
     const count = 1024
     const real = new Float32Array(count)
     const imag = new Float32Array(count)
@@ -90,7 +94,7 @@ class NoiseChannel extends OscillatorChannel {
     oscillator.setPeriodicWave(wave)
 
     oscillator.connect(this.gainNode)
-    this.gainNode.connect(context.destination)
+    this.gainNode.connect(destination)
   }
 }
 
@@ -124,7 +128,8 @@ class PulseChannel extends OscillatorChannel {
     this.updateDelay()
   }
 
-  protected setupOscillator(oscillator: OscillatorNode, context: AudioContext) {
+  protected setupOscillator(oscillator: OscillatorNode, context: AudioContext,
+                            destination: AudioNode) {
     oscillator.type = 'sawtooth'
 
     const inverter = context.createGain()
@@ -137,7 +142,7 @@ class PulseChannel extends OscillatorChannel {
     delay.connect(this.gainNode)
     this.delay = delay
 
-    this.gainNode.connect(context.destination)
+    this.gainNode.connect(destination)
   }
 
   private updateDelay() {
@@ -147,23 +152,25 @@ class PulseChannel extends OscillatorChannel {
 }
 
 class DmcChannel extends OscillatorChannel {
-  protected setupOscillator(_oscillator: OscillatorNode, _context: AudioContext) {
+  protected setupOscillator(_oscillator: OscillatorNode, _context: AudioContext,
+                            _destination: AudioNode) {
     // TODO: Implement
   }
 }
 
-function createSoundChannel(context: AudioContext, type: ChannelType): SoundChannel {
+function createSoundChannel(context: AudioContext, destination: AudioNode, type: ChannelType
+                           ): SoundChannel {
   switch (type) {
   case ChannelType.PULSE:
-    return new PulseChannel(context)
+    return new PulseChannel(context, destination)
   case ChannelType.TRIANGLE:
-    return new TriangleChannel(context)
+    return new TriangleChannel(context, destination)
   case ChannelType.NOISE:
-    return new NoiseChannel(context)
+    return new NoiseChannel(context, destination)
   case ChannelType.SAWTOOTH:
-    return new SawtoothChannel(context)
+    return new SawtoothChannel(context, destination)
   case ChannelType.DMC:
-    return new DmcChannel(context)
+    return new DmcChannel(context, destination)
   }
 }
 
@@ -195,7 +202,7 @@ export class AudioManager {
     if (context == null)
       return
 
-    const sc = createSoundChannel(context, type)
+    const sc = createSoundChannel(context, context.destination, type)
     sc.start()
     this.channels.push(sc)
   }
