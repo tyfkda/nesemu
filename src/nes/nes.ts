@@ -222,6 +222,8 @@ export default class Nes implements PrgBankController {
       prgBankCtrl: this,
       prgSize,
       romHash,
+      writeToApu: (adr: Address, value: Byte) => this.writeToApu(adr, value),
+      readFromApu: (adr: Address) => this.readFromApu(adr),
     })
   }
 

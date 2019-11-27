@@ -243,8 +243,10 @@ export default class Ppu {
 
   public setMirrorMode(mode: MirrorMode): void {
     this.mirrorMode = mode
-    const bit = kMirrorModeBitTable[mode]
+    this.setMirrorModeBit(kMirrorModeBitTable[mode])
+  }
 
+  public setMirrorModeBit(bit: Byte): void {
     this.incScrollCounter()
     this.addHevent(HEventType.MIRROR_MODE_BIT, bit)
   }

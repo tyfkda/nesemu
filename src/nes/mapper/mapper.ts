@@ -2,6 +2,7 @@ import Bus from '../bus'
 import {ChannelType} from '../apu'
 import Cpu from '../cpu/cpu'
 import Ppu from '../ppu/ppu'
+import {Address, Byte} from '../types'
 
 export interface PrgBankController {
   setPrgBank(bank: number, page: number): void
@@ -14,6 +15,8 @@ export interface MapperOptions {
   prgBankCtrl: PrgBankController
   prgSize: number
   romHash?: string
+  writeToApu: (adr: Address, value: Byte) => void
+  readFromApu: (adr: Address) => Byte
 }
 
 export class Mapper {

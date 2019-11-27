@@ -1,6 +1,7 @@
 import {Mapper020} from './mapper020'
 import Nes from '../nes'
 import {PrgBankController} from '../mapper/mapper'
+import {Address, Byte} from '../types'
 
 // Famicom Disk System
 export default class Fds implements PrgBankController {
@@ -16,6 +17,8 @@ export default class Fds implements PrgBankController {
       ppu,
       prgBankCtrl: this,
       prgSize: biosData.length,
+      writeToApu: (_adr: Address, _value: Byte) => {},  // Dummy
+      readFromApu: (_adr: Address) => 0,  // Dummy
     })
 
     this.mapper.setUp(nes)
