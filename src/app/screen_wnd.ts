@@ -51,6 +51,13 @@ const enum DebugMenuType {
   SPRITE_FLICKER,
 }
 
+let isAudioPermissionAcquired = false
+
+function requireAudioPermission() {
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent)
+  return isSafari
+}
+
 function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const img = document.createElement('img') as HTMLImageElement
   const title = String(Date.now())
@@ -124,6 +131,22 @@ export class ScreenWnd extends Wnd {
     this.contentWidth = (WIDTH - HEDGE * 2) * 2
     this.contentHeight = (HEIGHT - VEDGE * 2) * 2
     this.updateContentSize(this.contentWidth, this.contentHeight)
+
+    if (!isAudioPermissionAcquired && requireAudioPermission()) {
+      const button = document.createElement('button')
+      button.innerText = 'Play audio'
+      DomUtil.setStyles(button, {
+        position: 'absolute',
+        right: 0,
+        top: 0,
+      })
+      button.addEventListener('click', (_event) => {
+        this.app.setupAudioManager()
+        this.fullscreenBase.removeChild(button)
+        isAudioPermissionAcquired = true
+      })
+      this.fullscreenBase.appendChild(button)
+    }
   }
 
   protected onEvent(event: WndEvent, param?: any): any {

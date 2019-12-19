@@ -411,7 +411,7 @@ export class App {
       this.audioManager.setChannelVolume(ch, 0)
   }
 
-  protected setupAudioManager() {
+  public setupAudioManager() {
     if (this.audioManager == null) {
       const contextClass = window.AudioContext || window.webkitAudioContext
       // if (contextClass == null)
