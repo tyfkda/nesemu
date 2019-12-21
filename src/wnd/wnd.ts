@@ -67,12 +67,13 @@ export interface MenuItemInfo {
 }
 
 export class Wnd {
-  public static TITLEBAR_HEIGHT = 14
+  public static TITLEBAR_HEIGHT = 20
   public static MENUBAR_HEIGHT = 14
 
   protected contentHolder: HTMLElement
   private root: HTMLElement
   private titleBar: HTMLElement
+  private titleBtnHolder: HTMLElement
   private titleElem: HTMLElement
   private menuBar: HTMLElement
   private clientMarginWidth: number = 0
@@ -89,7 +90,10 @@ export class Wnd {
     const [upper, lower] = createHorizontalSplitter(this.root, Wnd.TITLEBAR_HEIGHT)
     this.clientMarginHeight += Wnd.TITLEBAR_HEIGHT
 
-    this.titleBar = this.createTitleBar(title)
+    const {titleBar, titleBtnHolder, titleElem} = this.createTitleBar(title)
+    this.titleBar = titleBar
+    this.titleBtnHolder = titleBtnHolder
+    this.titleElem = titleElem
     upper.appendChild(this.titleBar)
 
     this.contentHolder = lower
@@ -160,7 +164,7 @@ export class Wnd {
 
   public addMenuBar(menu: Array<MenuItemInfo>): Wnd {
     const [upper, lower] = createHorizontalSplitter(this.root, Wnd.MENUBAR_HEIGHT)
-    this.clientMarginHeight += Wnd.TITLEBAR_HEIGHT
+    this.clientMarginHeight += Wnd.MENUBAR_HEIGHT
     this.contentHolder.appendChild(upper)
     this.contentHolder.appendChild(lower)
 
@@ -239,7 +243,7 @@ export class Wnd {
   public addResizeBox() {
     this.root.classList.add('resizable')
 
-    this.addTitleButton(this.titleBar, 'maximize', () => {
+    this.addTitleButton(this.titleBtnHolder, 'maximize', () => {
       this.maximize()
     })
 
@@ -362,13 +366,17 @@ export class Wnd {
     return root
   }
 
-  private createTitleBar(title: string): HTMLElement {
+  private createTitleBar(title: string) {
     const titleBar = document.createElement('div')
-    titleBar.className = 'title-bar clearfix'
+    titleBar.className = 'title-bar'
 
-    this.titleElem = this.addTitle(titleBar, title)
+    const titleElem = this.addTitle(titleBar, title)
 
-    this.addTitleButton(titleBar, 'close', () => {
+    const titleBtnHolder = document.createElement('div')
+    titleBtnHolder.className = 'title-btn-holder'
+    titleBar.appendChild(titleBtnHolder)
+
+    this.addTitleButton(titleBtnHolder, 'close', () => {
       this.close()
     })
 
@@ -396,7 +404,7 @@ export class Wnd {
       })
       return true
     })
-    return titleBar
+    return {titleBar, titleBtnHolder, titleElem}
   }
 
   private addTitleButton(parent: HTMLElement, className: string,
