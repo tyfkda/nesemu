@@ -253,6 +253,7 @@ export class Wnd {
     const W = 8
 
     const table = [
+      // Corners
       {
         styleParams: { right: '-1px', bottom: '-1px', cursor: 'nwse-resize' },
         horz: 'right',
@@ -273,6 +274,27 @@ export class Wnd {
         horz: 'left',
         vert: 'top',
       },
+      // Edges
+      {
+        styleParams: { left: `${W}px`, right: `${W}px`, top: `-${W - 4}px`, cursor: 'ns-resize' },
+        horz: 'center',
+        vert: 'top',
+      },
+      {
+        styleParams: { left: `${W}px`, right: `${W}px`, bottom: '-1px', cursor: 'ns-resize' },
+        horz: 'center',
+        vert: 'bottom',
+      },
+      {
+        styleParams: { top: `${W}px`, bottom: `${W}px`, left: '-1px', cursor: 'ew-resize' },
+        horz: 'left',
+        vert: 'center',
+      },
+      {
+        styleParams: { top: `${W}px`, bottom: `${W}px`, right: '-1px', cursor: 'ew-resize' },
+        horz: 'right',
+        vert: 'center',
+      },
     ]
 
     const MIN_WIDTH = 80
@@ -280,14 +302,14 @@ export class Wnd {
 
     table.forEach(param => {
       const resizeBox = document.createElement('div')
-      resizeBox.style.position = 'absolute'
+      resizeBox.className = 'resize-box'
       Object.keys(param.styleParams).forEach((key: string) => {
         resizeBox.style[key] = param.styleParams[key]
       })
       DomUtil.setStyles(resizeBox, {
-        width: `${W}px`,
-        height: `${W}px`,
-        zIndex: '100',
+        width: param.horz !== 'center' ? `${W}px` : undefined,
+        height: param.vert !== 'center' ? `${W}px` : undefined,
+        zIndex: '2000',
       })
       resizeBox.addEventListener('mousedown', (event) => {
         event.stopPropagation()
@@ -304,6 +326,7 @@ export class Wnd {
           top: rect.top - prect.top,
           right: rect.right - prect.left,
           bottom: rect.bottom - prect.top,
+          center: 0,  // dummy
         }
 
         this.onEvent(WndEvent.RESIZE_BEGIN)
