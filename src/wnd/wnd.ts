@@ -1,10 +1,7 @@
 import DomUtil from '../util/dom_util'
 import WindowManager from './window_manager'
 import WndUtil from './wnd_util'
-import {MenuItemInfo, WndEvent} from './types'
-
-const Z_MENUBAR = 1000
-const Z_MENU_SUBITEM = Z_MENUBAR + 1
+import {MenuItemInfo, WndEvent, Z_MENUBAR} from './types'
 
 export default class Wnd {
   public static TITLEBAR_HEIGHT = 20
@@ -145,7 +142,7 @@ export default class Wnd {
         onClose,
       }
       closeSubmenu = WndUtil.openSubmenu(
-        menuItem, pos, Z_MENU_SUBITEM, this.root, option)
+        menuItem, pos, this.root, option)
       itemElem.classList.add('opened')
     }
 
@@ -201,25 +198,29 @@ export default class Wnd {
       this.maximize()
     })
 
-    WndUtil.makeResizable(this.root, (event, param?) => {
-      switch (event) {
-      case WndEvent.RESIZE_BEGIN:
-        this.wndMgr.moveToTop(this)
-        this.root.style.transitionProperty = 'none'  // To change size immediately.
-        break
-      case WndEvent.RESIZE_END:
-        this.root.style.transitionProperty = ''
-        break
-      }
-      this.onEvent(event, param)
-    })
+    WndUtil.makeResizable(
+      this.root,
+      () => this.wndMgr.getRootClientRect(),
+      (event, param?) => {
+        switch (event) {
+        case WndEvent.RESIZE_BEGIN:
+          this.wndMgr.moveToTop(this)
+          this.root.style.transitionProperty = 'none'  // To change size immediately.
+          break
+        case WndEvent.RESIZE_END:
+          this.root.style.transitionProperty = ''
+          break
+        }
+        this.onEvent(event, param)
+      })
   }
 
   protected maximize() {
     this.setPos(0, 0)
     const menubarHeight = this.menuBar != null ? Wnd.MENUBAR_HEIGHT : 0
-    const width = window.innerWidth - 2  // -2 for border size
-    const height = window.innerHeight - (Wnd.TITLEBAR_HEIGHT + menubarHeight) - 2
+    const rootRect = this.wndMgr.getRootClientRect()
+    const width = rootRect.width - 2  // -2 for border size
+    const height = rootRect.height - (Wnd.TITLEBAR_HEIGHT + menubarHeight) - 2
     this.setClientSize(width, height)
   }
 
@@ -249,17 +250,20 @@ export default class Wnd {
       this.close()
     })
 
-    WndUtil.makeDraggable(this.root, titleBar, (event, param?) => {
-      switch (event) {
-      case WndEvent.DRAG_BEGIN:
-        this.root.style.transitionProperty = 'none'  // To change position immediately.
-        break
-      case WndEvent.DRAG_END:
-        this.root.style.transitionProperty = ''
-        break
-      }
-      this.onEvent(event, param)
-    })
+    WndUtil.makeDraggable(
+      this.root, titleBar,
+      () => this.wndMgr.getRootClientRect(),
+      (event, param?) => {
+        switch (event) {
+        case WndEvent.DRAG_BEGIN:
+          this.root.style.transitionProperty = 'none'  // To change position immediately.
+          break
+        case WndEvent.DRAG_END:
+          this.root.style.transitionProperty = ''
+          break
+        }
+        this.onEvent(event, param)
+      })
     return {titleBar, titleBtnHolder, titleElem}
   }
 

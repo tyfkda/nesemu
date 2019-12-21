@@ -1,3 +1,6 @@
+export const Z_MENUBAR = 1000
+export const Z_MENU_SUBITEM = Z_MENUBAR + 1
+
 export const enum WndEvent {
   UPDATE_FRAME,  // RequestAnimationFrame
   CLOSE,

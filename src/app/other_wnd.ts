@@ -9,6 +9,8 @@ import Nes from '../nes/nes'
 import Ppu from '../nes/ppu/ppu'
 import PpuDebug from './ppu_debug'
 import {kPaletColors} from '../nes/ppu/const'
+import StorageUtil from '../util/storage_util'
+import Util from '../util/util'
 
 import {AppEvent} from './app_event'
 
@@ -17,6 +19,9 @@ import * as Stats from 'stats-js'
 
 import * as githubLogo from '../res/github-logo.svg'
 import * as twitterLogo from '../res/twitter-logo.svg'
+
+const DEFAULT_MASTER_VOLUME = 0.25
+const KEY_VOLUME = 'volume'
 
 export class FpsWnd extends Wnd {
   private subscription: Pubsub.Subscription
@@ -679,6 +684,88 @@ export class EqualizerWnd extends Wnd {
         canvasCtx.lineTo(x, y)
     }
     canvasCtx.stroke()
+  }
+}
+
+export class VolumeWnd extends Wnd {
+  private static volume = 0
+
+  public static setUp() {
+    VolumeWnd.volume = VolumeWnd.readVolumeFromStorage()
+    const audioContextClass = window.AudioContext || window.webkitAudioContext
+    AudioManager.setUp(audioContextClass)
+    AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
+  }
+
+  public static onFocusChanged(focus: boolean) {
+    if (focus) {
+      AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
+    } else {
+      AudioManager.setMasterVolume(0)
+    }
+  }
+
+  private static readVolumeFromStorage(): number {
+    return Util.clamp(StorageUtil.getFloat(KEY_VOLUME, 1), 0, 1)
+  }
+
+  constructor(wndMgr: WindowManager, private onClose: () => void) {
+    super(wndMgr, 32, 120, 'V')
+
+    const container = this.createDom()
+    this.setContent(container)
+  }
+
+  private createDom(): HTMLElement {
+    const container = document.createElement('div')
+    container.id = 'volume-slider-container'
+    container.className = 'volume-slider-container full-size'
+
+    const div = document.createElement('div')
+    div.className = 'full-size'
+    container.appendChild(div)
+
+    const slider = document.createElement('div')
+    slider.id = 'volume-slider'
+    slider.className = 'volume-slider'
+    slider.style.height = '100px'
+    div.appendChild(slider)
+
+    let dragging = false
+
+    container.addEventListener('mousedown', (event) => {
+      if (event.button !== 0 || dragging)
+        return
+      dragging = true
+      const sliderHeight = (slider.parentNode as HTMLElement).getBoundingClientRect().height
+
+      const updateSlider = (event2: MouseEvent) => {
+        const [, y] = DomUtil.getMousePosIn(event2, slider.parentNode as HTMLElement)
+        const height = Util.clamp(sliderHeight - y, 0, sliderHeight)
+        slider.style.height = `${height}px`
+        VolumeWnd.volume = height / sliderHeight
+        AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
+      }
+      DomUtil.setMouseDragListener({
+        move: updateSlider,
+        up: (_event2: MouseEvent) => {
+          dragging = false
+          VolumeWnd.volume = Math.round(VolumeWnd.volume * 100) / 100
+          StorageUtil.put(KEY_VOLUME, VolumeWnd.volume)
+        },
+      })
+      updateSlider(event)
+    })
+
+    // Set initial slider height.
+    slider.style.height = `${Math.round(VolumeWnd.volume * (120 - 3 * 2))}px`
+
+    return container
+  }
+
+  public close(): void {
+    this.onClose()
+    super.close()
   }
 }
 

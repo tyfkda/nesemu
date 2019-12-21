@@ -1,6 +1,6 @@
 import DomUtil from '../util/dom_util'
 import Util from '../util/util'
-import {MenuItemInfo, WndEvent} from './types'
+import {MenuItemInfo, WndEvent, Z_MENU_SUBITEM} from './types'
 import Wnd from './wnd'
 
 export default class WndUtil {
@@ -44,12 +44,17 @@ export default class WndUtil {
     return [upper, lower]
   }
 
-  public static makeDraggable(element: HTMLElement, grip: HTMLElement, onEvent: (WndEvent, any?) => void) {
+  public static makeDraggable(
+    element: HTMLElement, grip: HTMLElement, getClientRect: () => DOMRect,
+    onEvent: (WndEvent, any?) => void
+  ) {
     grip.addEventListener('mousedown', event => {
       if (event.button !== 0)
         return false
 
       onEvent(WndEvent.DRAG_BEGIN)
+
+      const rootRect = getClientRect()
 
       event.preventDefault()
       const [mx, my] = DomUtil.getMousePosIn(event, element)
@@ -63,8 +68,8 @@ export default class WndUtil {
       DomUtil.setMouseDragListener({
         move: (event2: MouseEvent) => {
           let [x, y] = DomUtil.getMousePosIn(event2, element.parentNode as HTMLElement)
-          pos.x = Util.clamp(x, -dragOfsX, window.innerWidth - width - dragOfsX) + dragOfsX
-          pos.y = Util.clamp(y, -dragOfsY, window.innerHeight - height - dragOfsY) + dragOfsY
+          pos.x = Util.clamp(x + dragOfsX, 0, Math.floor(rootRect.width - width))
+          pos.y = Util.clamp(y + dragOfsY, 0, Math.floor(rootRect.height - height))
 
           DomUtil.setStyles(element, {
             left: `${Math.round(pos.x)}px`,
@@ -80,7 +85,9 @@ export default class WndUtil {
     })
   }
 
-  public static makeResizable(element: HTMLElement, onEvent: (WndEvent, any?) => void) {
+  public static makeResizable(
+    element: HTMLElement, getClientRect: () => DOMRect, onEvent: (WndEvent, any?) => void
+  ) {
     const MIN_WIDTH = 80
     const MIN_HEIGHT = 60 + Wnd.TITLEBAR_HEIGHT
     const W = 8
@@ -147,6 +154,7 @@ export default class WndUtil {
 
         event.stopPropagation()
         event.preventDefault()
+        const rootRect = getClientRect()
         const [mx, my] = DomUtil.getMousePosIn(event, resizeBox)
         const dragOfsX = param.horz === 'left' ? -mx : W - mx
         const dragOfsY = param.vert === 'top' ? -my : W - my
@@ -166,8 +174,8 @@ export default class WndUtil {
         DomUtil.setMouseDragListener({
           move: (event2: MouseEvent) => {
             let [x, y] = DomUtil.getMousePosIn(event2, element.parentNode as HTMLElement)
-            x = Util.clamp(x, -dragOfsX, window.innerWidth - dragOfsX)
-            y = Util.clamp(y, -dragOfsY, window.innerHeight - dragOfsY)
+            x = Util.clamp(x, -dragOfsX, rootRect.width - dragOfsX)
+            y = Util.clamp(y, -dragOfsY, rootRect.height - dragOfsY)
             box[param.horz] = x + dragOfsX
             box[param.vert] = y + dragOfsY
 
@@ -205,13 +213,13 @@ export default class WndUtil {
   public static openSubmenu(
     menuItem: MenuItemInfo,
     pos: {left?: string, bottom?: string},
-    zIndex: number, parent: HTMLElement,
+    parent: HTMLElement,
     option: {className?: string, onClose?: () => void}
   ): () => void {
     const subItemHolder = document.createElement('div')
     if (option.className != null)
       subItemHolder.className = option.className
-    subItemHolder.style.zIndex = String(zIndex)
+    subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
     menuItem.submenu.forEach(submenuItem => {
       const submenuRow = document.createElement('div')
       submenuRow.className = 'submenu-row clearfix'

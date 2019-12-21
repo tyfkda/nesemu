@@ -467,8 +467,9 @@ export default class ScreenWnd extends Wnd {
   }
 
   protected maximize() {
-    const winWidth = window.innerWidth
-    const winHeight = window.innerHeight
+    const rootRect = this.wndMgr.getRootClientRect()
+    const winWidth = rootRect.width
+    const winHeight = rootRect.height
     const maxWidth = winWidth - 2  // -2 for border size
     const maxHeight = winHeight - Wnd.TITLEBAR_HEIGHT - Wnd.MENUBAR_HEIGHT - 2
 

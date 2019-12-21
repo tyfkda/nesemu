@@ -159,6 +159,10 @@ export default class WindowManager {
     return true
   }
 
+  public getRootClientRect(): DOMRect {
+    return this.root.getBoundingClientRect()
+  }
+
   private removeWnd(wnd: Wnd): void {
     const index = this.windows.indexOf(wnd)
     if (index < 0)
