@@ -40,15 +40,21 @@ class Main {
   }
 
   private setUpFileDrop(): void {
-    // Handle file drop.
-    if (!(window.File && window.FileReader && window.FileList && window.Blob))
+    const dropDesc = document.getElementById('drop-desc')
+    if (!dropDesc)
       return
 
-    DomUtil.handleFileDrop(this.root, (files, x, y) => this.createAppFromFiles(files, x, y))
+    // Handle file drop.
+    if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
+      dropDesc.style.display = 'none'
+      return
+    }
+    dropDesc.style.opacity = '0'
 
-    const dropDesc = document.getElementById('drop-desc')
-    if (dropDesc)
-      dropDesc.style.display = ''
+    DomUtil.handleFileDrop(this.root, (files, x, y) => {
+      this.createAppFromFiles(files, x, y)
+      dropDesc.style.display = 'none'
+    })
   }
 
   private createAppFromFiles(files: FileList, x: number, y: number): void {
