@@ -11,8 +11,8 @@ export namespace AppEvent {
     BREAK_POINT,
     START_CALC,
     END_CALC,
-    OPEN_MENU,
-    CLOSE_MENU,
+    PAUSE_APP,
+    RESUME_APP,
     CLOSE_WND,
   }
 
@@ -42,11 +42,11 @@ export namespace AppEvent {
     public triggerEndCalc() {
       this.next(Type.END_CALC)
     }
-    public triggerOpenMenu() {
-      this.next(Type.OPEN_MENU)
+    public triggerPauseApp() {
+      this.next(Type.PAUSE_APP)
     }
-    public triggerCloseMenu() {
-      this.next(Type.CLOSE_MENU)
+    public triggerResumeApp() {
+      this.next(Type.RESUME_APP)
     }
     public triggerCloseWnd(wnd: Wnd) {
       this.next(Type.CLOSE_WND, wnd)

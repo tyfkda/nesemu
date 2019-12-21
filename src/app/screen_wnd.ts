@@ -151,13 +151,21 @@ export class ScreenWnd extends Wnd {
 
   protected onEvent(event: WndEvent, param?: any): any {
     switch (event) {
+    case WndEvent.DRAG_BEGIN:
+      this.stream.triggerPauseApp()
+      break;
+    case WndEvent.DRAG_END:
+      this.stream.triggerResumeApp()
+      break;
     case WndEvent.RESIZE_BEGIN:
       this.canvasHolder.style.transitionDuration = '0s'
+      this.stream.triggerPauseApp()
       break
     case WndEvent.RESIZE_END:
       this.canvasHolder.style.transitionDuration = TRANSITION_DURATION
+      this.stream.triggerResumeApp()
       break
-    case WndEvent.RESIZE:
+    case WndEvent.RESIZE_MOVE:
       {
         const {width, height} = param
         this.onResized(width, height)
@@ -462,11 +470,11 @@ export class ScreenWnd extends Wnd {
     debugMenu[DebugMenuType.EDGE].checked = !this.hideEdge
     debugMenu[DebugMenuType.SPRITE_FLICKER].checked = !ppu.suppressSpriteFlicker
 
-    this.stream.triggerOpenMenu()
+    this.stream.triggerPauseApp()
   }
 
   protected onCloseMenu() {
-    this.stream.triggerCloseMenu()
+    this.stream.triggerResumeApp()
   }
 
   protected maximize() {

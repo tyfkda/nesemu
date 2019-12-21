@@ -102,11 +102,11 @@ export class App {
     case AppEvent.Type.RESET:
       this.nes.reset()
       break
-    case AppEvent.Type.OPEN_MENU:
+    case AppEvent.Type.PAUSE_APP:
       this.cancelLoopAnimation()
       this.muteAudio()
       break
-    case AppEvent.Type.CLOSE_MENU:
+    case AppEvent.Type.RESUME_APP:
       this.startLoopAnimation()
       break
     case AppEvent.Type.CLOSE_WND:

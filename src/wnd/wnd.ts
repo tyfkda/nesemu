@@ -47,10 +47,13 @@ function createHorizontalSplitter(parent: HTMLElement, upperHeight: number) {
 
 export const enum WndEvent {
   CLOSE,
+  DRAG_BEGIN,
+  DRAG_MOVE,
+  DRAG_END,
   OPEN_MENU,
   CLOSE_MENU,
   RESIZE_BEGIN,
-  RESIZE,
+  RESIZE_MOVE,
   RESIZE_END,
 }
 
@@ -329,7 +332,7 @@ export class Wnd {
               left: `${Math.round(box.left)}px`,
               top: `${Math.round(box.top)}px`,
             })
-            this.onEvent(WndEvent.RESIZE, {width, height: height - Wnd.TITLEBAR_HEIGHT})
+            this.onEvent(WndEvent.RESIZE_MOVE, {width, height: height - Wnd.TITLEBAR_HEIGHT})
           },
           up: (_event2: MouseEvent) => {
             this.root.style['transition-property'] = null
@@ -384,6 +387,8 @@ export class Wnd {
       if (event.button !== 0)
         return false
 
+      this.onEvent(WndEvent.DRAG_BEGIN)
+
       // Move window position with dragging.
       event.preventDefault()
       let [mx, my] = DomUtil.getMousePosIn(event, this.root)
@@ -400,6 +405,10 @@ export class Wnd {
             left: `${Math.round(x + dragOfsX)}px`,
             top: `${Math.round(y + dragOfsY)}px`,
           })
+          this.onEvent(WndEvent.DRAG_MOVE, {x: x + dragOfsX, y: y + dragOfsY})
+        },
+        up: (_event2: MouseEvent) => {
+          this.onEvent(WndEvent.DRAG_END)
         },
       })
       return true
