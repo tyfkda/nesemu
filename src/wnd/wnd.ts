@@ -55,6 +55,10 @@ export const enum WndEvent {
   RESIZE_BEGIN,
   RESIZE_MOVE,
   RESIZE_END,
+  KEY_DOWN,
+  KEY_UP,
+  FOCUS,
+  BLUR,
 }
 
 export interface SubmenuItemInfo {
@@ -145,7 +149,7 @@ export class Wnd {
     return { width, height }
   }
 
-  protected onEvent(_event: WndEvent, _param?: any): any {
+  public onEvent(_event: WndEvent, _param?: any): any {
   }
 
   public setFocus(): Wnd {

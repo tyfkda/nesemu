@@ -1,8 +1,6 @@
 import DomUtil from '../util/dom_util'
-import {GamepadManager} from '../util/gamepad_manager'
 import {KeyCode} from '../util/key_code'
-import {PadKeyHandler} from '../util/pad_key_handler'
-import {Wnd} from './wnd'
+import {Wnd, WndEvent} from './wnd'
 
 const BASE_PRIORITY = 100
 
@@ -12,11 +10,10 @@ function setWindowZIndex(wnd: Wnd, i: number, n: number) {
 
 export default class WindowManager {
   private windows: Wnd[] = []
-  private padKeyHandler = new PadKeyHandler()
-  private pressingKeys: {[key: number]: boolean} = {}
 
   private onKeyDown: (event: Event) => void
   private onKeyUp: (event: Event) => void
+  private isBlur = false
 
   public constructor(private root: HTMLElement) {
     this.onKeyDown = (event: KeyboardEvent) => {
@@ -28,17 +25,20 @@ export default class WindowManager {
         }
       }
 
-      if (event.ctrlKey || event.altKey || event.metaKey)
-        return
-
       event.preventDefault()
-      this.padKeyHandler.onKeyDown(event.keyCode)
-      this.pressingKeys[event.keyCode] = true
+
+      if (this.windows.length > 0) {
+        const wnd = this.windows[0]
+        wnd.onEvent(WndEvent.KEY_DOWN, event)
+      }
     }
     this.onKeyUp = (event: KeyboardEvent) => {
       event.preventDefault()
-      this.padKeyHandler.onKeyUp(event.keyCode)
-      this.pressingKeys[event.keyCode] = false
+
+      if (this.windows.length > 0) {
+        const wnd = this.windows[0]
+        wnd.onEvent(WndEvent.KEY_UP, event)
+      }
     }
     this.root.addEventListener('keydown', this.onKeyDown)
     this.root.addEventListener('keyup', this.onKeyUp)
@@ -48,14 +48,8 @@ export default class WindowManager {
     this.setUpBlur()
   }
 
-  public getPadStatus(wnd: Wnd, i: number): number {
-    if (!wnd.isTop())
-      return 0
-    return this.padKeyHandler.getStatus(i) | GamepadManager.getState(i)
-  }
-
-  public getKeyPressing(wnd: Wnd, keyCode: number): boolean {
-    return wnd.isTop() && this.pressingKeys[keyCode]
+  public IsBlur(): boolean {
+    return this.isBlur
   }
 
   public add(wnd: Wnd): void {
@@ -99,6 +93,7 @@ export default class WindowManager {
     if (n > 0 && this.windows[0] === wnd)  // Already on the top
       return
 
+    this.windows[0].onEvent(WndEvent.BLUR)
     let prev = wnd
     for (let i = 0; i < n; ++i) {
       const tmp = this.windows[i]
@@ -109,6 +104,7 @@ export default class WindowManager {
     }
 
     this.updateWindowPriorities()
+    wnd.onEvent(WndEvent.FOCUS)
   }
 
   public setFullscreen(element: HTMLElement, callback: (isFullscreen: boolean) => void): boolean {
@@ -172,11 +168,11 @@ export default class WindowManager {
   }
 
   private setUpBlur(): void {
+    window.addEventListener('focus', () => {
+      this.isBlur = false
+    })
     window.addEventListener('blur', () => {
-      for (let key of Object.keys(this.pressingKeys)) {
-        delete this.pressingKeys[key]
-      }
-      this.padKeyHandler.clearAll()
+      this.isBlur = true
     })
   }
 }

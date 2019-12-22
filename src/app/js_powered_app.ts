@@ -6,7 +6,6 @@ import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
 import {Bus} from '../nes/bus'
 import DomUtil from '../util/dom_util'
-import {KeyCode} from '../util/key_code'
 import {Nes} from '../nes/nes'
 import {Ppu} from '../nes/ppu/ppu'
 import {ScreenWnd} from './screen_wnd'
@@ -284,7 +283,7 @@ export class JsApp extends App {
 
   protected update(elapsedTime: number): void {
     for (let i = 0; i < 2; ++i) {
-      const pad =  this.wndMgr.getPadStatus(this.screenWnd, i)
+      const pad = this.screenWnd.getPadStatus(i)
       this.nes.setPadStatus(i, pad)
     }
 
@@ -297,8 +296,7 @@ export class JsApp extends App {
       this.leftTime = 0
     }
 
-    frameCount = (this.wndMgr.getKeyPressing(this.screenWnd, KeyCode.SHIFT)
-                  ? frameCount * 4 : frameCount)
+    frameCount *= this.screenWnd.getTimeScale()
 
     if (frameCount > 0) {
       const ppu = this.jsNes.getPpu()

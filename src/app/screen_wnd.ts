@@ -7,6 +7,9 @@ import {Scaler, NearestNeighborScaler, ScanlineScaler, EpxScaler} from '../util/
 
 import {App} from './app'
 import {AppEvent} from './app_event'
+import {PadKeyHandler} from '../util/pad_key_handler'
+import {GamepadManager} from '../util/gamepad_manager'
+import {KeyCode} from '../util/key_code'
 
 import * as Pubsub from '../util/pubsub'
 
@@ -16,6 +19,9 @@ const HEDGE = 0 | 0
 const VEDGE = 8 | 0
 
 const TRANSITION_DURATION = '0.1s'
+
+const TIME_SCALE_NORMAL = 1
+const TIME_SCALE_FAST = 4
 
 const enum MenuType {
   FILE,
@@ -90,6 +96,8 @@ export class ScreenWnd extends Wnd {
   private contentHeight = 0
   private menuItems: Array<MenuItemInfo>
   private scalerType = ScalerType.NEAREST
+  private padKeyHandler = new PadKeyHandler()
+  private timeScale = 1
 
   constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,
               protected stream: AppEvent.Stream)
@@ -149,7 +157,11 @@ export class ScreenWnd extends Wnd {
     }
   }
 
-  protected onEvent(event: WndEvent, param?: any): any {
+  public getTimeScale(): number {
+    return this.timeScale
+  }
+
+  public onEvent(event: WndEvent, param?: any): any {
     switch (event) {
     case WndEvent.DRAG_BEGIN:
       this.stream.triggerPauseApp()
@@ -177,6 +189,28 @@ export class ScreenWnd extends Wnd {
     case WndEvent.CLOSE_MENU:
       this.onCloseMenu()
       break
+    case WndEvent.KEY_DOWN:
+      {
+        const event = param as KeyboardEvent
+        if (event.keyCode === KeyCode.SHIFT)
+          this.timeScale = TIME_SCALE_FAST
+        if (!event.ctrlKey && !event.altKey && !event.metaKey)
+          this.padKeyHandler.onKeyDown(event.keyCode)
+      }
+      break;
+    case WndEvent.KEY_UP:
+      {
+        const event = param as KeyboardEvent
+        if (event.keyCode === KeyCode.SHIFT)
+          this.timeScale = TIME_SCALE_NORMAL
+        if (!event.ctrlKey && !event.altKey && !event.metaKey)
+          this.padKeyHandler.onKeyUp(event.keyCode)
+      }
+      break;
+    case WndEvent.BLUR:
+      this.timeScale = TIME_SCALE_NORMAL
+      this.padKeyHandler.clearAll()
+      break
     }
   }
 
@@ -199,6 +233,12 @@ export class ScreenWnd extends Wnd {
 
   public capture(): string {
     return this.scaler.getCanvas().toDataURL()
+  }
+
+  public getPadStatus(padNo: number): number {
+    if (!this.isTop() || this.wndMgr.IsBlur())
+      return 0;
+    return this.padKeyHandler.getStatus(padNo) | GamepadManager.getState(padNo)
   }
 
   public setFullscreen(callback?: (isFullscreen: boolean) => boolean): boolean {

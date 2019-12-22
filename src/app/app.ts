@@ -5,7 +5,6 @@ import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
 import {Fds} from '../nes/fds/fds'
 import {FdsCtrlWnd} from './fds_ctrl_wnd'
-import {KeyCode} from '../util/key_code'
 import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
 import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd, AudioWnd} from './other_wnd'
 import {ScreenWnd} from './screen_wnd'
@@ -377,13 +376,11 @@ export class App {
       return
 
     for (let i = 0; i < 2; ++i) {
-      const pad =  this.wndMgr.getPadStatus(this.screenWnd, i)
+      const pad = this.screenWnd.getPadStatus(i)
       this.nes.setPadStatus(i, pad)
     }
 
-    let et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
-    et = (this.wndMgr.getKeyPressing(this.screenWnd, KeyCode.SHIFT)
-          ? et * 4 : et)
+    let et = Math.min(elapsedTime, MAX_ELAPSED_TIME) * this.screenWnd.getTimeScale()
 
     this.nes.runMilliseconds(et)
   }
