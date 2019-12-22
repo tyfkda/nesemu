@@ -2,7 +2,7 @@ import DomUtil from '../util/dom_util'
 import {PadBit} from '../nes/apu'
 import StorageUtil from '../util/storage_util'
 import WindowManager from '../wnd/window_manager'
-import {Wnd} from '../wnd/wnd'
+import {Wnd, WndEvent} from '../wnd/wnd'
 
 // Type
 const enum Type {
@@ -173,7 +173,6 @@ function createButton(parent: HTMLElement, x: number, y: number, name: string,
 }
 
 export class GamepadWnd extends Wnd {
-  private destroying = false
   private buttons: HTMLElement[]
   private selectedButton: HTMLElement|null = null
 
@@ -200,21 +199,22 @@ export class GamepadWnd extends Wnd {
       return btn
     })
     this.selectedButton = null
-
-    const loopFn = () => {
-      if (this.destroying)
-        return
-      this.checkGamepad()
-      requestAnimationFrame(loopFn)
-    }
-    requestAnimationFrame(loopFn)
   }
 
   public close(): void {
-    this.destroying = true
     if (this.onClose != null)
       this.onClose()
     super.close()
+  }
+
+  public onEvent(event: WndEvent, _param?: any): any {
+    switch (event) {
+    case WndEvent.UPDATE_FRAME:
+      this.checkGamepad()
+      break
+    default:
+      break
+    }
   }
 
   private checkGamepad(): void {

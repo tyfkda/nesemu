@@ -46,6 +46,7 @@ function createHorizontalSplitter(parent: HTMLElement, upperHeight: number) {
 }
 
 export const enum WndEvent {
+  UPDATE_FRAME,  // RequestAnimationFrame
   CLOSE,
   DRAG_BEGIN,
   DRAG_MOVE,

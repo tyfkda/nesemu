@@ -3,7 +3,8 @@ import {Wnd} from '../wnd/wnd'
 
 export namespace AppEvent {
   export const enum Type {
-    RENDER = 1,
+    UPDATE = 1,
+    RENDER,
     RUN,
     PAUSE,
     STEP,
@@ -17,6 +18,9 @@ export namespace AppEvent {
   }
 
   export class Stream extends Pubsub.Subject<Type> {
+    public triggerUpdate(elapsed: number) {
+      this.next(Type.UPDATE, elapsed)
+    }
     public triggerRender() {
       this.next(Type.RENDER)
     }

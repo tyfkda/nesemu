@@ -232,7 +232,6 @@ export class JsApp extends App {
   }
 
   public setFile(file: File): void {
-    this.cancelLoopAnimation()
     this.jsNes.setFile(file)
       .then(() => {
         const contextClass = window.AudioContext || window.webkitAudioContext
@@ -242,43 +241,11 @@ export class JsApp extends App {
         this.audioManager = new AudioManager(contextClass)
         this.setupAudioManager()
         this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
-
-        this.startLoopAnimation()
       })
   }
 
   public reload(): void {
-    this.cancelLoopAnimation()
     this.jsNes.reload()
-    this.startLoopAnimation()
-  }
-
-  protected startLoopAnimation(): void {
-    if (this.rafId != null)
-      return
-
-    let lastTime = window.performance.now()
-    const loopFn = () => {
-      if (this.destroying)
-        return
-
-      // this.stream.triggerStartCalc()
-      const curTime = window.performance.now()
-      const elapsedTime = curTime - lastTime
-      lastTime = curTime
-
-      this.update(elapsedTime)
-      // this.stream.triggerEndCalc()
-      this.rafId = requestAnimationFrame(loopFn)
-    }
-    this.rafId = requestAnimationFrame(loopFn)
-  }
-
-  protected cancelLoopAnimation(): void {
-    if (this.rafId == null)
-      return
-    cancelAnimationFrame(this.rafId)
-    this.rafId = undefined
   }
 
   protected update(elapsedTime: number): void {

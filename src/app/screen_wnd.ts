@@ -211,6 +211,16 @@ export class ScreenWnd extends Wnd {
       this.timeScale = TIME_SCALE_NORMAL
       this.padKeyHandler.clearAll()
       break
+    case WndEvent.UPDATE_FRAME:
+      {
+        const elapsed: number = param
+        this.stream.triggerStartCalc()
+        this.stream.triggerUpdate(elapsed)
+        this.stream.triggerEndCalc()
+      }
+      break
+    default:
+      break
     }
   }
 

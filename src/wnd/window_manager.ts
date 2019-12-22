@@ -14,6 +14,7 @@ export default class WindowManager {
   private onKeyDown: (event: Event) => void
   private onKeyUp: (event: Event) => void
   private isBlur = false
+  private rafId = 0  // requestAnimationFrame
 
   public constructor(private root: HTMLElement) {
     this.onKeyDown = (event: KeyboardEvent) => {
@@ -56,6 +57,9 @@ export default class WindowManager {
     this.windows.unshift(wnd)
     this.root.appendChild(wnd.getRootNode())
     this.updateWindowPriorities()
+
+    if (this.windows.length === 1)
+      this.startLoopAnimation()
   }
 
   public remove(wnd: Wnd): void {
@@ -64,6 +68,9 @@ export default class WindowManager {
     const elem = wnd.getRootNode()
     if (elem != null && elem.parentNode != null)
       elem.parentNode.removeChild(elem)
+
+    if (this.windows.length <= 0)
+      this.cancelLoopAnimation()
   }
 
   public async showSnackbar(message: string, option: any = {}) {
@@ -174,5 +181,32 @@ export default class WindowManager {
     window.addEventListener('blur', () => {
       this.isBlur = true
     })
+  }
+
+  protected startLoopAnimation(): void {
+    if (this.rafId !== 0)
+      return
+
+    let lastTime = window.performance.now()
+    const loopFn = () => {
+      const curTime = window.performance.now()
+      const elapsedTime = curTime - lastTime
+      lastTime = curTime
+
+      // Deriver RAF to all windows.
+      for (let i = 0; i < this.windows.length; ++i) {
+        const wnd = this.windows[i]
+        wnd.onEvent(WndEvent.UPDATE_FRAME, elapsedTime)
+      }
+      this.rafId = requestAnimationFrame(loopFn)
+    }
+    this.rafId = requestAnimationFrame(loopFn)
+  }
+
+  protected cancelLoopAnimation(): void {
+    if (this.rafId === 0)
+      return
+    cancelAnimationFrame(this.rafId)
+    this.rafId = 0
   }
 }

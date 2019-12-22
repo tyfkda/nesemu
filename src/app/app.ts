@@ -39,8 +39,8 @@ export const enum AppWndType {
 
 export class App {
   protected destroying = false
+  protected isPaused = false
   protected isBlur = false
-  protected rafId?: number  // requestAnimationFrame
   protected nes: Nes
   protected audioManager: AudioManager
   protected stream = new AppEvent.Stream()
@@ -86,7 +86,11 @@ export class App {
 
   protected handleAppEvent(type: AppEvent.Type, param?: any) {
     switch (type) {
-    case AppEvent.Type.RENDER:
+    case AppEvent.Type.UPDATE:
+      if (!this.isPaused) {
+        const elapsed: number = param
+        this.update(elapsed)
+      }
       break
     case AppEvent.Type.RUN:
       this.nes.getCpu().pause(false)
@@ -102,11 +106,11 @@ export class App {
       this.nes.reset()
       break
     case AppEvent.Type.PAUSE_APP:
-      this.cancelLoopAnimation()
+      this.isPaused = true
       this.muteAudio()
       break
     case AppEvent.Type.RESUME_APP:
-      this.startLoopAnimation()
+      this.isPaused = false
       break
     case AppEvent.Type.CLOSE_WND:
       {
@@ -119,6 +123,8 @@ export class App {
           }
         }
       }
+      break
+    default:
       break
     }
   }
@@ -138,8 +144,6 @@ export class App {
     this.nes.reset()
     this.nes.getCpu().pause(false)
     this.screenWnd.getContentHolder().focus()
-
-    this.startLoopAnimation()
 
     if (window.$DEBUG) {  // Accessing global variable!!!
       this.createPaletWnd()
@@ -161,8 +165,6 @@ export class App {
     this.nes.reset()
     this.nes.getCpu().pause(false)
     this.screenWnd.getContentHolder().focus()
-
-    this.startLoopAnimation()
 
     return true
   }
@@ -211,7 +213,6 @@ export class App {
     if (this.isBlur)
       return
     this.isBlur = true
-    // this.cancelLoopAnimation()
     if (this.audioManager)
       this.audioManager.setMasterVolume(0)
   }
@@ -220,7 +221,6 @@ export class App {
     if (!this.isBlur)
       return
     this.isBlur = false
-    // this.startLoopAnimation()
     if (this.audioManager)
       this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
   }
@@ -325,7 +325,6 @@ export class App {
   }
 
   protected cleanUp() {
-    this.cancelLoopAnimation()
     this.destroying = true
     if (this.audioManager)
       this.audioManager.release()
@@ -341,34 +340,6 @@ export class App {
 
   protected onBreakPoint(): void {
     this.stream.triggerBreakPoint()
-  }
-
-  protected startLoopAnimation(): void {
-    if (this.rafId != null)
-      return
-
-    let lastTime = window.performance.now()
-    const loopFn = () => {
-      if (this.destroying)
-        return
-
-      this.stream.triggerStartCalc()
-      const curTime = window.performance.now()
-      const elapsedTime = curTime - lastTime
-      lastTime = curTime
-
-      this.update(elapsedTime)
-      this.stream.triggerEndCalc()
-      this.rafId = requestAnimationFrame(loopFn)
-    }
-    this.rafId = requestAnimationFrame(loopFn)
-  }
-
-  protected cancelLoopAnimation(): void {
-    if (this.rafId == null)
-      return
-    cancelAnimationFrame(this.rafId)
-    this.rafId = undefined
   }
 
   protected update(elapsedTime: number): void {
