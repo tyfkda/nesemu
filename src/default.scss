@@ -231,10 +231,16 @@ $BUTTON_HEIGHT: 6px;
   text-align: center;
   cursor: pointer;
 }
+@keyframes gamepad-btn-selected {
+  0% {border: 2px solid rgba(0,204,0,1);}
+  50% {border: 2px solid rgba(0,204,0,0);}
+  100% {border: 2px solid rgba(0,204,0,1);}
+}
 .gamepad-btn.selected {
-  border: 2px solid #0c0;
+  border: 2px solid rgb(0,204,0);
   margin-top: -2px;
   margin-left: -2px;
+  animation: gamepad-btn-selected 0.5s ease infinite;
 }
 .gamepad-btn.pressed {
   box-shadow: none;
