@@ -22,27 +22,27 @@ const kKeyTable: {[key: number]: {no: number, bit: number}} = {
 }
 
 export default class PadKeyHandler {
-  private controller = new Uint8Array(2)
+  private status = new Uint8Array(2)
 
   public onKeyDown(keyCode: KeyCode): void {
     const c = kKeyTable[keyCode]
     if (!c)
       return
-    this.controller[c.no] |= c.bit
+    this.status[c.no] |= c.bit
   }
 
   public onKeyUp(keyCode: KeyCode): void {
     const c = kKeyTable[keyCode]
     if (!c)
       return
-    this.controller[c.no] &= ~c.bit
+    this.status[c.no] &= ~c.bit
   }
 
-  public getStatus(no: number): number {
-    return this.controller[no]
+  public getStatus(padNo: number): number {
+    return this.status[padNo]
   }
 
   public clearAll(): void {
-    this.controller.fill(0)
+    this.status.fill(0)
   }
 }
