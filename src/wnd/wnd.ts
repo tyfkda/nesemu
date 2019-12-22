@@ -56,8 +56,6 @@ export const enum WndEvent {
   RESIZE_BEGIN,
   RESIZE_MOVE,
   RESIZE_END,
-  KEY_DOWN,
-  KEY_UP,
   FOCUS,
   BLUR,
 }

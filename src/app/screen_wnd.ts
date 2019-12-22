@@ -9,7 +9,6 @@ import App from './app'
 import {AppEvent} from './app_event'
 import PadKeyHandler from '../util/pad_key_handler'
 import GamepadManager from '../util/gamepad_manager'
-import KeyCode from '../util/key_code'
 
 import * as Pubsub from '../util/pubsub'
 
@@ -165,10 +164,10 @@ export default class ScreenWnd extends Wnd {
     switch (event) {
     case WndEvent.DRAG_BEGIN:
       this.stream.triggerPauseApp()
-      break;
+      break
     case WndEvent.DRAG_END:
       this.stream.triggerResumeApp()
-      break;
+      break
     case WndEvent.RESIZE_BEGIN:
       this.canvasHolder.style.transitionDuration = '0s'
       this.stream.triggerPauseApp()
@@ -189,30 +188,16 @@ export default class ScreenWnd extends Wnd {
     case WndEvent.CLOSE_MENU:
       this.onCloseMenu()
       break
-    case WndEvent.KEY_DOWN:
-      {
-        const event = param as KeyboardEvent
-        if (event.keyCode === KeyCode.SHIFT)
-          this.timeScale = TIME_SCALE_FAST
-        if (!event.ctrlKey && !event.altKey && !event.metaKey)
-          this.padKeyHandler.onKeyDown(event.keyCode)
-      }
-      break;
-    case WndEvent.KEY_UP:
-      {
-        const event = param as KeyboardEvent
-        if (event.keyCode === KeyCode.SHIFT)
-          this.timeScale = TIME_SCALE_NORMAL
-        if (!event.ctrlKey && !event.altKey && !event.metaKey)
-          this.padKeyHandler.onKeyUp(event.keyCode)
-      }
-      break;
     case WndEvent.BLUR:
       this.timeScale = TIME_SCALE_NORMAL
       this.padKeyHandler.clearAll()
       break
     case WndEvent.UPDATE_FRAME:
       {
+        this.padKeyHandler.update(this.wndMgr.getKeyboardManager())
+        const speedUp = this.wndMgr.getKeyboardManager().getKeyPressing('ShiftLeft')
+        this.timeScale = speedUp ? TIME_SCALE_FAST : TIME_SCALE_NORMAL
+
         const elapsed: number = param
         this.stream.triggerStartCalc()
         this.stream.triggerUpdate(elapsed)
@@ -247,7 +232,7 @@ export default class ScreenWnd extends Wnd {
 
   public getPadStatus(padNo: number): number {
     if (!this.isTop() || this.wndMgr.IsBlur())
-      return 0;
+      return 0
     return this.padKeyHandler.getStatus(padNo) | GamepadManager.getState(padNo)
   }
 

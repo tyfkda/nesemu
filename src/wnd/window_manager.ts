@@ -1,5 +1,5 @@
 import DomUtil from '../util/dom_util'
-import KeyCode from '../util/key_code'
+import KeyboardManager from '../util/keyboard_manager'
 import Wnd, {WndEvent} from './wnd'
 
 const BASE_PRIORITY = 100
@@ -10,6 +10,7 @@ function setWindowZIndex(wnd: Wnd, i: number, n: number) {
 
 export default class WindowManager {
   private windows: Wnd[] = []
+  private keyboardManager = new KeyboardManager()
 
   private onKeyDown: (event: Event) => void
   private onKeyUp: (event: Event) => void
@@ -19,27 +20,22 @@ export default class WindowManager {
   public constructor(private root: HTMLElement) {
     this.onKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey) {  // Ctrl+W: Quit
-        if (event.keyCode === KeyCode.W) {
+        if (event.code === 'KeyW') {
           if (this.windows.length > 0)
             this.windows[0].close()
           return
         }
       }
 
-      event.preventDefault()
+      if (event.ctrlKey || event.altKey || event.metaKey)
+        return
 
-      if (this.windows.length > 0) {
-        const wnd = this.windows[0]
-        wnd.onEvent(WndEvent.KEY_DOWN, event)
-      }
+      event.preventDefault()
+      this.keyboardManager.onKeyDown(event)
     }
     this.onKeyUp = (event: KeyboardEvent) => {
       event.preventDefault()
-
-      if (this.windows.length > 0) {
-        const wnd = this.windows[0]
-        wnd.onEvent(WndEvent.KEY_UP, event)
-      }
+      this.keyboardManager.onKeyUp(event)
     }
     this.root.addEventListener('keydown', this.onKeyDown)
     this.root.addEventListener('keyup', this.onKeyUp)
@@ -51,6 +47,10 @@ export default class WindowManager {
 
   public IsBlur(): boolean {
     return this.isBlur
+  }
+
+  public getKeyboardManager(): KeyboardManager {
+    return this.keyboardManager
   }
 
   public add(wnd: Wnd): void {
@@ -183,7 +183,7 @@ export default class WindowManager {
     })
   }
 
-  protected startLoopAnimation(): void {
+  private startLoopAnimation(): void {
     if (this.rafId !== 0)
       return
 
@@ -203,7 +203,7 @@ export default class WindowManager {
     this.rafId = requestAnimationFrame(loopFn)
   }
 
-  protected cancelLoopAnimation(): void {
+  private cancelLoopAnimation(): void {
     if (this.rafId === 0)
       return
     cancelAnimationFrame(this.rafId)

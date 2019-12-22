@@ -1,42 +1,31 @@
 import {PadValue} from '../nes/apu'
-import KeyCode from './key_code'
+import KeyboardManager from './keyboard_manager'
 
-const kKeyTable: {[key: number]: {no: number, bit: number}} = {
-  [KeyCode.LEFT]:   {no: 0, bit: PadValue.L},
-  [KeyCode.RIGHT]:  {no: 0, bit: PadValue.R},
-  [KeyCode.UP]:     {no: 0, bit: PadValue.U},
-  [KeyCode.DOWN]:   {no: 0, bit: PadValue.D},
-  [KeyCode.Z]:      {no: 0, bit: PadValue.B},
-  [KeyCode.X]:      {no: 0, bit: PadValue.A},
-  [KeyCode.SPACE]:  {no: 0, bit: PadValue.SELECT},
-  [KeyCode.RETURN]: {no: 0, bit: PadValue.START},
-
-  [KeyCode.J]:      {no: 1, bit: PadValue.L},
-  [KeyCode.L]:      {no: 1, bit: PadValue.R},
-  [KeyCode.I]:      {no: 1, bit: PadValue.U},
-  [KeyCode.K]:      {no: 1, bit: PadValue.D},
-  [KeyCode.Q]:      {no: 1, bit: PadValue.B},
-  [KeyCode.W]:      {no: 1, bit: PadValue.A},
-  [KeyCode.O]:      {no: 1, bit: PadValue.SELECT},
-  [KeyCode.P]:      {no: 1, bit: PadValue.START},
-}
+const kKeyTable = [
+  [
+    {key: 'KeyX',        bit: PadValue.A},
+    {key: 'KeyZ',        bit: PadValue.B},
+    {key: 'Space',       bit: PadValue.SELECT},
+    {key: 'Enter',       bit: PadValue.START},
+    {key: 'ArrowUp',     bit: PadValue.U},
+    {key: 'ArrowDown',   bit: PadValue.D},
+    {key: 'ArrowLeft',   bit: PadValue.L},
+    {key: 'ArrowRight',  bit: PadValue.R},
+  ],
+  [
+    {key: 'KeyW',      bit: PadValue.A},
+    {key: 'KeyQ',      bit: PadValue.B},
+    {key: 'KeyO',      bit: PadValue.SELECT},
+    {key: 'KeyP',      bit: PadValue.START},
+    {key: 'KeyI',      bit: PadValue.U},
+    {key: 'KeyK',      bit: PadValue.D},
+    {key: 'KeyJ',      bit: PadValue.L},
+    {key: 'KeyL',      bit: PadValue.R},
+  ],
+]
 
 export default class PadKeyHandler {
   private status = new Uint8Array(2)
-
-  public onKeyDown(keyCode: KeyCode): void {
-    const c = kKeyTable[keyCode]
-    if (!c)
-      return
-    this.status[c.no] |= c.bit
-  }
-
-  public onKeyUp(keyCode: KeyCode): void {
-    const c = kKeyTable[keyCode]
-    if (!c)
-      return
-    this.status[c.no] &= ~c.bit
-  }
 
   public getStatus(padNo: number): number {
     return this.status[padNo]
@@ -44,5 +33,21 @@ export default class PadKeyHandler {
 
   public clearAll(): void {
     this.status.fill(0)
+  }
+
+  public update(keyboardManager: KeyboardManager) {
+    for (let padNo = 0; padNo < 2; ++padNo) {
+      const table = kKeyTable[padNo]
+      let state = 0
+      for (let i = 0; i < table.length; ++i) {
+        if (keyboardManager.getKeyPressing(table[i].key))
+          state |= table[i].bit
+      }
+      this.status[padNo] = state
+    }
+  }
+
+  public static getMapping(padNo: number) {
+    return kKeyTable[padNo]
   }
 }

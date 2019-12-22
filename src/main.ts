@@ -2,7 +2,8 @@ import App from './app/app'
 import {GlobalPaletWnd} from './app/other_wnd'
 import DomUtil from './util/dom_util'
 import JsApp from './app/js_powered_app'
-import GamepadManager, {GamepadWnd} from './util/gamepad_manager'
+import GamepadManager from './util/gamepad_manager'
+import {KeyConfigWnd, GamepadWnd} from './app/key_config_wnd'
 import StorageUtil from './util/storage_util'
 import Util from './util/util'
 import WindowManager from './wnd/window_manager'
@@ -23,6 +24,7 @@ class Main {
   private diskBios: Uint8Array|null = null
   private uninsertedApp: App|null = null
   private volume = 1
+  private keyConfigWnd: KeyConfigWnd|null = null
   private gamepadWnd: GamepadWnd|null = null
   private globalPaletWnd: GlobalPaletWnd|null = null
 
@@ -33,6 +35,7 @@ class Main {
 
     this.setUpFileDrop()
     this.setUpPaletLink()
+    this.setUpKeyConfigLink()
     this.setUpGamePadLink()
     this.setUpVolumeLink()
     this.setUpOpenRomLink()
@@ -223,6 +226,25 @@ class Main {
         this.wndMgr.add(this.globalPaletWnd)
       } else {
         this.wndMgr.moveToTop(this.globalPaletWnd)
+      }
+    })
+  }
+
+  private setUpKeyConfigLink(): void {
+    KeyConfigWnd.loadSetting()
+
+    const keyConfigText = document.getElementById('keyconfig')
+    if (keyConfigText == null)
+      return
+
+    keyConfigText.addEventListener('click', () => {
+      if (this.keyConfigWnd == null) {
+        this.keyConfigWnd = new KeyConfigWnd(this.wndMgr, () => {
+          this.keyConfigWnd = null
+        })
+        this.wndMgr.add(this.keyConfigWnd)
+      } else {
+        this.wndMgr.moveToTop(this.keyConfigWnd)
       }
     })
   }
