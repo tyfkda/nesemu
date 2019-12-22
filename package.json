@@ -11,7 +11,7 @@
     "server": "webpack-dev-server --content-base public",
     "test": "gulp test",
     "lint": "gulp lint",
-    "release": "rm -rf nodejs && gulp release && git switch nodejs",
+    "release": "rm -rf nodejs && gulp release && git checkout nodejs",
     "clean": "gulp clean",
     "deploy": "pushd gh-pages && git reset --hard && git checkout gh-pages && popd && npm run release && cp -r release/* gh-pages/ && pushd gh-pages && git commit -a --amend -m 'Deploy' && git push -f && popd"
   },
