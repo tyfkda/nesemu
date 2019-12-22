@@ -1,5 +1,5 @@
 import * as Pubsub from '../util/pubsub'
-import {Wnd} from '../wnd/wnd'
+import Wnd from '../wnd/wnd'
 
 export namespace AppEvent {
   export const enum Type {

@@ -174,7 +174,7 @@ function createSoundChannel(context: AudioContext, destination: AudioNode, type:
   }
 }
 
-export class AudioManager {
+export default class AudioManager {
   private static initialized: boolean = false
   private static context?: AudioContext
 

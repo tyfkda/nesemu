@@ -1,10 +1,10 @@
 // NES: Nintendo Entertainment System
 
 import {Apu, ChannelType} from './apu'
-import {Bus} from './bus'
-import {Cpu, IrqType} from './cpu/cpu'
+import Bus from './bus'
+import Cpu, {IrqType} from './cpu/cpu'
 import {MirrorMode} from './ppu/types'
-import {Ppu} from './ppu/ppu'
+import Ppu from './ppu/ppu'
 import {Address, Byte} from './types'
 import Util from '../util/util'
 
@@ -53,7 +53,7 @@ function loadChrRom(romData: Uint8Array): Uint8Array {
   return new Uint8Array(chr)
 }
 
-export class Nes implements PrgBankController {
+export default class Nes implements PrgBankController {
   protected ram = new Uint8Array(RAM_SIZE)
   protected bus: Bus
   protected cpu: Cpu

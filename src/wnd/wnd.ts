@@ -74,7 +74,7 @@ export interface MenuItemInfo {
   submenu: Array<SubmenuItemInfo>,
 }
 
-export class Wnd {
+export default class Wnd {
   public static TITLEBAR_HEIGHT = 20
   public static MENUBAR_HEIGHT = 14
 

@@ -1,4 +1,4 @@
-export const enum KeyCode {
+const enum KeyCode {
   // Controller 1
   SPACE = 32,
   RETURN = 13,
@@ -22,3 +22,5 @@ export const enum KeyCode {
   // Misc.
   SHIFT = 16,
 }
+
+export default KeyCode

@@ -1,10 +1,10 @@
 import WindowManager from '../wnd/window_manager'
-import {Wnd} from '../wnd/wnd'
+import Wnd from '../wnd/wnd'
 
 import DomUtil from '../util/dom_util'
-import {Nes} from '../nes/nes'
+import Nes from '../nes/nes'
 import {Addressing, Instruction, OpType, kInstTable} from '../nes/cpu/inst'
-import {disassemble} from '../nes/cpu/disasm'
+import disassemble from '../nes/cpu/disasm'
 import Util from '../util/util'
 
 import {AppEvent} from './app_event'

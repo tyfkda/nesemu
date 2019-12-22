@@ -1,17 +1,17 @@
-import {Nes} from '../nes/nes'
+import Nes from '../nes/nes'
 import {MirrorMode} from '../nes/ppu/types'
 
 import {AppEvent} from './app_event'
-import {AudioManager} from '../util/audio_manager'
-import {Fds} from '../nes/fds/fds'
+import AudioManager from '../util/audio_manager'
+import Fds from '../nes/fds/fds'
 import {FdsCtrlWnd} from './fds_ctrl_wnd'
 import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
 import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd, AudioWnd} from './other_wnd'
-import {ScreenWnd} from './screen_wnd'
+import ScreenWnd from './screen_wnd'
 import StorageUtil from '../util/storage_util'
 import Util from '../util/util'
 import WindowManager from '../wnd/window_manager'
-import {Wnd} from '../wnd/wnd'
+import Wnd from '../wnd/wnd'
 
 import * as Pubsub from '../util/pubsub'
 
@@ -37,7 +37,7 @@ export const enum AppWndType {
   FPS,
 }
 
-export class App {
+export default class App {
   protected destroying = false
   protected isPaused = false
   protected isBlur = false

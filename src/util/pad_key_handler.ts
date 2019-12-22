@@ -1,5 +1,5 @@
 import {PadValue} from '../nes/apu'
-import {KeyCode} from './key_code'
+import KeyCode from './key_code'
 
 const kKeyTable: {[key: number]: {no: number, bit: number}} = {
   [KeyCode.LEFT]:   {no: 0, bit: PadValue.L},
@@ -21,7 +21,7 @@ const kKeyTable: {[key: number]: {no: number, bit: number}} = {
   [KeyCode.P]:      {no: 1, bit: PadValue.START},
 }
 
-export class PadKeyHandler {
+export default class PadKeyHandler {
   private controller = new Uint8Array(2)
 
   public onKeyDown(keyCode: KeyCode): void {

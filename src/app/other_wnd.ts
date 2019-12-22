@@ -1,11 +1,11 @@
 import WindowManager from '../wnd/window_manager'
-import {Wnd} from '../wnd/wnd'
+import Wnd from '../wnd/wnd'
 
 import {ChannelType} from '../nes/apu'
 import DomUtil from '../util/dom_util'
-import {Nes} from '../nes/nes'
-import {Ppu} from '../nes/ppu/ppu'
-import {PpuDebug} from '../nes/ppu/ppu_debug'
+import Nes from '../nes/nes'
+import Ppu from '../nes/ppu/ppu'
+import PpuDebug from '../nes/ppu/ppu_debug'
 import {kPaletColors} from '../nes/ppu/const'
 
 import {AppEvent} from './app_event'

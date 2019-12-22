@@ -2,7 +2,7 @@ import DomUtil from '../util/dom_util'
 import {PadBit} from '../nes/apu'
 import StorageUtil from '../util/storage_util'
 import WindowManager from '../wnd/window_manager'
-import {Wnd, WndEvent} from '../wnd/wnd'
+import Wnd, {WndEvent} from '../wnd/wnd'
 
 // Type
 const enum Type {
@@ -15,7 +15,7 @@ const kKeyTable: string[] = ['A', 'B', 'SELECT', 'START', 'U', 'D', 'L', 'R']
 // ================================================
 // Manager.
 
-export class GamepadManager {
+export default class GamepadManager {
   public static AXIS_THRESHOLD = 0.5
 
   private static initialized = false

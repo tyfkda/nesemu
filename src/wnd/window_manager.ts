@@ -1,6 +1,6 @@
 import DomUtil from '../util/dom_util'
-import {KeyCode} from '../util/key_code'
-import {Wnd, WndEvent} from './wnd'
+import KeyCode from '../util/key_code'
+import Wnd, {WndEvent} from './wnd'
 
 const BASE_PRIORITY = 100
 

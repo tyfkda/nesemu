@@ -1,15 +1,15 @@
 import WindowManager from '../wnd/window_manager'
-import {Wnd, WndEvent, MenuItemInfo} from '../wnd/wnd'
+import Wnd, {WndEvent, MenuItemInfo} from '../wnd/wnd'
 
 import DomUtil from '../util/dom_util'
-import {Nes} from '../nes/nes'
+import Nes from '../nes/nes'
 import {Scaler, NearestNeighborScaler, ScanlineScaler, EpxScaler} from '../util/scaler'
 
-import {App} from './app'
+import App from './app'
 import {AppEvent} from './app_event'
-import {PadKeyHandler} from '../util/pad_key_handler'
-import {GamepadManager} from '../util/gamepad_manager'
-import {KeyCode} from '../util/key_code'
+import PadKeyHandler from '../util/pad_key_handler'
+import GamepadManager from '../util/gamepad_manager'
+import KeyCode from '../util/key_code'
 
 import * as Pubsub from '../util/pubsub'
 
@@ -86,7 +86,7 @@ function fitAspectRatio(width: number, height: number, ratio: number): [number, 
   return [width, height]
 }
 
-export class ScreenWnd extends Wnd {
+export default class ScreenWnd extends Wnd {
   protected subscription: Pubsub.Subscription
   private fullscreenBase: HTMLElement
   private canvasHolder: HTMLElement

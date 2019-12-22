@@ -131,7 +131,7 @@ function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8Cl
   }
 }
 
-export class Ppu {
+export default class Ppu {
   public suppressSpriteFlicker = true
 
   private chrData = new Uint8Array(0)

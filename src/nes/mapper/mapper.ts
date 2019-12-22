@@ -1,7 +1,7 @@
-import {Bus} from '../bus'
+import Bus from '../bus'
 import {ChannelType} from '../apu'
-import {Cpu} from '../cpu/cpu'
-import {Ppu} from '../ppu/ppu'
+import Cpu from '../cpu/cpu'
+import Ppu from '../ppu/ppu'
 
 export interface PrgBankController {
   setPrgBank(bank: number, page: number): void

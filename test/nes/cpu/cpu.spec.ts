@@ -1,5 +1,5 @@
-import {Cpu} from '../../../src/nes/cpu/cpu'
-import {IBus} from '../../../src/nes/cpu/ibus'
+import Cpu from '../../../src/nes/cpu/cpu'
+import IBus from '../../../src/nes/cpu/ibus'
 import {Address, Byte} from '../../../src/nes/types'
 
 class MappedBus implements IBus {

@@ -1,7 +1,7 @@
 // CPU: MOS 6502
 
 import {Addressing, OpType, kInstTable} from './inst'
-import {IBus} from './ibus'
+import IBus from './ibus'
 import Util from '../../util/util'
 import {Address, Byte, Word} from '../types'
 
@@ -48,7 +48,7 @@ interface Regs {
   pc: Address
 }
 
-export class Cpu {
+export default class Cpu {
   private a: Byte  // A register
   private x: Byte  // X register
   private y: Byte  // Y register

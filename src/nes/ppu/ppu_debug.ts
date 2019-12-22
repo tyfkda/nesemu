@@ -1,4 +1,4 @@
-import {Ppu} from './ppu'
+import Ppu from './ppu'
 import {getNameTable, getBgPatternTableAddress, getBgPat} from './ppu'
 import {PpuReg, PpuCtrlBit} from './types'
 import {Const} from '../const'
@@ -33,7 +33,7 @@ function render8x8Chip(
   }
 }
 
-export class PpuDebug {
+export default class PpuDebug {
   public static renderNameTable1(ppu: Ppu, pixels: Uint8ClampedArray, lineWidth: number,
                                  startX: number, startY: number, page: number): void
   {

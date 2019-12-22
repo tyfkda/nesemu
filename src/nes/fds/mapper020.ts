@@ -5,7 +5,7 @@
 import {Address, Byte} from '../types'
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from '../mapper/mapper'
-import {Nes} from '../nes'
+import Nes from '../nes'
 import {MirrorMode} from '../ppu/types'
 
 // $402x: write-only registers
