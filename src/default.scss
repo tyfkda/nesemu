@@ -173,6 +173,10 @@ $RESIZABLE_RADIUS: 8px;
   background-color: transparent;
   cursor: default;
 }
+.menu-item.opened {
+  color: white;
+  background-color: #22f;
+}
 
 .menu-subitem-holder {
   position: absolute;
@@ -185,7 +189,7 @@ $RESIZABLE_RADIUS: 8px;
   }
   font-size: 10px;
   border-radius: 0 0 4px 4px;
-  padding-bottom: 4px;
+  padding: 2px 0 4px;
   box-sizing: content-box;
   box-shadow: 0 4px 8px rgba(0,0,0,.7);
   backdrop-filter: blur(4px);

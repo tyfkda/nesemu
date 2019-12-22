@@ -185,7 +185,11 @@ export default class Wnd {
     let closeSubmenu: (() => void)|null
 
     const onClose = () => {
-      activeSubmenuIndex = -1
+      if (activeSubmenuIndex >= 0) {
+        const prev = itemElems[activeSubmenuIndex]
+        prev.classList.remove('opened')
+        activeSubmenuIndex = -1
+      }
       closeSubmenu = null
       this.onEvent(WndEvent.CLOSE_MENU)
     }
@@ -198,9 +202,14 @@ export default class Wnd {
       if (closeSubmenu != null)
         closeSubmenu()
 
+      if (activeSubmenuIndex >= 0) {
+        const prev = itemElems[activeSubmenuIndex]
+        prev.classList.remove('opened')
+      }
       const itemElem = itemElems[index]
       activeSubmenuIndex = index
       closeSubmenu = this.openSubmenu(menuItem, itemElem, onClose)
+      itemElem.classList.add('opened')
     }
 
     menu.forEach((menuItem: MenuItemInfo, index: number) => {
