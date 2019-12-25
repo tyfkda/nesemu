@@ -156,8 +156,8 @@ export default class Cpu {
     let pc = this.pc
     const op = this.read8(pc++)
     const inst = kInstTable[op]
-    if (inst == null) {
-      console.error(`Unhandled OPCODE, ${Util.hex(this.pc - 1, 4)}: ${Util.hex(op, 2)}`)
+    if (inst.opType === OpType.UNKNOWN) {
+      console.error(`Unknonwn OPCODE, ${Util.hex(this.pc - 1, 4)}: ${Util.hex(op, 2)}`)
       this.paused = true
       return 0
     }

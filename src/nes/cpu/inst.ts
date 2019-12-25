@@ -41,6 +41,9 @@ export const enum OpType {
   CLC, SEC,
   SEI, CLI, CLV, SED, CLD,
   BRK,
+
+  // Unofficial
+  IGN = NOP, SKB = NOP,
 }
 
 export interface Instruction {
@@ -244,6 +247,35 @@ const kTable = [
   [0xd8, OpType.CLD, Addressing.IMPLIED, 1, 2],
 
   [0x00, OpType.BRK, Addressing.IMPLIED, 1, 7],
+
+  // Unofficial
+  [0x1a, OpType.IGN, Addressing.IMPLIED, 1, 2],
+  [0x3a, OpType.IGN, Addressing.IMPLIED, 1, 2],
+  [0x5a, OpType.IGN, Addressing.IMPLIED, 1, 2],
+  [0x7a, OpType.IGN, Addressing.IMPLIED, 1, 2],
+  [0xda, OpType.IGN, Addressing.IMPLIED, 1, 2],
+  [0xfa, OpType.IGN, Addressing.IMPLIED, 1, 2],
+  [0x04, OpType.IGN, Addressing.IMPLIED, 2, 3],
+  [0x44, OpType.IGN, Addressing.IMPLIED, 2, 3],
+  [0x64, OpType.IGN, Addressing.IMPLIED, 2, 3],
+  [0x14, OpType.IGN, Addressing.IMPLIED, 2, 4],
+  [0x34, OpType.IGN, Addressing.IMPLIED, 2, 4],
+  [0x54, OpType.IGN, Addressing.IMPLIED, 2, 4],
+  [0x74, OpType.IGN, Addressing.IMPLIED, 2, 4],
+  [0xd4, OpType.IGN, Addressing.IMPLIED, 2, 4],
+  [0xf4, OpType.IGN, Addressing.IMPLIED, 2, 4],
+  [0x0c, OpType.IGN, Addressing.IMPLIED, 1, 4],
+  [0x1c, OpType.IGN, Addressing.IMPLIED, 3, 4],
+  [0x3c, OpType.IGN, Addressing.IMPLIED, 3, 4],
+  [0x5c, OpType.IGN, Addressing.IMPLIED, 3, 4],
+  [0x7c, OpType.IGN, Addressing.IMPLIED, 3, 4],
+  [0xdc, OpType.IGN, Addressing.IMPLIED, 3, 4],
+  [0xfc, OpType.IGN, Addressing.IMPLIED, 3, 5],
+  [0x80, OpType.SKB, Addressing.IMPLIED, 2, 2],
+  [0x82, OpType.SKB, Addressing.IMPLIED, 2, 2],
+  [0x89, OpType.SKB, Addressing.IMPLIED, 2, 2],
+  [0xc2, OpType.SKB, Addressing.IMPLIED, 2, 2],
+  [0xe2, OpType.SKB, Addressing.IMPLIED, 2, 2],
 ]
 
 export const kIllegalInstruction: Instruction = {
