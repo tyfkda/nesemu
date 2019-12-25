@@ -204,8 +204,9 @@ export default class Ppu {
     this.mirrorMode = saveData.mirrorMode
 
     if (isRam) {
-      this.vram = Util.convertBase64StringToUint8Array(saveData.vram)
-      this.chrData = this.vram
+      const vram = Util.convertBase64StringToUint8Array(saveData.vram)
+      for (let i = 0; i < vram.length; ++i)
+        this.vram[i] = vram[i]
     } else {
       const vramHigh = Util.convertBase64StringToUint8Array(saveData.vramHigh)
       for (let i = 0; i < vramHigh.length; ++i)
