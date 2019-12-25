@@ -1,9 +1,13 @@
 // CPU: MOS 6502
 
+declare let window: any
+
 import {Addressing, OpType, kInstTable} from './inst'
 import {IBus} from './ibus'
 import {Util} from '../../util/util'
 import {Address, Byte, Word} from '../types'
+
+import {disasm} from './disasm'
 
 export const enum IrqType {
   APU,
@@ -26,6 +30,8 @@ const RESERVED_FLAG: Byte = 1 << RESERVED_BIT
 const VEC_NMI: Address = 0xfffa
 const VEC_RESET: Address = 0xfffc
 const VEC_IRQ: Address = 0xfffe
+
+const MAX_STEP_LOG = 200
 
 type Bit = 0 | 1
 
@@ -62,12 +68,16 @@ export class Cpu {
   private irqRequest = 0
 
   // For debug
+  private $DEBUG: boolean
   private breakPoints = new Set<Address | string>()
   private watchRead = new Set<Address>()
   private watchWrite = new Set<Address>()
   private paused = false
+  private stepLogs: string[] = []
 
   constructor(private bus: IBus) {
+    this.$DEBUG = typeof window !== 'undefined' && !!window.$DEBUG  // Accessing global variable!!!
+
     this.a = this.x = this.y = this.s = 0
     this.pc = 0
 
@@ -79,6 +89,8 @@ export class Cpu {
     this.s = (this.s - 3) & 0xff
     this.pc = this.read16(VEC_RESET)
     this.irqBlocked = 1
+
+    this.stepLogs.length = 0
   }
 
   public getRegs(): Regs {
@@ -128,6 +140,9 @@ export class Cpu {
       console.warn(`paused because NMI: ${Util.hex(this.pc, 4)}, ${Util.hex(vector, 4)}`)
     }
 
+    if (this.$DEBUG) {
+      this.addStepLog(`NMI occurred at pc=${Util.hex(this.pc, 4)}`)
+    }
     this.push16(this.pc)
     this.push(this.getStatusReg() & ~BREAK_FLAG)
     this.pc = vector
@@ -149,6 +164,9 @@ export class Cpu {
     }
 
     let pc = this.pc
+    if (this.$DEBUG) {
+      this.addStepLog(disasm(this.bus, pc))
+    }
     const op = this.read8(pc++)
     const inst = kInstTable[op]
     if (inst.opType === OpType.UNKNOWN) {
@@ -743,6 +761,16 @@ export class Cpu {
     this.overflow = value ? 1 : 0
   }
 
+  private addStepLog(line: string): void {
+    if (this.stepLogs.length < MAX_STEP_LOG) {
+      this.stepLogs.push(line)
+    } else {
+      for (let i = 1; i < MAX_STEP_LOG; ++i)
+        this.stepLogs[i - 1] = this.stepLogs[i]
+      this.stepLogs[MAX_STEP_LOG - 1] = line
+    }
+  }
+
   private branch(adr: Address, cond: boolean): number {
     if (!cond)
       return 0
@@ -754,6 +782,9 @@ export class Cpu {
   }
 
   private handleIrq(): void {
+    if (this.$DEBUG) {
+      this.addStepLog(`IRQ occurred at pc=${Util.hex(this.pc, 4)}`)
+    }
     this.push16(this.pc)
     this.push(this.getStatusReg() & ~BREAK_FLAG)
     this.pc = this.read16(VEC_IRQ)
