@@ -1,6 +1,6 @@
 import App from './app/app'
 import AudioManager from './util/audio_manager'
-import {GlobalPaletWnd} from './app/other_wnd'
+import {GlobalPaletWnd, EqualizerWnd} from './app/other_wnd'
 import DomUtil from './util/dom_util'
 import JsApp from './app/js_powered_app'
 import GamepadManager from './util/gamepad_manager'
@@ -30,6 +30,7 @@ class Main {
   private keyConfigWnd: KeyConfigWnd|null = null
   private gamepadWnd: GamepadWnd|null = null
   private globalPaletWnd: GlobalPaletWnd|null = null
+  private equalizerWnd: EqualizerWnd|null = null
 
   constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
@@ -44,6 +45,7 @@ class Main {
     this.setUpKeyConfigLink()
     this.setUpGamePadLink()
     this.setUpVolumeLink()
+    this.setUpEqualizerLink()
     this.setUpOpenRomLink()
     this.setUpBlur()
   }
@@ -352,6 +354,23 @@ class Main {
       leave = true
       if (!dragging)
         hideSlider()
+    })
+  }
+
+  private setUpEqualizerLink(): void {
+    const equalizerText = document.getElementById('equalizer')
+    if (equalizerText == null)
+      return
+
+    equalizerText.addEventListener('click', () => {
+      if (this.equalizerWnd == null) {
+        this.equalizerWnd = new EqualizerWnd(this.wndMgr, () => {
+          this.equalizerWnd = null
+        })
+        this.wndMgr.add(this.equalizerWnd)
+      } else {
+        this.wndMgr.moveToTop(this.equalizerWnd)
+      }
     })
   }
 

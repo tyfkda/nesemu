@@ -179,6 +179,7 @@ export default class AudioManager {
   private static initialized: boolean = false
   private static context?: AudioContext
   private static masterGainNode: GainNode
+  private static analyserNode?: AnalyserNode
 
   private channels = new Array<SoundChannel>()
 
@@ -201,6 +202,19 @@ export default class AudioManager {
     const context = AudioManager.context
     if (context)
       AudioManager.masterGainNode.gain.setValueAtTime(volume, context.currentTime)
+  }
+
+  public static createAnalyser(): AnalyserNode|null {
+    const context = AudioManager.context
+    if (context == null)
+      return null
+    if (AudioManager.analyserNode == null) {
+      AudioManager.analyserNode = context.createAnalyser()
+      AudioManager.masterGainNode.disconnect()
+      AudioManager.masterGainNode.connect(AudioManager.analyserNode)
+      AudioManager.analyserNode.connect(context.destination)
+    }
+    return AudioManager.analyserNode
   }
 
   private static checkSetUpCalled() {

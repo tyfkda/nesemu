@@ -1,6 +1,7 @@
 import WindowManager from '../wnd/window_manager'
-import Wnd from '../wnd/wnd'
+import Wnd, {WndEvent} from '../wnd/wnd'
 
+import AudioManager from '../util/audio_manager'
 import {ChannelType} from '../nes/apu'
 import DomUtil from '../util/dom_util'
 import Nes from '../nes/nes'
@@ -523,5 +524,118 @@ export class AudioWnd extends Wnd {
     }
 
     return {root, dots}
+  }
+}
+
+export class EqualizerWnd extends Wnd {
+  private analyserNode: AnalyserNode
+  private dataArray: Uint8Array
+
+  private canvas: HTMLCanvasElement
+  private context: CanvasRenderingContext2D
+  private mode = 0
+
+  constructor(wndMgr: WindowManager, private onClose: () => void) {
+    super(wndMgr, 256, 128, 'Equalizer')
+
+    const width = 256
+    const height = 128
+
+    const canvas = document.createElement('canvas') as HTMLCanvasElement
+    canvas.width = width
+    canvas.height = height
+    DomUtil.setStyles(canvas, {
+      width: `${width}px`,
+      height: `${height}px`,
+    })
+    canvas.className = 'pixelated'
+    DomUtil.clearCanvas(canvas)
+
+    this.setContent(canvas)
+    this.canvas = canvas
+    this.context = DomUtil.getCanvasContext2d(this.canvas)
+
+    this.canvas.addEventListener('click', () => {
+      this.mode = 1 - this.mode
+    })
+
+    const analyserNode = AudioManager.createAnalyser()
+    if (analyserNode != null) {
+      this.analyserNode = analyserNode
+
+      this.analyserNode.fftSize = 256
+      const bufferLength = this.analyserNode.frequencyBinCount
+      this.dataArray = new Uint8Array(bufferLength)
+    }
+  }
+
+  public close(): void {
+    this.onClose()
+    super.close()
+  }
+
+  public onEvent(event: WndEvent, _param?: any): any {
+    switch (event) {
+    case WndEvent.UPDATE_FRAME:
+      this.render()
+      break
+    }
+  }
+
+  private render(): void {
+    switch (this.mode) {
+    case 0:
+      this.renderFrequency()
+      break
+    case 1:
+      this.renderTimeDomain()
+      break
+    }
+  }
+
+  private renderFrequency() {
+    const dataArray = this.dataArray
+    const bufferLength = dataArray.length
+    this.analyserNode.getByteFrequencyData(dataArray)
+
+    this.context.fillStyle = 'rgb(0, 0, 0)'
+    this.context.fillRect(0, 0, 256, 128)
+
+    const canvasCtx = this.context
+    const WIDTH = 256, HEIGHT = 128
+    const barWidth = 4
+    let x = 0
+
+    canvasCtx.fillStyle = 'rgb(0,255,64)'
+    const n = ((WIDTH + barWidth - 1) / barWidth) | 0
+    for (let i = 0; i < n; ++i) {
+      const barHeight = (dataArray[(i * bufferLength / n) | 0] * HEIGHT / 255) | 0
+      canvasCtx.fillRect(x, HEIGHT - barHeight, barWidth - 1, barHeight)
+      x += barWidth
+    }
+  }
+
+  private renderTimeDomain() {
+    const dataArray = this.dataArray
+    const bufferLength = dataArray.length
+    this.analyserNode.getByteTimeDomainData(dataArray)
+
+    this.context.fillStyle = 'rgb(0, 0, 0)'
+    this.context.fillRect(0, 0, 256, 128)
+
+    const canvasCtx = this.context
+    const WIDTH = 256, HEIGHT = 128
+
+    canvasCtx.strokeStyle = 'rgb(255,255,255)'
+    canvasCtx.beginPath()
+    for (let i = 0; i < bufferLength; ++i) {
+      const y = (HEIGHT / 2) - (((dataArray[i] - 128) * HEIGHT / 128) | 0)
+      const x = i * WIDTH / bufferLength
+      if (i === 0)
+        canvasCtx.moveTo(x, y)
+      else
+        canvasCtx.lineTo(x, y)
+    }
+    canvasCtx.stroke()
   }
 }
