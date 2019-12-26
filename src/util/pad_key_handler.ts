@@ -27,6 +27,10 @@ const kKeyTable = [
 export default class PadKeyHandler {
   private status = new Uint8Array(2)
 
+  public static getMapping(padNo: number) {
+    return kKeyTable[padNo]
+  }
+
   public getStatus(padNo: number): number {
     return this.status[padNo]
   }
@@ -45,9 +49,5 @@ export default class PadKeyHandler {
       }
       this.status[padNo] = state
     }
-  }
-
-  public static getMapping(padNo: number) {
-    return kKeyTable[padNo]
   }
 }

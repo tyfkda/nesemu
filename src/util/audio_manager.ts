@@ -158,8 +158,9 @@ class DmcChannel extends OscillatorChannel {
   }
 }
 
-function createSoundChannel(context: AudioContext, destination: AudioNode, type: ChannelType
-                           ): SoundChannel {
+function createSoundChannel(
+    context: AudioContext, destination: AudioNode, type: ChannelType,
+): SoundChannel {
   switch (type) {
   case ChannelType.PULSE:
     return new PulseChannel(context, destination)

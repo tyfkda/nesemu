@@ -271,7 +271,7 @@ export class KeyConfigWnd extends GamepadBaseWnd {
     for (let padNo = 0; padNo < 2; ++padNo) {
       const table = PadKeyHandler.getMapping(padNo)
       const mapping: (string|null)[] = [...Array(8).keys()].map(i => {
-        const index = table.findIndex(t => t.bit == (1 << i))
+        const index = table.findIndex(t => t.bit === (1 << i))
         return index >= 0 ? table[index].key : null
       })
       data[padNo] = mapping
