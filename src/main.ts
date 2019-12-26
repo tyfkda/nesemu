@@ -1,4 +1,5 @@
 import App from './app/app'
+import AudioManager from './util/audio_manager'
 import {GlobalPaletWnd} from './app/other_wnd'
 import DomUtil from './util/dom_util'
 import JsApp from './app/js_powered_app'
@@ -9,6 +10,8 @@ import Util from './util/util'
 import WindowManager from './wnd/window_manager'
 import './util/polyfill'
 import * as JSZip from 'jszip'
+
+const DEFAULT_MASTER_VOLUME = 0.25
 
 // Request Animation Frame
 window.requestAnimationFrame = (function() {
@@ -32,6 +35,9 @@ class Main {
     this.wndMgr = new WindowManager(root)
 
     this.volume = Util.clamp(StorageUtil.getFloat(KEY_VOLUME, 1), 0, 1)
+    const audioContextClass = window.AudioContext || window.webkitAudioContext
+    AudioManager.setUp(audioContextClass)
+    AudioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
 
     this.setUpFileDrop()
     this.setUpPaletLink()
@@ -180,7 +186,6 @@ class Main {
       app.close()
       return
     }
-    app.setVolume(this.volume)
     this.apps.push(app)
   }
 
@@ -200,7 +205,6 @@ class Main {
 
     const app = App.create(this.wndMgr, option)
     app.bootDiskBios(biosData)
-    app.setVolume(this.volume)
     if (diskImage != null)
       app.setDiskImage(diskImage)
     this.apps.push(app)
@@ -291,9 +295,7 @@ class Main {
         const height = Util.clamp(sliderHeight - y, 0, sliderHeight)
         slider.style.height = `${height}px`
         this.volume = height / sliderHeight
-        this.apps.forEach(app => {
-          app.setVolume(this.volume)
-        })
+        AudioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
       }
       DomUtil.setMouseDragListener({
         move: updateSlider,
@@ -369,10 +371,10 @@ class Main {
 
   private setUpBlur(): void {
     window.addEventListener('blur', () => {
-      this.apps.forEach(app => { app.onBlur() })
+      AudioManager.setMasterVolume(0)
     })
     window.addEventListener('focus', () => {
-      this.apps.forEach(app => { app.onFocus() })
+      AudioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
     })
   }
 }

@@ -178,24 +178,39 @@ function createSoundChannel(
 export default class AudioManager {
   private static initialized: boolean = false
   private static context?: AudioContext
+  private static masterGainNode: GainNode
 
   private channels = new Array<SoundChannel>()
-  private masterVolume: number = 0
 
-  private static setUp(audioContextClass: any) {
+  public static setUp(audioContextClass: any) {
     if (AudioManager.initialized)
       return
-    AudioManager.initialized = true
 
     if (audioContextClass == null)
       return
     AudioManager.context = new audioContextClass() as AudioContext
+    AudioManager.masterGainNode = AudioManager.context.createGain()
+    AudioManager.masterGainNode.gain.setValueAtTime(1, AudioManager.context.currentTime)
+    AudioManager.masterGainNode.connect(AudioManager.context.destination)
+    AudioManager.initialized = true
   }
 
-  constructor(audioContextClass: any) {
-    AudioManager.setUp(audioContextClass)
+  public static setMasterVolume(volume: number): void {
+    AudioManager.checkSetUpCalled()
 
-    this.masterVolume = 1.0
+    const context = AudioManager.context
+    if (context)
+      AudioManager.masterGainNode.gain.setValueAtTime(volume, context.currentTime)
+  }
+
+  private static checkSetUpCalled() {
+    if (!AudioManager.initialized) {
+      console.error('Audio.setUp must be called!')
+    }
+  }
+
+  constructor() {
+    AudioManager.checkSetUpCalled()
   }
 
   public addChannel(type: ChannelType) {
@@ -203,7 +218,7 @@ export default class AudioManager {
     if (context == null)
       return
 
-    const sc = createSoundChannel(context, context.destination, type)
+    const sc = createSoundChannel(context, AudioManager.masterGainNode, type)
     sc.start()
     this.channels.push(sc)
   }
@@ -230,24 +245,12 @@ export default class AudioManager {
   public setChannelVolume(channel: number, volume: number): void {
     if (AudioManager.context == null)
       return
-    this.channels[channel].setVolume(volume * this.masterVolume, AudioManager.context)
+    this.channels[channel].setVolume(volume, AudioManager.context)
   }
 
   public setChannelDutyRatio(channel: number, ratio: number): void {
     if (AudioManager.context == null)
       return
     this.channels[channel].setDutyRatio(ratio)
-  }
-
-  public setMasterVolume(volume: number): void {
-    const context = AudioManager.context
-    if (context == null)
-      return
-    this.masterVolume = volume
-    if (volume <= 0) {
-      this.channels.forEach(channel => {
-        channel.setVolume(0, context)
-      })
-    }
   }
 }

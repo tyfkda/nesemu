@@ -16,7 +16,6 @@ import Wnd from '../wnd/wnd'
 import * as Pubsub from '../util/pubsub'
 
 const MAX_ELAPSED_TIME = 1000 / 15
-export const DEFAULT_MASTER_VOLUME = 0.125
 
 export class Option {
   public title?: string
@@ -40,7 +39,6 @@ export const enum AppWndType {
 export default class App {
   protected destroying = false
   protected isPaused = false
-  protected isBlur = false
   protected nes: Nes
   protected audioManager: AudioManager
   protected stream = new AppEvent.Stream()
@@ -51,8 +49,6 @@ export default class App {
   protected wndMap: {[key: number]: Wnd} = {}
 
   protected fds?: Fds
-
-  protected volume = 1
 
   public static create(wndMgr: WindowManager, option: Option): App {
     return new App(wndMgr, option)
@@ -129,11 +125,6 @@ export default class App {
     }
   }
 
-  public setVolume(vol: number): void {
-    this.volume = vol
-    this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
-  }
-
   public loadRom(romData: Uint8Array): boolean|string {
     const result = this.nes.setRomData(romData)
     if (result !== true)
@@ -207,22 +198,6 @@ export default class App {
     } else {
       this.wndMgr.showSnackbar(`No save data for "${this.title}"`)
     }
-  }
-
-  public onBlur() {
-    if (this.isBlur)
-      return
-    this.isBlur = true
-    if (this.audioManager)
-      this.audioManager.setMasterVolume(0)
-  }
-
-  public onFocus() {
-    if (!this.isBlur)
-      return
-    this.isBlur = false
-    if (this.audioManager)
-      this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
   }
 
   public createPaletWnd(): boolean {
@@ -381,16 +356,11 @@ export default class App {
 
   public setupAudioManager() {
     if (this.audioManager == null) {
-      const contextClass = window.AudioContext || window.webkitAudioContext
-      // if (contextClass == null)
-      //   return
-
-      this.audioManager = new AudioManager(contextClass)
+      this.audioManager = new AudioManager()
     } else {
       this.audioManager.release()
     }
 
-    this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
     const channelTypes = this.nes.getSoundChannelTypes()
     for (const type of channelTypes) {
       this.audioManager.addChannel(type)

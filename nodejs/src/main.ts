@@ -57,7 +57,7 @@ function createMyApp() {
     private nes: Nes
     private pad = 0
 
-    private audioManager = new AudioManager(AudioContext)
+    private audioManager = new AudioManager()
 
     constructor() {
       this.win = new Window({
@@ -133,7 +133,6 @@ function createMyApp() {
     }
 
     private setupAudioManager() {
-      this.audioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
       const channelTypes = this.nes.getSoundChannelTypes()
       for (const type of channelTypes) {
         this.audioManager.addChannel(type)
@@ -192,5 +191,8 @@ if (process.argv.length < 3) {
   console.error('ROMFILE')
   process.exit(1)
 }
+
+AudioManager.setUp(AudioContext)
+AudioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
 
 run(process.argv[2])

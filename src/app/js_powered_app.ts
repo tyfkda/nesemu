@@ -1,7 +1,7 @@
 // JS-powered NES
 // Run JavaScript code, instead of 6502 CPU.
 
-import App, {AppWndType, Option, DEFAULT_MASTER_VOLUME} from './app'
+import App, {AppWndType, Option} from './app'
 import {AppEvent} from './app_event'
 import AudioManager from '../util/audio_manager'
 import Bus from '../nes/bus'
@@ -234,13 +234,8 @@ export default class JsApp extends App {
   public setFile(file: File): void {
     this.jsNes.setFile(file)
       .then(() => {
-        const contextClass = window.AudioContext || window.webkitAudioContext
-        // if (contextClass == null)
-        //   return
-
-        this.audioManager = new AudioManager(contextClass)
+        this.audioManager = new AudioManager()
         this.setupAudioManager()
-        this.audioManager.setMasterVolume(this.volume * DEFAULT_MASTER_VOLUME)
       })
   }
 
