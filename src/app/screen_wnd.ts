@@ -97,6 +97,7 @@ export default class ScreenWnd extends Wnd {
   private scalerType = ScalerType.NEAREST
   private padKeyHandler = new PadKeyHandler()
   private timeScale = 1
+  private fullscreenResizeFunc: () => void
 
   constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,
               protected stream: AppEvent.Stream)
@@ -153,6 +154,24 @@ export default class ScreenWnd extends Wnd {
         isAudioPermissionAcquired = true
       })
       this.fullscreenBase.appendChild(button)
+    }
+
+    this.fullscreenResizeFunc = () => {
+      const bounding = document.body.getBoundingClientRect()
+      let width = bounding.width
+      let height = bounding.height
+      if (width / height >= WIDTH / HEIGHT) {
+        width = (height * (WIDTH / HEIGHT)) | 0
+      } else {
+        height = (width * (HEIGHT / WIDTH)) | 0
+      }
+      DomUtil.setStyles(this.fullscreenBase, {
+        width: `${width}px`,
+        height: `${height}px`,
+        margin: 'auto',
+      })
+      this.contentHolder.style.backgroundColor = 'black'
+      this.updateContentSize(width, height)
     }
   }
 
@@ -237,23 +256,10 @@ export default class ScreenWnd extends Wnd {
   }
 
   public setFullscreen(callback?: (isFullscreen: boolean) => boolean): boolean {
+    window.addEventListener('resize', this.fullscreenResizeFunc)
     return this.wndMgr.setFullscreen(this.contentHolder, (isFullscreen) => {
-      if (isFullscreen) {
-        let width = window.parent.screen.width
-        let height = window.parent.screen.height
-        if (width / height >= WIDTH / HEIGHT) {
-          width = (height * (WIDTH / HEIGHT)) | 0
-        } else {
-          height = (width * (HEIGHT / WIDTH)) | 0
-        }
-        DomUtil.setStyles(this.fullscreenBase, {
-          width: `${width}px`,
-          height: `${height}px`,
-          margin: 'auto',
-        })
-        this.contentHolder.style.backgroundColor = 'black'
-        this.updateContentSize(width, height)
-      } else {
+      if (!isFullscreen) {
+        window.removeEventListener('resize', this.fullscreenResizeFunc)
         DomUtil.setStyles(this.fullscreenBase, {
           width: '',
           height: '',
