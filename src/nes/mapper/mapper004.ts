@@ -5,8 +5,6 @@ import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode, PpuReg, PpuMaskBit} from '../ppu/types'
 import Util from '../../util/util'
 
-const VRETURN = 262
-
 export class Mapper004 extends Mapper {
   protected regs = new Uint8Array(8)
   protected ram = new Uint8Array(0x2000)  // PRG RAM
@@ -139,7 +137,7 @@ export class Mapper004 extends Mapper {
     }
 
     switch (hcount) {
-    case VRETURN:
+    case 0:
       this.irqHlineCounter = this.irqHlineValue
       break
     default:

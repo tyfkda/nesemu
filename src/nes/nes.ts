@@ -284,6 +284,11 @@ export default class Nes implements PrgBankController {
     const beforeHcount = getHblankCount(cycleCount)
     let hcount = getHblankCount(cycleCount2)
     if (hcount > beforeHcount) {
+      if (hcount === VRETURN) {
+        cycleCount2 -= (VRETURN * 341 / 3) | 0
+        hcount = 0
+      }
+
       this.ppu.setHcount(hcount)
       this.apu.onHblank(hcount)
 
@@ -297,10 +302,6 @@ export default class Nes implements PrgBankController {
         break
       case VBLANK_END:
         this.ppu.clearVBlank()
-        break
-      case VRETURN:
-        cycleCount2 -= (VRETURN * 341 / 3) | 0
-        this.ppu.setHcount(0)
         break
       default:
         break
