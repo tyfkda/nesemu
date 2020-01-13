@@ -594,15 +594,16 @@ export class EqualizerWnd extends Wnd {
   }
 
   private renderFrequency() {
+    const canvasCtx = this.context
+    const WIDTH = 256, HEIGHT = 128
+
     const dataArray = this.dataArray
     const bufferLength = dataArray.length
     this.analyserNode.getByteFrequencyData(dataArray)
 
-    this.context.fillStyle = 'rgb(0, 0, 0)'
-    this.context.fillRect(0, 0, 256, 128)
+    canvasCtx.fillStyle = 'rgb(0, 0, 0)'
+    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT)
 
-    const canvasCtx = this.context
-    const WIDTH = 256, HEIGHT = 128
     const barWidth = 4
     let x = 0
 
