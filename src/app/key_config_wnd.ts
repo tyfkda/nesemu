@@ -6,7 +6,7 @@ import StorageUtil from '../util/storage_util'
 import WindowManager from '../wnd/window_manager'
 import Wnd, {WndEvent} from '../wnd/wnd'
 
-const escape = require('escape-html')
+import * as escape from 'escape-html'
 
 interface GamepadButtonOption {
   width?: number
