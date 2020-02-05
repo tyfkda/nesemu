@@ -171,7 +171,7 @@ export default class Cpu {
     // Dispatch
     switch (inst.opType) {
     default:
-    case OpType.UNKNOWN:
+    // case OpType.UNKNOWN:  // Unreachable here.
       break
     case OpType.NOP:
       break
