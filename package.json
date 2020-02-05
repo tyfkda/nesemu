@@ -42,8 +42,6 @@
     "@types/jest": "~24.0.25",
     "@types/node": "~13.1.6",
     "argv": "~0.0.2",
-    "babel-jest": "~24.9.0",
-    "babel-loader": "~8.0.6",
     "browser-sync": "~2.26.7",
     "clone": "~2.1.2",
     "del": "~5.1.0",
