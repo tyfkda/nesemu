@@ -123,10 +123,10 @@ function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8Cl
   for (let i = 0; i < n; ++i) {
     const pal = offscreen[i] & 0x1f
     const col = palet[pal] & colorMask
-    const c = col * 3
-    pixels[index + 0] = kPaletColors[c]
-    pixels[index + 1] = kPaletColors[c + 1]
-    pixels[index + 2] = kPaletColors[c + 2]
+    const c = kPaletColors[col]
+    pixels[index + 0] =  c >> 16
+    pixels[index + 1] = (c >>  8) & 0xff
+    pixels[index + 2] =  c        & 0xff
     index += 4
   }
 }

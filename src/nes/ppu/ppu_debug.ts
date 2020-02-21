@@ -19,10 +19,10 @@ function render8x8Chip(
       let r = clearR, g = clearG, b = clearB
       if (pal !== 0) {
         const col = palet[paletHigh | pal] & 0x3f
-        const c = col * 3
-        r = kPaletColors[c]
-        g = kPaletColors[c + 1]
-        b = kPaletColors[c + 2]
+        const c = kPaletColors[col]
+        r =  c >> 16
+        g = (c >>  8) & 0xff
+        b =  c        & 0xff
       }
 
       const index = (py * lineWidth + px + startOffset) * 4
@@ -50,10 +50,10 @@ export default class PpuDebug {
     const W = 8
     const chrStart = getBgPatternTableAddress(regs[PpuReg.CTRL])
 
-    const clearColor = palet[0] & 0x3f  // Universal background color
-    const clearR = kPaletColors[clearColor * 3 + 0]
-    const clearG = kPaletColors[clearColor * 3 + 1]
-    const clearB = kPaletColors[clearColor * 3 + 2]
+    const clearColor = kPaletColors[palet[0] & 0x3f]  // Universal background color
+    const clearR =  clearColor >> 16
+    const clearG = (clearColor >>  8) & 0xff
+    const clearB =  clearColor        & 0xff
     const pattern = new Uint16Array(W)
 
     for (let by = 0; by < Const.HEIGHT / W; ++by) {
@@ -93,10 +93,10 @@ export default class PpuDebug {
     for (let i = 0; i < 2; ++i) {
       const b = i ^ invert
       const paletHigh = ((colorGroups[b] << 2) | (b << 4)) | 0
-      const col0 = palet[paletHigh] & 0x3f
-      const clearR = kPaletColors[col0 * 3 + 0]
-      const clearG = kPaletColors[col0 * 3 + 1]
-      const clearB = kPaletColors[col0 * 3 + 2]
+      const c = kPaletColors[palet[paletHigh] & 0x3f]
+      const clearR =   c >> 16
+      const clearG = (c >>  8) & 0xff
+      const clearB =  c        & 0xff
       const startX = i * (W * 16)
       for (let by = 0; by < 16; ++by) {
         for (let bx = 0; bx < 16; ++bx) {

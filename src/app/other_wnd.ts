@@ -109,10 +109,10 @@ export class PaletWnd extends Wnd {
         continue
       this.palet[i] = c
 
-      const j = c * 3
-      const r = kPaletColors[j + 0]
-      const g = kPaletColors[j + 1]
-      const b = kPaletColors[j + 2]
+      const cc = kPaletColors[c]
+      const r =  cc >> 16
+      const g = (cc >>  8) & 0xff
+      const b =  cc        & 0xff
       this.boxes[i].style.backgroundColor = `rgb(${r},${g},${b})`
     }
   }
@@ -320,9 +320,10 @@ export class GlobalPaletWnd extends Wnd {
     // Set colors
     const n = this.boxes.length
     for (let i = 0; i < n; ++i) {
-      const r = kPaletColors[i * 3 + 0]
-      const g = kPaletColors[i * 3 + 1]
-      const b = kPaletColors[i * 3 + 2]
+      const c = kPaletColors[i]
+      const r =  c >> 16
+      const g = (c >>  8) & 0xff
+      const b =  c        & 0xff
       this.boxes[i].style.backgroundColor = `rgb(${r},${g},${b})`
     }
   }
