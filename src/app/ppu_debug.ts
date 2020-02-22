@@ -6,28 +6,24 @@ import {kPaletColors} from '../nes/ppu/const'
 // No clipping, debug purpose.
 function render8x8Chip(
   ppu: Ppu, pixels: Uint8ClampedArray, startOffset: number,
-  pattern: Uint16Array, paletHigh: number,
-  clearR: number, clearG: number, clearB: number, lineWidth: number)
+  pattern: Uint16Array, paletHigh: number, clearColor: number, lineWidth: number)
 {
   const W = 8
   const palet = ppu.getPaletTable()
   for (let py = 0; py < W; ++py) {
     const pat = pattern[py]
     for (let px = 0; px < W; ++px) {
+      let c = clearColor
       const pal = (pat >> ((W - 1) * 2 - (px << 1))) & 3
-      let r = clearR, g = clearG, b = clearB
       if (pal !== 0) {
         const col = palet[paletHigh | pal] & 0x3f
-        const c = kPaletColors[col]
-        r =  c >> 16
-        g = (c >>  8) & 0xff
-        b =  c        & 0xff
+        c = kPaletColors[col]
       }
 
       const index = (py * lineWidth + px + startOffset) * 4
-      pixels[index + 0] = r
-      pixels[index + 1] = g
-      pixels[index + 2] = b
+      pixels[index + 0] =  c >> 16
+      pixels[index + 1] = (c >>  8) & 0xff
+      pixels[index + 2] =  c        & 0xff
     }
   }
 }
@@ -50,9 +46,6 @@ export default class PpuDebug {
     const chrStart = getBgPatternTableAddress(regs[PpuReg.CTRL])
 
     const clearColor = kPaletColors[palet[0] & 0x3f]  // Universal background color
-    const clearR =  clearColor >> 16
-    const clearG = (clearColor >>  8) & 0xff
-    const clearB =  clearColor        & 0xff
     const pattern = new Uint16Array(W)
 
     for (let by = 0; by < Const.HEIGHT / W; ++by) {
@@ -71,7 +64,7 @@ export default class PpuDebug {
         for (let py = 0; py < W; ++py)
           pattern[py] = getBgPat(chrData, chridx, py, chrBankOffset)
         render8x8Chip(ppu, pixels, (by * W + startY) * lineWidth + bx * W + startX,
-                      pattern, paletHigh, clearR, clearG, clearB, lineWidth)
+                      pattern, paletHigh, clearColor, lineWidth)
       }
     }
   }
@@ -92,10 +85,7 @@ export default class PpuDebug {
     for (let i = 0; i < 2; ++i) {
       const b = i ^ invert
       const paletHigh = ((colorGroups[b] << 2) | (b << 4)) | 0
-      const c = kPaletColors[palet[paletHigh] & 0x3f]
-      const clearR =   c >> 16
-      const clearG = (c >>  8) & 0xff
-      const clearB =  c        & 0xff
+      const clearColor = kPaletColors[palet[paletHigh] & 0x3f]
       const startX = i * (W * 16)
       for (let by = 0; by < 16; ++by) {
         for (let bx = 0; bx < 16; ++bx) {
@@ -103,7 +93,7 @@ export default class PpuDebug {
           for (let py = 0; py < W; ++py)
             pattern[py] = getBgPat(chrData, chridx, py, chrBankOffset)
           render8x8Chip(ppu, pixels, (by * W) * lineWidth + bx * W + startX,
-                        pattern, paletHigh, clearR, clearG, clearB, lineWidth)
+                        pattern, paletHigh, clearColor, lineWidth)
         }
       }
     }
