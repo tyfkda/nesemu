@@ -1,8 +1,7 @@
-import Ppu from './ppu'
-import {getNameTable, getBgPatternTableAddress, getBgPat} from './ppu'
-import {PpuReg, PpuCtrlBit} from './types'
-import {Const} from '../const'
-import {kPaletColors} from './const'
+import Ppu, {getNameTable, getBgPatternTableAddress, getBgPat} from '../nes/ppu/ppu'
+import {PpuReg, PpuCtrlBit} from '../nes/ppu/types'
+import {Const} from '../nes/const'
+import {kPaletColors} from '../nes/ppu/const'
 
 // No clipping, debug purpose.
 function render8x8Chip(

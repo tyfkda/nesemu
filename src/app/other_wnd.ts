@@ -6,7 +6,7 @@ import {ChannelType} from '../nes/apu'
 import DomUtil from '../util/dom_util'
 import Nes from '../nes/nes'
 import Ppu from '../nes/ppu/ppu'
-import PpuDebug from '../nes/ppu/ppu_debug'
+import PpuDebug from './ppu_debug'
 import {kPaletColors} from '../nes/ppu/const'
 
 import {AppEvent} from './app_event'
