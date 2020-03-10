@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "es6",
+    "target": "es2019",
+    "lib": ["es2019", "dom", "dom.iterable"],
+    "incremental": true,
     "outDir": "dist",
     "rootDir": ".",
     "sourceMap": true,
@@ -25,7 +27,9 @@
     // "noFallthroughCasesInSwitch": true,    /* Report errors for fallthrough cases in switch statement. */
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "nodejs",
+    "dist",
   ],
   "compileOnSave": false,
   "buildOnSave": false,
