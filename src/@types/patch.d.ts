@@ -17,12 +17,6 @@ interface Window {
   $DEBUG: boolean
 }
 
-interface Document {
-  fullScreen: Function
-  mozFullScreen: Function
-  webkitIsFullScreen: Function
-}
-
 interface HTMLElement {
   disabled: any
 }

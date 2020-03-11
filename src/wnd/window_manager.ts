@@ -2,6 +2,8 @@ import DomUtil from '../util/dom_util'
 import KeyboardManager from '../util/keyboard_manager'
 import Wnd, {WndEvent} from './wnd'
 
+import fscreen from 'fscreen'
+
 const BASE_PRIORITY = 100
 
 function setWindowZIndex(wnd: Wnd, i: number, n: number) {
@@ -115,46 +117,36 @@ export default class WindowManager {
   }
 
   public setFullscreen(element: HTMLElement, callback: (isFullscreen: boolean) => void): boolean {
-    const kList = [
-      { fullscreen: 'requestFullscreen', change: 'fullscreenchange' },
-      { fullscreen: 'webkitRequestFullScreen', change: 'webkitfullscreenchange' },
-      { fullscreen: 'mozRequestFullScreen', change: 'mozfullscreenchange' },
-      { fullscreen: 'msRequestFullscreen', change: 'MSFullscreenChange' },
-    ]
-    for (let i = 0; i < kList.length; ++i) {
-      if (element[kList[i].fullscreen]) {
-        element[kList[i].fullscreen]()
-        const changeEvent = kList[i].change
-        const exitHandler = () => {
-          const isFullscreen = !!(document.fullScreen || document.mozFullScreen ||
-                                  document.webkitIsFullScreen)
-          if (isFullscreen) {
-            element.setAttribute('tabindex', '1')
-            element.style.cursor = 'none'
-            element.addEventListener('keydown', this.onKeyDown)
-            element.addEventListener('keyup', this.onKeyUp)
-          } else {
-            element.removeAttribute('tabindex')
-            element.style.cursor = ''
-            element.removeEventListener('keydown', this.onKeyDown)
-            element.removeEventListener('keyup', this.onKeyUp)
-          }
+    if (!fscreen.fullscreenEnabled)
+      return false
 
-          if (callback)
-            callback(isFullscreen)
-          if (isFullscreen) {
-            element.focus()
-          } else {  // End
-            document.removeEventListener(changeEvent, exitHandler, false)
-            this.root.focus()
-          }
-        }
-        document.addEventListener(changeEvent, exitHandler, false)
+    fscreen.requestFullscreen(element)
+    const exitHandler = () => {
+      const isFullscreen = fscreen.fullscreenElement != null
+      if (isFullscreen) {
+        element.setAttribute('tabindex', '1')
+        element.style.cursor = 'none'
+        element.addEventListener('keydown', this.onKeyDown)
+        element.addEventListener('keyup', this.onKeyUp)
+      } else {
+        element.removeAttribute('tabindex')
+        element.style.cursor = ''
+        element.removeEventListener('keydown', this.onKeyDown)
+        element.removeEventListener('keyup', this.onKeyUp)
+      }
 
-        return true
+      if (callback)
+        callback(isFullscreen)
+      if (isFullscreen) {
+        element.focus()
+      } else {  // End
+        fscreen.removeEventListener('fullscreenchange', exitHandler, false)
+        this.root.focus()
       }
     }
-    return false
+    fscreen.addEventListener('fullscreenchange', exitHandler, false)
+
+    return true
   }
 
   private removeWnd(wnd: Wnd): void {
