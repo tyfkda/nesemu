@@ -61,14 +61,10 @@ class SpDmcChannel extends IDmcChannel {
     const node = context.createScriptProcessor(SP_DMC_BUFFER_SIZE, 0, 1)
     node.onaudioprocess = (e) => {
       const output = e.outputBuffer.getChannelData(0)
-      this.fillBuffer(output)
+      this.sampler.fillBuffer(output)
     }
     node.connect(destination)
     return node
-  }
-
-  private fillBuffer(buffer: Float32Array): void {
-    this.sampler.fillBuffer(buffer)
   }
 }
 

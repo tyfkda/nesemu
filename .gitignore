@@ -16,3 +16,5 @@ typings
 /release
 
 /nodejs/nesemu.js
+/nodejs/package-lock.json
+*.LICENSE.txt
