@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
-    "module": "es2015",
-    "target": "es6",
+    "module": "commonjs",
+    "target": "es2019",
+    "incremental": true,
     "outDir": "dist",
     "rootDirs": [
       ".",
@@ -13,7 +14,7 @@
     "moduleResolution": "node",
 
     "lib": [
-      "es2015"  // To avoid DOM typings.
+      "es2019"  // To avoid DOM typings.
     ],
 
     "typeRoots": [
@@ -21,6 +22,7 @@
       "./src/@types"
     ],
     "types": [
+      "node",
       "audio_context"
     ],
 
