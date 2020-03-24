@@ -1,9 +1,4 @@
-declare function __non_webpack_require__(fn: string)
-
-import {audio as SDLAudio} from 'node-sdl2/lib/audio'
-
-const NS = __non_webpack_require__('node-sdl2')
-const SDL_audio = NS.require('SDL_audio')
+const sdl = __non_webpack_require__('@kmamal/sdl')
 
 class AudioParam {
   public value = 0
@@ -44,8 +39,6 @@ export class PeriodicWave {
 
 const enum OscillatorType {
   NONE,
-  // SQUARE,
-  // SINE
   TRIANGLE,
   SAWTOOTH,
   PERIODIC_WAVE,
@@ -66,8 +59,11 @@ export class OscillatorNode extends AudioNode {
   }
 
   setPeriodicWave(_wave: PeriodicWave): void {
-    this.oscType = OscillatorType.PERIODIC_WAVE
+    // this.oscType = OscillatorType.PERIODIC_WAVE
     //this.wave = wave
+
+    // TODO: Calculate wave.
+    this.oscType = OscillatorType.TRIANGLE
   }
 
   public sample(counter: number, sampleRate: number): number {
@@ -119,8 +115,65 @@ export class DelayNode extends AudioNode {
   }
 }
 
+class OutputBuffer<T> {
+  constructor(public buffer: T[]) {}
+
+  public getChannelData(index: number) {
+    return this.buffer[index]
+  }
+}
+
+export class ScriptProcessorNode extends AudioNode {
+  private index = 0
+  private onaudioprocess: any = (_) => {}
+  private outputBuffer: OutputBuffer<Float32Array>
+  private ev: {outputBuffer: OutputBuffer<Float32Array>}
+
+  public constructor(context: AudioContext, size: number, _inputChannels: number, outputChannels: number) {
+    super(context)
+    const buffer = [...Array(outputChannels)].map(_ => new Float32Array(size))
+    this.outputBuffer = new OutputBuffer<Float32Array>(buffer)
+    this.ev = {
+      outputBuffer: this.outputBuffer,
+    }
+  }
+
+  public sample(_counter: number, _sampleRate: number): number {
+    if (this.index === 0) {
+      this.onaudioprocess(this.ev)
+    }
+    const value = this.outputBuffer.buffer[0][this.index]
+    if (++this.index >= this.outputBuffer.buffer[0].length) {
+      this.index = 0
+    }
+    return value
+  }
+}
+
 class AudioDestinationNode extends AudioNode {
   private time = 0
+  private playbackInstance: any
+  private buffer: Buffer
+  private f32Array: Float32Array
+
+  public constructor(context: AudioContext) {
+    super(context)
+    const channels = 1
+    this.playbackInstance = sdl.audio.openDevice({type: 'playback'}, {
+      channels,
+      buffered: 512,
+    })
+
+    const frames = (1.0 / 60 * this.sampleRate) | 0
+    this.buffer = Buffer.alloc(frames * 4 * channels)
+    this.f32Array = new Float32Array(this.buffer.buffer)
+
+    this.playbackInstance.play()
+  }
+
+  public get sampleRate(): number {
+    return this.playbackInstance.frequency
+  }
 
   public fillBuffer(array: Float32Array) {
     const len = array.length
@@ -142,28 +195,22 @@ class AudioDestinationNode extends AudioNode {
   public sample(_counter: number, _sampleRate: number): number {
     return 0
   }
+
+  public update(_dt: number) {
+    this.fillBuffer(this.f32Array)
+    this.playbackInstance.enqueue(this.buffer)
+  }
 }
 
 export class AudioContext {
-  private audio: SDLAudio
   private destination  = new AudioDestinationNode(this)
 
   public get sampleRate(): number {
-    return this.audio.spec.freq
+    return this.destination.sampleRate
   }
 
-  public constructor() {
-    this.audio = NS.audio.create()
-    const options = {
-      freq: 48000,
-      channels: 1,
-      format: SDL_audio.SDL_AudioFormatFlag.AUDIO_F32,
-      samples: 512,
-    }
-    this.audio.openAudioDevice(options, (arrayBuffer: ArrayBuffer) => {
-      const array = new Float32Array(arrayBuffer)
-      this.destination.fillBuffer(array)
-    })
+  public update(dt: number): void {
+    this.destination.update(dt)
   }
 
   public createGain(): GainNode {
@@ -176,6 +223,10 @@ export class AudioContext {
 
   public createDelay(): DelayNode {
     return new DelayNode(this)
+  }
+
+  public createScriptProcessor(size: number, a: number, b: number): ScriptProcessorNode {
+    return new ScriptProcessorNode(this, size, a, b)
   }
 
   public createPeriodicWave(real: Float32Array, imag: Float32Array): PeriodicWave {

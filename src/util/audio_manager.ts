@@ -44,6 +44,8 @@ export class AudioManager {
     }
   }
 
+  public static getContext(): AudioContext|undefined { return this.context }
+
   public static setMasterVolume(volume: number): void {
     AudioManager.checkSetUpCalled()
     AudioManager.masterVolume = volume

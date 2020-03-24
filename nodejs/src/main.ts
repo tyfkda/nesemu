@@ -1,16 +1,17 @@
-declare function __non_webpack_require__(fn: string)
+const fs = __non_webpack_require__('fs').promises
 
-const fs = __non_webpack_require__('fs')
-
-import * as JSZip from 'jszip'
-import {Nes} from '../../src/nes/nes'
-import {INoiseChannel, IPulseChannel, PadValue, WaveType} from '../../src/nes/apu'
+import JSZip from 'jszip'
+import {Nes, NesEvent} from '../../src/nes/nes'
+import {Cartridge} from '../../src/nes/cartridge'
+import {IDeltaModulationChannel, INoiseChannel, IPulseChannel, PadValue, WaveType} from '../../src/nes/apu'
 import {Util} from '../../src/util/util'
 import {AudioManager} from '../../src/util/audio_manager'
 
 import {AudioContext} from './audio_context'
 
-const DEFAULT_MASTER_VOLUME = 0.125
+const sdl = __non_webpack_require__('@kmamal/sdl')
+
+const DEFAULT_MASTER_VOLUME = 0.25
 
 const KEY_X = 27
 const KEY_Z = 29
@@ -34,13 +35,6 @@ const kScanCode2PadValue: Record<number, number> = {
 }
 
 function createMyApp() {
-  const NS = __non_webpack_require__('node-sdl2')
-  const SDL = NS.require('SDL')
-  const SDL_render = NS.require('SDL_render')
-  const SDL_pixels = NS.require('SDL_pixels')
-  const App = NS.createAppWithFlags(SDL.SDL_InitFlags.SDL_INIT_EVERYTHING)
-  const Window = NS.window
-
   const WIDTH = 256
   const HEIGHT = 240
 
@@ -50,28 +44,30 @@ function createMyApp() {
 
   class MyApp {
     private win: any
-    private texture: any
     private pixels = new Uint8Array(WIDTH * HEIGHT * 4)
+    private buffer: Buffer
+    private u8buffer: Uint8Array
     private prevTime = 0
 
+    protected cartridge: Cartridge
     private nes: Nes
     private pad = 0
+    private timer: NodeJS.Timer
 
     private audioManager = new AudioManager()
 
+    protected prgBanks = new Int32Array([0, 1, -2, -1])
+    protected prgBanksLast = new Int32Array([0, 1, -2, -1])
+
     constructor() {
-      this.win = new Window({
-        title: TITLE,
-        w: WIDTH * 2,
-        h: HEIGHT * 2,
-      })
+      this.buffer = Buffer.alloc(0)  // Dummy
+      this.u8buffer = new Uint8Array(this.buffer.buffer)
+
+      this.win = sdl.video.createWindow({ width: WIDTH * 3, height: HEIGHT * 3, title: TITLE, resizable: true, vsync: true })
       this.win.on('close', () => {
-        App.quit()
+        clearInterval(this.timer)
       })
-      this.win.on('change', () => {
-        this.render()
-      })
-      this.win.on('keydown', (key) => {
+      this.win.on('keyDown', (key) => {
         if (key.scancode === ESCAPE)
           process.exit(0)
 
@@ -79,30 +75,52 @@ function createMyApp() {
         if (v)
           this.pad |= v
       })
-      this.win.on('keyup', (key) => {
+      this.win.on('keyUp', (key) => {
         const v = kScanCode2PadValue[key.scancode]
         if (v)
           this.pad &= ~v
       })
+      this.win.on('resize', ({width, height}) => {
+        this.buffer = Buffer.alloc(width * 4 * height)
+        this.u8buffer = new Uint8Array(this.buffer.buffer)
+      })
 
-      this.texture = this.win.render.createTexture(
-        256, 240, SDL_pixels.PixelFormat.ABGR8888, SDL_render.SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING)
-
-      this.nes = Nes.create()
+      this.nes = new Nes()
     }
 
-    public run(romData: Buffer): void {
-      const result = this.nes.setRomData(romData)
-      if (result !== true)
-        throw result
+    public run(romData: Uint8Array): void {
+      if (!Cartridge.isRomValid(romData))
+        throw 'Invalid format'
+
+      const cartridge = new Cartridge(romData)
+      if (!Nes.isMapperSupported(cartridge.mapperNo))
+        throw `Mapper ${cartridge.mapperNo} not supported`
+
+      this.cartridge = cartridge
+      this.nes.setCartridge(cartridge)
       this.nes.reset()
 
       this.setupAudioManager()
-      this.nes.setVblankCallback((leftV) => { this.onVblank(leftV) })
+      this.nes.setEventCallback((event: NesEvent, param?: any) => {
+        switch (event) {
+        case NesEvent.VBlank:
+          this.onVblank(param as number)
+          break
+        case NesEvent.PrgBankChange:
+          {
+            const value: number = param
+            const bank = (value >> 8) & 3
+            const page = value & 0xff
+            this.prgBanks[bank] = page
+          }
+          break
+        default: break
+        }
+      })
 
-      this.prevTime = Date.now()
-      setInterval(() => {
-        const now = Date.now()
+      this.prevTime = performance.now()
+      this.timer = setInterval(() => {
+        const now = performance.now()
         const elapsedTime = now - this.prevTime
         this.loop(elapsedTime)
         this.prevTime = now
@@ -120,19 +138,40 @@ function createMyApp() {
       if (leftV < 1)
         this.render()
       this.updateAudio()
+
+      {  // Swap
+        const tmp = this.prgBanks
+        this.prgBanks = this.prgBanksLast
+        this.prgBanksLast = tmp
+      }
     }
 
     private render(): void {
       this.nes.render(this.pixels)
 
-      const pitch = WIDTH * 4
-      this.texture.update(null, this.pixels, pitch)
-      this.win.render.copy(this.texture, null, null)
-
-      this.win.render.present()
+      const {width, height} = this.win
+      const u8buf = this.u8buffer
+      const SHIFT = 12
+      const stepX = ((WIDTH << SHIFT) / width) | 0
+      const stepY = ((HEIGHT << SHIFT) / height) | 0
+      let dst = 0
+      let sy = 0
+      for (let i = 0; i < height; ++i, sy += stepY) {
+        let sx = 0
+        for (let j = 0; j < width; ++j, sx += stepX) {
+          const src = ((sy >> SHIFT) * WIDTH + (sx >> SHIFT)) * 4
+          u8buf[dst++] = this.pixels[src]
+          u8buf[dst++] = this.pixels[src + 1]
+          u8buf[dst++] = this.pixels[src + 2]
+          u8buf[dst++] = 255
+        }
+      }
+      this.win.render(width, height, width * 4, 'rgba32', this.buffer)
     }
 
     private setupAudioManager(): void {
+      this.audioManager.setCartridge(this.cartridge)
+
       const waveTypes = this.nes.getChannelWaveTypes()
       for (const type of waveTypes) {
         this.audioManager.addChannel(type)
@@ -141,11 +180,18 @@ function createMyApp() {
 
     private updateAudio(): void {
       const audioManager = this.audioManager
+
+      this.sendPrgBankChanges()
+
       const nes = this.nes
       const waveTypes = this.nes.getChannelWaveTypes()
-      const count = waveTypes.length
-      for (let ch = 0; ch < count; ++ch) {
+      for (let ch = 0; ch < waveTypes.length; ++ch) {
         const channel = nes.getSoundChannel(ch)
+        const enabled = channel.isEnabled()
+        audioManager.setChannelEnable(ch, enabled)
+        if (!enabled)
+          continue
+
         const volume = channel.getVolume()
         audioManager.setChannelVolume(ch, volume)
         if (volume > 0) {
@@ -168,10 +214,23 @@ function createMyApp() {
             }
             break
           case WaveType.DMC:
-            // TODO:
+            {
+              const dmc = channel as unknown as IDeltaModulationChannel
+              audioManager.setChannelDmcWrite(ch, dmc.getWriteBuf())
+            }
             break
           }
         }
+      }
+
+      AudioManager.getContext()?.update(1.0 / 60)
+    }
+
+    private sendPrgBankChanges(): void {
+      for (let bank = 0; bank < 4; ++bank) {
+        const page = this.prgBanks[bank]
+        if (page !== this.prgBanksLast[bank])
+          this.audioManager.onPrgBankChange(bank, page)
       }
     }
   }
@@ -179,34 +238,37 @@ function createMyApp() {
   return new MyApp()
 }
 
-function run(fileName: string): void {
-  // TODO: Use util.promisify
-  new Promise(
-    (resolve, reject) => {
-      fs.readFile(fileName, (err: any, data: Buffer) => err ? reject(err) : resolve(data))
-    })
-    .then((data: Buffer) => {
-      if (Util.getExt(fileName).toLowerCase() !== 'zip')
-        return Promise.resolve(data)
+async function loadNesRomData(fileName: string): Promise<Uint8Array> {
+  switch (Util.getExt(fileName).toLowerCase()) {
+  case 'nes':
+    return await fs.readFile(fileName)
 
+  case 'zip':
+    {
+      const data = await fs.readFile(fileName)
       const zip = new JSZip()
-      return zip.loadAsync(data)
-        .then((loadedZip: JSZip) => {
-          for (let fn of Object.keys(loadedZip.files)) {
-            if (Util.getExt(fn).toLowerCase() === 'nes')
-              return loadedZip.files[fn].async('uint8array')
-          }
-          return Promise.reject('No .nes file included')
-        })
-    })
-    .then((romData: Buffer) => {
-      const myApp = createMyApp()
-      myApp.run(romData)
-    })
-    .catch((error: any) => {
-      console.error(error)
-      process.exit(1)
-    })
+      const loadedZip = await zip.loadAsync(data)
+      for (let fn of Object.keys(loadedZip.files)) {
+        if (Util.getExt(fn).toLowerCase() === 'nes')
+          return loadedZip.files[fn].async('uint8array')
+      }
+      return Promise.reject(`No .nes file included in ${fileName}`)
+    }
+
+  default:
+    return Promise.reject('.nes or .zip file required')
+  }
+}
+
+async function run(fileName: string): Promise<void> {
+  try {
+    const romData = await loadNesRomData(fileName)
+    const myApp = createMyApp()
+    myApp.run(romData)
+  } catch (error) {
+    console.error(error)
+    process.exit(1)
+  }
 }
 
 if (process.argv.length < 3) {
@@ -216,5 +278,6 @@ if (process.argv.length < 3) {
 
 AudioManager.setUp(AudioContext)
 AudioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
+AudioManager.enableAudio()
 
 run(process.argv[2])

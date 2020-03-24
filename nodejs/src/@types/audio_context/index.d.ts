@@ -1,3 +1,5 @@
+declare function __non_webpack_require__(fn: string)
+
 interface AudioNode {
   readonly context: AudioContext
 
@@ -30,14 +32,16 @@ interface DelayNode extends AudioNode {
   delayTime: AudioParam
 }
 
+interface ScriptProcessorNode extends AudioNode {
+  onaudioprocess: Function
+}
+
 interface AudioDestinationNode extends AudioNode {
 }
 
 interface AnalyserNode extends AudioNode {
 }
 
-type ScriptProcessorNode = any
-declare const ScriptProcessorNode: ScriptProcessorNode
 type AudioWorkletNode = any
 declare const AudioWorkletNode: AudioWorkletNode
 
@@ -53,4 +57,7 @@ interface AudioContext {
   createDelay(): DelayNode
   createAnalyser(): AnalyserNode
   createScriptProcessor(size: number, a: number, b: number): ScriptProcessorNode
+
+  // Additional method:
+  update(dt: number): void
 }
