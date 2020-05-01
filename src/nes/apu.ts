@@ -50,16 +50,20 @@ const CPU_CLOCK = 1789773  // Hz
 const DMC_IRQ_ENABLE = 0x80
 
 const CHANNEL_COUNT = 5
-const CH_PULSE1 = 0
-const CH_PULSE2 = 1
-const CH_TRIANGLE = 2
-const CH_NOISE = 3
-const CH_DMC = 4
+const enum ApuChannel {
+  PULSE1 = 0,
+  PULSE2 = 1,
+  TRIANGLE = 2,
+  NOISE = 3,
+  DMC = 4,
+}
 
-const REG_STATUS = 0
-const REG_SWEEP = 1
-const REG_TIMER_L = 2
-const REG_TIMER_H = 3
+const enum Reg {
+  STATUS = 0,
+  SWEEP = 1,
+  TIMER_L = 2,
+  TIMER_H = 3,
+}
 
 export const kChannelTypes: ChannelType[] = [
   ChannelType.PULSE,
@@ -120,7 +124,7 @@ class Channel {
     this.stopped = true
   }
 
-  public write(reg: number, value: Byte) {
+  public write(reg: Reg, value: Byte) {
     this.regs[reg] = value
   }
 
@@ -152,21 +156,21 @@ class PulseChannel extends Channel {
     this.envelopeDivider = this.envelopeCounter = 0
   }
 
-  public write(reg: number, value: Byte) {
+  public write(reg: Reg, value: Byte) {
     super.write(reg, value)
 
     switch (reg) {
-    case REG_STATUS:
+    case Reg.STATUS:
       this.stopped = false
       if ((value & CONSTANT_VOLUME) === 0) {
         this.envelopeDivider = value & 0x0f
         this.envelopeCounter = 0x0f
       }
       break
-    case REG_SWEEP:
+    case Reg.SWEEP:
       this.sweepCounter = (value >> 4) & 7
       break
-    case REG_TIMER_H:
+    case Reg.TIMER_H:
       this.lengthCounter = kLengthTable[value >> 3]
       this.stopped = false
       this.envelopeReset = true
@@ -180,19 +184,19 @@ class PulseChannel extends Channel {
     if (this.stopped)
       return 0
 
-    let v = this.regs[REG_STATUS]
+    let v = this.regs[Reg.STATUS]
     if ((v & CONSTANT_VOLUME) !== 0)
       return (v & 15) / 15
     return this.envelopeCounter / 15
   }
 
   public getFrequency(): number {
-    const value = this.regs[REG_TIMER_L] + ((this.regs[REG_TIMER_H] & 7) << 8)
+    const value = this.regs[Reg.TIMER_L] + ((this.regs[Reg.TIMER_H] & 7) << 8)
     return ((CPU_CLOCK / 16) / (value + 1)) | 0
   }
 
   public getDutyRatio(): number {
-    return kPulseDutyRatio[(this.regs[REG_STATUS] >> 6) & 3]
+    return kPulseDutyRatio[(this.regs[Reg.STATUS] >> 6) & 3]
   }
 
   public update(): void {
@@ -205,7 +209,7 @@ class PulseChannel extends Channel {
   }
 
   private updateLength(): void {
-    let v = this.regs[REG_STATUS]
+    let v = this.regs[Reg.STATUS]
     if ((v & LENGTH_COUNTER_HALT) !== 0)
       return
     let l = this.lengthCounter
@@ -221,13 +225,13 @@ class PulseChannel extends Channel {
   }
 
   private updateEnvelope(): void {
-    if ((this.regs[REG_STATUS] & CONSTANT_VOLUME) !== 0)
+    if ((this.regs[Reg.STATUS] & CONSTANT_VOLUME) !== 0)
       return
 
     if (this.envelopeReset) {
       this.envelopeReset = false
       this.envelopeCounter = 0x0f
-      this.envelopeDivider = this.regs[REG_STATUS] & 0x0f
+      this.envelopeDivider = this.regs[Reg.STATUS] & 0x0f
       return
     }
 
@@ -237,12 +241,12 @@ class PulseChannel extends Channel {
     } else {
       if (this.envelopeCounter > 0) {
         --this.envelopeCounter
-        this.envelopeDivider += this.regs[REG_STATUS] & 0x0f
+        this.envelopeDivider += this.regs[Reg.STATUS] & 0x0f
       } else {
         this.envelopeCounter = 0
-        if ((this.regs[REG_STATUS] & ENVELOPE_LOOP) !== 0) {
+        if ((this.regs[Reg.STATUS] & ENVELOPE_LOOP) !== 0) {
           this.envelopeCounter = 0x0f
-          this.envelopeDivider += this.regs[REG_STATUS] & 0x0f
+          this.envelopeDivider += this.regs[Reg.STATUS] & 0x0f
         }
       }
     }
@@ -250,7 +254,7 @@ class PulseChannel extends Channel {
 
   // APU Sweep: http://wiki.nesdev.com/w/index.php/APU_Sweep
   private sweep(): void {
-    const sweep = this.regs[REG_SWEEP]
+    const sweep = this.regs[Reg.SWEEP]
     if ((sweep & 0x80) === 0)  // Not enabled.
       return
 
@@ -260,7 +264,7 @@ class PulseChannel extends Channel {
     if (c >= count) {
       c -= count
 
-      let freq = this.regs[REG_TIMER_L] + ((this.regs[REG_TIMER_H] & 7) << 8)
+      let freq = this.regs[Reg.TIMER_L] + ((this.regs[Reg.TIMER_H] & 7) << 8)
       const shift = sweep & 7
       if (shift > 0) {
         const add = freq >> shift
@@ -273,8 +277,8 @@ class PulseChannel extends Channel {
           if (freq < 8)
             this.stopped = true
         }
-        this.regs[REG_TIMER_L] = freq & 0xff
-        this.regs[REG_TIMER_H] = (this.regs[REG_TIMER_H] & ~7) | ((freq & 0x0700) >> 8)
+        this.regs[Reg.TIMER_L] = freq & 0xff
+        this.regs[Reg.TIMER_H] = (this.regs[Reg.TIMER_H] & ~7) | ((freq & 0x0700) >> 8)
       }
 
       c -= 2  // 2 sequences per frame
@@ -289,13 +293,13 @@ class PulseChannel extends Channel {
 class TriangleChannel extends Channel {
   private lengthCounter = 0
 
-  public write(reg: number, value: Byte) {
+  public write(reg: Reg, value: Byte) {
     super.write(reg, value)
 
     switch (reg) {
-    case REG_STATUS:
-    case REG_TIMER_H:
-      this.lengthCounter = this.regs[REG_STATUS] & 0x7f
+    case Reg.STATUS:
+    case Reg.TIMER_H:
+      this.lengthCounter = this.regs[Reg.STATUS] & 0x7f
       this.stopped = this.lengthCounter <= 0
       break
     default:
@@ -310,7 +314,7 @@ class TriangleChannel extends Channel {
   }
 
   public getFrequency(): number {
-    const value = this.regs[REG_TIMER_L] + ((this.regs[REG_TIMER_H] & 7) << 8)
+    const value = this.regs[Reg.TIMER_L] + ((this.regs[Reg.TIMER_H] & 7) << 8)
     return ((CPU_CLOCK / 32) / (value + 1)) | 0
   }
 
@@ -322,7 +326,7 @@ class TriangleChannel extends Channel {
   }
 
   private updateLength(): void {
-    let v = this.regs[REG_STATUS]
+    let v = this.regs[Reg.STATUS]
     if ((v & LENGTH_COUNTER_HALT_TRI) !== 0)
       return
     let l = this.lengthCounter
@@ -341,11 +345,11 @@ class TriangleChannel extends Channel {
 class NoiseChannel extends Channel {
   private lengthCounter = 0
 
-  public write(reg: number, value: Byte) {
+  public write(reg: Reg, value: Byte) {
     super.write(reg, value)
 
     switch (reg) {
-    case REG_TIMER_H:  // Set length.
+    case Reg.TIMER_H:  // Set length.
       this.lengthCounter = kLengthTable[value >> 3]
       this.stopped = false
       break
@@ -358,14 +362,14 @@ class NoiseChannel extends Channel {
     if (this.stopped)
       return 0
 
-    let v = this.regs[REG_STATUS]
+    let v = this.regs[Reg.STATUS]
     if ((v & CONSTANT_VOLUME) !== 0)
       return (v & 15) / 15
     return 1
   }
 
   public getFrequency(): number {
-    const period = this.regs[REG_TIMER_L] & 15
+    const period = this.regs[Reg.TIMER_L] & 15
     return kNoiseFrequencies[period]
   }
 
@@ -377,7 +381,7 @@ class NoiseChannel extends Channel {
   }
 
   private updateLength(): void {
-    let v = this.regs[REG_STATUS]
+    let v = this.regs[Reg.STATUS]
     if ((v & LENGTH_COUNTER_HALT) !== 0)
       return
     let l = this.lengthCounter
@@ -414,11 +418,11 @@ class DmcChannel extends Channel {
     }
   }
 
-  public write(reg: number, value: Byte) {
+  public write(reg: Reg, value: Byte) {
     super.write(reg, value)
 
     switch (reg) {
-    case REG_TIMER_H:  // Set length.
+    case Reg.TIMER_H:  // Set length.
       this.regsLengthCounter = ((value << 4) + 1) * 8
       this.stopped = false
       break
@@ -431,14 +435,14 @@ class DmcChannel extends Channel {
     if (this.stopped)
       return 0
 
-    let v = this.regs[REG_STATUS]
+    let v = this.regs[Reg.STATUS]
     if ((v & CONSTANT_VOLUME) !== 0)
       return (v & 15) / 15
     return 1
   }
 
   public getFrequency(): number {
-    const period = this.regs[REG_TIMER_L] & 15
+    const period = this.regs[Reg.TIMER_L] & 15
     return kNoiseFrequencies[period]
   }
 
@@ -484,11 +488,11 @@ export class Apu {
   private gamePad = new GamePad()
 
   constructor(private triggerIrq: () => void) {
-    this.channels[CH_PULSE1] = new PulseChannel()
-    this.channels[CH_PULSE2] = new PulseChannel()
-    this.channels[CH_TRIANGLE] = new TriangleChannel()
-    this.channels[CH_NOISE] = new NoiseChannel()
-    this.channels[CH_DMC] = new DmcChannel(triggerIrq)
+    this.channels[ApuChannel.PULSE1] = new PulseChannel()
+    this.channels[ApuChannel.PULSE2] = new PulseChannel()
+    this.channels[ApuChannel.TRIANGLE] = new TriangleChannel()
+    this.channels[ApuChannel.NOISE] = new NoiseChannel()
+    this.channels[ApuChannel.DMC] = new DmcChannel(triggerIrq)
   }
 
   public getChannelTypes(): ChannelType[] {
@@ -587,7 +591,7 @@ export class Apu {
   }
 
   public onHblank(hcount: number): void {
-    (this.channels[CH_DMC] as DmcChannel).onHblank(hcount)
+    (this.channels[ApuChannel.DMC] as DmcChannel).onHblank(hcount)
 
     switch (hcount) {
     case VBLANK_START:
