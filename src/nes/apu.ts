@@ -235,18 +235,17 @@ class PulseChannel extends Channel {
       return
     }
 
-    const DEC = 2
-    if (this.envelopeDivider >= DEC) {
-      this.envelopeDivider -= DEC
-    } else {
+    const DEC = 4
+    this.envelopeDivider -= DEC
+    if (this.envelopeDivider <= 0) {
+      this.envelopeDivider += this.regs[Reg.STATUS] & 0x0f
       if (this.envelopeCounter > 0) {
         --this.envelopeCounter
-        this.envelopeDivider += this.regs[Reg.STATUS] & 0x0f
       } else {
-        this.envelopeCounter = 0
         if ((this.regs[Reg.STATUS] & ENVELOPE_LOOP) !== 0) {
           this.envelopeCounter = 0x0f
-          this.envelopeDivider += this.regs[Reg.STATUS] & 0x0f
+        } else {
+          this.envelopeCounter = 0
         }
       }
     }
