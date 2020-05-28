@@ -23,7 +23,7 @@ const READ_DATA            = 1
 const DRIVE_STATUS         = 2
 const EXTERNAL_CONNECTOR_R = 3
 
-const IRQ_CTRL_REPEAT  = 0 << 1
+const IRQ_CTRL_REPEAT  = 1 << 0
 const IRQ_CTRL_ENABLED = 1 << 1
 
 const MASTER_IO_ENABLE_DISK  = 1 << 0
