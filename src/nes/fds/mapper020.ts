@@ -8,6 +8,8 @@ import {Mapper, MapperOptions} from '../mapper/mapper'
 import {Nes} from '../nes'
 import {MirrorMode} from '../ppu/types'
 
+// import {Util} from '../../util/util'
+
 // $402x: write-only registers
 const IRQ_RELOAD_L         = 0
 const IRQ_RELOAD_H         = 1
@@ -175,19 +177,16 @@ export class Mapper020 extends Mapper {
   }
 
   public onHblank(_hcount: number): void {
-    if ((this.regs[IRQ_CTRL] & IRQ_CTRL_ENABLED) !== 0 &&
-        (this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) !== 0) {
+    if ((this.regs[IRQ_CTRL] & IRQ_CTRL_ENABLED) !== 0 /* &&
+        (this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) !== 0*/) {
       this.irqCounter -= 185  // TODO: Calculate
       if (this.irqCounter <= 0) {
         this.options.cpu.requestIrq(IrqType.EXTERNAL)
         this.timerIrqOccurred = true
 console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, nextCounter=${(this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]}`)
-        if ((this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0) {
-          this.irqCounter = (this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]
-        } else {
-          this.irqCounter = 0
+        this.irqCounter = (this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]
+        if ((this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) === 0)
           this.regs[IRQ_CTRL] &= ~IRQ_CTRL_ENABLED
-        }
       }
     }
 
@@ -320,19 +319,22 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
 
     switch (reg) {
     case IRQ_CTRL:
-      // if ((this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) !== 0) {
-        if ((value & IRQ_CTRL_ENABLED) !== 0) {
-          this.irqCounter = (this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]
-        } else {
-          this.irqCounter = 0
-          this.timerIrqOccurred = false
-        }
-      // }
+      if ((this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) === 0)
+        this.regs[reg] = value &= ~IRQ_CTRL_ENABLED
+
+      if ((value & IRQ_CTRL_ENABLED) !== 0) {
+        this.irqCounter = (this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]
+      } else {
+        this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
+      }
       break
     case MASTER_IO_ENABLE:
       if ((value & MASTER_IO_ENABLE_DISK) === 0) {
         this.irqCounter = 0
         this.timerIrqOccurred = false
+        this.regs[IRQ_CTRL] &= ~IRQ_CTRL_ENABLED
+        this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
+        this.options.cpu.clearIrqRequest(IrqType.FDS)
       }
       break
     case WRITE_DATA:

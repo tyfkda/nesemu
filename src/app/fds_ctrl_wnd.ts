@@ -59,7 +59,7 @@ export class FdsCtrlWnd extends Wnd {
       this.fds.eject()
       setTimeout(() => {
         this.fds.setSide(select.selectedIndex)
-      }, 100)
+      }, 1000)
     })
   }
 }
