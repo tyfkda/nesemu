@@ -41,14 +41,12 @@ function getMapperNo(romData: Uint8Array): number {
 
 function loadPrgRom(romData: Uint8Array): Uint8Array {
   const start = 16, size = romData[4] * (16 * 1024)
-  const prg = romData.slice(start, start + size)
-  return new Uint8Array(prg)
+  return romData.slice(start, start + size)
 }
 
 function loadChrRom(romData: Uint8Array): Uint8Array {
   const start = 16 + romData[4] * (16 * 1024), size = romData[5] * (8 * 1024)
-  const chr = romData.slice(start, start + size)
-  return new Uint8Array(chr)
+  return romData.slice(start, start + size)
 }
 
 export default class Nes implements PrgBankController {
