@@ -31,10 +31,8 @@ function getHblankCount(cpuCycle: number): number {
 
 function isRomValid(romData: Uint8Array): boolean {
   // Check header.
-  if (!(romData[0] === 0x4e && romData[1] === 0x45 && romData[2] === 0x53 &&
-        romData[3] === 0x1a))
-    return false
-  return true
+  return (romData[0] === 0x4e && romData[1] === 0x45 && romData[2] === 0x53 &&
+          romData[3] === 0x1a)
 }
 
 function getMapperNo(romData: Uint8Array): number {
