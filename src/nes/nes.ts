@@ -17,8 +17,8 @@ const CPU_HZ = 1789773
 
 const RAM_SIZE = 0x0800
 
-const VBLANK_START = 241
-const VBLANK_NMI = 242
+const VBLANK_START = 240
+const VBLANK_NMI = 241
 const VBLANK_END = 261
 const VRETURN = 262
 const VCYCLE = (VRETURN * 341 / 3) | 0
