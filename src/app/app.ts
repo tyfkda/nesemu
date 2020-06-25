@@ -80,51 +80,6 @@ export default class App {
     this.screenWnd.setPos(x, y)
   }
 
-  protected handleAppEvent(type: AppEvent.Type, param?: any) {
-    switch (type) {
-    case AppEvent.Type.UPDATE:
-      if (!this.isPaused) {
-        const elapsed: number = param
-        this.update(elapsed)
-      }
-      break
-    case AppEvent.Type.RUN:
-      this.nes.getCpu().pause(false)
-      break
-    case AppEvent.Type.PAUSE:
-      this.nes.getCpu().pause(true)
-      this.muteAudio()
-      break
-    case AppEvent.Type.STEP:
-      this.nes.step(0)
-      break
-    case AppEvent.Type.RESET:
-      this.nes.reset()
-      break
-    case AppEvent.Type.PAUSE_APP:
-      this.isPaused = true
-      this.muteAudio()
-      break
-    case AppEvent.Type.RESUME_APP:
-      this.isPaused = false
-      break
-    case AppEvent.Type.CLOSE_WND:
-      {
-        const wnd = param as Wnd
-        const key = Object.keys(this.wndMap).find(k => this.wndMap[k] === wnd)
-        if (key != null) {
-          delete this.wndMap[key]
-          if (parseInt(key, 10) === AppWndType.SCREEN) {
-            this.destroy()
-          }
-        }
-      }
-      break
-    default:
-      break
-    }
-  }
-
   public loadRom(romData: Uint8Array): boolean|string {
     const result = this.nes.setRomData(romData)
     if (result !== true)
@@ -290,6 +245,19 @@ export default class App {
     return true
   }
 
+  public setupAudioManager() {
+    if (this.audioManager == null) {
+      this.audioManager = new AudioManager()
+    } else {
+      this.audioManager.release()
+    }
+
+    const channelTypes = this.nes.getSoundChannelTypes()
+    for (const type of channelTypes) {
+      this.audioManager.addChannel(type)
+    }
+  }
+
   protected destroy() {
     for (let wnd of Object.values(this.wndMap))
       wnd.close()
@@ -305,6 +273,51 @@ export default class App {
       this.audioManager.release()
 
     this.subscription.unsubscribe()
+  }
+
+  protected handleAppEvent(type: AppEvent.Type, param?: any) {
+    switch (type) {
+    case AppEvent.Type.UPDATE:
+      if (!this.isPaused) {
+        const elapsed: number = param
+        this.update(elapsed)
+      }
+      break
+    case AppEvent.Type.RUN:
+      this.nes.getCpu().pause(false)
+      break
+    case AppEvent.Type.PAUSE:
+      this.nes.getCpu().pause(true)
+      this.muteAudio()
+      break
+    case AppEvent.Type.STEP:
+      this.nes.step(0)
+      break
+    case AppEvent.Type.RESET:
+      this.nes.reset()
+      break
+    case AppEvent.Type.PAUSE_APP:
+      this.isPaused = true
+      this.muteAudio()
+      break
+    case AppEvent.Type.RESUME_APP:
+      this.isPaused = false
+      break
+    case AppEvent.Type.CLOSE_WND:
+      {
+        const wnd = param as Wnd
+        const key = Object.keys(this.wndMap).find(k => this.wndMap[k] === wnd)
+        if (key != null) {
+          delete this.wndMap[key]
+          if (parseInt(key, 10) === AppWndType.SCREEN) {
+            this.destroy()
+          }
+        }
+      }
+      break
+    default:
+      break
+    }
   }
 
   protected onVblank(leftV: number): void {
@@ -352,18 +365,5 @@ export default class App {
     const n = this.audioManager.getChannelCount()
     for (let ch = 0; ch < n; ++ch)
       this.audioManager.setChannelVolume(ch, 0)
-  }
-
-  public setupAudioManager() {
-    if (this.audioManager == null) {
-      this.audioManager = new AudioManager()
-    } else {
-      this.audioManager.release()
-    }
-
-    const channelTypes = this.nes.getSoundChannelTypes()
-    for (const type of channelTypes) {
-      this.audioManager.addChannel(type)
-    }
   }
 }

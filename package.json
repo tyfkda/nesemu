@@ -58,8 +58,8 @@
     "jest-cli": "~24.9.0",
     "ts-jest": "~24.3.0",
     "ts-loader": "~7.0.5",
-    "tslint": "~5.20.1",
     "ts-node": "~8.10.2",
+    "tslint": "6.1.2",
     "typescript": "~3.9.5",
     "webpack": "~4.43.0",
     "webpack-stream": "~5.2.1"

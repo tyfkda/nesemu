@@ -212,6 +212,18 @@ export default class JsApp extends App {
     this.screenWnd.setPos(x, y)
   }
 
+  public setFile(file: File): void {
+    this.jsNes.setFile(file)
+      .then(() => {
+        this.audioManager = new AudioManager()
+        this.setupAudioManager()
+      })
+  }
+
+  public reload(): void {
+    this.jsNes.reload()
+  }
+
   protected handleAppEvent(type: AppEvent.Type, param?: any) {
     switch (type) {
     case AppEvent.Type.RUN:
@@ -229,18 +241,6 @@ export default class JsApp extends App {
     default:
       return super.handleAppEvent(type, param)
     }
-  }
-
-  public setFile(file: File): void {
-    this.jsNes.setFile(file)
-      .then(() => {
-        this.audioManager = new AudioManager()
-        this.setupAudioManager()
-      })
-  }
-
-  public reload(): void {
-    this.jsNes.reload()
   }
 
   protected update(elapsedTime: number): void {

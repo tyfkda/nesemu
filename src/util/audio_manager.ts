@@ -3,16 +3,16 @@ import {ChannelType} from '../nes/apu'
 abstract class SoundChannel {
   protected gainNode: GainNode
 
+  public constructor(context: AudioContext) {
+    this.gainNode = context.createGain()
+    this.gainNode.gain.setValueAtTime(0, context.currentTime)
+  }
+
   public destroy() {
     if (this.gainNode != null) {
       this.gainNode.disconnect()
       // this.gainNode = null
     }
-  }
-
-  public constructor(context: AudioContext) {
-    this.gainNode = context.createGain()
-    this.gainNode.gain.setValueAtTime(0, context.currentTime)
   }
 
   public start(): void {
@@ -32,19 +32,19 @@ abstract class SoundChannel {
 abstract class OscillatorChannel extends SoundChannel {
   protected oscillator: OscillatorNode
 
+  public constructor(context: AudioContext, destination: AudioNode) {
+    super(context)
+
+    this.oscillator = context.createOscillator()
+    this.setupOscillator(this.oscillator, context, destination)
+  }
+
   public destroy() {
     super.destroy()
     if (this.oscillator != null) {
       this.oscillator.disconnect()
       // this.oscillator = null
     }
-  }
-
-  public constructor(context: AudioContext, destination: AudioNode) {
-    super(context)
-
-    this.oscillator = context.createOscillator()
-    this.setupOscillator(this.oscillator, context, destination)
   }
 
   public start(): void {
