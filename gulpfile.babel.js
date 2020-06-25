@@ -40,7 +40,7 @@ const RELEASE_ASSETS_DIR = `${RELEASE_DIR}/assets`
 
 function convertHtml(buildTarget, dest) {
   return gulp.src([SRC_HTML_FILES,
-                   '!' + SRC_HTML_DIR + '/**/_*.html'])
+                   `!${SRC_HTML_DIR}/**/_*.html`])
     .pipe(plumber())
     .pipe(ejs({buildTarget}))
     .pipe(htmlmin({
@@ -192,10 +192,11 @@ gulp.task('default', gulp.series('build', gulp.parallel('server', 'watch')))
 gulp.task('release-build', gulp.series(gulp.parallel('sass', 'copy-res'), () => {
   // Copy resources.
   return gulp.src([`${DEST_DIR}/**/*.*`,
-            `!${DEST_DIR}/index.html`,
-            `!${DEST_DIR}/**/*.map`,
-           ],
-           {base: DEST_DIR})
+                   `!${DEST_DIR}/index.html`,
+                   `!${DEST_DIR}/**/*.js`,
+                   `!${DEST_DIR}/**/*.map`,
+                  ],
+                  {base: DEST_DIR})
     .pipe(gulp.dest(RELEASE_DIR))
 }))
 
@@ -207,7 +208,7 @@ gulp.task('release-html', () => {
 gulp.task('release-ts', () => {
   // Concatenate TypeScript into single 'assets/main.ts' file.
   const config = clone(webpackConfig)
-  delete config.output.sourceMapFilename
+  // delete config.output.sourceMapFilename
   return gulp.src(`${SRC_TS_DIR}/main.ts`)
     .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(RELEASE_ASSETS_DIR))
