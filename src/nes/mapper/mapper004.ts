@@ -87,6 +87,7 @@ export class Mapper004 extends Mapper {
     case '6c0cd447297e95e45db35a4373dbeae1':  // Babel no Tou
     case 'e791b12fc3419a2e2f8a5ed64b210d72':  // Dragon Spirit
     case '44c206c61ff37406815f21b922e105c7':  // Family Pinball
+    case '98b3778d1e6045d2a3350eb7eb3b39fc':  // Genpei Touma Den
       mirror = MirrorMode.HORZ
       break
     default:
