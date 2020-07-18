@@ -148,7 +148,6 @@ export default class Ppu {
   private hstatusMgr = new HStatusMgr()
 
   private scrollTemp: Word = 0
-  private scrollLatch: Word = 0
   private hclipZero = false
 
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
@@ -298,14 +297,9 @@ export default class Ppu {
         this.incScrollCounter()
         this.scrollTemp = ((this.scrollTemp & ~0x0c00) |
                            ((value & PpuCtrlBit.BASE_NAMETABLE_ADDRESS) << 10))
-        this.scrollLatch = this.scrollTemp
         // At dot 257 of each scanline:
         const scrollCurr = ((this.hstatusMgr.current.scrollCurr & ~0x041f) |
                             (this.scrollTemp & 0x041f))
-        // this.scrollCurr = scrollCurr
-        // if (this.hcount >= 280 && this.hcount < 304) {
-        //   this.scrollCurr = (this.scrollCurr & ~0x7be0) | (this.scrollTemp & 0x7be0)
-        // }
 
         this.addHevent(HEventType.PPU_CTRL, this.regs[PpuReg.CTRL])
         this.addHevent(HEventType.SCROLL_CURR, scrollCurr)
@@ -326,7 +320,6 @@ export default class Ppu {
       this.incScrollCounter()
       if (this.latch === 0) {
         this.scrollTemp = (this.scrollTemp & ~0x001f) | (value >> 3)
-        this.scrollLatch = this.scrollTemp
         this.addHevent(HEventType.SCROLL_FINE_X, value & 7)
         // At dot 257 of each scanline:
         const scrollCurr = ((this.hstatusMgr.current.scrollCurr & ~0x041f) |
@@ -335,7 +328,6 @@ export default class Ppu {
       } else {
         this.scrollTemp = ((this.scrollTemp & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
                            ((value & 0x07) << 12))
-        this.scrollLatch = this.scrollTemp
         if (this.hclipZero)
           this.addHevent(HEventType.SCROLL_CURR, this.scrollTemp)
       }
@@ -344,10 +336,8 @@ export default class Ppu {
     case PpuReg.ADDR:
       if (this.latch === 0) {
         this.scrollTemp = (this.scrollTemp & ~0x7f00) | ((value & 0x3f) << 8)
-        this.scrollLatch = this.scrollTemp
       } else {
         this.scrollTemp = (this.scrollTemp & ~0x00ff) | value
-        this.scrollLatch = this.scrollTemp
         this.ppuAddr = this.scrollTemp
 
         this.addHevent(HEventType.SCROLL_CURR, this.scrollTemp)
@@ -386,7 +376,7 @@ export default class Ppu {
   public clearVBlank(): void {
     this.regs[PpuReg.STATUS] &= ~(PpuStatusBit.VBLANK | PpuStatusBit.SPRITE0HIT)
 
-    this.addHevent(HEventType.SCROLL_CURR, this.scrollLatch)
+    this.addHevent(HEventType.SCROLL_CURR, this.scrollTemp)
   }
 
   public interruptEnable(): boolean {
@@ -666,7 +656,6 @@ export default class Ppu {
     if (dy <= 0)
       return
 
-    this.scrollTemp = incScroll(this.scrollTemp, dy)
     this.addHevent(HEventType.SCROLL_CURR, incScroll(this.hstatusMgr.current.scrollCurr, dy))
   }
 
