@@ -295,7 +295,8 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
       }
     case DRIVE_STATUS:
       {
-        let val = DRIVE_STATUS_DISK_NOT_INSERTED | DRIVE_STATUS_DISK_NOT_READY | DRIVE_STATUS_DISK_PROTECTED
+        let val = (DRIVE_STATUS_DISK_NOT_INSERTED | DRIVE_STATUS_DISK_NOT_READY |
+                   DRIVE_STATUS_DISK_PROTECTED)
         if (this.image != null) {
           val = 0
           if (!this.scanningDisk)

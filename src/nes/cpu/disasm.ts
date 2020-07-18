@@ -71,7 +71,8 @@ export const kOpcode: {[key: number]: string} = {
   [OpType.NOP]: 'NOP',
 }
 
-export default function disassemble(inst: Instruction, mem: Uint8Array, start: number, pc: number): string
+export default function disassemble(
+  inst: Instruction, mem: Uint8Array, start: number, pc: number): string
 {
   let operand = ''
   switch (inst.addressing) {

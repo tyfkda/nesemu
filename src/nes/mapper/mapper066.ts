@@ -23,9 +23,9 @@ export class Mapper066 extends Mapper {
   }
 
   public reset() {
-    //const BANK_BIT = 15
-    //const BANK_SIZE = 1 << BANK_BIT
-    //const size = this.options.prgSize
+    // const BANK_BIT = 15
+    // const BANK_SIZE = 1 << BANK_BIT
+    // const size = this.options.prgSize
     this.setPrgBank(0)
   }
 

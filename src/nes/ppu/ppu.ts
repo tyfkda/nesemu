@@ -268,8 +268,8 @@ export default class Ppu {
         if (PALET_ADR <= addr && addr <= PALET_END_ADR) {
           result = this.readPpuDirect(addr)  // Palette read shouldn't be buffered like other VRAM
           // Palette read should also read VRAM into read buffer
-          this.bufferedValue = this.readPpuDirect(getPpuAddr(ppuAddr - 0x1000,
-                                                             this.hstatusMgr.current.mirrorModeBit))
+          this.bufferedValue = this.readPpuDirect(
+            getPpuAddr(ppuAddr - 0x1000, this.hstatusMgr.current.mirrorModeBit))
         } else {
           result = this.bufferedValue
           this.bufferedValue = this.readPpuDirect(addr)
