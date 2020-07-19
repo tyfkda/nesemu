@@ -523,10 +523,9 @@ export class Apu {
     switch (reg) {
     case STATUS_REG:
       {
-        // TODO: Implement.
         let result = this.dmcInterrupt | this.frameInterrupt
         for (let ch = 0; ch < CHANNEL_COUNT; ++ch) {
-          if (this.channels[ch].isPlaying())
+          if ((this.regs[STATUS_REG] & (1 << ch)) !== 0 && this.channels[ch].isPlaying())
             result |= 1 << ch
         }
 
