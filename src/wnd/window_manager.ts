@@ -42,9 +42,12 @@ export default class WindowManager {
     this.root.addEventListener('keydown', this.onKeyDown)
     this.root.addEventListener('keyup', this.onKeyUp)
 
-    this.root.focus()
-
     this.setUpBlur()
+    this.setFocus()
+  }
+
+  public setFocus(): void {
+    this.root.focus()
   }
 
   public isBlur(): boolean {
@@ -141,7 +144,7 @@ export default class WindowManager {
         element.focus()
       } else {  // End
         fscreen.removeEventListener('fullscreenchange', exitHandler, false)
-        this.root.focus()
+        this.setFocus()
       }
     }
     fscreen.addEventListener('fullscreenchange', exitHandler, false)

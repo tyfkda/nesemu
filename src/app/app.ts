@@ -249,7 +249,7 @@ export default class App {
     if (this.audioManager == null) {
       this.audioManager = new AudioManager()
     } else {
-      this.audioManager.release()
+      this.audioManager.releaseAllChannels()
     }
 
     const channelTypes = this.nes.getSoundChannelTypes()

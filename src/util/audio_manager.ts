@@ -177,9 +177,11 @@ function createSoundChannel(
 
 export default class AudioManager {
   private static initialized: boolean = false
+  private static audioContextClass?: AudioContext
   private static context?: AudioContext
   private static masterGainNode: GainNode
   private static analyserNode?: AnalyserNode
+  private static masterVolume = 1.0
 
   private channels = new Array<SoundChannel>()
 
@@ -189,15 +191,27 @@ export default class AudioManager {
 
     if (audioContextClass == null)
       return
-    AudioManager.context = new audioContextClass() as AudioContext
-    AudioManager.masterGainNode = AudioManager.context.createGain()
-    AudioManager.masterGainNode.gain.setValueAtTime(1, AudioManager.context.currentTime)
-    AudioManager.masterGainNode.connect(AudioManager.context.destination)
+    AudioManager.audioContextClass = audioContextClass
     AudioManager.initialized = true
+  }
+
+  public static enableAudio() {
+    if (AudioManager.context != null)
+      return
+    const audioContextClass: any = AudioManager.audioContextClass
+    if (audioContextClass != null) {
+      AudioManager.context = new audioContextClass() as AudioContext
+      AudioManager.masterGainNode = AudioManager.context.createGain()
+      AudioManager.masterGainNode.gain.setValueAtTime(
+        AudioManager.masterVolume, AudioManager.context.currentTime)
+      AudioManager.masterGainNode.connect(AudioManager.context.destination)
+      AudioManager.initialized = true
+    }
   }
 
   public static setMasterVolume(volume: number): void {
     AudioManager.checkSetUpCalled()
+    AudioManager.masterVolume = volume
 
     const context = AudioManager.context
     if (context)
@@ -227,6 +241,19 @@ export default class AudioManager {
     AudioManager.checkSetUpCalled()
   }
 
+  public release() {
+    this.releaseAllChannels()
+  }
+
+  public releaseAllChannels() {
+    if (this.channels != null) {
+      for (let channel of this.channels) {
+        channel.destroy()
+      }
+      this.channels.length = 0
+    }
+  }
+
   public addChannel(type: ChannelType) {
     const context = AudioManager.context
     if (context == null)
@@ -239,15 +266,6 @@ export default class AudioManager {
 
   public getChannelCount(): number {
     return this.channels.length
-  }
-
-  public release() {
-    if (this.channels != null) {
-      for (let channel of this.channels) {
-        channel.destroy()
-      }
-      this.channels.length = 0
-    }
   }
 
   public setChannelFrequency(channel: number, frequency: number): void {
