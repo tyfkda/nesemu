@@ -370,7 +370,8 @@ export default class Ppu {
   }
 
   public clearVBlank(): void {
-    this.regs[PpuReg.STATUS] &= ~(PpuStatusBit.VBLANK | PpuStatusBit.SPRITE0HIT)
+    this.regs[PpuReg.STATUS] &= ~(PpuStatusBit.VBLANK | PpuStatusBit.SPRITE0HIT |
+                                  PpuStatusBit.SPRITE_OVERFLOW)
 
     this.addHevent(HEventType.SCROLL_CURR, this.scrollTemp)
   }
@@ -571,8 +572,10 @@ export default class Ppu {
           offscreen[pixelIndex] = paletHigh + pal
         }
 
-        if (++n >= MAX_SPRITE_ON_SCANLINE && !this.suppressSpriteFlicker)
+        if (++n >= MAX_SPRITE_ON_SCANLINE && !this.suppressSpriteFlicker) {
+          this.regs[PpuReg.STATUS] |= PpuStatusBit.SPRITE_OVERFLOW
           break
+        }
       }
     }
   }
