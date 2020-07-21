@@ -250,7 +250,7 @@ export default class ScreenWnd extends Wnd {
   }
 
   public getPadStatus(padNo: number): number {
-    if (!this.isTop() || this.wndMgr.IsBlur())
+    if (!this.isTop() || this.wndMgr.isBlur())
       return 0
     return this.padKeyHandler.getStatus(padNo) | GamepadManager.getState(padNo)
   }

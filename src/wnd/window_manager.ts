@@ -16,7 +16,7 @@ export default class WindowManager {
 
   private onKeyDown: (event: Event) => void
   private onKeyUp: (event: Event) => void
-  private isBlur = false
+  private blurred = false
   private rafId = 0  // requestAnimationFrame
 
   public constructor(private root: HTMLElement) {
@@ -47,8 +47,8 @@ export default class WindowManager {
     this.setUpBlur()
   }
 
-  public IsBlur(): boolean {
-    return this.isBlur
+  public isBlur(): boolean {
+    return this.blurred
   }
 
   public getKeyboardManager(): KeyboardManager {
@@ -168,10 +168,10 @@ export default class WindowManager {
 
   private setUpBlur(): void {
     window.addEventListener('focus', () => {
-      this.isBlur = false
+      this.blurred = false
     })
     window.addEventListener('blur', () => {
-      this.isBlur = true
+      this.blurred = true
     })
   }
 
