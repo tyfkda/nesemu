@@ -58,6 +58,20 @@ body {
   float: left;
 }
 
+.nesroot {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.no-outline {
+  outline: none;
+  :focus {
+    outline: none;
+  }
+}
+
 .wnd {
   background-color: gray;
   border: 1px solid #888;
