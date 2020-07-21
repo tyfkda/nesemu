@@ -23,6 +23,8 @@ export default class Util {
   }
 
   public static clamp(x: number, min: number, max: number): number {
+    if (max < min)
+      return min
     return x < min ? min : x > max ? max : x
   }
 
