@@ -151,11 +151,6 @@ export default class Wnd {
   public onEvent(_event: WndEvent, _param?: any): any {
   }
 
-  public setFocus(): Wnd {
-    this.root.focus()
-    return this
-  }
-
   public isTop(): boolean {
     return this.bTop
   }
