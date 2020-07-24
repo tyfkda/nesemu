@@ -1,4 +1,4 @@
-import App from './app/app'
+import App, {Option} from './app/app'
 import AudioManager from './util/audio_manager'
 import {GlobalPaletWnd, EqualizerWnd} from './app/other_wnd'
 import DomUtil from './util/dom_util'
@@ -174,7 +174,7 @@ class Main {
   private createAppFromRom(romData: Uint8Array, name: string, x: number, y: number): void {
     const m = name.match(/^(.*?)(\s*\(.*\))?\.\w+$/)
     const title = m ? m[1] : name
-    const option = {
+    const option: Option = {
       title,
       centerX: x,
       centerY: y,
@@ -197,7 +197,7 @@ class Main {
   {
     const m = name.match(/^(.*?)\s*\(.*\)\.\w*$/)
     const title = m ? m[1] : name
-    const option = {
+    const option: Option = {
       title,
       centerX: x,
       centerY: y,
@@ -293,7 +293,7 @@ class Main {
         return
       dragging = true
       const sliderHeight = (slider.parentNode as HTMLElement).getBoundingClientRect().height
-      const updateSlider = (event2) => {
+      const updateSlider = (event2: MouseEvent) => {
         const [, y] = DomUtil.getMousePosIn(event2, slider.parentNode as HTMLElement)
         const height = Util.clamp(sliderHeight - y, 0, sliderHeight)
         slider.style.height = `${height}px`
@@ -302,7 +302,7 @@ class Main {
       }
       DomUtil.setMouseDragListener({
         move: updateSlider,
-        up: (_event2) => {
+        up: (_event2: MouseEvent) => {
           dragging = false
           if (leave)
             hideSlider()

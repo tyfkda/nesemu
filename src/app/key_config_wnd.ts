@@ -215,7 +215,7 @@ export class GamepadWnd extends GamepadBaseWnd {
 }
 
 const kKeyLabels: {[key: string]: string} = (() => {
-  const table = {
+  const table: Record<string, string> = {
     ArrowUp: '&uarr;',
     ArrowDown: '&darr;',
     ArrowLeft: '&larr;',

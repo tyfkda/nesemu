@@ -114,13 +114,13 @@ export default class DomUtil {
         mouseLeaveTarget.removeEventListener('mouseleave', mouseLeaveDelegate, useCapture)
     }
 
-    const mouseUpDelegate = $event => {
+    const mouseUpDelegate = ($event: MouseEvent) => {
       if (mouseUp)
         mouseUp($event)
       unlisten()
     }
 
-    const mouseLeaveDelegate = (mouseLeave == null ? null : $event => {
+    const mouseLeaveDelegate = (mouseLeave == null ? null : ($event: MouseEvent) => {
       if (mouseLeave && mouseLeave($event))
         unlisten()
     })

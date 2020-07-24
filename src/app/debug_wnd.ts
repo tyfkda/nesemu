@@ -15,7 +15,7 @@ export class RegisterWnd extends Wnd {
   protected valueElems = new Array<HTMLInputElement>()
   protected subscription: Pubsub.Subscription
 
-  private static createPregStr(p): string {
+  private static createPregStr(p: number): string {
     const chrs = 'NV_BDIZC'
     const ss = new Array<string>(8)
     for (let i = 0; i < 8; ++i)

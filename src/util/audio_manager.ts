@@ -54,12 +54,12 @@ abstract class OscillatorChannel extends SoundChannel {
   }
 
   protected abstract setupOscillator(oscillator: OscillatorNode, context: AudioContext,
-                                     destination: AudioNode)
+                                     destination: AudioNode): void
 }
 
 class TriangleChannel extends OscillatorChannel {
   protected setupOscillator(oscillator: OscillatorNode, _context: AudioContext,
-                            destination: AudioNode) {
+                            destination: AudioNode): void {
     oscillator.type = 'triangle'
     oscillator.connect(this.gainNode)
     this.gainNode.connect(destination)
@@ -68,7 +68,7 @@ class TriangleChannel extends OscillatorChannel {
 
 class SawtoothChannel extends OscillatorChannel {
   protected setupOscillator(oscillator: OscillatorNode, _context: AudioContext,
-                            destination: AudioNode) {
+                            destination: AudioNode): void {
     oscillator.type = 'sawtooth'
     oscillator.connect(this.gainNode)
     this.gainNode.connect(destination)
@@ -77,7 +77,7 @@ class SawtoothChannel extends OscillatorChannel {
 
 class NoiseChannel extends OscillatorChannel {
   protected setupOscillator(oscillator: OscillatorNode, context: AudioContext,
-                            destination: AudioNode) {
+                            destination: AudioNode): void {
     const count = 1024
     const real = new Float32Array(count)
     const imag = new Float32Array(count)
@@ -126,7 +126,7 @@ class PulseChannel extends OscillatorChannel {
   }
 
   protected setupOscillator(oscillator: OscillatorNode, context: AudioContext,
-                            destination: AudioNode) {
+                            destination: AudioNode): void {
     oscillator.type = 'sawtooth'
 
     const inverter = context.createGain()
@@ -150,7 +150,7 @@ class PulseChannel extends OscillatorChannel {
 
 class DmcChannel extends OscillatorChannel {
   protected setupOscillator(_oscillator: OscillatorNode, _context: AudioContext,
-                            _destination: AudioNode) {
+                            _destination: AudioNode): void {
     // TODO: Implement
   }
 }
