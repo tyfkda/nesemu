@@ -62,7 +62,7 @@ export const enum WndEvent {
 
 export interface SubmenuItemInfo {
   label: string
-  click: () => void
+  click?: () => void
   checked?: boolean
   disabled?: boolean
 }
@@ -479,23 +479,28 @@ export default class Wnd {
     menuItem.submenu.forEach(submenuItem => {
       const submenuRow = document.createElement('div')
       submenuRow.className = 'submenu-row clearfix'
-
-      if (submenuItem.checked) {
-        const checked = document.createElement('div')
-        checked.className = 'submenu-check'
-        submenuRow.appendChild(checked)
-      }
-
       const subItemElem = document.createElement('div')
-      subItemElem.innerText = submenuItem.label
-      if (submenuItem.disabled) {
-        subItemElem.className = 'menu-item disabled'
+      if (submenuItem.label !== '----') {
+        if (submenuItem.checked) {
+          const checked = document.createElement('div')
+          checked.className = 'submenu-check'
+          submenuRow.appendChild(checked)
+        }
+
+        subItemElem.innerText = submenuItem.label
+        if (submenuItem.disabled) {
+          subItemElem.className = 'menu-item disabled'
+        } else {
+          subItemElem.className = 'menu-item'
+          subItemElem.addEventListener('click', _event => {
+            if (submenuItem.click)
+              submenuItem.click()
+          })
+        }
       } else {
-        subItemElem.className = 'menu-item'
-        subItemElem.addEventListener('click', _event => {
-          if (submenuItem.click)
-            submenuItem.click()
-        })
+        const hr = document.createElement('hr')
+        hr.className = 'submenu-splitter'
+        submenuRow.appendChild(hr)
       }
       submenuRow.appendChild(subItemElem)
       subItemHolder.appendChild(submenuRow)

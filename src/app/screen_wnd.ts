@@ -34,8 +34,10 @@ const enum FileMenuType {
   PAUSE,
   RESET,
   SCREENSHOT,
+  _HR1,
   SAVE,
   LOAD,
+  _HR2,
   QUIT,
 }
 
@@ -43,6 +45,7 @@ const enum ViewMenuType {
   SCALE_1x1,
   SCALE_2x2,
   ADJUST_ASPECT_RATIO,
+  _HR1,
   FULLSCREEN,
 }
 
@@ -332,6 +335,7 @@ export default class ScreenWnd extends Wnd {
               takeScreenshot(this.wndMgr, this)
             },
           },
+          {label: '----'},
           {
             label: 'Save',
             click: () => {
@@ -347,6 +351,7 @@ export default class ScreenWnd extends Wnd {
               this.app.loadData()
             },
           },
+          {label: '----'},
           {
             label: 'Quit',
             click: () => {
@@ -376,6 +381,7 @@ export default class ScreenWnd extends Wnd {
               this.adjustAspectRatio()
             },
           },
+          {label: '----'},
           {
             label: 'Fullscreen',
             click: () => {
@@ -422,6 +428,7 @@ export default class ScreenWnd extends Wnd {
               this.toggleSpriteFlicker()
             },
           },
+          {label: '----'},
           {
             label: 'Palette',
             click: () => {
@@ -447,6 +454,13 @@ export default class ScreenWnd extends Wnd {
             },
           },
           {
+            label: 'FPS',
+            click: () => {
+              this.app.createFpsWnd()
+            },
+          },
+          {label: '----'},
+          {
             label: 'Trace',
             click: () => {
               this.app.createTraceWnd()
@@ -462,12 +476,6 @@ export default class ScreenWnd extends Wnd {
             label: 'Control',
             click: () => {
               this.app.createControlWnd()
-            },
-          },
-          {
-            label: 'FPS',
-            click: () => {
-              this.app.createFpsWnd()
             },
           },
         ],
