@@ -18,10 +18,10 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
 
 function clearCanvasImage(imageData: ImageData) {
   for (let i = 0, n = imageData.width * imageData.height * 4; i < n; ++i) {
-    imageData[i * 4 + 0] = 0
-    imageData[i * 4 + 1] = 0
-    imageData[i * 4 + 2] = 0
-    imageData[i * 4 + 3] = 255
+    imageData.data[i * 4 + 0] = 0
+    imageData.data[i * 4 + 1] = 0
+    imageData.data[i * 4 + 2] = 0
+    imageData.data[i * 4 + 3] = 255
   }
 }
 
@@ -49,6 +49,7 @@ export class NearestNeighborScaler extends Scaler {
     this.canvas = createCanvas(WIDTH, HEIGHT)
     this.context = DomUtil.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
+    clearCanvasImage(this.imageData)
 
     this.canvas.classList.add('pixelated')
   }
