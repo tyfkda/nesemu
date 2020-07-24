@@ -46,7 +46,7 @@ export default class App {
 
   protected title: string
   protected screenWnd: ScreenWnd
-  protected wndMap: {[key: number]: Wnd} = {}
+  protected wndMap = new Array<Wnd | null>()
 
   protected fds?: Fds
 
@@ -260,7 +260,8 @@ export default class App {
 
   protected destroy() {
     for (let wnd of Object.values(this.wndMap))
-      wnd.close()
+      if (wnd != null)
+        wnd.close()
 
     this.cleanUp()
     if (this.option.onClosed)
@@ -306,12 +307,12 @@ export default class App {
     case AppEvent.Type.CLOSE_WND:
       {
         const wnd = param as Wnd
-        const key = Object.keys(this.wndMap).find(k => this.wndMap[k] === wnd)
-        if (key != null) {
-          delete this.wndMap[key]
-          if (parseInt(key, 10) === AppWndType.SCREEN) {
+        const i = this.wndMap.indexOf(wnd)
+        if (i >= 0) {
+          this.wndMap[i] = null
+          if (i === AppWndType.SCREEN)
             this.destroy()
-          }
+          break
         }
       }
       break
