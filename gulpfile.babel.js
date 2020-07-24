@@ -8,7 +8,7 @@ import clone from 'clone'
 import webpack from 'webpack'
 import webpackStream from 'webpack-stream'
 import webpackConfig from './webpack.config.babel'
-import tslint from 'gulp-tslint'
+import eslint from 'gulp-eslint'
 
 // HTML
 import ejs from 'gulp-ejs'
@@ -55,13 +55,9 @@ function convertHtml(buildTarget, dest) {
 
 function lint(glob) {
   return gulp.src(glob)
-    .pipe(tslint({
-      configuration: 'tslint.json',
-      formatter: 'prose',
-    }))
-    .pipe(tslint.report({
-      emitError: false,
-    }))
+    .pipe(eslint())
+    .pipe(eslint.format())
+    .pipe(eslint.failAfterError())
 }
 
 function buildWhenModified(glob, buildFunc) {
