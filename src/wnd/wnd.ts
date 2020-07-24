@@ -364,14 +364,14 @@ export default class Wnd {
             this.onEvent(WndEvent.RESIZE_MOVE, {width, height: height - Wnd.TITLEBAR_HEIGHT})
           },
           up: (_event2: MouseEvent) => {
-            this.root.style['transition-property'] = null
+            this.root.style.transitionProperty = ''
             this.onEvent(WndEvent.RESIZE_END)
           },
         })
 
         this.wndMgr.moveToTop(this)
 
-        this.root.style['transition-property'] = 'none'  // To change size immediately.
+        this.root.style.transitionProperty = 'none'  // To change size immediately.
         return true
       })
       this.root.appendChild(resizeBox)
@@ -437,9 +437,11 @@ export default class Wnd {
           this.onEvent(WndEvent.DRAG_MOVE, {x: x + dragOfsX, y: y + dragOfsY})
         },
         up: (_event2: MouseEvent) => {
+          this.root.style.transitionProperty = ''
           this.onEvent(WndEvent.DRAG_END)
         },
       })
+      this.root.style.transitionProperty = 'none'  // To change position immediately.
       return true
     })
     return {titleBar, titleBtnHolder, titleElem}
