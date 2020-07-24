@@ -156,7 +156,7 @@ export class PaletWnd extends Wnd {
         })
         groups[j + i * (W / 4)] = group
         line.appendChild(group)
-        group.addEventListener('click', (_event) => {
+        group.addEventListener('click', _event => {
           this.select(i, j)
         })
 
@@ -192,8 +192,7 @@ export class NameTableWnd extends Wnd {
   private imageData: ImageData
   private subscription: Pubsub.Subscription
 
-  public constructor(wndMgr: WindowManager, ppu: Ppu, stream: AppEvent.Stream,
-                     vert: boolean) {
+  public constructor(wndMgr: WindowManager, ppu: Ppu, stream: AppEvent.Stream, vert: boolean) {
     const width = 256 * (vert ? 1 : 2)
     const height = 240 * (vert ? 2 : 1)
     super(wndMgr, width, height, 'NameTable')
@@ -449,7 +448,7 @@ export class AudioWnd extends Wnd {
     }
   }
 
-  private createDom(channelCount: number): {root: HTMLElement, dots: HTMLElement[]} {
+  private createDom(channelCount: number): {root: HTMLElement; dots: HTMLElement[]} {
     const W = AudioWnd.W, H = AudioWnd.H
     const root = document.createElement('div')
     const width = W * AudioWnd.OCTAVE * 7

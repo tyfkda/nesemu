@@ -22,19 +22,19 @@ interface GamepadButtonDef {
 }
 
 const kGamepadButtons: GamepadButtonDef[] = [
-  { x: 175, y:  40, padbit: PadBit.A, opt: {type: 'round'} },
-  { x: 130, y:  40, padbit: PadBit.B, opt: {type: 'round'} },
-  { x:  50, y: 110, padbit: PadBit.SELECT, opt: {width: 60, height: 20} },
-  { x: 120, y: 110, padbit: PadBit.START, opt: {width: 60, height: 20} },
-  { x:  40, y:  10, padbit: PadBit.U },
-  { x:  40, y:  70, padbit: PadBit.D },
-  { x:  10, y:  40, padbit: PadBit.L },
-  { x:  70, y:  40, padbit: PadBit.R },
+  {x: 175, y:  40, padbit: PadBit.A, opt: {type: 'round'}},
+  {x: 130, y:  40, padbit: PadBit.B, opt: {type: 'round'}},
+  {x:  50, y: 110, padbit: PadBit.SELECT, opt: {width: 60, height: 20}},
+  {x: 120, y: 110, padbit: PadBit.START, opt: {width: 60, height: 20}},
+  {x:  40, y:  10, padbit: PadBit.U},
+  {x:  40, y:  70, padbit: PadBit.D},
+  {x:  10, y:  40, padbit: PadBit.L},
+  {x:  70, y:  40, padbit: PadBit.R},
 ]
 
 abstract class GamepadBaseWnd extends Wnd {
   private buttons: HTMLElement[]
-  private selectedButton: HTMLElement|null = null
+  private selectedButton: HTMLElement | null = null
 
   private static createButton(parent: HTMLElement, x: number, y: number, name: string,
                               opt: GamepadButtonOption = {}): HTMLElement
@@ -75,7 +75,7 @@ abstract class GamepadBaseWnd extends Wnd {
     this.buttons = kGamepadButtons.map(d => {
       const label = labels[d.padbit]
       const btn = GamepadBaseWnd.createButton(content, d.x, d.y, label, d.opt)
-      btn.addEventListener('click', (event) => {
+      btn.addEventListener('click', event => {
         event.stopPropagation()
         this.setSelectedButton(btn)
       })
@@ -133,7 +133,7 @@ abstract class GamepadBaseWnd extends Wnd {
     }
   }
 
-  private setSelectedButton(btn: HTMLElement|null): void {
+  private setSelectedButton(btn: HTMLElement | null): void {
     if (this.selectedButton != null) {
       this.selectedButton.classList.remove('selected')
     }
@@ -267,10 +267,10 @@ export class KeyConfigWnd extends GamepadBaseWnd {
   }
 
   private static saveSetting() {
-    const data = new Array<(string|null)[]>(2)
+    const data = new Array<(string | null)[]>(2)
     for (let padNo = 0; padNo < 2; ++padNo) {
       const table = PadKeyHandler.getMapping(padNo)
-      const mapping: (string|null)[] = [...Array(8).keys()].map(i => {
+      const mapping: (string | null)[] = [...Array(8).keys()].map(i => {
         const index = table.findIndex(t => t.bit === (1 << i))
         return index >= 0 ? table[index].key : null
       })

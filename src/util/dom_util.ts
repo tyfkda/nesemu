@@ -13,7 +13,7 @@ export default class DomUtil {
       element.removeChild(child)
   }
 
-  public static setStyles(elem: HTMLElement, styles: Object) {
+  public static setStyles(elem: HTMLElement, styles: Record<string, unknown>) {
     Object.assign(elem.style, styles)
   }
 
@@ -95,8 +95,8 @@ export default class DomUtil {
 
   // Register mouse drag event listener.
   public static setMouseDragListener(mouseMove: any, mouseUp?: any, useCapture?: boolean) {
-    let mouseLeave: Function|null = null
-    let mouseLeaveTarget: HTMLElement|null = null
+    let mouseLeave: ((event: MouseEvent) => void) | null = null
+    let mouseLeaveTarget: HTMLElement | null = null
     if (typeof mouseMove === 'object') {
       const option = mouseMove
       mouseMove = option.move
@@ -114,13 +114,13 @@ export default class DomUtil {
         mouseLeaveTarget.removeEventListener('mouseleave', mouseLeaveDelegate, useCapture)
     }
 
-    const mouseUpDelegate = ($event) => {
+    const mouseUpDelegate = $event => {
       if (mouseUp)
         mouseUp($event)
       unlisten()
     }
 
-    const mouseLeaveDelegate = (mouseLeave == null ? null : ($event) => {
+    const mouseLeaveDelegate = (mouseLeave == null ? null : $event => {
       if (mouseLeave && mouseLeave($event))
         unlisten()
     })

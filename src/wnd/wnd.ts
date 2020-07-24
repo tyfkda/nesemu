@@ -61,15 +61,15 @@ export const enum WndEvent {
 }
 
 export interface SubmenuItemInfo {
-  label: string,
-  click: () => void,
-  checked?: boolean,
-  disabled?: boolean,
+  label: string
+  click: () => void
+  checked?: boolean
+  disabled?: boolean
 }
 
 export interface MenuItemInfo {
-  label: string,
-  submenu: Array<SubmenuItemInfo>,
+  label: string
+  submenu: Array<SubmenuItemInfo>
 }
 
 export default class Wnd {
@@ -142,14 +142,13 @@ export default class Wnd {
     return this
   }
 
-  public getWindowSize(): {width: number, height: number} {
+  public getWindowSize(): {width: number; height: number} {
     const width = parseInt(this.root.style.width || '-1', 10)
     const height = parseInt(this.root.style.height || '-1', 10)
-    return { width, height }
+    return {width, height}
   }
 
-  public onEvent(_event: WndEvent, _param?: any): any {
-  }
+  public onEvent(_event: WndEvent, _param?: any): any {}
 
   public isTop(): boolean {
     return this.bTop
@@ -175,7 +174,7 @@ export default class Wnd {
 
     const itemElems: HTMLElement[] = []
     let activeSubmenuIndex = -1
-    let closeSubmenu: (() => void)|null
+    let closeSubmenu: (() => void) | null
 
     const onClose = () => {
       if (activeSubmenuIndex >= 0) {
@@ -210,7 +209,7 @@ export default class Wnd {
       itemElem.className = 'menu-item pull-left'
       itemElem.innerText = menuItem.label
       itemElem.style.height = '100%'
-      itemElem.addEventListener('click', (event) => {
+      itemElem.addEventListener('click', event => {
         event.stopPropagation()
         if ('submenu' in menuItem) {
           if (activeSubmenuIndex < 0) {
@@ -226,7 +225,7 @@ export default class Wnd {
       this.menuBar.appendChild(itemElem)
       itemElems.push(itemElem)
 
-      itemElem.addEventListener('mouseenter', (_event) => {
+      itemElem.addEventListener('mouseenter', _event => {
         if (activeSubmenuIndex >= 0 && activeSubmenuIndex !== index && 'submenu' in menuItem) {
           showSubmenu(index)
         }
@@ -262,43 +261,43 @@ export default class Wnd {
     const table = [
       // Corners
       {
-        styleParams: { right: '-1px', bottom: '-1px', cursor: 'nwse-resize' },
+        styleParams: {right: '-1px', bottom: '-1px', cursor: 'nwse-resize'},
         horz: 'right',
         vert: 'bottom',
       },
       {
-        styleParams: { left: '-1px', bottom: '-1px', cursor: 'nesw-resize' },
+        styleParams: {left: '-1px', bottom: '-1px', cursor: 'nesw-resize'},
         horz: 'left',
         vert: 'bottom',
       },
       {
-        styleParams: { right: '-1px', top: '-1px', cursor: 'nesw-resize' },
+        styleParams: {right: '-1px', top: '-1px', cursor: 'nesw-resize'},
         horz: 'right',
         vert: 'top',
       },
       {
-        styleParams: { left: '-1px', top: '-1px', cursor: 'nwse-resize' },
+        styleParams: {left: '-1px', top: '-1px', cursor: 'nwse-resize'},
         horz: 'left',
         vert: 'top',
       },
       // Edges
       {
-        styleParams: { left: `${W}px`, right: `${W}px`, top: `-${W - 4}px`, cursor: 'ns-resize' },
+        styleParams: {left: `${W}px`, right: `${W}px`, top: `-${W - 4}px`, cursor: 'ns-resize'},
         horz: 'center',
         vert: 'top',
       },
       {
-        styleParams: { left: `${W}px`, right: `${W}px`, bottom: '-1px', cursor: 'ns-resize' },
+        styleParams: {left: `${W}px`, right: `${W}px`, bottom: '-1px', cursor: 'ns-resize'},
         horz: 'center',
         vert: 'bottom',
       },
       {
-        styleParams: { top: `${W}px`, bottom: `${W}px`, left: '-1px', cursor: 'ew-resize' },
+        styleParams: {top: `${W}px`, bottom: `${W}px`, left: '-1px', cursor: 'ew-resize'},
         horz: 'left',
         vert: 'center',
       },
       {
-        styleParams: { top: `${W}px`, bottom: `${W}px`, right: '-1px', cursor: 'ew-resize' },
+        styleParams: {top: `${W}px`, bottom: `${W}px`, right: '-1px', cursor: 'ew-resize'},
         horz: 'right',
         vert: 'center',
       },
@@ -318,7 +317,7 @@ export default class Wnd {
         height: param.vert !== 'center' ? `${W}px` : undefined,
         zIndex: '2000',
       })
-      resizeBox.addEventListener('mousedown', (event) => {
+      resizeBox.addEventListener('mousedown', event => {
         event.stopPropagation()
         event.preventDefault()
         if (event.button !== 0)
@@ -357,7 +356,7 @@ export default class Wnd {
               height = MIN_HEIGHT
             }
             DomUtil.setStyles(this.root, {
-              width: `${Math.round(box.right - box.left -  2)}px`,
+              width: `${Math.round(box.right - box.left - 2)}px`,
               height: `${Math.round(box.bottom - box.top - 2)}px`,
               left: `${Math.round(box.left)}px`,
               top: `${Math.round(box.top)}px`,
@@ -389,7 +388,7 @@ export default class Wnd {
 
   private createRoot(): HTMLElement {
     const root = document.createElement('div')
-    root.addEventListener('mousedown', (event) => {
+    root.addEventListener('mousedown', event => {
       if (event.button === 0) {
         event.stopPropagation()
         this.wndMgr.moveToTop(this)
@@ -413,7 +412,7 @@ export default class Wnd {
       this.close()
     })
 
-    titleBar.addEventListener('mousedown', (event) => {
+    titleBar.addEventListener('mousedown', event => {
       if (event.button !== 0)
         return false
 
@@ -421,7 +420,7 @@ export default class Wnd {
 
       // Move window position with dragging.
       event.preventDefault()
-      let [mx, my] = DomUtil.getMousePosIn(event, this.root)
+      const [mx, my] = DomUtil.getMousePosIn(event, this.root)
       const dragOfsX = -mx
       const dragOfsY = -my
       const winSize = this.getWindowSize()
@@ -453,7 +452,7 @@ export default class Wnd {
     button.className = `${className} btn`
     button.title = className
     button.addEventListener('click', clickCallback)
-    button.addEventListener('mousedown', (event) => {
+    button.addEventListener('mousedown', event => {
       event.preventDefault()
       event.stopPropagation()
     })
@@ -475,7 +474,7 @@ export default class Wnd {
     const subItemHolder = document.createElement('div')
     subItemHolder.className = 'menu-subitem-holder'
     subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
-    menuItem.submenu.forEach((submenuItem) => {
+    menuItem.submenu.forEach(submenuItem => {
       const submenuRow = document.createElement('div')
       submenuRow.className = 'submenu-row clearfix'
 
@@ -491,7 +490,7 @@ export default class Wnd {
         subItemElem.className = 'menu-item disabled'
       } else {
         subItemElem.className = 'menu-item'
-        subItemElem.addEventListener('click', (_event) => {
+        subItemElem.addEventListener('click', _event => {
           if (submenuItem.click)
             submenuItem.click()
         })

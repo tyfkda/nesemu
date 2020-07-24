@@ -60,8 +60,8 @@ export default class App {
 
     this.nes = Nes.create()
     window.app = this  // Put app into global.
-    this.nes.setVblankCallback((leftV) => { this.onVblank(leftV) })
-    this.nes.setBreakPointCallback(() => { this.onBreakPoint() })
+    this.nes.setVblankCallback(leftV => this.onVblank(leftV))
+    this.nes.setBreakPointCallback(() => this.onBreakPoint())
 
     this.subscription = this.stream
       .subscribe((type, param?) => this.handleAppEvent(type, param))
@@ -80,7 +80,7 @@ export default class App {
     this.screenWnd.setPos(x, y)
   }
 
-  public loadRom(romData: Uint8Array): boolean|string {
+  public loadRom(romData: Uint8Array): boolean | string {
     const result = this.nes.setRomData(romData)
     if (result !== true)
       return result
@@ -339,7 +339,7 @@ export default class App {
       this.nes.setPadStatus(i, pad)
     }
 
-    let et = Math.min(elapsedTime, MAX_ELAPSED_TIME) * this.screenWnd.getTimeScale()
+    const et = Math.min(elapsedTime, MAX_ELAPSED_TIME) * this.screenWnd.getTimeScale()
 
     this.nes.runMilliseconds(et)
   }

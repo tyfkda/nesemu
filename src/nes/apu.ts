@@ -593,7 +593,7 @@ export class Apu {
 
     switch (hcount) {
     case VBLANK_START:
-      this.channels.forEach(channel => { channel.update() })
+      this.channels.forEach(channel => channel.update())
       if (this.isIrqEnabled()) {
         this.frameInterrupt = 0x40
         this.triggerIrq()

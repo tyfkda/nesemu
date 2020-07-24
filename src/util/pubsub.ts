@@ -14,7 +14,7 @@ function compactArray(array: any[]): void {
 }
 
 export class Subject<Type> {
-  private subscribers = new Array<Callback<Type>|null>()
+  private subscribers = new Array<Callback<Type> | null>()
   private anyRemoved = false
   private nestCount = 0
 

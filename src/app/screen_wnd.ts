@@ -144,7 +144,7 @@ export default class ScreenWnd extends Wnd {
         right: 0,
         top: 0,
       })
-      button.addEventListener('click', (_event) => {
+      button.addEventListener('click', _event => {
         AudioManager.enableAudio()
         this.app.setupAudioManager()
         button.parentNode!.removeChild(button)
@@ -226,7 +226,6 @@ export default class ScreenWnd extends Wnd {
     }
   }
 
-
   public onResized(width: number, height: number): void {
     this.contentWidth = width
     this.contentHeight = height
@@ -255,7 +254,7 @@ export default class ScreenWnd extends Wnd {
 
   public setFullscreen(callback?: (isFullscreen: boolean) => boolean): boolean {
     window.addEventListener('resize', this.fullscreenResizeFunc)
-    return this.wndMgr.setFullscreen(this.contentHolder, (isFullscreen) => {
+    return this.wndMgr.setFullscreen(this.contentHolder, isFullscreen => {
       if (!isFullscreen) {
         window.removeEventListener('resize', this.fullscreenResizeFunc)
         DomUtil.setStyles(this.fullscreenBase, {

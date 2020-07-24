@@ -24,7 +24,7 @@ interface JsCpu {
   update(): void
   step(): void
   pause(value: boolean): void
-  isPaused(): boolean,
+  isPaused(): boolean
   getRegs(): number[]
 }
 
@@ -249,7 +249,7 @@ export default class JsApp extends App {
       this.nes.setPadStatus(i, pad)
     }
 
-    let et = elapsedTime + this.leftTime
+    const et = elapsedTime + this.leftTime
     let frameCount = (et * 60 / 1000) | 0
     if (frameCount <= MAX_FRAME_COUNT) {
       this.leftTime = et - ((frameCount * 1000 / 60) | 0)

@@ -1,6 +1,6 @@
 export default class KeyboardManager {
   private pressingKeys: {[key: string]: boolean} = {}
-  private lastPressing: string|null = null
+  private lastPressing: string | null = null
 
   public onKeyDown(event: KeyboardEvent) {
     this.pressingKeys[event.code] = true
@@ -17,7 +17,7 @@ export default class KeyboardManager {
     return this.pressingKeys[key]
   }
 
-  public getLastPressing(): string|null {
+  public getLastPressing(): string | null {
     return this.lastPressing
   }
 }

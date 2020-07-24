@@ -14,8 +14,8 @@ export default class WindowManager {
   private windows: Wnd[] = []
   private keyboardManager = new KeyboardManager()
 
-  private onKeyDown: (event: Event) => void
-  private onKeyUp: (event: Event) => void
+  private onKeyDown: (event: KeyboardEvent) => void
+  private onKeyUp: (event: KeyboardEvent) => void
   private blurred = false
   private rafId = 0  // requestAnimationFrame
 
@@ -163,7 +163,7 @@ export default class WindowManager {
   private updateWindowPriorities(): void {
     const n = this.windows.length
     for (let i = 0; i < n; ++i) {
-      let wnd = this.windows[i]
+      const wnd = this.windows[i]
       wnd.setTop(i === 0)
       setWindowZIndex(wnd, i, n)
     }

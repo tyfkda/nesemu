@@ -72,8 +72,8 @@ export default class Nes implements PrgBankController {
     this.bus = new Bus()
     this.cpu = new Cpu(this.bus)
     this.ppu = new Ppu()
-    this.apu = new Apu(() => { this.cpu.requestIrq(IrqType.APU) })
-    this.vblankCallback = (_leftV) => {}
+    this.apu = new Apu(() => this.cpu.requestIrq(IrqType.APU))
+    this.vblankCallback = _leftV => {}
     this.breakPointCallback = () => {}
 
     const mapperNo = 0
@@ -94,7 +94,7 @@ export default class Nes implements PrgBankController {
     this.breakPointCallback = callback
   }
 
-  public setRomData(romData: Uint8Array): boolean|string {
+  public setRomData(romData: Uint8Array): boolean | string {
     if (!isRomValid(romData))
       return 'Invalid format'
     const mapperNo = getMapperNo(romData)
@@ -243,7 +243,7 @@ export default class Nes implements PrgBankController {
     const bus = this.bus
     bus.clearMemoryMap()
 
-    bus.setReadMemory(0x2000, 0x3fff, (adr) => {  // PPU
+    bus.setReadMemory(0x2000, 0x3fff, adr => {  // PPU
       const reg = adr & 7
       return this.ppu.read(reg)
     })
@@ -257,11 +257,13 @@ export default class Nes implements PrgBankController {
 
     // PRG ROM
     const prgMask = (this.prgRom.length - 1) | 0
-    this.prgBank = [0x0000,  // 0x8000~
-                    0x2000,  // 0xa000~
-                    -0x4000 & prgMask,  // 0xc000~
-                    -0x2000 & prgMask]  // 0xe000~
-    bus.setReadMemory(0x8000, 0xffff, (adr) => {
+    this.prgBank = [
+      0x0000,             // 0x8000~
+      0x2000,             // 0xa000~
+      -0x4000 & prgMask,  // 0xc000~
+      -0x2000 & prgMask,  // 0xe000~
+    ]
+    bus.setReadMemory(0x8000, 0xffff, adr => {
       adr = adr | 0
       const bank = (adr - 0x8000) >> 13
       const offset = (adr & ((1 << 13) - 1)) | 0

@@ -18,7 +18,7 @@ export default class Bus implements IBus {
   }
 
   public clearMemoryMap(): void {
-    this.readerTable.fill((adr) => {
+    this.readerTable.fill(adr => {
       if (!this.readErrorReported) {
         console.error(`Illegal read at ${Util.hex(adr, 4)}`)
         this.readErrorReported = true

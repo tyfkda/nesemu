@@ -11,7 +11,7 @@ const _atob = typeof atob !== 'undefined' ? atob : (function(str: string): strin
 })
 
 export default class Util {
-  public static hex(x: number, order: number = 2): string {
+  public static hex(x: number, order = 2): string {
     const s = x.toString(16)
     const dif = s.length - order
     if (dif > 0)

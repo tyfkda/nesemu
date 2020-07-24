@@ -15,15 +15,15 @@ export default class GamepadManager {
   public static AXIS_THRESHOLD = 0.5
 
   private static initialized = false
-  private static padSettings: {type: Type, index: number, direction: number}[] = [
-    { type: Type.BUTTON, index: 0, direction: 1 },  // A
-    { type: Type.BUTTON, index: 1, direction: 1 },  // B
-    { type: Type.BUTTON, index: 2, direction: 1 },  // SELECT
-    { type: Type.BUTTON, index: 3, direction: 1 },  // START
-    { type: Type.AXIS, index: 1, direction: -1  },  // U
-    { type: Type.AXIS, index: 1, direction: 1  },  // D
-    { type: Type.AXIS, index: 0, direction: -1  },  // L
-    { type: Type.AXIS, index: 0, direction: 1  },  // R
+  private static padSettings: {type: Type; index: number; direction?: number}[] = [
+    {type: Type.BUTTON, index: 0},  // A
+    {type: Type.BUTTON, index: 1},  // B
+    {type: Type.BUTTON, index: 2},  // SELECT
+    {type: Type.BUTTON, index: 3},  // START
+    {type: Type.AXIS, index: 1, direction: -1},  // U
+    {type: Type.AXIS, index: 1, direction:  1},  // D
+    {type: Type.AXIS, index: 0, direction: -1},  // L
+    {type: Type.AXIS, index: 0, direction:  1},  // R
   ]
 
   public static setUp(): void {
@@ -53,14 +53,18 @@ export default class GamepadManager {
     GamepadManager.padSettings.forEach((s, i) => {
       switch (s.type) {
       case Type.AXIS:
-        const axis = gamepad.axes[s.index] || 0
-        if (axis * s.direction >= THRESHOLD)
-          pad |= 1 << i
+        {
+          const axis = gamepad.axes[s.index] || 0
+          if (axis * s.direction! >= THRESHOLD)
+            pad |= 1 << i
+        }
         break
       case Type.BUTTON:
-        const button = gamepad.buttons[s.index]
-        if (button && button.pressed)
-          pad |= 1 << i
+        {
+          const button = gamepad.buttons[s.index]
+          if (button && button.pressed)
+            pad |= 1 << i
+        }
         break
       }
     })
@@ -82,7 +86,7 @@ export default class GamepadManager {
   }
 
   private static saveSetting() {
-    const data: {[key: string]: object} = {}
+    const data: {[key: string]: {button?: number; axis?: number; direction?: number}} = {}
     GamepadManager.padSettings.forEach((s, i) => {
       const key = kKeyTable[i]
       switch (s.type) {

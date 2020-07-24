@@ -65,13 +65,13 @@ export class RegisterWnd extends Wnd {
     root.className = 'fixed-font'
 
     const kElems = [
-      { name: 'PC' },
-      { name: 'A' },
-      { name: 'X' },
-      { name: 'Y' },
-      { name: 'S' },
-      { name: 'P' },
-      { name: 'cycle' },
+      {name: 'PC'},
+      {name: 'A'},
+      {name: 'X'},
+      {name: 'Y'},
+      {name: 'S'},
+      {name: 'P'},
+      {name: 'cycle'},
     ]
     const table = document.createElement('table')
     DomUtil.setStyles(table, {

@@ -104,10 +104,11 @@ class Main {
             return zip.loadAsync(binary)
           })
           .then((loadedZip: JSZip) => {
-            for (let fileName of Object.keys(loadedZip.files)) {
+            for (const fileName of Object.keys(loadedZip.files)) {
               const ext2 = Util.getExt(fileName).toLowerCase()
               if (kTargetExts.indexOf(ext2) >= 0) {
-                return loadedZip.files[fileName].async('uint8array')
+                return loadedZip.files[fileName]
+                  .async('uint8array')
                   .then(unzipped => Promise.resolve({type: ext2, binary: unzipped, fileName}))
               }
             }

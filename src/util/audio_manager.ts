@@ -15,18 +15,15 @@ abstract class SoundChannel {
     }
   }
 
-  public start(): void {
-  }
+  public start(): void {}
 
   public setVolume(volume: number, context: AudioContext) {
     this.gainNode.gain.setValueAtTime(volume, context.currentTime)
   }
 
-  public setFrequency(_frequency: number) {
-  }
+  public setFrequency(_frequency: number) {}
 
-  public setDutyRatio(_ratio: number) {
-  }
+  public setDutyRatio(_ratio: number) {}
 }
 
 abstract class OscillatorChannel extends SoundChannel {
@@ -101,8 +98,8 @@ class NoiseChannel extends OscillatorChannel {
 // Pulse with duty control.
 class PulseChannel extends OscillatorChannel {
   private delay: DelayNode
-  private frequency: number = 1
-  private duty: number = 0.5
+  private frequency = 1
+  private duty = 0.5
 
   public destroy() {
     super.destroy()
@@ -176,7 +173,7 @@ function createSoundChannel(
 }
 
 export default class AudioManager {
-  private static initialized: boolean = false
+  private static initialized = false
   private static audioContextClass?: AudioContext
   private static context?: AudioContext
   private static masterGainNode: GainNode
@@ -218,7 +215,7 @@ export default class AudioManager {
       AudioManager.masterGainNode.gain.setValueAtTime(volume, context.currentTime)
   }
 
-  public static createAnalyser(): AnalyserNode|null {
+  public static createAnalyser(): AnalyserNode | null {
     const context = AudioManager.context
     if (context == null)
       return null
@@ -247,7 +244,7 @@ export default class AudioManager {
 
   public releaseAllChannels() {
     if (this.channels != null) {
-      for (let channel of this.channels) {
+      for (const channel of this.channels) {
         channel.destroy()
       }
       this.channels.length = 0
