@@ -114,15 +114,15 @@ hr {
 
       .btn.close {
         background-color: #f44;
-      }
-      .btn.close:hover {
-        background-color: #f88;
+        &:hover {
+          background-color: #f88;
+        }
       }
       .btn.maximize {
         background-color: #3d3;
-      }
-      .btn.maximize:hover {
-        background-color: #6e6;
+        &:hover {
+          background-color: #6e6;
+        }
       }
     }
 
@@ -143,6 +143,10 @@ hr {
     }
   }
 
+  .resize-box {
+    position: absolute;
+  }
+
   .menu-bar {
     position: absolute;
     left: 0;
@@ -154,8 +158,66 @@ hr {
     font-size: 10px;
   }
 
-  .resize-box {
+  .menu-subitem-holder {
     position: absolute;
+    display: inline-block;
+    @supports (backdrop-filter: none) {
+      background-color: rgba(204,204,204,0.8);
+    }
+    @supports not (backdrop-filter: none) {
+      background-color: rgb(204,204,204);
+    }
+    font-size: 10px;
+    border-radius: 0 0 4px 4px;
+    padding: 2px 0 4px;
+    box-sizing: content-box;
+    box-shadow: 0 4px 8px rgba(0,0,0,.7);
+    backdrop-filter: blur(4px);
+
+    .submenu-row {
+      position: relative;
+
+      .submenu-check {
+        position: absolute;
+        left: 0;
+        top: 0;
+
+        &:after {
+          content: '✓';
+        }
+      }
+
+      .submenu-splitter {
+        border-top: 1px solid #aaa;
+        border-bottom: 1px solid #ddd;
+        margin-top: 4px;
+        margin-bottom: 4px;
+      }
+    }
+  }
+
+  .menu-item {
+    padding: 0 16px;
+    cursor: pointer;
+
+    &:hover {
+      color: white;
+      background-color: #22f;
+    }
+
+    &.disabled {
+      color: gray;
+
+      &:hover {
+        background-color: transparent;
+        cursor: default;
+      }
+    }
+
+    &.opened {
+      color: white;
+      background-color: #22f;
+    }
   }
 }
 .wnd.top {
@@ -179,69 +241,13 @@ $RESIZABLE_RADIUS: 8px;
   }
 }
 
-.menu-item {
-  padding: 0 16px;
-  cursor: pointer;
-}
-.menu-item:hover {
-  color: white;
-  background-color: #22f;
-}
-.menu-item.disabled {
-  color: gray;
-}
-.menu-item.disabled:hover {
-  background-color: transparent;
-  cursor: default;
-}
-.menu-item.opened {
-  color: white;
-  background-color: #22f;
-}
-
-.menu-subitem-holder {
-  position: absolute;
-  display: inline-block;
-  @supports (backdrop-filter: none) {
-    background-color: rgba(204,204,204,0.8);
-  }
-  @supports not (backdrop-filter: none) {
-    background-color: rgb(204,204,204);
-  }
-  font-size: 10px;
-  border-radius: 0 0 4px 4px;
-  padding: 2px 0 4px;
-  box-sizing: content-box;
-  box-shadow: 0 4px 8px rgba(0,0,0,.7);
-  backdrop-filter: blur(4px);
-}
-
-.submenu-row {
-  position: relative;
-
-  .submenu-check {
-    position: absolute;
-    left: 0;
-    top: 0;
-  }
-  .submenu-check:after {
-    content: '✓';
-  }
-
-  .submenu-splitter {
-    border-top: 1px solid #aaa;
-    border-bottom: 1px solid #ddd;
-    margin-top: 4px;
-    margin-bottom: 4px;
-  }
-}
-
 .base-clickable {
   color: gray;
   cursor: pointer;
-}
-.base-clickable:hover {
-  color: black;
+
+  &:hover {
+    color: black;
+  }
 }
 
 .gamepad-content {
