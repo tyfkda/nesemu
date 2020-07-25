@@ -171,7 +171,6 @@ export default class ScreenWnd extends Wnd {
         height: `${height}px`,
         margin: 'auto',
       })
-      this.contentHolder.style.backgroundColor = 'black'
       this.updateContentSize(width, height)
     }
   }
@@ -265,8 +264,16 @@ export default class ScreenWnd extends Wnd {
           height: '',
           margin: '',
         })
-        this.contentHolder.style.backgroundColor = ''
+        DomUtil.setStyles(this.contentHolder, {
+          backgroundColor: '',
+          display: '',
+        })
         this.updateContentSize(this.contentWidth, this.contentHeight)
+      } else {
+        DomUtil.setStyles(this.contentHolder, {
+          backgroundColor: 'black',
+          display: 'flex',  // To locate vertically middle.
+        })
       }
       if (callback)
         callback(isFullscreen)
