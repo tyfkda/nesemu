@@ -4,7 +4,7 @@
 // https://wiki.nesdev.com/w/index.php/PPU_scrolling
 
 import {Const} from '../const'
-import {Address, Byte} from '../types'
+import {Address, Byte, Word} from '../types'
 import {kPaletColors, kStaggered, kFlipXBits} from './const'
 import {HEventType, HEvents, HStatusMgr} from './hevent'
 import {MirrorMode, PpuReg, PpuCtrlBit, PpuMaskBit, PpuStatusBit, OamElem,
@@ -136,6 +136,8 @@ export class Ppu {
   private hevents = new HEvents()
   private hstatusMgr = new HStatusMgr()
 
+  private scrollTemp: Word = 0
+
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
 
   constructor(private triggerNmi: () => void) {
@@ -250,7 +252,7 @@ export class Ppu {
       break
     case PpuReg.DATA:
       {
-        const ppuAddr = this.hstatusMgr.current.scrollCurr
+        const ppuAddr = this.ppuAddr
         const addr = getPpuAddr(ppuAddr, this.hstatusMgr.current.mirrorModeBit)
         if (PALET_ADR <= addr && addr <= PALET_END_ADR) {
           result = this.readPpuDirect(addr)  // Palette read shouldn't be buffered like other VRAM
@@ -261,7 +263,7 @@ export class Ppu {
           result = this.bufferedValue
           this.bufferedValue = this.readPpuDirect(addr)
         }
-        this.addHevent(HEventType.SCROLL_CURR, incPpuAddr(ppuAddr, this.regs[PpuReg.CTRL]))
+        this.ppuAddr = incPpuAddr(ppuAddr, this.regs[PpuReg.CTRL])
       }
       break
     default:
@@ -281,10 +283,14 @@ export class Ppu {
     case PpuReg.CTRL:
       {
         this.incScrollCounter()
+        this.scrollTemp = ((this.scrollTemp & ~0x0c00) |
+                           ((value & PpuCtrlBit.BASE_NAMETABLE_ADDRESS) << 10))
+        // At dot 257 of each scanline:
+        const scrollCurr = ((this.hstatusMgr.current.scrollCurr & ~0x041f) |
+                            (this.scrollTemp & 0x041f))
+
         this.addHevent(HEventType.PPU_CTRL, this.regs[PpuReg.CTRL])
-        this.ppuAddr = ((this.ppuAddr & ~0x0c00) |
-                        ((value & PpuCtrlBit.BASE_NAMETABLE_ADDRESS) << 10))
-        this.updateCoarseX()
+        this.addHevent(HEventType.SCROLL_CURR, scrollCurr)
       }
       break
     case PpuReg.MASK:
@@ -301,33 +307,36 @@ export class Ppu {
     case PpuReg.SCROLL:
       this.incScrollCounter()
       if (this.latch === 0) {
-        this.ppuAddr = (this.ppuAddr & ~0x001f) | (value >> 3)
+        this.scrollTemp = (this.scrollTemp & ~0x001f) | (value >> 3)
         this.addHevent(HEventType.SCROLL_FINE_X, value & 7)
-        this.updateCoarseX()
+        // At dot 257 of each scanline:
+        const scrollCurr = ((this.hstatusMgr.current.scrollCurr & ~0x041f) |
+                            (this.scrollTemp & 0x041f))
+        this.addHevent(HEventType.SCROLL_CURR, scrollCurr)
       } else {
-        this.ppuAddr = ((this.ppuAddr & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
-                        ((value & 0x07) << 12))
+        this.scrollTemp = ((this.scrollTemp & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
+                           ((value & 0x07) << 12))
       }
       this.latch = 1 - this.latch
       break
     case PpuReg.ADDR:
       if (this.latch === 0) {
-        this.ppuAddr = (this.ppuAddr & ~0x7f00) | ((value & 0x3f) << 8)
+        this.scrollTemp = (this.scrollTemp & ~0x7f00) | ((value & 0x3f) << 8)
       } else {
-        this.ppuAddr = (this.ppuAddr & ~0x00ff) | value
+        this.scrollTemp = (this.scrollTemp & ~0x00ff) | value
+        this.ppuAddr = this.scrollTemp
 
-        this.addHevent(HEventType.SCROLL_CURR, this.ppuAddr)
+        this.addHevent(HEventType.SCROLL_CURR, this.scrollTemp)
       }
       this.latch = 1 - this.latch
       break
     case PpuReg.DATA:
       {
-        const ppuAddr = this.hstatusMgr.current.scrollCurr
-        const addr = getPpuAddr(ppuAddr, this.hstatusMgr.current.mirrorModeBit)
+        const addr = getPpuAddr(this.ppuAddr, this.hstatusMgr.current.mirrorModeBit)
         this.vram[addr] = value
         if (PALET_ADR <= addr && addr < PALET_ADR + 32)
           this.addHevent(HEventType.PALET, value, addr - PALET_ADR)
-        this.addHevent(HEventType.SCROLL_CURR, incPpuAddr(ppuAddr, this.regs[PpuReg.CTRL]))
+        this.ppuAddr = incPpuAddr(this.ppuAddr, this.regs[PpuReg.CTRL])
       }
       break
     default:
@@ -355,8 +364,7 @@ export class Ppu {
     this.regs[PpuReg.STATUS] &= ~(PpuStatusBit.VBLANK | PpuStatusBit.SPRITE0HIT |
                                   PpuStatusBit.SPRITE_OVERFLOW)
 
-    if ((this.hstatusMgr.current.ppuMask & (PpuMaskBit.SHOW_SPRITE | PpuMaskBit.SHOW_BG)) !== 0)
-      this.addHevent(HEventType.SCROLL_CURR, this.ppuAddr)
+    this.addHevent(HEventType.SCROLL_CURR, this.scrollTemp)
   }
 
   public setHcount(hcount: number): void {
@@ -659,31 +667,15 @@ export class Ppu {
   }
 
   private incScrollCounter(): void {
-    if (!this.visible())
-      return
     const lastHcount = this.hevents.getLastHcount()
     if (lastHcount < 0)
       return
-    const hcount = this.hcount + 1
+    const hcount = this.hcount < Const.HEIGHT - 1 ? this.hcount + 1 : 0
     const dy = hcount - lastHcount
     if (dy <= 0)
       return
 
     this.addHevent(HEventType.SCROLL_CURR, incScroll(this.hstatusMgr.current.scrollCurr, dy))
-  }
-
-  private visible(): boolean {
-    return this.hcount < Const.HEIGHT &&
-      (this.hstatusMgr.current.ppuMask & (PpuMaskBit.SHOW_SPRITE | PpuMaskBit.SHOW_BG)) !== 0
-  }
-
-  private updateCoarseX(): void {
-    if (this.visible()) {
-      // At dot 257 of each scanline:
-      const scrollCurr = ((this.hstatusMgr.current.scrollCurr & ~0x041f) |
-                          (this.ppuAddr & 0x041f))
-      this.addHevent(HEventType.SCROLL_CURR, scrollCurr)
-    }
   }
 
   private readPpuDirect(addr: Address): Byte {
