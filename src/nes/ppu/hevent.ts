@@ -195,6 +195,15 @@ export class HStatus {
   }
 }
 
+/*
+  Note
+
+    * Status are triple buffered (in HEvents):
+      1. current (modified according to CPU writes)
+      2. lastFrame (keep begining state of last frame, to use at rendering)
+      3. save ()
+
+*/
 export class HStatusMgr {
   public current = new HStatus()
   public lastFrame = new HStatus()

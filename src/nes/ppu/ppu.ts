@@ -3,6 +3,15 @@
 // PPU scrolling
 // https://wiki.nesdev.com/w/index.php/PPU_scrolling
 
+/*
+  Implementation note:
+
+    * Process per scanline, not per PPU cycle
+    * So not aim to implement accurately
+    * Register/status changes are put into array with its timing (hcount)
+    * Replay these events at rendering
+*/
+
 import {Const} from '../const'
 import {Address, Byte} from '../types'
 import {kPaletColors, kStaggered, kFlipXBits} from './const'
