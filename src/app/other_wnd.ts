@@ -559,13 +559,17 @@ export class EqualizerWnd extends Wnd {
       this.mode = 1 - this.mode
     })
 
-    const analyserNode = AudioManager.createAnalyser()
-    if (analyserNode != null) {
-      this.analyserNode = analyserNode
-
-      this.analyserNode.fftSize = 256
-      const bufferLength = this.analyserNode.frequencyBinCount
-      this.dataArray = new Uint8Array(bufferLength)
+    if (!this.setUp()) {
+      const div = document.createElement('div')
+      div.innerText = 'No audio'
+      DomUtil.setStyles(div, {
+        position: 'absolute',
+        left: '50%',
+        top: '50%',
+        transform: 'translate(-50%, -50%)',
+        color: 'red',
+      })
+      this.getContentHolder().appendChild(div)
     }
   }
 
@@ -582,7 +586,26 @@ export class EqualizerWnd extends Wnd {
     }
   }
 
+  private setUp(): boolean {
+    if (this.analyserNode != null)
+      return false
+
+    const analyserNode = AudioManager.createAnalyser()
+    if (analyserNode == null)
+      return false
+
+    this.analyserNode = analyserNode
+
+    this.analyserNode.fftSize = 256
+    const bufferLength = this.analyserNode.frequencyBinCount
+    this.dataArray = new Uint8Array(bufferLength)
+    return true
+  }
+
   private render(): void {
+    if (this.dataArray == null)
+      return
+
     switch (this.mode) {
     case 0:
       this.renderFrequency()
