@@ -1,0 +1,26 @@
+
+PPUのスクロールレジスタの値の扱いを正しくしようとしたところ、いくつかバグが出てきた。
+
+原因は１つではないぽい。
+
+### 星のカービィ
+
+Share same variable with PPU_ADDR and PPU_SCROLL
+b22f1e4
+以降ちらつく
+
+
+### ゼルダの伝説
+
+6f14698
+Remove cheap trick
+以降ちらつく
+
+上下画面に移動するとスクロール時にちょっとずれている
+
+
+### ドラクエ3
+
+6a5b78d
+Share same variable with PPU_ADDR and PPU_SCROLL
+以降ラスタースクロールがおかしい
