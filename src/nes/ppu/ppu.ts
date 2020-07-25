@@ -137,6 +137,7 @@ export class Ppu {
   private hstatusMgr = new HStatusMgr()
 
   private scrollTemp: Word = 0
+  private hclipZero = false
 
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
 
@@ -316,6 +317,8 @@ export class Ppu {
       } else {
         this.scrollTemp = ((this.scrollTemp & ~0x73e0) | ((value & 0xf8) << (5 - 3)) |
                            ((value & 0x07) << 12))
+        if (this.hclipZero)
+          this.addHevent(HEventType.SCROLL_CURR, this.scrollTemp)
       }
       this.latch = 1 - this.latch
       break
@@ -358,6 +361,7 @@ export class Ppu {
     this.regs[PpuReg.STATUS] = this.regs[PpuReg.STATUS] | PpuStatusBit.VBLANK
     this.hevents.swap()
     this.hstatusMgr.swap()
+    this.hclipZero = true
   }
 
   public clearVBlank(): void {
@@ -385,6 +389,9 @@ export class Ppu {
     default:
       break
     }
+
+    if (this.hclipZero && hcount < Const.HEIGHT)
+      this.hclipZero = false
   }
 
   public render(pixels: Uint8Array | Uint8ClampedArray): void {
@@ -661,7 +668,10 @@ export class Ppu {
 
     let hcount = this.hcount + 1
     if (hcount > Const.HEIGHT) {
-      hcount = 0
+      if (this.hclipZero)
+        hcount = 0
+      else
+        hcount = Const.HEIGHT
     }
     this.hevents.add(hcount, type, value, index)
   }
