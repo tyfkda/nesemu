@@ -23,41 +23,10 @@ const TRANSITION_DURATION = '0.1s'
 const TIME_SCALE_NORMAL = 1
 const TIME_SCALE_FAST = 4
 
-const enum MenuType {
-  FILE,
-  VIEW,
-  SCALER,
-  DEBUG,
-}
-
-const enum FileMenuType {
-  PAUSE,
-  RESET,
-  SCREENSHOT,
-  _HR1,
-  SAVE,
-  LOAD,
-  _HR2,
-  QUIT,
-}
-
-const enum ViewMenuType {
-  SCALE_1x1,
-  SCALE_2x2,
-  ADJUST_ASPECT_RATIO,
-  _HR1,
-  FULLSCREEN,
-}
-
 const enum ScalerType {
   NEAREST,
   SCANLINE,
   EPX,
-}
-
-const enum DebugMenuType {
-  EDGE,
-  SPRITE_FLICKER,
 }
 
 let isAudioPermissionAcquired = false
@@ -202,10 +171,10 @@ export default class ScreenWnd extends Wnd {
       }
       break
     case WndEvent.OPEN_MENU:
-      this.onOpenMenu()
+      this.stream.triggerPauseApp()
       break
     case WndEvent.CLOSE_MENU:
-      this.onCloseMenu()
+      this.stream.triggerResumeApp()
       break
     case WndEvent.BLUR:
       this.timeScale = TIME_SCALE_NORMAL
@@ -322,6 +291,7 @@ export default class ScreenWnd extends Wnd {
         submenu: [
           {
             label: 'Pause',
+            checked: () => this.nes.getCpu().isPaused(),
             click: () => {
               if (this.nes.getCpu().isPaused())
                 this.stream.triggerRun()
@@ -345,18 +315,12 @@ export default class ScreenWnd extends Wnd {
           {label: '----'},
           {
             label: 'Save',
-            click: () => {
-              if (this.app.saveData()) {
-                const fileMenu = this.menuItems[MenuType.FILE].submenu
-                fileMenu[FileMenuType.LOAD].disabled = false
-              }
-            },
+            click: () => this.app.saveData(),
           },
           {
             label: 'Load',
-            click: () => {
-              this.app.loadData()
-            },
+            disabled: () => !this.app.hasSaveData(),
+            click: () => this.app.loadData(),
           },
           {label: '----'},
           {
@@ -372,18 +336,21 @@ export default class ScreenWnd extends Wnd {
         submenu: [
           {
             label: '1x1',
+            checked: () => this.isAspectRatio(1),
             click: () => {
               this.setClientScale(1)
             },
           },
           {
             label: '2x2',
+            checked: () => this.isAspectRatio(2),
             click: () => {
               this.setClientScale(2)
             },
           },
           {
             label: 'Adjust aspect ratio',
+            disabled: () => this.isAspectRatio(0),
             click: () => {
               this.adjustAspectRatio()
             },
@@ -402,18 +369,21 @@ export default class ScreenWnd extends Wnd {
         submenu: [
           {
             label: 'Nearest',
+            checked: () => this.scalerType === ScalerType.NEAREST,
             click: () => {
               this.setScaler(ScalerType.NEAREST)
             },
           },
           {
             label: 'Scanline',
+            checked: () => this.scalerType === ScalerType.SCANLINE,
             click: () => {
               this.setScaler(ScalerType.SCANLINE)
             },
           },
           {
             label: 'Epx',
+            checked: () => this.scalerType === ScalerType.EPX,
             click: () => {
               this.setScaler(ScalerType.EPX)
             },
@@ -425,12 +395,14 @@ export default class ScreenWnd extends Wnd {
         submenu: [
           {
             label: 'Edge',
+            checked: () => !this.hideEdge,
             click: () => {
               this.toggleEdge()
             },
           },
           {
             label: 'Sprite flicker',
+            checked: () => !this.nes.getPpu().suppressSpriteFlicker,
             click: () => {
               this.toggleSpriteFlicker()
             },
@@ -491,45 +463,6 @@ export default class ScreenWnd extends Wnd {
     this.addMenuBar(this.menuItems)
   }
 
-  protected onOpenMenu() {
-    if (this.menuItems == null)
-      return
-
-    const rect = this.contentHolder.getBoundingClientRect()
-    const w = (WIDTH - (this.hideEdge ? HEDGE * 2 : 0)) | 0
-    const h = (HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)) | 0
-
-    const fileMenu = this.menuItems[MenuType.FILE].submenu
-    fileMenu[FileMenuType.PAUSE].checked = this.nes.getCpu().isPaused()
-    if (!('disabled' in fileMenu[FileMenuType.LOAD])) {
-      fileMenu[FileMenuType.LOAD].disabled = !this.app.hasSaveData()
-    }
-
-    const viewMenu = this.menuItems[MenuType.VIEW].submenu
-    viewMenu[ViewMenuType.SCALE_1x1].checked =
-      Math.abs(rect.width - w) < 0.5 && Math.abs(rect.height - h) < 0.5
-    viewMenu[ViewMenuType.SCALE_2x2].checked =
-      Math.abs(rect.width - w * 2) < 0.5 && Math.abs(rect.height - h * 2) < 0.5
-    viewMenu[ViewMenuType.ADJUST_ASPECT_RATIO].disabled =
-      Math.abs(rect.width / rect.height - w / h) < 0.005
-
-    const scalerMenu = this.menuItems[MenuType.SCALER].submenu
-    for (let i = 0; i < scalerMenu.length; ++i) {
-      scalerMenu[i].checked = this.scalerType === i
-    }
-
-    const ppu = this.nes.getPpu()
-    const debugMenu = this.menuItems[MenuType.DEBUG].submenu
-    debugMenu[DebugMenuType.EDGE].checked = !this.hideEdge
-    debugMenu[DebugMenuType.SPRITE_FLICKER].checked = !ppu.suppressSpriteFlicker
-
-    this.stream.triggerPauseApp()
-  }
-
-  protected onCloseMenu() {
-    this.stream.triggerResumeApp()
-  }
-
   protected maximize() {
     const winWidth = window.innerWidth
     const winHeight = window.innerHeight
@@ -544,6 +477,16 @@ export default class ScreenWnd extends Wnd {
     const y = (winHeight - (height + Wnd.TITLEBAR_HEIGHT + Wnd.MENUBAR_HEIGHT + 2)) / 2
     this.setPos(Math.round(x), Math.round(y))
     this.setClientSize(width, height)
+  }
+
+  private isAspectRatio(scale: number): boolean {
+    const rect = this.contentHolder.getBoundingClientRect()
+    const w = WIDTH - (this.hideEdge ? HEDGE * 2 : 0)
+    const h = HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)
+
+    if (scale > 0)
+      return Math.abs(rect.width - w * scale) < 0.5 && Math.abs(rect.height - h * scale) < 0.5
+    return Math.abs(rect.width / rect.height - w / h) < 0.005
   }
 
   private adjustAspectRatio() {

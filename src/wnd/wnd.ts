@@ -63,8 +63,8 @@ export const enum WndEvent {
 export interface SubmenuItemInfo {
   label: string
   click?: () => void
-  checked?: boolean
-  disabled?: boolean
+  checked?: boolean | (() => boolean)
+  disabled?: boolean | (() => boolean)
 }
 
 export interface MenuItemInfo {
@@ -481,14 +481,20 @@ export default class Wnd {
       submenuRow.className = 'submenu-row clearfix'
       const subItemElem = document.createElement('div')
       if (submenuItem.label !== '----') {
-        if (submenuItem.checked) {
+        let checked = submenuItem.checked
+        if (typeof submenuItem.checked === 'function')
+          checked = submenuItem.checked()
+        if (checked) {
           const checked = document.createElement('div')
           checked.className = 'submenu-check'
           submenuRow.appendChild(checked)
         }
 
         subItemElem.innerText = submenuItem.label
-        if (submenuItem.disabled) {
+        let disabled = submenuItem.disabled
+        if (typeof submenuItem.disabled === 'function')
+          disabled = submenuItem.disabled()
+        if (disabled) {
           subItemElem.className = 'menu-item disabled'
         } else {
           subItemElem.className = 'menu-item'
