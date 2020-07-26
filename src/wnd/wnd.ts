@@ -496,9 +496,12 @@ export default class Wnd {
           disabled = submenuItem.disabled()
         if (disabled) {
           subItemElem.className = 'menu-item disabled'
+          submenuRow.addEventListener('click', event => {
+            event.stopPropagation()
+          })
         } else {
           subItemElem.className = 'menu-item'
-          subItemElem.addEventListener('click', _event => {
+          submenuRow.addEventListener('click', _event => {
             if (submenuItem.click)
               submenuItem.click()
           })
@@ -506,6 +509,10 @@ export default class Wnd {
       } else {
         const hr = document.createElement('hr')
         hr.className = 'submenu-splitter'
+        submenuRow.style.padding = '4px 0'
+        submenuRow.addEventListener('click', event => {
+          event.stopPropagation()
+        })
         submenuRow.appendChild(hr)
       }
       submenuRow.appendChild(subItemElem)
