@@ -27,18 +27,6 @@ const VEC_NMI: Address = 0xfffa
 const VEC_RESET: Address = 0xfffc
 const VEC_IRQ: Address = 0xfffe
 
-function inc8(value: Byte): Byte {
-  return (value + 1) & 0xff
-}
-
-function dec8(value: Byte): Byte {
-  return (value - 1) & 0xff
-}
-
-function toSigned(value: Byte): number {
-  return value < 0x80 ? value : value - 0x0100
-}
-
 interface Regs {
   a: Byte
   x: Byte
@@ -249,32 +237,32 @@ export default class Cpu {
       break
 
     case OpType.INX:
-      this.x = inc8(this.x)
+      this.x = (this.x + 1) & 0xff
       this.setNZFlag(this.x)
       break
     case OpType.INY:
-      this.y = inc8(this.y)
+      this.y = (this.y + 1) & 0xff
       this.setNZFlag(this.y)
       break
     case OpType.INC:
       {
-        const value = inc8(this.read8(adr))
+        const value = (this.read8(adr) + 1) & 0xff
         this.write8(adr, value)
         this.setNZFlag(value)
       }
       break
 
     case OpType.DEX:
-      this.x = dec8(this.x)
+      this.x = (this.x - 1) & 0xff
       this.setNZFlag(this.x)
       break
     case OpType.DEY:
-      this.y = dec8(this.y)
+      this.y = (this.y - 1) & 0xff
       this.setNZFlag(this.y)
       break
     case OpType.DEC:
       {
-        const value = dec8(this.read8(adr))
+        const value = (this.read8(adr) - 1) & 0xff
         this.write8(adr, value)
         this.setNZFlag(value)
       }
@@ -540,27 +528,27 @@ export default class Cpu {
 
   private push(value: Word): void {
     this.write8(0x0100 + this.s, value)
-    this.s = dec8(this.s)
+    this.s = (this.s - 1) & 0xff
   }
 
   private push16(value: Word): void {
     let s = this.s
     this.write8(0x0100 + s, value >> 8)
-    s = dec8(s)
+    s = (s - 1) & 0xff
     this.write8(0x0100 + s, value & 0xff)
-    this.s = dec8(s)
+    this.s = (s - 1) & 0xff
   }
 
   private pop(): Byte {
-    this.s = inc8(this.s)
+    this.s = (this.s + 1) & 0xff
     return this.read8(0x0100 + this.s)
   }
 
   private pop16(): Word {
     let s = this.s
-    s = inc8(s)
+    s = (s + 1) & 0xff
     const l = this.read8(0x0100 + s)
-    s = inc8(s)
+    s = (s + 1) & 0xff
     const h = this.read8(0x0100 + s)
     this.s = s
     return (h << 8) | l
@@ -630,7 +618,8 @@ export default class Cpu {
     if (!cond)
       return 0
     const pc = this.pc
-    const newPc = (pc + toSigned(this.read8(adr))) & 0xffff
+    const offset = this.read8(adr)
+    const newPc = (pc + (offset < 0x80 ? offset : offset - 0x100)) & 0xffff
     this.pc = newPc
     return ((pc ^ newPc) & 0x0100) > 0 ? 2 : 1
   }
