@@ -1,5 +1,6 @@
 import WindowManager from '../wnd/window_manager'
-import Wnd, {WndEvent} from '../wnd/wnd'
+import Wnd from '../wnd/wnd'
+import {WndEvent} from '../wnd/types'
 
 import AudioManager from '../util/audio_manager'
 import {ChannelType} from '../nes/apu'

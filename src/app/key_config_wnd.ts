@@ -4,7 +4,8 @@ import {PadBit} from '../nes/apu'
 import PadKeyHandler from '../util/pad_key_handler'
 import StorageUtil from '../util/storage_util'
 import WindowManager from '../wnd/window_manager'
-import Wnd, {WndEvent} from '../wnd/wnd'
+import Wnd from '../wnd/wnd'
+import {WndEvent} from '../wnd/types'
 
 import * as escape from 'escape-html'
 

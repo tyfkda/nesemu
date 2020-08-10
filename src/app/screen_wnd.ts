@@ -1,5 +1,6 @@
 import WindowManager from '../wnd/window_manager'
-import Wnd, {WndEvent, MenuItemInfo} from '../wnd/wnd'
+import Wnd from '../wnd/wnd'
+import {MenuItemInfo, WndEvent} from '../wnd/types'
 
 import DomUtil from '../util/dom_util'
 import Nes from '../nes/nes'

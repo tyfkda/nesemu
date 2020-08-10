@@ -1,6 +1,7 @@
 import DomUtil from '../util/dom_util'
 import KeyboardManager from '../util/keyboard_manager'
-import Wnd, {WndEvent} from './wnd'
+import Wnd from './wnd'
+import {WndEvent} from './types'
 
 import fscreen from 'fscreen'
 

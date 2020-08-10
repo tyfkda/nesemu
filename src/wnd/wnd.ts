@@ -1,76 +1,10 @@
 import DomUtil from '../util/dom_util'
-import Util from '../util/util'
 import WindowManager from './window_manager'
+import WndUtil from './wnd_util'
+import {MenuItemInfo, WndEvent} from './types'
 
 const Z_MENUBAR = 1000
 const Z_MENU_SUBITEM = Z_MENUBAR + 1
-
-function getOffsetRect(parent: HTMLElement, target: HTMLElement) {
-  const prect = parent.getBoundingClientRect()
-  const trect = target.getBoundingClientRect()
-  return {
-    left: trect.left - prect.left,
-    top: trect.top - prect.top,
-    right: trect.right - prect.left,
-    bottom: trect.bottom - prect.top,
-  }
-}
-
-function createHorizontalSplitter(parent: HTMLElement, upperHeight: number) {
-  const upper = document.createElement('div')
-  upper.className = 'upper'
-  DomUtil.setStyles(upper, {
-    position: 'absolute',
-    overflow: 'hidden',
-    left: 0,
-    top: 0,
-    right: 0,
-    height: `${upperHeight}px`,
-  })
-
-  const lower = document.createElement('div')
-  lower.className = 'lower'
-  DomUtil.setStyles(lower, {
-    position: 'absolute',
-    overflow: 'hidden',
-    left: 0,
-    bottom: 0,
-    right: 0,
-    top: `${upperHeight}px`,
-  })
-
-  parent.appendChild(upper)
-  parent.appendChild(lower)
-
-  return [upper, lower]
-}
-
-export const enum WndEvent {
-  UPDATE_FRAME,  // RequestAnimationFrame
-  CLOSE,
-  DRAG_BEGIN,
-  DRAG_MOVE,
-  DRAG_END,
-  OPEN_MENU,
-  CLOSE_MENU,
-  RESIZE_BEGIN,
-  RESIZE_MOVE,
-  RESIZE_END,
-  FOCUS,
-  BLUR,
-}
-
-export interface SubmenuItemInfo {
-  label: string
-  click?: () => void
-  checked?: boolean | (() => boolean)
-  disabled?: boolean | (() => boolean)
-}
-
-export interface MenuItemInfo {
-  label: string
-  submenu: Array<SubmenuItemInfo>
-}
 
 export default class Wnd {
   public static TITLEBAR_HEIGHT = 20
@@ -93,7 +27,7 @@ export default class Wnd {
     this.root.className = 'wnd'
     this.root.style.position = 'absolute'
 
-    const [upper, lower] = createHorizontalSplitter(this.root, Wnd.TITLEBAR_HEIGHT)
+    const [upper, lower] = WndUtil.createHorizontalSplitter(this.root, Wnd.TITLEBAR_HEIGHT)
     this.clientMarginHeight += Wnd.TITLEBAR_HEIGHT
 
     const {titleBar, titleBtnHolder, titleElem} = this.createTitleBar(title)
@@ -163,7 +97,7 @@ export default class Wnd {
   }
 
   public addMenuBar(menu: Array<MenuItemInfo>): Wnd {
-    const [upper, lower] = createHorizontalSplitter(this.root, Wnd.MENUBAR_HEIGHT)
+    const [upper, lower] = WndUtil.createHorizontalSplitter(this.root, Wnd.MENUBAR_HEIGHT)
     this.clientMarginHeight += Wnd.MENUBAR_HEIGHT
     this.contentHolder.appendChild(upper)
     this.contentHolder.appendChild(lower)
@@ -256,125 +190,17 @@ export default class Wnd {
       this.maximize()
     })
 
-    const W = 8
-
-    const table = [
-      // Corners
-      {
-        styleParams: {right: '-1px', bottom: '-1px', cursor: 'nwse-resize'},
-        horz: 'right',
-        vert: 'bottom',
-      },
-      {
-        styleParams: {left: '-1px', bottom: '-1px', cursor: 'nesw-resize'},
-        horz: 'left',
-        vert: 'bottom',
-      },
-      {
-        styleParams: {right: '-1px', top: '-1px', cursor: 'nesw-resize'},
-        horz: 'right',
-        vert: 'top',
-      },
-      {
-        styleParams: {left: '-1px', top: '-1px', cursor: 'nwse-resize'},
-        horz: 'left',
-        vert: 'top',
-      },
-      // Edges
-      {
-        styleParams: {left: `${W}px`, right: `${W}px`, top: `-${W - 4}px`, cursor: 'ns-resize'},
-        horz: 'center',
-        vert: 'top',
-      },
-      {
-        styleParams: {left: `${W}px`, right: `${W}px`, bottom: '-1px', cursor: 'ns-resize'},
-        horz: 'center',
-        vert: 'bottom',
-      },
-      {
-        styleParams: {top: `${W}px`, bottom: `${W}px`, left: '-1px', cursor: 'ew-resize'},
-        horz: 'left',
-        vert: 'center',
-      },
-      {
-        styleParams: {top: `${W}px`, bottom: `${W}px`, right: '-1px', cursor: 'ew-resize'},
-        horz: 'right',
-        vert: 'center',
-      },
-    ]
-
-    const MIN_WIDTH = 80
-    const MIN_HEIGHT = 60 + Wnd.TITLEBAR_HEIGHT
-
-    table.forEach(param => {
-      const resizeBox = document.createElement('div')
-      resizeBox.className = 'resize-box'
-      Object.keys(param.styleParams).forEach((key: string) => {
-        resizeBox.style[key] = param.styleParams[key]
-      })
-      DomUtil.setStyles(resizeBox, {
-        width: param.horz !== 'center' ? `${W}px` : undefined,
-        height: param.vert !== 'center' ? `${W}px` : undefined,
-        zIndex: '2000',
-      })
-      resizeBox.addEventListener('mousedown', event => {
-        event.stopPropagation()
-        event.preventDefault()
-        if (event.button !== 0)
-          return false
-        const [mx, my] = DomUtil.getMousePosIn(event, resizeBox)
-        const dragOfsX = param.horz === 'left' ? -mx : W - mx
-        const dragOfsY = param.vert === 'top' ? -my : W - my
-        const rect = this.root.getBoundingClientRect()
-        const prect = (this.root.parentNode as HTMLElement).getBoundingClientRect()
-        const box = {
-          left: rect.left - prect.left,
-          top: rect.top - prect.top,
-          right: rect.right - prect.left,
-          bottom: rect.bottom - prect.top,
-          center: 0,  // dummy
-        }
-
-        this.onEvent(WndEvent.RESIZE_BEGIN)
-
-        DomUtil.setMouseDragListener({
-          move: (event2: MouseEvent) => {
-            let [x, y] = DomUtil.getMousePosIn(event2, this.root.parentNode as HTMLElement)
-            x = Util.clamp(x, -dragOfsX, window.innerWidth - dragOfsX)
-            y = Util.clamp(y, -dragOfsY, window.innerHeight - dragOfsY)
-            box[param.horz] = x + dragOfsX
-            box[param.vert] = y + dragOfsY
-
-            let width = box.right - box.left - 2  // For border width.
-            let height = box.bottom - box.top - 2
-            if (width < MIN_WIDTH) {
-              box[param.horz] -= (MIN_WIDTH - width) * (param.horz === 'left' ? 1 : -1)
-              width = MIN_WIDTH
-            }
-            if (height < MIN_HEIGHT) {
-              box[param.vert] -= (MIN_HEIGHT - height) * (param.vert === 'top' ? 1 : -1)
-              height = MIN_HEIGHT
-            }
-            DomUtil.setStyles(this.root, {
-              width: `${Math.round(box.right - box.left - 2)}px`,
-              height: `${Math.round(box.bottom - box.top - 2)}px`,
-              left: `${Math.round(box.left)}px`,
-              top: `${Math.round(box.top)}px`,
-            })
-            this.onEvent(WndEvent.RESIZE_MOVE, {width, height: height - Wnd.TITLEBAR_HEIGHT})
-          },
-          up: (_event2: MouseEvent) => {
-            this.root.style.transitionProperty = ''
-            this.onEvent(WndEvent.RESIZE_END)
-          },
-        })
-
+    WndUtil.makeResizable(this.root, (event, param?) => {
+      switch (event) {
+      case WndEvent.RESIZE_BEGIN:
         this.wndMgr.moveToTop(this)
-
         this.root.style.transitionProperty = 'none'  // To change size immediately.
-        return true
-      })
-      this.root.appendChild(resizeBox)
+        break
+      case WndEvent.RESIZE_END:
+        this.root.style.transitionProperty = ''
+        break
+      }
+      this.onEvent(event, param)
     })
   }
 
@@ -412,37 +238,16 @@ export default class Wnd {
       this.close()
     })
 
-    titleBar.addEventListener('mousedown', event => {
-      if (event.button !== 0)
-        return false
-
-      this.onEvent(WndEvent.DRAG_BEGIN)
-
-      // Move window position with dragging.
-      event.preventDefault()
-      const [mx, my] = DomUtil.getMousePosIn(event, this.root)
-      const dragOfsX = -mx
-      const dragOfsY = -my
-      const winSize = this.getWindowSize()
-      DomUtil.setMouseDragListener({
-        move: (event2: MouseEvent) => {
-          let [x, y] = DomUtil.getMousePosIn(event2, this.root.parentNode as HTMLElement)
-          x = Util.clamp(x, -dragOfsX, window.innerWidth - winSize.width - dragOfsX)
-          y = Util.clamp(y, -dragOfsY, window.innerHeight - winSize.height - dragOfsY)
-
-          DomUtil.setStyles(this.root, {
-            left: `${Math.round(x + dragOfsX)}px`,
-            top: `${Math.round(y + dragOfsY)}px`,
-          })
-          this.onEvent(WndEvent.DRAG_MOVE, {x: x + dragOfsX, y: y + dragOfsY})
-        },
-        up: (_event2: MouseEvent) => {
-          this.root.style.transitionProperty = ''
-          this.onEvent(WndEvent.DRAG_END)
-        },
-      })
-      this.root.style.transitionProperty = 'none'  // To change position immediately.
-      return true
+    WndUtil.makeDraggable(this.root, titleBar, (event, param?) => {
+      switch (event) {
+      case WndEvent.DRAG_BEGIN:
+        this.root.style.transitionProperty = 'none'  // To change position immediately.
+        break
+      case WndEvent.DRAG_END:
+        this.root.style.transitionProperty = ''
+        break
+      }
+      this.onEvent(event, param)
     })
     return {titleBar, titleBtnHolder, titleElem}
   }
@@ -520,7 +325,7 @@ export default class Wnd {
     })
     this.root.appendChild(subItemHolder)
 
-    const rect = getOffsetRect(this.root, itemElem)
+    const rect = WndUtil.getOffsetRect(this.root, itemElem)
     DomUtil.setStyles(subItemHolder, {
       left: `${rect.left - 1}px`,  // For border size
       top: `${rect.bottom - 1}px`,
