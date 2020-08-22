@@ -134,7 +134,18 @@ export default class Wnd {
       }
       const itemElem = itemElems[index]
       activeSubmenuIndex = index
-      closeSubmenu = this.openSubmenu(menuItem, itemElem, onClose)
+
+      const rect = WndUtil.getOffsetRect(this.root, itemElem)
+      const pos = {
+        left: `${rect.left - 1}px`,  // For border size
+        top: `${rect.bottom - 1}px`,
+      }
+      const option = {
+        className: 'menu-subitem-holder',
+        onClose,
+      }
+      closeSubmenu = WndUtil.openSubmenu(
+        menuItem, pos, Z_MENU_SUBITEM, this.root, option)
       itemElem.classList.add('opened')
     }
 
@@ -273,78 +284,5 @@ export default class Wnd {
     titleElem.appendChild(document.createTextNode(title))
     parent.appendChild(titleElem)
     return titleElem
-  }
-
-  private openSubmenu(menuItem: MenuItemInfo, itemElem: HTMLElement,
-                      onClose?: () => void): () => void
-  {
-    const subItemHolder = document.createElement('div')
-    subItemHolder.className = 'menu-subitem-holder'
-    subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
-    menuItem.submenu.forEach(submenuItem => {
-      const submenuRow = document.createElement('div')
-      submenuRow.className = 'submenu-row clearfix'
-      const subItemElem = document.createElement('div')
-      if (submenuItem.label !== '----') {
-        let checked = submenuItem.checked
-        if (typeof submenuItem.checked === 'function')
-          checked = submenuItem.checked()
-        if (checked) {
-          const checked = document.createElement('div')
-          checked.className = 'submenu-check'
-          submenuRow.appendChild(checked)
-        }
-
-        subItemElem.innerText = submenuItem.label
-        let disabled = submenuItem.disabled
-        if (typeof submenuItem.disabled === 'function')
-          disabled = submenuItem.disabled()
-        if (disabled) {
-          subItemElem.className = 'menu-item disabled'
-          submenuRow.addEventListener('click', event => {
-            event.stopPropagation()
-          })
-        } else {
-          subItemElem.className = 'menu-item'
-          submenuRow.addEventListener('click', _event => {
-            if (submenuItem.click)
-              submenuItem.click()
-          })
-        }
-      } else {
-        const hr = document.createElement('hr')
-        hr.className = 'submenu-splitter'
-        submenuRow.style.padding = '4px 0'
-        submenuRow.addEventListener('click', event => {
-          event.stopPropagation()
-        })
-        submenuRow.appendChild(hr)
-      }
-      submenuRow.appendChild(subItemElem)
-      subItemHolder.appendChild(submenuRow)
-    })
-    this.root.appendChild(subItemHolder)
-
-    const rect = WndUtil.getOffsetRect(this.root, itemElem)
-    DomUtil.setStyles(subItemHolder, {
-      left: `${rect.left - 1}px`,  // For border size
-      top: `${rect.bottom - 1}px`,
-    })
-
-    const close = () => {
-      if (subItemHolder.parentNode != null)
-        subItemHolder.parentNode.removeChild(subItemHolder)
-      document.removeEventListener('click', onClickOther)
-    }
-
-    // To handle earlier than menu open, pass useCapture=true
-    const onClickOther = (_event: MouseEvent) => {
-      close()
-      if (onClose != null)
-        onClose()
-    }
-    document.addEventListener('click', onClickOther /*, true*/)
-
-    return close
   }
 }

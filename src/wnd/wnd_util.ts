@@ -1,6 +1,6 @@
 import DomUtil from '../util/dom_util'
 import Util from '../util/util'
-import {WndEvent} from './types'
+import {MenuItemInfo, WndEvent} from './types'
 import Wnd from './wnd'
 
 export default class WndUtil {
@@ -200,5 +200,78 @@ export default class WndUtil {
       })
       element.appendChild(resizeBox)
     })
+  }
+
+  public static openSubmenu(
+    menuItem: MenuItemInfo,
+    pos: {left?: string, bottom?: string},
+    zIndex: number, parent: HTMLElement,
+    option: {className?: string, onClose?: () => void}
+  ): () => void {
+    const subItemHolder = document.createElement('div')
+    if (option.className != null)
+      subItemHolder.className = option.className
+    subItemHolder.style.zIndex = String(zIndex)
+    menuItem.submenu.forEach(submenuItem => {
+      const submenuRow = document.createElement('div')
+      submenuRow.className = 'submenu-row clearfix'
+      const subItemElem = document.createElement('div')
+      if (submenuItem.label !== '----') {
+        let checked = submenuItem.checked
+        if (typeof submenuItem.checked === 'function')
+          checked = submenuItem.checked()
+        if (checked) {
+          const checked = document.createElement('div')
+          checked.className = 'submenu-check'
+          submenuRow.appendChild(checked)
+        }
+
+        subItemElem.innerText = submenuItem.label
+        let disabled = submenuItem.disabled
+        if (typeof submenuItem.disabled === 'function')
+          disabled = submenuItem.disabled()
+        if (disabled) {
+          subItemElem.className = 'menu-item disabled'
+          submenuRow.addEventListener('click', event => {
+            event.stopPropagation()
+          })
+        } else {
+          subItemElem.className = 'menu-item'
+          submenuRow.addEventListener('click', _event => {
+            if (submenuItem.click)
+              submenuItem.click()
+          })
+        }
+      } else {
+        const hr = document.createElement('hr')
+        hr.className = 'submenu-splitter'
+        submenuRow.style.padding = '4px 0'
+        submenuRow.addEventListener('click', event => {
+          event.stopPropagation()
+        })
+        submenuRow.appendChild(hr)
+      }
+      submenuRow.appendChild(subItemElem)
+      subItemHolder.appendChild(submenuRow)
+    })
+    parent.appendChild(subItemHolder)
+
+    DomUtil.setStyles(subItemHolder, pos)
+
+    const close = () => {
+      if (subItemHolder.parentNode != null)
+        subItemHolder.parentNode.removeChild(subItemHolder)
+      document.removeEventListener('click', onClickOther)
+    }
+
+    // To handle earlier than menu open, pass useCapture=true
+    const onClickOther = (_event: MouseEvent) => {
+      close()
+      if (option.onClose != null)
+        option.onClose()
+    }
+    document.addEventListener('click', onClickOther /*, true*/)
+
+    return close
   }
 }
