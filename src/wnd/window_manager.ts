@@ -120,6 +120,12 @@ export default class WindowManager {
     wnd.onEvent(WndEvent.FOCUS)
   }
 
+  public moveToCenter(wnd: Wnd): void {
+    const rootRect = this.root.getBoundingClientRect()
+    const wndSize = wnd.getWindowSize()
+    wnd.setPos((rootRect.width - wndSize.width) / 2, (rootRect.height - wndSize.height) / 2)
+  }
+
   public setFullscreen(element: HTMLElement, callback: (isFullscreen: boolean) => void): boolean {
     if (!fscreen.fullscreenEnabled)
       return false

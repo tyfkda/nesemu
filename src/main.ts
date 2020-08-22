@@ -1,6 +1,6 @@
 import App, {Option} from './app/app'
 import AudioManager from './util/audio_manager'
-import {GlobalPaletWnd, EqualizerWnd} from './app/other_wnd'
+import {AboutWnd, GlobalPaletWnd, EqualizerWnd} from './app/other_wnd'
 import DomUtil from './util/dom_util'
 import JsApp from './app/js_powered_app'
 import GamepadManager from './util/gamepad_manager'
@@ -31,6 +31,7 @@ class Main {
   private gamepadWnd: GamepadWnd|null = null
   private globalPaletWnd: GlobalPaletWnd|null = null
   private equalizerWnd: EqualizerWnd|null = null
+  private aboutWnd: AboutWnd|null = null
 
   constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
@@ -46,6 +47,7 @@ class Main {
     this.setUpGamePadLink()
     this.setUpVolumeLink()
     this.setUpEqualizerLink()
+    this.setUpAboutLink()
     this.setUpOpenRomLink()
     this.setUpBlur()
   }
@@ -371,6 +373,23 @@ class Main {
         this.wndMgr.add(this.equalizerWnd)
       } else {
         this.wndMgr.moveToTop(this.equalizerWnd)
+      }
+    })
+  }
+
+  private setUpAboutLink(): void {
+    const aboutText = document.getElementById('about')
+    if (aboutText == null)
+      return
+
+    aboutText.addEventListener('click', () => {
+      if (this.aboutWnd == null) {
+        this.aboutWnd = new AboutWnd(this.wndMgr, () => {
+          this.aboutWnd = null
+        })
+        this.wndMgr.add(this.aboutWnd)
+      } else {
+        this.wndMgr.moveToTop(this.aboutWnd)
       }
     })
   }
