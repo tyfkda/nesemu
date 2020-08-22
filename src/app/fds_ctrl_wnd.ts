@@ -16,6 +16,8 @@ export class FdsCtrlWnd extends Wnd {
         this.checkSideCount()
       })
     }
+
+    wndMgr.add(this)
   }
 
   private checkSideCount(): boolean {

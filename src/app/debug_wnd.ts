@@ -40,6 +40,8 @@ export class RegisterWnd extends Wnd {
           break
         }
       })
+
+    wndMgr.add(this)
   }
 
   public updateStatus(): void {
@@ -137,6 +139,8 @@ export class TraceWnd extends Wnd {
           break
         }
       })
+
+    wndMgr.add(this)
   }
 
   public reset(): void {
@@ -223,6 +227,8 @@ export class ControlWnd extends Wnd {
           break
         }
       })
+
+    wndMgr.add(this)
   }
 
   public updateState(paused: boolean): void {

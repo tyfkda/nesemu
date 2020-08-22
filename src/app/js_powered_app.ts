@@ -110,6 +110,8 @@ class JsScreenWnd extends ScreenWnd {
     this.canvas.className = 'pixelated full-size'
 
     this.setContent(this.canvas)
+
+    wndMgr.add(this)
   }
 
   public render(): void {
@@ -194,7 +196,6 @@ export default class JsApp extends App {
     super(wndMgr, option, true)
     this.jsNes = new JsNes()
     this.jsScreenWnd = new JsScreenWnd(this.wndMgr, this, this.jsNes, this.stream)
-    this.wndMgr.add(this.jsScreenWnd)
     if (option.title)
       this.jsScreenWnd.setTitle(option.title as string)
 

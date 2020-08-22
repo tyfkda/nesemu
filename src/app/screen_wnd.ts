@@ -143,6 +143,8 @@ export default class ScreenWnd extends Wnd {
       })
       this.updateContentSize(width, height)
     }
+
+    wndMgr.add(this)
   }
 
   public getTimeScale(): number {

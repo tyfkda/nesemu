@@ -47,6 +47,8 @@ export class FpsWnd extends Wnd {
           break
         }
       })
+
+    wndMgr.add(this)
   }
 
   public close(): void {
@@ -88,6 +90,8 @@ export class PaletWnd extends Wnd {
 
     this.palet.fill(-1)
     this.render()
+
+    wndMgr.add(this)
   }
 
   public getSelectedPalets(buf: Uint8Array) {
@@ -229,6 +233,8 @@ export class NameTableWnd extends Wnd {
         }
       })
     this.render()
+
+    wndMgr.add(this)
   }
 
   public close(): void {
@@ -287,6 +293,8 @@ export class PatternTableWnd extends Wnd {
         }
       })
     this.render()
+
+    wndMgr.add(this)
   }
 
   public close(): void {
@@ -329,6 +337,8 @@ export class GlobalPaletWnd extends Wnd {
       const b =  c        & 0xff
       this.boxes[i].style.backgroundColor = `rgb(${r},${g},${b})`
     }
+
+    wndMgr.add(this)
   }
 
   public close(): void {
@@ -413,6 +423,8 @@ export class AudioWnd extends Wnd {
         }
       })
     this.render()
+
+    wndMgr.add(this)
   }
 
   public close(): void {
@@ -575,6 +587,8 @@ export class EqualizerWnd extends Wnd {
       })
       this.getContentHolder().appendChild(div)
     }
+
+    wndMgr.add(this)
   }
 
   public close(): void {
@@ -695,7 +709,8 @@ export class AboutWnd extends Wnd {
 
     this.setContent(root)
 
-    this.wndMgr.moveToCenter(this)
+    wndMgr.add(this)
+    wndMgr.moveToCenter(this)
   }
 
   public close(): void {

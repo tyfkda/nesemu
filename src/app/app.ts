@@ -68,7 +68,6 @@ export default class App {
 
     const screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
     this.wndMap[AppWndType.SCREEN] = this.screenWnd = screenWnd
-    this.wndMgr.add(this.screenWnd)
     this.title = (option.title as string) || 'NES'
     this.screenWnd.setTitle(this.title)
 
@@ -120,8 +119,7 @@ export default class App {
       return false
     const result = this.fds.setImage(diskData)
     if (result) {
-      const ctrlWnd = new FdsCtrlWnd(this.wndMgr, this.fds)
-      this.wndMgr.add(ctrlWnd)
+      /*const ctrlWnd =*/ new FdsCtrlWnd(this.wndMgr, this.fds)
       this.wndMgr.moveToTop(this.screenWnd)
     }
     return result
@@ -159,7 +157,6 @@ export default class App {
     if (this.wndMap[AppWndType.PALET] != null)
       return false
     const paletWnd = new PaletWnd(this.wndMgr, this.nes, this.stream)
-    this.wndMgr.add(paletWnd)
     paletWnd.setPos(520, 0)
     this.wndMap[AppWndType.PALET] = paletWnd
     return true
@@ -172,7 +169,6 @@ export default class App {
     const ppu = this.nes.getPpu()
     const nameTableWnd = new NameTableWnd(this.wndMgr, ppu, this.stream,
                                           ppu.getMirrorMode() === MirrorMode.HORZ)
-    this.wndMgr.add(nameTableWnd)
     nameTableWnd.setPos(520, 40)
     this.wndMap[AppWndType.NAME] = nameTableWnd
     return true
@@ -191,7 +187,6 @@ export default class App {
     }
     const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes.getPpu(), this.stream,
                                                 getSelectedPalets)
-    this.wndMgr.add(patternTableWnd)
     patternTableWnd.setPos(520, 300)
     this.wndMap[AppWndType.PATTERN] = patternTableWnd
     return true
@@ -201,7 +196,6 @@ export default class App {
     if (this.wndMap[AppWndType.AUDIO] != null)
       return false
     const wnd = new AudioWnd(this.wndMgr, this.nes, this.stream)
-    this.wndMgr.add(wnd)
     this.wndMap[AppWndType.AUDIO] = wnd
     return true
   }
@@ -210,7 +204,6 @@ export default class App {
     if (this.wndMap[AppWndType.TRACE] != null)
       return false
     const traceWnd = new TraceWnd(this.wndMgr, this.nes, this.stream)
-    this.wndMgr.add(traceWnd)
     traceWnd.setPos(0, 500)
     this.wndMap[AppWndType.TRACE] = traceWnd
     return true
@@ -220,7 +213,6 @@ export default class App {
     if (this.wndMap[AppWndType.REGISTER] != null)
       return false
     const registerWnd = new RegisterWnd(this.wndMgr, this.nes, this.stream)
-    this.wndMgr.add(registerWnd)
     registerWnd.setPos(410, 500)
     this.wndMap[AppWndType.REGISTER] = registerWnd
     return true
@@ -230,7 +222,6 @@ export default class App {
     if (this.wndMap[AppWndType.CONTROL] != null)
       return false
     const ctrlWnd = new ControlWnd(this.wndMgr, this.stream)
-    this.wndMgr.add(ctrlWnd)
     ctrlWnd.setPos(520, 500)
     this.wndMap[AppWndType.CONTROL] = ctrlWnd
     return true
@@ -240,7 +231,6 @@ export default class App {
     if (this.wndMap[AppWndType.FPS] != null)
       return false
     const fpsWnd = new FpsWnd(this.wndMgr, this.stream)
-    this.wndMgr.add(fpsWnd)
     this.wndMap[AppWndType.FPS] = fpsWnd
     return true
   }

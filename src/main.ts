@@ -232,7 +232,6 @@ class Main {
         this.globalPaletWnd = new GlobalPaletWnd(this.wndMgr, () => {
           this.globalPaletWnd = null
         })
-        this.wndMgr.add(this.globalPaletWnd)
       } else {
         this.wndMgr.moveToTop(this.globalPaletWnd)
       }
@@ -251,7 +250,6 @@ class Main {
         this.keyConfigWnd = new KeyConfigWnd(this.wndMgr, () => {
           this.keyConfigWnd = null
         })
-        this.wndMgr.add(this.keyConfigWnd)
       } else {
         this.wndMgr.moveToTop(this.keyConfigWnd)
       }
@@ -273,7 +271,6 @@ class Main {
         this.gamepadWnd = new GamepadWnd(this.wndMgr, () => {
           this.gamepadWnd = null
         })
-        this.wndMgr.add(this.gamepadWnd)
       } else {
         this.wndMgr.moveToTop(this.gamepadWnd)
       }
@@ -370,7 +367,6 @@ class Main {
         this.equalizerWnd = new EqualizerWnd(this.wndMgr, () => {
           this.equalizerWnd = null
         })
-        this.wndMgr.add(this.equalizerWnd)
       } else {
         this.wndMgr.moveToTop(this.equalizerWnd)
       }
@@ -387,7 +383,6 @@ class Main {
         this.aboutWnd = new AboutWnd(this.wndMgr, () => {
           this.aboutWnd = null
         })
-        this.wndMgr.add(this.aboutWnd)
       } else {
         this.wndMgr.moveToTop(this.aboutWnd)
       }

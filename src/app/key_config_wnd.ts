@@ -167,6 +167,7 @@ const kGamepadLabels: string[] = [
 export class GamepadWnd extends GamepadBaseWnd {
   public constructor(wndMgr: WindowManager, onClose?: () => void) {
     super(wndMgr, 'Gamepad Config', kGamepadLabels, onClose)
+    wndMgr.add(this)
   }
 
   protected checkGamepad(): number {
@@ -283,6 +284,7 @@ export class KeyConfigWnd extends GamepadBaseWnd {
   public constructor(wndMgr: WindowManager, onClose?: () => void) {
     super(wndMgr, 'Key Config', kGamepadLabels, onClose)
     this.updateLabels()
+    wndMgr.add(this)
   }
 
   protected checkGamepad(): number {
