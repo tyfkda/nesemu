@@ -15,7 +15,6 @@ export default class Wnd {
   private menuBar: HTMLElement
   private clientMarginWidth: number = 0
   private clientMarginHeight: number = 0
-  private bTop: boolean = false
 
   public constructor(protected wndMgr: WindowManager, width: number, height: number,
                      title: string)
@@ -82,11 +81,10 @@ export default class Wnd {
   public onEvent(_event: WndEvent, _param?: any): any {}
 
   public isTop(): boolean {
-    return this.bTop
+    return this.wndMgr.isTop(this)
   }
 
   public setTop(value: boolean): void {
-    this.bTop = value
     if (value)
       this.root.classList.add('top')
     else

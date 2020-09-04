@@ -122,6 +122,10 @@ export default class WindowManager {
     wnd.onEvent(WndEvent.FOCUS, true)
   }
 
+  public isTop(wnd: Wnd): boolean {
+    return this.windows.length > 0 && this.windows[0] === wnd
+  }
+
   public moveToCenter(wnd: Wnd): void {
     const rootRect = this.root.getBoundingClientRect()
     const wndSize = wnd.getWindowSize()
