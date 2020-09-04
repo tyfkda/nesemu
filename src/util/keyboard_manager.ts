@@ -14,7 +14,7 @@ export default class KeyboardManager {
   }
 
   public getKeyPressing(key: string): boolean {
-    return this.pressingKeys[key]
+    return this.pressingKeys[key] === true
   }
 
   public getLastPressing(): string | null {
