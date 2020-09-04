@@ -13,6 +13,10 @@ export default class KeyboardManager {
       this.lastPressing = null
   }
 
+  public clear() {
+    Object.keys(this.pressingKeys).forEach((key) => this.pressingKeys[key] = false)
+  }
+
   public getKeyPressing(key: string): boolean {
     return this.pressingKeys[key] === true
   }

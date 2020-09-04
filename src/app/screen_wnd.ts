@@ -186,7 +186,8 @@ export default class ScreenWnd extends Wnd {
     case WndEvent.UPDATE_FRAME:
       {
         this.padKeyHandler.update(this.wndMgr.getKeyboardManager())
-        const speedUp = this.wndMgr.getKeyboardManager().getKeyPressing('ShiftLeft')
+        const speedUp = (this.isTop() &&
+                         this.wndMgr.getKeyboardManager().getKeyPressing('ShiftLeft'))
         this.timeScale = speedUp ? TIME_SCALE_FAST : TIME_SCALE_NORMAL
 
         const elapsed: number = param

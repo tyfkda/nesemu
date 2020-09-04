@@ -173,7 +173,7 @@ export class GamepadWnd extends GamepadBaseWnd {
   protected checkGamepad(): number {
     const padNo = 0
     const gamepad = this.getGamepad(padNo)
-    if (!gamepad)
+    if (!gamepad || this.wndMgr.isBlur())
       return 0
     return GamepadManager.getState(padNo)
   }

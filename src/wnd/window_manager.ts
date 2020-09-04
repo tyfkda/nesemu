@@ -186,6 +186,7 @@ export default class WindowManager {
     })
     window.addEventListener('blur', () => {
       this.blurred = true
+      this.keyboardManager.clear()
     })
   }
 
