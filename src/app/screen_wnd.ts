@@ -179,10 +179,6 @@ export default class ScreenWnd extends Wnd {
     case WndEvent.CLOSE_MENU:
       this.stream.triggerResumeApp()
       break
-    case WndEvent.BLUR:
-      this.timeScale = TIME_SCALE_NORMAL
-      this.padKeyHandler.clearAll()
-      break
     case WndEvent.UPDATE_FRAME:
       {
         this.padKeyHandler.update(this.wndMgr.getKeyboardManager())
@@ -194,6 +190,12 @@ export default class ScreenWnd extends Wnd {
         this.stream.triggerStartCalc()
         this.stream.triggerUpdate(elapsed)
         this.stream.triggerEndCalc()
+      }
+      break
+    case WndEvent.FOCUS:
+      if (!param) {
+        this.timeScale = TIME_SCALE_NORMAL
+        this.padKeyHandler.clearAll()
       }
       break
     default:

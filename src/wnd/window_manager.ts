@@ -60,6 +60,8 @@ export default class WindowManager {
   }
 
   public add(wnd: Wnd): void {
+    if (this.windows.length > 0)
+      this.windows[0].onEvent(WndEvent.FOCUS, false)
     this.windows.unshift(wnd)
     this.root.appendChild(wnd.getRootNode())
     this.updateWindowPriorities()
@@ -106,7 +108,7 @@ export default class WindowManager {
     if (n > 0 && this.windows[0] === wnd)  // Already on the top
       return
 
-    this.windows[0].onEvent(WndEvent.BLUR)
+    this.windows[0].onEvent(WndEvent.FOCUS, false)
     let prev = wnd
     for (let i = 0; i < n; ++i) {
       const tmp = this.windows[i]
@@ -117,7 +119,7 @@ export default class WindowManager {
     }
 
     this.updateWindowPriorities()
-    wnd.onEvent(WndEvent.FOCUS)
+    wnd.onEvent(WndEvent.FOCUS, true)
   }
 
   public moveToCenter(wnd: Wnd): void {
@@ -168,6 +170,8 @@ export default class WindowManager {
     if (index < 0)
       return
     this.windows.splice(index, 1)
+    if (index === 0 && this.windows.length > 0)
+      this.windows[0].onEvent(WndEvent.FOCUS, true)
     this.updateWindowPriorities()
   }
 

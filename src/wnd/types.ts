@@ -12,8 +12,7 @@ export const enum WndEvent {
   RESIZE_BEGIN,
   RESIZE_MOVE,
   RESIZE_END,
-  FOCUS,
-  BLUR,
+  FOCUS,  // param: true or false
 }
 
 export interface SubmenuItemInfo {
