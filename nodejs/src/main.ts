@@ -91,7 +91,7 @@ function createMyApp() {
       this.nes = Nes.create()
     }
 
-    public run(romData: Buffer): void {
+    public run(romData: Uint8Array): void {
       const result = this.nes.setRomData(romData)
       if (result !== true)
         throw result
@@ -185,7 +185,7 @@ function run(fileName: string): void {
     (resolve, reject) => {
       fs.readFile(fileName, (err: any, data: Buffer) => err ? reject(err) : resolve(data))
     })
-    .then((data: Buffer) => {
+    .then((data /*: Buffer*/) => {
       if (Util.getExt(fileName).toLowerCase() !== 'zip')
         return Promise.resolve(data)
 
@@ -199,9 +199,9 @@ function run(fileName: string): void {
           return Promise.reject('No .nes file included')
         })
     })
-    .then((romData: Buffer) => {
+    .then((romData /*: Uint8Array*/) => {
       const myApp = createMyApp()
-      myApp.run(romData)
+      myApp.run(romData as Uint8Array)
     })
     .catch((error: any) => {
       console.error(error)
