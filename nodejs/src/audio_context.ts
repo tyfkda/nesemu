@@ -162,6 +162,7 @@ export class AudioContext {
     }
     this.audio.openAudioDevice(options, (arrayBuffer: ArrayBuffer) => {
       const array = new Float32Array(arrayBuffer)
+console.log(`Callback: arrayBuffer=${array.length}`)
       this.destination.fillBuffer(array)
     })
   }
