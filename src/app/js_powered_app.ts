@@ -1,7 +1,7 @@
 // JS-powered NES
 // Run JavaScript code, instead of 6502 CPU.
 
-import App, {AppWndType, Option} from './app'
+import App, {Option} from './app'
 import {AppEvent} from './app_event'
 import AudioManager from '../util/audio_manager'
 import Bus from '../nes/bus'
@@ -159,25 +159,25 @@ class JsScreenWnd extends ScreenWnd {
           {
             label: 'Palette',
             click: () => {
-              this.app.createPaletWnd()
+              this.createPaletWnd()
             },
           },
           {
             label: 'NameTable',
             click: () => {
-              this.app.createNameTableWnd()
+              this.createNameTableWnd()
             },
           },
           {
             label: 'PatternTable',
             click: () => {
-              this.app.createPatternTableWnd()
+              this.createPatternTableWnd()
             },
           },
           {
             label: 'Control',
             click: () => {
-              this.app.createControlWnd()
+              this.createControlWnd()
             },
           },
         ],
@@ -202,7 +202,7 @@ export default class JsApp extends App {
       .subscribe((type, param?) => this.handleAppEvent(type, param))
 
     this.nes = this.jsNes
-    this.wndMap[AppWndType.SCREEN] = this.screenWnd = this.jsScreenWnd
+    this.screenWnd = this.jsScreenWnd
 
     const size = this.screenWnd.getWindowSize()
     let x = Util.clamp((option.centerX || 0) - size.width / 2,

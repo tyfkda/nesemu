@@ -1,12 +1,8 @@
 import Nes from '../nes/nes'
-import {MirrorMode} from '../nes/ppu/types'
 
 import {AppEvent} from './app_event'
 import AudioManager from '../util/audio_manager'
 import Fds from '../nes/fds/fds'
-import {FdsCtrlWnd} from './fds_ctrl_wnd'
-import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
-import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd, AudioWnd} from './other_wnd'
 import ScreenWnd from './screen_wnd'
 import StorageUtil from '../util/storage_util'
 import Util from '../util/util'
@@ -24,18 +20,6 @@ export class Option {
   public onClosed?: (app: App) => void
 }
 
-export const enum AppWndType {
-  SCREEN = 1,
-  PALET,
-  NAME,
-  PATTERN,
-  AUDIO,
-  REGISTER,
-  TRACE,
-  CONTROL,
-  FPS,
-}
-
 export default class App {
   protected destroying = false
   protected isPaused = false
@@ -46,7 +30,6 @@ export default class App {
 
   protected title: string
   protected screenWnd: ScreenWnd
-  protected wndMap = new Array<Wnd | null>()
 
   protected fds?: Fds
 
@@ -67,7 +50,7 @@ export default class App {
       .subscribe((type, param?) => this.handleAppEvent(type, param))
 
     const screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
-    this.wndMap[AppWndType.SCREEN] = this.screenWnd = screenWnd
+    this.screenWnd = screenWnd
     this.title = (option.title as string) || 'NES'
     this.screenWnd.setTitle(this.title)
 
@@ -90,15 +73,6 @@ export default class App {
     this.nes.getCpu().pause(false)
     this.screenWnd.getContentHolder().focus()
 
-    if (window.$DEBUG) {  // Accessing global variable!!!
-      this.createPaletWnd()
-      this.createNameTableWnd()
-      this.createPatternTableWnd()
-      this.createTraceWnd()
-      this.createRegisterWnd()
-      this.createControlWnd()
-    }
-
     return true
   }
 
@@ -119,7 +93,7 @@ export default class App {
       return false
     const result = this.fds.setImage(diskData)
     if (result) {
-      /*const ctrlWnd =*/ new FdsCtrlWnd(this.wndMgr, this.fds)
+      this.screenWnd.createFdsCtrlWnd(this.fds)
       this.wndMgr.moveToTop(this.screenWnd)
     }
     return result
@@ -153,88 +127,6 @@ export default class App {
     }
   }
 
-  public createPaletWnd(): boolean {
-    if (this.wndMap[AppWndType.PALET] != null)
-      return false
-    const paletWnd = new PaletWnd(this.wndMgr, this.nes, this.stream)
-    paletWnd.setPos(520, 0)
-    this.wndMap[AppWndType.PALET] = paletWnd
-    return true
-  }
-
-  public createNameTableWnd(): boolean {
-    if (this.wndMap[AppWndType.NAME] != null)
-      return false
-
-    const ppu = this.nes.getPpu()
-    const nameTableWnd = new NameTableWnd(this.wndMgr, ppu, this.stream,
-                                          ppu.getMirrorMode() === MirrorMode.HORZ)
-    nameTableWnd.setPos(520, 40)
-    this.wndMap[AppWndType.NAME] = nameTableWnd
-    return true
-  }
-
-  public createPatternTableWnd(): boolean {
-    if (this.wndMap[AppWndType.PATTERN] != null)
-      return false
-
-    const getSelectedPalets = (buf: Uint8Array): boolean => {
-      const paletWnd = this.wndMap[AppWndType.PALET] as PaletWnd
-      if (paletWnd == null)
-        return false
-      paletWnd.getSelectedPalets(buf)
-      return true
-    }
-    const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes.getPpu(), this.stream,
-                                                getSelectedPalets)
-    patternTableWnd.setPos(520, 300)
-    this.wndMap[AppWndType.PATTERN] = patternTableWnd
-    return true
-  }
-
-  public createAudioWnd(): boolean {
-    if (this.wndMap[AppWndType.AUDIO] != null)
-      return false
-    const wnd = new AudioWnd(this.wndMgr, this.nes, this.stream)
-    this.wndMap[AppWndType.AUDIO] = wnd
-    return true
-  }
-
-  public createTraceWnd(): boolean {
-    if (this.wndMap[AppWndType.TRACE] != null)
-      return false
-    const traceWnd = new TraceWnd(this.wndMgr, this.nes, this.stream)
-    traceWnd.setPos(0, 500)
-    this.wndMap[AppWndType.TRACE] = traceWnd
-    return true
-  }
-
-  public createRegisterWnd(): boolean {
-    if (this.wndMap[AppWndType.REGISTER] != null)
-      return false
-    const registerWnd = new RegisterWnd(this.wndMgr, this.nes, this.stream)
-    registerWnd.setPos(410, 500)
-    this.wndMap[AppWndType.REGISTER] = registerWnd
-    return true
-  }
-
-  public createControlWnd(): boolean {
-    if (this.wndMap[AppWndType.CONTROL] != null)
-      return false
-    const ctrlWnd = new ControlWnd(this.wndMgr, this.stream)
-    ctrlWnd.setPos(520, 500)
-    this.wndMap[AppWndType.CONTROL] = ctrlWnd
-    return true
-  }
-
-  public createFpsWnd(): boolean {
-    if (this.wndMap[AppWndType.FPS] != null)
-      return false
-    const fpsWnd = new FpsWnd(this.wndMgr, this.stream)
-    this.wndMap[AppWndType.FPS] = fpsWnd
-    return true
-  }
-
   public setupAudioManager() {
     if (this.audioManager == null) {
       this.audioManager = new AudioManager()
@@ -249,10 +141,6 @@ export default class App {
   }
 
   protected destroy() {
-    for (let wnd of Object.values(this.wndMap))
-      if (wnd != null)
-        wnd.close()
-
     this.cleanUp()
     if (this.option.onClosed)
       this.option.onClosed(this)
@@ -297,13 +185,8 @@ export default class App {
     case AppEvent.Type.CLOSE_WND:
       {
         const wnd = param as Wnd
-        const i = this.wndMap.indexOf(wnd)
-        if (i >= 0) {
-          this.wndMap[i] = null
-          if (i === AppWndType.SCREEN)
-            this.destroy()
-          break
-        }
+        if (wnd === this.screenWnd)
+          this.destroy()
       }
       break
     default:

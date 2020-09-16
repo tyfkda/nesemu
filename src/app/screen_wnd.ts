@@ -4,6 +4,7 @@ import {MenuItemInfo, WndEvent} from '../wnd/types'
 
 import DomUtil from '../util/dom_util'
 import Nes from '../nes/nes'
+import {MirrorMode} from '../nes/ppu/types'
 import {Scaler, NearestNeighborScaler, ScanlineScaler, EpxScaler} from '../util/scaler'
 
 import App from './app'
@@ -11,6 +12,10 @@ import {AppEvent} from './app_event'
 import AudioManager from '../util/audio_manager'
 import PadKeyHandler from '../util/pad_key_handler'
 import GamepadManager from '../util/gamepad_manager'
+import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
+import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd, AudioWnd} from './other_wnd'
+import Fds from '../nes/fds/fds'
+import {FdsCtrlWnd} from './fds_ctrl_wnd'
 
 import * as Pubsub from '../util/pubsub'
 
@@ -23,6 +28,18 @@ const TRANSITION_DURATION = '0.1s'
 
 const TIME_SCALE_NORMAL = 1
 const TIME_SCALE_FAST = 4
+
+const enum WndType {
+  PALET = 1,
+  NAME,
+  PATTERN,
+  AUDIO,
+  REGISTER,
+  TRACE,
+  CONTROL,
+  FPS,
+  FDS_CTRL,
+}
 
 const enum ScalerType {
   NEAREST,
@@ -67,6 +84,8 @@ export default class ScreenWnd extends Wnd {
   private padKeyHandler = new PadKeyHandler()
   private timeScale = 1
   private fullscreenResizeFunc: () => void
+
+  protected wndMap = new Array<Wnd | null>()
 
   constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,
               protected stream: AppEvent.Stream)
@@ -145,6 +164,15 @@ export default class ScreenWnd extends Wnd {
     }
 
     wndMgr.add(this)
+
+    if (window.$DEBUG) {  // Accessing global variable!!!
+      this.createPaletWnd()
+      this.createNameTableWnd()
+      this.createPatternTableWnd()
+      this.createTraceWnd()
+      this.createRegisterWnd()
+      this.createControlWnd()
+    }
   }
 
   public getTimeScale(): number {
@@ -257,6 +285,8 @@ export default class ScreenWnd extends Wnd {
   }
 
   public close(): void {
+    this.closeChildrenWindows()
+
     if (this.subscription != null)
       this.subscription.unsubscribe()
     this.stream.triggerCloseWnd(this)
@@ -265,6 +295,20 @@ export default class ScreenWnd extends Wnd {
 
   public render(): void {
     this.scaler.render(this.nes)
+  }
+
+  public createFdsCtrlWnd(fds: Fds): boolean {
+    if (this.wndMap[WndType.FDS_CTRL] != null)
+      return false
+    const fdsCtrlWnd = new FdsCtrlWnd(this.wndMgr, fds)
+    this.wndMap[WndType.FDS_CTRL] = fdsCtrlWnd
+    return true
+  }
+
+  protected closeChildrenWindows(): void {
+    for (let wnd of Object.values(this.wndMap))
+      if (wnd != null)
+        wnd.close()
   }
 
   protected setClientScale(scale: number): Wnd {
@@ -417,50 +461,50 @@ export default class ScreenWnd extends Wnd {
           {
             label: 'Palette',
             click: () => {
-              this.app.createPaletWnd()
+              this.createPaletWnd()
             },
           },
           {
             label: 'NameTable',
             click: () => {
-              this.app.createNameTableWnd()
+              this.createNameTableWnd()
             },
           },
           {
             label: 'PatternTable',
             click: () => {
-              this.app.createPatternTableWnd()
+              this.createPatternTableWnd()
             },
           },
           {
             label: 'Audio',
             click: () => {
-              this.app.createAudioWnd()
+              this.createAudioWnd()
             },
           },
           {
             label: 'FPS',
             click: () => {
-              this.app.createFpsWnd()
+              this.createFpsWnd()
             },
           },
           {label: '----'},
           {
             label: 'Trace',
             click: () => {
-              this.app.createTraceWnd()
+              this.createTraceWnd()
             },
           },
           {
             label: 'Registers',
             click: () => {
-              this.app.createRegisterWnd()
+              this.createRegisterWnd()
             },
           },
           {
             label: 'Control',
             click: () => {
-              this.app.createControlWnd()
+              this.createControlWnd()
             },
           },
         ],
@@ -484,6 +528,88 @@ export default class ScreenWnd extends Wnd {
     const y = (winHeight - (height + Wnd.TITLEBAR_HEIGHT + Wnd.MENUBAR_HEIGHT + 2)) / 2
     this.setPos(Math.round(x), Math.round(y))
     this.setClientSize(width, height)
+  }
+
+  protected createPaletWnd(): boolean {
+    if (this.wndMap[WndType.PALET] != null)
+      return false
+    const paletWnd = new PaletWnd(this.wndMgr, this.nes, this.stream)
+    paletWnd.setPos(520, 0)
+    this.wndMap[WndType.PALET] = paletWnd
+    return true
+  }
+
+  protected createNameTableWnd(): boolean {
+    if (this.wndMap[WndType.NAME] != null)
+      return false
+
+    const ppu = this.nes.getPpu()
+    const nameTableWnd = new NameTableWnd(this.wndMgr, ppu, this.stream,
+                                          ppu.getMirrorMode() === MirrorMode.HORZ)
+    nameTableWnd.setPos(520, 40)
+    this.wndMap[WndType.NAME] = nameTableWnd
+    return true
+  }
+
+  protected createPatternTableWnd(): boolean {
+    if (this.wndMap[WndType.PATTERN] != null)
+      return false
+
+    const getSelectedPalets = (buf: Uint8Array): boolean => {
+      const paletWnd = this.wndMap[WndType.PALET] as PaletWnd
+      if (paletWnd == null)
+        return false
+      paletWnd.getSelectedPalets(buf)
+      return true
+    }
+    const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes.getPpu(), this.stream,
+                                                getSelectedPalets)
+    patternTableWnd.setPos(520, 300)
+    this.wndMap[WndType.PATTERN] = patternTableWnd
+    return true
+  }
+
+  protected createAudioWnd(): boolean {
+    if (this.wndMap[WndType.AUDIO] != null)
+      return false
+    const wnd = new AudioWnd(this.wndMgr, this.nes, this.stream)
+    this.wndMap[WndType.AUDIO] = wnd
+    return true
+  }
+
+  protected createTraceWnd(): boolean {
+    if (this.wndMap[WndType.TRACE] != null)
+      return false
+    const traceWnd = new TraceWnd(this.wndMgr, this.nes, this.stream)
+    traceWnd.setPos(0, 500)
+    this.wndMap[WndType.TRACE] = traceWnd
+    return true
+  }
+
+  protected createRegisterWnd(): boolean {
+    if (this.wndMap[WndType.REGISTER] != null)
+      return false
+    const registerWnd = new RegisterWnd(this.wndMgr, this.nes, this.stream)
+    registerWnd.setPos(410, 500)
+    this.wndMap[WndType.REGISTER] = registerWnd
+    return true
+  }
+
+  protected createControlWnd(): boolean {
+    if (this.wndMap[WndType.CONTROL] != null)
+      return false
+    const ctrlWnd = new ControlWnd(this.wndMgr, this.stream)
+    ctrlWnd.setPos(520, 500)
+    this.wndMap[WndType.CONTROL] = ctrlWnd
+    return true
+  }
+
+  protected createFpsWnd(): boolean {
+    if (this.wndMap[WndType.FPS] != null)
+      return false
+    const fpsWnd = new FpsWnd(this.wndMgr, this.stream)
+    this.wndMap[WndType.FPS] = fpsWnd
+    return true
   }
 
   private isAspectRatio(scale: number): boolean {
