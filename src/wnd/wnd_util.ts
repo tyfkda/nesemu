@@ -46,7 +46,7 @@ export default class WndUtil {
 
   public static makeDraggable(
     element: HTMLElement, grip: HTMLElement, getClientRect: () => DOMRect,
-    onEvent: (WndEvent, any?) => void
+    onEvent: (event: WndEvent, param?: any) => void,
   ) {
     grip.addEventListener('mousedown', event => {
       if (event.button !== 0)
@@ -86,7 +86,8 @@ export default class WndUtil {
   }
 
   public static makeResizable(
-    element: HTMLElement, getClientRect: () => DOMRect, onEvent: (WndEvent, any?) => void
+    element: HTMLElement, getClientRect: () => DOMRect,
+    onEvent: (event: WndEvent, param?: any) => void,
   ) {
     const MIN_WIDTH = 80
     const MIN_HEIGHT = 60 + Wnd.TITLEBAR_HEIGHT
@@ -214,7 +215,7 @@ export default class WndUtil {
     menuItem: MenuItemInfo,
     pos: {left?: string, bottom?: string},
     parent: HTMLElement,
-    option: {className?: string, onClose?: () => void}
+    option: {className?: string, onClose?: () => void},
   ): () => void {
     const subItemHolder = document.createElement('div')
     if (option.className != null)
@@ -229,9 +230,9 @@ export default class WndUtil {
         if (typeof submenuItem.checked === 'function')
           checked = submenuItem.checked()
         if (checked) {
-          const checked = document.createElement('div')
-          checked.className = 'submenu-check'
-          submenuRow.appendChild(checked)
+          const checkedElem = document.createElement('div')
+          checkedElem.className = 'submenu-check'
+          submenuRow.appendChild(checkedElem)
         }
 
         subItemElem.innerText = submenuItem.label

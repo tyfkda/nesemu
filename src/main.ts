@@ -109,7 +109,6 @@ class Main {
         activeSubmenuIndex = -1
       }
       closeSubmenu = null
-      //this.onEvent(WndEvent.CLOSE_MENU)
       bar.classList.remove('selected')
     }
 

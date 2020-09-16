@@ -716,6 +716,11 @@ export class VolumeWnd extends Wnd {
     this.setContent(container)
   }
 
+  public close(): void {
+    this.onClose()
+    super.close()
+  }
+
   private createDom(): HTMLElement {
     const container = document.createElement('div')
     container.id = 'volume-slider-container'
@@ -761,11 +766,6 @@ export class VolumeWnd extends Wnd {
     slider.style.height = `${Math.round(VolumeWnd.volume * (120 - 3 * 2))}px`
 
     return container
-  }
-
-  public close(): void {
-    this.onClose()
-    super.close()
   }
 }
 
