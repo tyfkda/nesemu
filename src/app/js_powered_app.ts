@@ -73,7 +73,8 @@ class JsNes extends Nes {
   }
 
   public update(): void {
-    this.jsCpu.update()
+    if (this.jsCpu != null)
+      this.jsCpu.update()
   }
 
   public step(_leftCycles?: number): number {
@@ -110,8 +111,6 @@ class JsScreenWnd extends ScreenWnd {
     this.canvas.className = 'pixelated full-size'
 
     this.setContent(this.canvas)
-
-    wndMgr.add(this)
   }
 
   public render(): void {

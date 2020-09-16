@@ -341,6 +341,9 @@ export default class App {
 
   protected updateAudio(): void {
     const audioManager = this.audioManager
+    if (audioManager == null)
+      return
+
     const count = audioManager.getChannelCount()
     for (let ch = 0; ch < count; ++ch) {
       const volume = this.nes.getSoundVolume(ch)
