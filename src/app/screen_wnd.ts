@@ -364,13 +364,22 @@ export default class ScreenWnd extends Wnd {
           },
           {label: '----'},
           {
-            label: 'Save',
+            label: 'Save status',
             click: () => this.app.saveData(),
           },
           {
-            label: 'Load',
+            label: 'Download status to file',
+            click: () => this.app.saveDataAs(),
+          },
+          {label: '----'},
+          {
+            label: 'Load status',
             disabled: () => !this.app.hasSaveData(),
             click: () => this.app.loadData(),
+          },
+          {
+            label: 'Restore status from file',
+            click: () => this.app.loadDataFromFile(),
           },
           {label: '----'},
           {

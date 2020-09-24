@@ -2,6 +2,7 @@ import Nes from '../nes/nes'
 
 import {AppEvent} from './app_event'
 import AudioManager from '../util/audio_manager'
+import DomUtil from '../util/dom_util'
 import Fds from '../nes/fds/fds'
 import ScreenWnd from './screen_wnd'
 import StorageUtil from '../util/storage_util'
@@ -108,6 +109,18 @@ export default class App {
     return StorageUtil.putObject(this.title, saveData)
   }
 
+  public saveDataAs() {
+    const saveData = this.nes.save()
+    const blob = new Blob([JSON.stringify(saveData)], {type: 'application/json'})
+    const objectURL = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    document.body.appendChild(link)
+    link.href = objectURL
+    link.download = `${this.title}.json`
+    link.click()
+    document.body.removeChild(link)
+  }
+
   public hasSaveData(): boolean {
     return StorageUtil.hasKey(this.title)
   }
@@ -120,11 +133,37 @@ export default class App {
       } catch (e) {
         console.error(e)
         this.wndMgr.showSnackbar('Error: Load data failed')
-        this.nes.reset()
       }
     } else {
       this.wndMgr.showSnackbar(`No save data for "${this.title}"`)
     }
+  }
+
+  public loadDataFromFile() {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.json, application/json'
+    input.onchange = (_event) => {
+      if (!input.value)
+        return
+      const fileList = input.files
+      if (fileList) {
+        const file = fileList[0]
+        DomUtil.loadFile(file)
+          .then(binary => {
+            try {
+              const json = (new TextDecoder).decode(binary)
+              const saveData = JSON.parse(json)
+              this.nes.load(saveData)
+            } catch (e) {
+              console.error(e)
+              this.wndMgr.showSnackbar('Error: Load data failed')
+            }
+          })
+      }
+      input.value = ''
+    }
+    input.click()
   }
 
   public setupAudioManager() {
