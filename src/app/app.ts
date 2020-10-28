@@ -56,10 +56,10 @@ export default class App {
     this.screenWnd.setTitle(this.title)
 
     const size = this.screenWnd.getWindowSize()
-    let x = Util.clamp((option.centerX || 0) - size.width / 2,
-                       0, window.innerWidth - size.width - 1)
-    let y = Util.clamp((option.centerY || 0) - size.height / 2,
-                       0, window.innerHeight - size.height - 1)
+    const x = Util.clamp((option.centerX || 0) - size.width / 2,
+                         0, window.innerWidth - size.width - 1)
+    const y = Util.clamp((option.centerY || 0) - size.height / 2,
+                         0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
   }
 
@@ -109,7 +109,7 @@ export default class App {
     return StorageUtil.putObject(this.title, saveData)
   }
 
-  public saveDataAs() {
+  public saveDataAs(): void {
     const saveData = this.nes.save()
     const blob = new Blob([JSON.stringify(saveData)], {type: 'application/json'})
     const objectURL = window.URL.createObjectURL(blob)
@@ -139,11 +139,11 @@ export default class App {
     }
   }
 
-  public loadDataFromFile() {
+  public loadDataFromFile(): void {
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = '.json, application/json'
-    input.onchange = (_event) => {
+    input.onchange = _event => {
       if (!input.value)
         return
       const fileList = input.files
@@ -152,7 +152,7 @@ export default class App {
         DomUtil.loadFile(file)
           .then(binary => {
             try {
-              const json = (new TextDecoder).decode(binary)
+              const json = new TextDecoder().decode(binary)
               const saveData = JSON.parse(json)
               this.nes.load(saveData)
             } catch (e) {
@@ -166,7 +166,7 @@ export default class App {
     input.click()
   }
 
-  public setupAudioManager() {
+  public setupAudioManager(): void {
     if (this.audioManager == null) {
       this.audioManager = new AudioManager()
     } else {
@@ -179,13 +179,13 @@ export default class App {
     }
   }
 
-  protected destroy() {
+  protected destroy(): void {
     this.cleanUp()
     if (this.option.onClosed)
       this.option.onClosed(this)
   }
 
-  protected cleanUp() {
+  protected cleanUp(): void {
     this.destroying = true
     if (this.audioManager)
       this.audioManager.release()
@@ -193,11 +193,11 @@ export default class App {
     this.subscription.unsubscribe()
   }
 
-  protected handleAppEvent(type: AppEvent.Type, param?: any) {
+  protected handleAppEvent(type: AppEvent.Type, param?: any): void {
     switch (type) {
     case AppEvent.Type.UPDATE:
       if (!this.isPaused) {
-        const elapsed: number = param
+        const elapsed = param as number
         this.update(elapsed)
       }
       break

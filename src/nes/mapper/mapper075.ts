@@ -53,7 +53,7 @@ export class Mapper075 extends Mapper {
     // PRG RAM
     const ram = new Uint8Array(0x2000)
     ram.fill(0xbf)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
+    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => ram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
   }
 }

@@ -13,23 +13,22 @@ import './util/polyfill'
 import * as JSZip from 'jszip'
 
 // Request Animation Frame
-window.requestAnimationFrame = (function() {
-  return (window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-          window.webkitRequestAnimationFrame || window.msRequestAnimationFrame)
-})()
+window.requestAnimationFrame =
+  (window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+   window.webkitRequestAnimationFrame || window.msRequestAnimationFrame)
 
 class Main {
   private wndMgr: WindowManager
   private menuItems: Array<MenuItemInfo>
   private apps: App[] = []
-  private diskBios: Uint8Array|null = null
-  private uninsertedApp: App|null = null
-  private keyConfigWnd: KeyConfigWnd|null = null
-  private gamepadWnd: GamepadWnd|null = null
-  private globalPaletWnd: GlobalPaletWnd|null = null
-  private equalizerWnd: EqualizerWnd|null = null
-  private volumeWnd: VolumeWnd|null = null
-  private aboutWnd: AboutWnd|null = null
+  private diskBios: Uint8Array | null = null
+  private uninsertedApp: App | null = null
+  private keyConfigWnd: KeyConfigWnd | null = null
+  private gamepadWnd: GamepadWnd | null = null
+  private globalPaletWnd: GlobalPaletWnd | null = null
+  private equalizerWnd: EqualizerWnd | null = null
+  private volumeWnd: VolumeWnd | null = null
+  private aboutWnd: AboutWnd | null = null
 
   constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
@@ -52,7 +51,7 @@ class Main {
               const input = document.createElement('input')
               input.type = 'file'
               input.accept = '.nes,.zip, application/zip'
-              input.onchange = (_event) => {
+              input.onchange = _event => {
                 if (!input.value)
                   return
                 const fileList = input.files
@@ -202,7 +201,7 @@ class Main {
         title: file.name,
         centerX: x,
         centerY: y,
-        onClosed: (app) => {
+        onClosed: app => {
           this.removeApp(app)
         },
       })
@@ -216,7 +215,7 @@ class Main {
     const promises = new Array<Promise<any>>()
     for (let i = 0; i < files.length; ++i) {
       const file = files[i]
-      let promise: Promise<any>|null = null
+      let promise: Promise<any> | null = null
       const ext = Util.getExt(file.name).toLowerCase()
       if (ext === 'js') {
         // Skip, because already processed.
@@ -249,7 +248,7 @@ class Main {
     Promise.all(promises)
       .then(results => {
         const typeMap: {[key: string]: Array<any>} = {}
-        ; (results as {type: string, binary: Uint8Array, fileName: string}[]).forEach(result => {
+        ; (results as {type: string; binary: Uint8Array; fileName: string}[]).forEach(result => {
           if (!typeMap[result.type])
             typeMap[result.type] = []
           typeMap[result.type].push(result)
@@ -301,7 +300,7 @@ class Main {
       title,
       centerX: x,
       centerY: y,
-      onClosed: (app2) => {
+      onClosed: app2 => {
         this.removeApp(app2)
       },
     }
@@ -324,8 +323,8 @@ class Main {
       title,
       centerX: x,
       centerY: y,
-      onClosed: (_app) => {
-        this.removeApp(_app)
+      onClosed: app2 => {
+        this.removeApp(app2)
       },
     }
 

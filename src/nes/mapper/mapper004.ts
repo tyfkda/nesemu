@@ -28,7 +28,7 @@ export class Mapper004 extends Mapper {
     this.options.prgBankCtrl.setPrgBank(3, this.maxPrg)
 
     this.ram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.ram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
                                     (adr, value) => { this.ram[adr & 0x1fff] = value })
 
@@ -96,7 +96,7 @@ export class Mapper004 extends Mapper {
     this.options.ppu.setMirrorMode(mirror)  // Default vertical mirroring?
   }
 
-  public reset() {
+  public reset(): void {
     this.irqHlineEnable = false
     this.irqHlineValue = this.irqHlineCounter = -1
   }
@@ -146,7 +146,7 @@ export class Mapper004 extends Mapper {
     }
   }
 
-  protected setPrgBank(swap: number) {
+  protected setPrgBank(swap: number): void {
     if ((swap & 0x40) === 0) {
       this.options.prgBankCtrl.setPrgBank(0, this.regs[6])
       this.options.prgBankCtrl.setPrgBank(1, this.regs[7])
@@ -158,7 +158,7 @@ export class Mapper004 extends Mapper {
     }
   }
 
-  protected setChrBank(swap: number) {
+  protected setChrBank(swap: number): void {
     if ((swap & 0x80) === 0) {
       this.options.ppu.setChrBankOffset(0, this.regs[0] & 0xfe)
       this.options.ppu.setChrBankOffset(1, this.regs[0] | 1)

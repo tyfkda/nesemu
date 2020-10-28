@@ -27,7 +27,7 @@ class HEventBuf {
     this.count = 0
   }
 
-  public add(hcount: number, type: HEventType, value: number, index: number = -1): void {
+  public add(hcount: number, type: HEventType, value: number, index = -1): void {
     const n = this.count
     // Search an event which has same type at the hcount.
     for (let i = n; --i >= 0; ) {
@@ -99,18 +99,18 @@ export class HEvents {
     return this.nextBuf.events[n - 1].hcount
   }
 
-  public add(hcount: number, type: HEventType, value: number, index: number = -1): void {
+  public add(hcount: number, type: HEventType, value: number, index = -1): void {
     this.nextBuf.add(hcount, type, value, index)
   }
 }
 
 export class HStatus {
-  public ppuCtrl: number = 0
-  public ppuMask: number = 0
+  public ppuCtrl = 0
+  public ppuMask = 0
   public chrBankOffset = new Array<number>(8)
-  public mirrorModeBit: number = 0x44  // 2bit x 4screen
-  public scrollCurr: number = 0
-  public scrollFineX: number = 0
+  public mirrorModeBit = 0x44  // 2bit x 4screen
+  public scrollCurr = 0
+  public scrollFineX = 0
 
   constructor() {
     this.reset()
@@ -183,13 +183,13 @@ export class HStatusMgr {
   public lastFrame = new HStatus()
   public save = new HStatus()
 
-  public reset() {
+  public reset(): void {
     this.current.reset()
     this.lastFrame.reset()
     this.save.reset()
   }
 
-  public swap() {
+  public swap(): void {
     // Move save to lastFrame,
     // and keep current status into save as a next frame's start status.
     const tmp = this.lastFrame

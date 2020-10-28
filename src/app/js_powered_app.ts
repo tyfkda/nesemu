@@ -205,10 +205,10 @@ export default class JsApp extends App {
     this.screenWnd = this.jsScreenWnd
 
     const size = this.screenWnd.getWindowSize()
-    let x = Util.clamp((option.centerX || 0) - size.width / 2,
-                       0, window.innerWidth - size.width - 1)
-    let y = Util.clamp((option.centerY || 0) - size.height / 2,
-                       0, window.innerHeight - size.height - 1)
+    const x = Util.clamp((option.centerX || 0) - size.width / 2,
+                         0, window.innerWidth - size.width - 1)
+    const y = Util.clamp((option.centerY || 0) - size.height / 2,
+                         0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
   }
 
@@ -224,7 +224,7 @@ export default class JsApp extends App {
     this.jsNes.reload()
   }
 
-  protected handleAppEvent(type: AppEvent.Type, param?: any) {
+  protected handleAppEvent(type: AppEvent.Type, param?: any): void {
     switch (type) {
     case AppEvent.Type.RUN:
       this.jsNes.jsCpu.pause(false)

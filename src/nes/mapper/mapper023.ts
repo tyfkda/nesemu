@@ -17,9 +17,9 @@ class Mapper023Base extends Mapper {
   private prgBankMode = 0
   private prgBank = new Array(4)
   private chrBank = new Array(8)
-  private irqControl: number = 0
-  private irqLatch: number = 0
-  private irqCounter: number = 0
+  private irqControl = 0
+  private irqLatch = 0
+  private irqCounter = 0
 
   constructor(private options: MapperOptions, mapping: {[key: number]: number}) {
     super()
@@ -122,7 +122,7 @@ class Mapper023Base extends Mapper {
 
     // PRG RAM
     this.ram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.ram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
                                     (adr, value) => { this.ram[adr & 0x1fff] = value })
   }

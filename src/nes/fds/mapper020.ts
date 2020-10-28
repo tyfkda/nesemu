@@ -79,7 +79,7 @@ function loadFdsImage(image: Uint8Array): Uint8Array[] {
     const totalLen = imageLen + blocks.length * 2 + 1
     const sideImage = new Uint8Array(totalLen)
     let dst = 0
-    for (let [p, len] of blocks) {
+    for (const [p, len] of blocks) {
       for (let j = 0; j < len; ++j)
         sideImage[dst + j] = image[p + j]
       dst += len
@@ -118,7 +118,7 @@ export class Mapper020 extends Mapper {
     this.options.ppu.setMirrorMode(MirrorMode.HORZ)
 
     // BIOS ROM
-    this.options.bus.setReadMemory(0xe000, 0xffff, (adr) => {
+    this.options.bus.setReadMemory(0xe000, 0xffff, adr => {
       adr = adr | 0
       return this.biosData[adr - 0xe000] | 0
     })
@@ -126,7 +126,7 @@ export class Mapper020 extends Mapper {
     this.reset()
   }
 
-  public reset() {
+  public reset(): void {
     this.headPointer = 0
     this.irqCounter = 0
     this.regs.fill(0)
@@ -139,10 +139,10 @@ export class Mapper020 extends Mapper {
     this.delay = 0
   }
 
-  public setUp(nes: Nes) {
+  public setUp(nes: Nes): void {
     this.nes = nes
 
-    this.options.bus.setReadMemory(0x4000, 0x5fff, (adr) => {  // APU
+    this.options.bus.setReadMemory(0x4000, 0x5fff, adr => {  // APU
       if (0x4030 <= adr && adr <= 0x403f)
         return this.readDiskReg(adr)
       return this.nes.readFromApu(adr)
@@ -155,7 +155,7 @@ export class Mapper020 extends Mapper {
 
     // PRG RAM
     this.ram.fill(0xbf)
-    this.options.bus.setReadMemory(0x6000, 0xdfff, (adr) => this.ram[adr - 0x6000])
+    this.options.bus.setReadMemory(0x6000, 0xdfff, adr => this.ram[adr - 0x6000])
     this.options.bus.setWriteMemory(0x6000, 0xdfff,
                                     (adr, value) => { this.ram[adr - 0x6000] = value })
   }
@@ -214,7 +214,7 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
     } else {
       this.scanningDisk = true
 
-      let needIrq = (this.regs[FDS_CTRL] & FDS_CTRL_ENABLE_IRQ_WHEN_DRIVE_READY) !== 0
+      const needIrq = (this.regs[FDS_CTRL] & FDS_CTRL_ENABLE_IRQ_WHEN_DRIVE_READY) !== 0
 
 // console.log(`  read from disk: ${Util.hex(this.headPointer, 4)}: ${Util.hex(this.image[this.headPointer])}`)
       const diskData = this.image[this.headPointer]
@@ -242,12 +242,12 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
     }
   }
 
-  public eject() {
+  public eject(): void {
     delete this.image
     this.headPointer = 0
   }
 
-  public setSide(side: number) {
+  public setSide(side: number): void {
     this.image = this.diskSideImages[side % this.diskSideImages.length]
     // this.reset()
   }

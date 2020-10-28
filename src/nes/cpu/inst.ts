@@ -290,7 +290,7 @@ export const kInstTable: Instruction[] = (() => {
   table.fill(kIllegalInstruction)
   kTable.forEach(inst => {
     const [code, opType, addressing, bytes, cycle] = inst
-    table[code] = { opType, addressing, bytes, cycle }
+    table[code] = {opType, addressing, bytes, cycle}
   })
   return table
 })()

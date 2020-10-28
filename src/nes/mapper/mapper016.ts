@@ -67,7 +67,7 @@ export class Mapper016 extends Mapper {
     })
   }
 
-  public reset() {
+  public reset(): void {
     this.irqEnable = false
     this.irqValue = this.irqCounter = 0
   }

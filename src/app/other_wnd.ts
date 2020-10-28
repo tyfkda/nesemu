@@ -99,7 +99,7 @@ export class PaletWnd extends Wnd {
     wndMgr.add(this)
   }
 
-  public getSelectedPalets(buf: Uint8Array) {
+  public getSelectedPalets(buf: Uint8Array): void {
     const selected = this.selected
     for (let i = 0; i < selected.length; ++i)
       buf[i] = selected[i]
@@ -138,7 +138,7 @@ export class PaletWnd extends Wnd {
       buf[i] = paletTable[i] & 0x3f
   }
 
-  private createDom(): {root: HTMLElement, boxes: HTMLElement[], groups: HTMLElement[]} {
+  private createDom(): {root: HTMLElement; boxes: HTMLElement[]; groups: HTMLElement[]} {
     const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
     const root = document.createElement('div')
     root.className = 'clearfix'
@@ -352,7 +352,7 @@ export class GlobalPaletWnd extends Wnd {
     super.close()
   }
 
-  private createDom(): {root: HTMLElement, boxes: HTMLElement[]} {
+  private createDom(): {root: HTMLElement; boxes: HTMLElement[]} {
     const UNIT = GlobalPaletWnd.UNIT, W = GlobalPaletWnd.W, H = GlobalPaletWnd.H
     const root = document.createElement('div')
     root.className = 'clearfix'
@@ -690,14 +690,14 @@ export class EqualizerWnd extends Wnd {
 export class VolumeWnd extends Wnd {
   private static volume = 0
 
-  public static setUp() {
+  public static setUp(): void {
     VolumeWnd.volume = VolumeWnd.readVolumeFromStorage()
     const audioContextClass = window.AudioContext || window.webkitAudioContext
     AudioManager.setUp(audioContextClass)
     AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
   }
 
-  public static onFocusChanged(focus: boolean) {
+  public static onFocusChanged(focus: boolean): void {
     if (focus) {
       AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
     } else {
@@ -738,7 +738,7 @@ export class VolumeWnd extends Wnd {
 
     let dragging = false
 
-    container.addEventListener('mousedown', (event) => {
+    container.addEventListener('mousedown', event => {
       if (event.button !== 0 || dragging)
         return
       dragging = true

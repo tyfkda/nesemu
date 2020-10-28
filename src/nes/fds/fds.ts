@@ -32,11 +32,11 @@ export default class Fds implements PrgBankController {
     return this.mapper.getSideCount()
   }
 
-  public eject() {
+  public eject(): void {
     this.mapper.eject()
   }
 
-  public setSide(side: number) {
+  public setSide(side: number): void {
     this.mapper.setSide(side)
   }
 

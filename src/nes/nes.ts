@@ -31,8 +31,7 @@ function getHblankCount(cpuCycle: number): number {
 
 function isRomValid(romData: Uint8Array): boolean {
   // Check header.
-  return (romData[0] === 0x4e && romData[1] === 0x45 && romData[2] === 0x53 &&
-          romData[3] === 0x1a)
+  return romData[0] === 0x4e && romData[1] === 0x45 && romData[2] === 0x53 && romData[3] === 0x1a
 }
 
 function getMapperNo(romData: Uint8Array): number {
@@ -199,7 +198,7 @@ export default class Nes implements PrgBankController {
     return this.mapper.getSoundDutyRatio(channel - this.apuChannelCount)
   }
 
-  public render(pixels: Uint8Array|Uint8ClampedArray): void {
+  public render(pixels: Uint8Array | Uint8ClampedArray): void {
     this.ppu.render(pixels)
   }
 
@@ -252,7 +251,7 @@ export default class Nes implements PrgBankController {
       this.ppu.write(reg, value)
     })
 
-    bus.setReadMemory(0x4000, 0x5fff, (adr) => this.readFromApu(adr))  // APU
+    bus.setReadMemory(0x4000, 0x5fff, adr => this.readFromApu(adr))  // APU
     bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => this.writeToApu(adr, value))  // APU
 
     // PRG ROM
@@ -271,7 +270,7 @@ export default class Nes implements PrgBankController {
     })
 
     // RAM
-    bus.setReadMemory(0x0000, 0x1fff, (adr) => this.ram[adr & (RAM_SIZE - 1)])
+    bus.setReadMemory(0x0000, 0x1fff, adr => this.ram[adr & (RAM_SIZE - 1)])
     bus.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
   }
 

@@ -13,8 +13,8 @@ export default class Wnd {
   private titleBtnHolder: HTMLElement
   private titleElem: HTMLElement
   private menuBar: HTMLElement
-  private clientMarginWidth: number = 0
-  private clientMarginHeight: number = 0
+  private clientMarginWidth = 0
+  private clientMarginHeight = 0
 
   public constructor(protected wndMgr: WindowManager, width: number, height: number,
                      title: string)
@@ -189,7 +189,7 @@ export default class Wnd {
     // this.root = null
   }
 
-  public addResizeBox() {
+  public addResizeBox(): void {
     this.root.classList.add('resizable')
 
     this.addTitleButton(this.titleBtnHolder, 'maximize', () => {
@@ -213,7 +213,7 @@ export default class Wnd {
       })
   }
 
-  protected maximize() {
+  protected maximize(): void {
     this.setPos(0, 0)
     const menubarHeight = this.menuBar != null ? Wnd.MENUBAR_HEIGHT : 0
     const rootRect = this.wndMgr.getRootClientRect()

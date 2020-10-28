@@ -33,7 +33,7 @@ export class Subject<Type> {
 
   public next(type: Type, param?: any): void {
     ++this.nestCount
-    for (let s of this.subscribers)
+    for (const s of this.subscribers)
       if (s != null)
         s(type, param)
 

@@ -4,7 +4,9 @@ import {MenuItemInfo, WndEvent, Z_MENU_SUBITEM} from './types'
 import Wnd from './wnd'
 
 export default class WndUtil {
-  public static getOffsetRect(parent: HTMLElement, target: HTMLElement) {
+  public static getOffsetRect(
+    parent: HTMLElement, target: HTMLElement,
+  ): {left: number; top: number; right: number; bottom: number} {
     const prect = parent.getBoundingClientRect()
     const trect = target.getBoundingClientRect()
     return {
@@ -15,7 +17,9 @@ export default class WndUtil {
     }
   }
 
-  public static createHorizontalSplitter(parent: HTMLElement, upperHeight: number) {
+  public static createHorizontalSplitter(
+    parent: HTMLElement, upperHeight: number,
+  ): [HTMLElement, HTMLElement] {
     const upper = document.createElement('div')
     upper.className = 'upper'
     DomUtil.setStyles(upper, {
@@ -47,7 +51,7 @@ export default class WndUtil {
   public static makeDraggable(
     element: HTMLElement, grip: HTMLElement, getClientRect: () => DOMRect,
     onEvent: (event: WndEvent, param?: any) => void,
-  ) {
+  ): void {
     grip.addEventListener('mousedown', event => {
       if (event.button !== 0)
         return false
@@ -67,7 +71,7 @@ export default class WndUtil {
       const pos = {x: mx, y: my}
       DomUtil.setMouseDragListener({
         move: (event2: MouseEvent) => {
-          let [x, y] = DomUtil.getMousePosIn(event2, element.parentNode as HTMLElement)
+          const [x, y] = DomUtil.getMousePosIn(event2, element.parentNode as HTMLElement)
           pos.x = Util.clamp(x + dragOfsX, 0, Math.floor(rootRect.width - width))
           pos.y = Util.clamp(y + dragOfsY, 0, Math.floor(rootRect.height - height))
 
@@ -88,7 +92,7 @@ export default class WndUtil {
   public static makeResizable(
     element: HTMLElement, getClientRect: () => DOMRect,
     onEvent: (event: WndEvent, param?: any) => void,
-  ) {
+  ): void {
     const MIN_WIDTH = 80
     const MIN_HEIGHT = 60 + Wnd.TITLEBAR_HEIGHT
     const W = 8
@@ -213,9 +217,9 @@ export default class WndUtil {
 
   public static openSubmenu(
     menuItem: MenuItemInfo,
-    pos: {left?: string, bottom?: string},
+    pos: {left?: string; bottom?: string},
     parent: HTMLElement,
-    option: {className?: string, onClose?: () => void},
+    option: {className?: string; onClose?: () => void},
   ): () => void {
     const subItemHolder = document.createElement('div')
     if (option.className != null)

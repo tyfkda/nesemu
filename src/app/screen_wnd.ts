@@ -214,7 +214,7 @@ export default class ScreenWnd extends Wnd {
                          this.wndMgr.getKeyboardManager().getKeyPressing('ShiftLeft'))
         this.timeScale = speedUp ? TIME_SCALE_FAST : TIME_SCALE_NORMAL
 
-        const elapsed: number = param
+        const elapsed = param as number
         this.stream.triggerStartCalc()
         this.stream.triggerUpdate(elapsed)
         this.stream.triggerEndCalc()
@@ -306,7 +306,7 @@ export default class ScreenWnd extends Wnd {
   }
 
   protected closeChildrenWindows(): void {
-    for (let wnd of Object.values(this.wndMap))
+    for (const wnd of Object.values(this.wndMap))
       if (wnd != null)
         wnd.close()
   }
@@ -317,7 +317,7 @@ export default class ScreenWnd extends Wnd {
     return this.setClientSize(w, h)
   }
 
-  protected updateContentSize(width: number, height: number) {
+  protected updateContentSize(width: number, height: number): void {
     if (!this.fullscreenBase)
       return
 
@@ -522,7 +522,7 @@ export default class ScreenWnd extends Wnd {
     this.addMenuBar(this.menuItems)
   }
 
-  protected maximize() {
+  protected maximize(): void {
     const rootRect = this.wndMgr.getRootClientRect()
     const winWidth = rootRect.width
     const winHeight = rootRect.height

@@ -122,9 +122,9 @@ class Mapper024Base extends Mapper {
   private prgBank = 0
   private ppuBankMode = 0
   private mirrorMode = 0
-  private irqControl: number = 0
-  private irqLatch: number = 0
-  private irqCounter: number = 0
+  private irqControl = 0
+  private irqLatch = 0
+  private irqCounter = 0
 
   private channels: Channel[] = new Array<Channel>(kChannelTypes.length)
   private frequencyScaling = 0
@@ -192,9 +192,11 @@ class Mapper024Base extends Mapper {
           this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
           break
         case 2:  // IRQ Acknowledge
-          // Copy to enable
-          const ea = this.irqControl & IRQ_ENABLE_AFTER
-          this.irqControl = (this.irqControl & ~IRQ_ENABLE) | (ea << 1)
+          {
+            // Copy to enable
+            const ea = this.irqControl & IRQ_ENABLE_AFTER
+            this.irqControl = (this.irqControl & ~IRQ_ENABLE) | (ea << 1)
+          }
           break
         default:
           break
@@ -204,7 +206,7 @@ class Mapper024Base extends Mapper {
 
     // PRG RAM
     this.ram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.ram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
                                     (adr, value) => { this.ram[adr & 0x1fff] = value })
 
@@ -323,7 +325,7 @@ class Mapper024Base extends Mapper {
   }
 
   private updateSound() {
-    for (let channel of this.channels) {
+    for (const channel of this.channels) {
       channel.update()
     }
   }

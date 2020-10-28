@@ -182,7 +182,7 @@ export default class AudioManager {
 
   private channels = new Array<SoundChannel>()
 
-  public static setUp(audioContextClass: any) {
+  public static setUp(audioContextClass: any): void {
     if (AudioManager.initialized)
       return
 
@@ -192,7 +192,7 @@ export default class AudioManager {
     AudioManager.initialized = true
   }
 
-  public static enableAudio() {
+  public static enableAudio(): void {
     if (AudioManager.context != null)
       return
     const audioContextClass: any = AudioManager.audioContextClass
@@ -238,11 +238,11 @@ export default class AudioManager {
     AudioManager.checkSetUpCalled()
   }
 
-  public release() {
+  public release(): void {
     this.releaseAllChannels()
   }
 
-  public releaseAllChannels() {
+  public releaseAllChannels(): void {
     if (this.channels != null) {
       for (const channel of this.channels) {
         channel.destroy()
@@ -251,7 +251,7 @@ export default class AudioManager {
     }
   }
 
-  public addChannel(type: ChannelType) {
+  public addChannel(type: ChannelType): void {
     const context = AudioManager.context
     if (context == null)
       return

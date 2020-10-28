@@ -80,7 +80,7 @@ function incPpuAddr(ppuAddr: Address, ppuCtrl: Byte): Address {
 }
 
 function incScroll(t: number, dy: number): number {
-  let pageY = ((t >> 11) & 1) * 240
+  const pageY = ((t >> 11) & 1) * 240
   let y = ((t & 0x03e0) >> (5 - 3)) | ((t >> 12) & 7)
   if (y >= 240)
     y -= 256
@@ -108,7 +108,7 @@ function getSpritePat(chrData: Uint8Array, chridx: number, py: number, flipHorz:
 function clearBg(offscreen: Uint8Array, hline0: number, hline1: number, x: number): void {
   const LINE_BYTES = Const.WIDTH
   for (let i = hline0; i < hline1; ++i) {
-    let index = i * LINE_BYTES
+    const index = i * LINE_BYTES
     for (let j = 0; j < x; ++j)
       offscreen[index + j] = 0
   }
@@ -372,12 +372,12 @@ export default class Ppu {
     return (this.regs[PpuReg.CTRL] & PpuCtrlBit.VINT_ENABLE) !== 0
   }
 
-  public setHcount(hcount: number) {
+  public setHcount(hcount: number): void {
     this.hcount = hcount
     this.checkSprite0Hit(hcount)
   }
 
-  public render(pixels: Uint8Array|Uint8ClampedArray): void {
+  public render(pixels: Uint8Array | Uint8ClampedArray): void {
     this.renderOffscreen(this.offscreen)
 
     const greyscale = (this.regs[PpuReg.MASK] & PpuMaskBit.GREYSCALE) !== 0
@@ -620,7 +620,7 @@ export default class Ppu {
     return 0
   }
 
-  private addHevent(type: HEventType, value: number, index: number = -1): void {
+  private addHevent(type: HEventType, value: number, index = -1): void {
     // Apply immediately to the current state.
     if (!this.hstatusMgr.current.set(type, value, index))
       return

@@ -57,8 +57,8 @@ abstract class GamepadBaseWnd extends Wnd {
   }
 
   public constructor(
-      wndMgr: WindowManager, title: string, labels: string[],
-      private onClose?: () => void,
+    wndMgr: WindowManager, title: string, labels: string[],
+    private onClose?: () => void,
   ) {
     super(wndMgr, 230, 150, title)
     const content = document.createElement('div')
@@ -206,7 +206,7 @@ export class GamepadWnd extends GamepadBaseWnd {
     return false
   }
 
-  private getGamepad(padNo: number): Gamepad|null {
+  private getGamepad(padNo: number): Gamepad | null {
     if (!window.Gamepad)
       return null
     const gamepads = navigator.getGamepads()
@@ -226,7 +226,7 @@ const kKeyLabels: {[key: string]: string} = (() => {
     Comma: ',',
     Slash: '/',
     Semicolon: ';',
-    Quote: '\'',
+    Quote: "'",
     BracketLeft: '[',
     BracketRight: ']',
     Backslash: '\\',
@@ -252,7 +252,7 @@ const kKeyLabels: {[key: string]: string} = (() => {
 })()
 
 export class KeyConfigWnd extends GamepadBaseWnd {
-  public static loadSetting() {
+  public static loadSetting(): void {
     const data = StorageUtil.getObject('keymap', null)
     if (Array.isArray(data)) {
       for (let padNo = 0; padNo < 2; ++padNo) {
@@ -260,7 +260,7 @@ export class KeyConfigWnd extends GamepadBaseWnd {
           break
         const table = PadKeyHandler.getMapping(padNo)
         for (let i = 0; i < data[padNo].length; ++i) {
-          const index = table.findIndex(t => t.bit === (1 << i))
+          const index = table.findIndex(t => t.bit === 1 << i)
           if (index >= 0)
             table[index].key = data[padNo][i]
         }
@@ -273,7 +273,7 @@ export class KeyConfigWnd extends GamepadBaseWnd {
     for (let padNo = 0; padNo < 2; ++padNo) {
       const table = PadKeyHandler.getMapping(padNo)
       const mapping: (string | null)[] = [...Array(8).keys()].map(i => {
-        const index = table.findIndex(t => t.bit === (1 << i))
+        const index = table.findIndex(t => t.bit === 1 << i)
         return index >= 0 ? table[index].key : null
       })
       data[padNo] = mapping
@@ -309,7 +309,7 @@ export class KeyConfigWnd extends GamepadBaseWnd {
     const button = kGamepadButtons[buttonIndex]
     const table = PadKeyHandler.getMapping(padNo)
     for (let i = 0; i < table.length; ++i) {
-      const index = table.findIndex(t => t.bit === (1 << button.padbit))
+      const index = table.findIndex(t => t.bit === 1 << button.padbit)
       if (index >= 0) {
         table[index].key = key
         this.updateLabels()

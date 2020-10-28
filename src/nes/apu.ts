@@ -184,7 +184,7 @@ class PulseChannel extends Channel {
     if (this.stopped)
       return 0
 
-    let v = this.regs[Reg.STATUS]
+    const v = this.regs[Reg.STATUS]
     if ((v & CONSTANT_VOLUME) !== 0)
       return (v & 15) / 15
     return this.envelopeCounter / 15
@@ -209,7 +209,7 @@ class PulseChannel extends Channel {
   }
 
   private updateLength(): void {
-    let v = this.regs[Reg.STATUS]
+    const v = this.regs[Reg.STATUS]
     if ((v & LENGTH_COUNTER_HALT) !== 0)
       return
     let l = this.lengthCounter
@@ -325,7 +325,7 @@ class TriangleChannel extends Channel {
   }
 
   private updateLength(): void {
-    let v = this.regs[Reg.STATUS]
+    const v = this.regs[Reg.STATUS]
     if ((v & LENGTH_COUNTER_HALT_TRI) !== 0)
       return
     let l = this.lengthCounter
@@ -361,7 +361,7 @@ class NoiseChannel extends Channel {
     if (this.stopped)
       return 0
 
-    let v = this.regs[Reg.STATUS]
+    const v = this.regs[Reg.STATUS]
     if ((v & CONSTANT_VOLUME) !== 0)
       return (v & 15) / 15
     return 1
@@ -380,7 +380,7 @@ class NoiseChannel extends Channel {
   }
 
   private updateLength(): void {
-    let v = this.regs[Reg.STATUS]
+    const v = this.regs[Reg.STATUS]
     if ((v & LENGTH_COUNTER_HALT) !== 0)
       return
     let l = this.lengthCounter
@@ -434,7 +434,7 @@ class DmcChannel extends Channel {
     if (this.stopped)
       return 0
 
-    let v = this.regs[Reg.STATUS]
+    const v = this.regs[Reg.STATUS]
     if ((v & CONSTANT_VOLUME) !== 0)
       return (v & 15) / 15
     return 1
@@ -498,7 +498,7 @@ export class Apu {
     return kChannelTypes
   }
 
-  public reset() {
+  public reset(): void {
     this.regs.fill(0)
     this.regs[FRAME_COUNTER] = IRQ_INHIBIT
     this.frameInterrupt = 0

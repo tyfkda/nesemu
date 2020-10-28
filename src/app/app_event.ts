@@ -18,41 +18,41 @@ export namespace AppEvent {
   }
 
   export class Stream extends Pubsub.Subject<Type> {
-    public triggerUpdate(elapsed: number) {
+    public triggerUpdate(elapsed: number): void {
       this.next(Type.UPDATE, elapsed)
     }
-    public triggerRender() {
+    public triggerRender(): void {
       this.next(Type.RENDER)
     }
-    public triggerRun() {
+    public triggerRun(): void {
       this.next(Type.RUN)
     }
-    public triggerPause() {
+    public triggerPause(): void {
       this.next(Type.PAUSE)
     }
-    public triggerStep() {
+    public triggerStep(): void {
       this.next(Type.STEP)
     }
-    public triggerReset() {
+    public triggerReset(): void {
       this.next(Type.RESET)
     }
-    public triggerBreakPoint() {
+    public triggerBreakPoint(): void {
       this.next(Type.BREAK_POINT)
     }
 
-    public triggerStartCalc() {
+    public triggerStartCalc(): void {
       this.next(Type.START_CALC)
     }
-    public triggerEndCalc() {
+    public triggerEndCalc(): void {
       this.next(Type.END_CALC)
     }
-    public triggerPauseApp() {
+    public triggerPauseApp(): void {
       this.next(Type.PAUSE_APP)
     }
-    public triggerResumeApp() {
+    public triggerResumeApp(): void {
       this.next(Type.RESUME_APP)
     }
-    public triggerCloseWnd(wnd: Wnd) {
+    public triggerCloseWnd(wnd: Wnd): void {
       this.next(Type.CLOSE_WND, wnd)
     }
   }

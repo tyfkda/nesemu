@@ -22,7 +22,7 @@ export class Mapper066 extends Mapper {
     this.reset()
   }
 
-  public reset() {
+  public reset(): void {
     // const BANK_BIT = 15
     // const BANK_SIZE = 1 << BANK_BIT
     // const size = this.options.prgSize

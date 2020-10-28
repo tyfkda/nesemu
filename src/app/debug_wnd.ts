@@ -19,7 +19,7 @@ export class RegisterWnd extends Wnd {
     const chrs = 'NV_BDIZC'
     const ss = new Array<string>(8)
     for (let i = 0; i < 8; ++i)
-      ss[i] = ((p & (0x80 >> i)) !== 0) ? chrs[i] : '.'
+      ss[i] = (p & (0x80 >> i)) !== 0 ? chrs[i] : '.'
     return ss.join('')
   }
 

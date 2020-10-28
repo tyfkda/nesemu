@@ -8,27 +8,24 @@ export interface PrgBankController {
 }
 
 export interface MapperOptions {
-  bus: Bus,
+  bus: Bus
   cpu: Cpu
-  ppu: Ppu,
+  ppu: Ppu
   prgBankCtrl: PrgBankController
   prgSize: number
   romHash?: string
 }
 
 export class Mapper {
-  public reset() {
-  }
+  public reset(): void {}
 
-  public onHblank(_hcount: number): void {
-  }
+  public onHblank(_hcount: number): void {}
 
   public save(): object {
     return {}
   }
 
-  public load(_saveData: any): void {
-  }
+  public load(_saveData: any): void {}
 
   public getExtraSoundChannelTypes(): ChannelType[] {
     return []

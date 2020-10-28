@@ -9,11 +9,11 @@ export default class DomUtil {
   }
 
   public static removeAllChildren(element: HTMLElement): void {
-    for (let child of element.childNodes)
+    for (const child of element.childNodes)
       element.removeChild(child)
   }
 
-  public static setStyles(elem: HTMLElement, styles: Record<string, unknown>) {
+  public static setStyles(elem: HTMLElement, styles: Record<string, unknown>): void {
     Object.assign(elem.style, styles)
   }
 
@@ -81,7 +81,7 @@ export default class DomUtil {
     a.click()
   }
 
-  public static chooseFile(callback: (files: FileList) => void) {
+  public static chooseFile(callback: (files: FileList) => void): void {
     const elem = document.createElement('input')
     elem.setAttribute('type', 'file')
     elem.setAttribute('accept', '.sav, application/json')
@@ -94,7 +94,7 @@ export default class DomUtil {
   }
 
   // Register mouse drag event listener.
-  public static setMouseDragListener(mouseMove: any, mouseUp?: any, useCapture?: boolean) {
+  public static setMouseDragListener(mouseMove: any, mouseUp?: any, useCapture?: boolean): void {
     let mouseLeave: ((event: MouseEvent) => void) | null = null
     let mouseLeaveTarget: HTMLElement | null = null
     if (typeof mouseMove === 'object') {
@@ -104,7 +104,7 @@ export default class DomUtil {
       mouseLeave = option.leave
       useCapture = option.useCapture
 
-      mouseLeaveTarget = (mouseLeave == null ? null : option.leaveTarget || document)
+      mouseLeaveTarget = mouseLeave == null ? null : option.leaveTarget || document
     }
 
     const unlisten = () => {

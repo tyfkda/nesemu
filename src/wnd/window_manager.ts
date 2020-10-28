@@ -81,7 +81,7 @@ export default class WindowManager {
       this.cancelLoopAnimation()
   }
 
-  public async showSnackbar(message: string, option: any = {}) {
+  public async showSnackbar(message: string, option: any = {}): Promise<void> {
     const wait = option.wait || 3000
     const type = option.type || 'danger'
 

@@ -132,7 +132,7 @@ export default class Cpu {
     this.irqRequest |= 1 << type
   }
 
-  public clearIrqRequest(type: IrqType) {
+  public clearIrqRequest(type: IrqType): void {
     this.irqRequest &= ~(1 << type)
   }
 

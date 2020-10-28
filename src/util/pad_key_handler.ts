@@ -27,7 +27,7 @@ const kKeyTable = [
 export default class PadKeyHandler {
   private status = new Uint8Array(2)
 
-  public static getMapping(padNo: number) {
+  public static getMapping(padNo: number): {key: string; bit: PadValue}[] {
     return kKeyTable[padNo]
   }
 
@@ -39,7 +39,7 @@ export default class PadKeyHandler {
     this.status.fill(0)
   }
 
-  public update(keyboardManager: KeyboardManager) {
+  public update(keyboardManager: KeyboardManager): void {
     for (let padNo = 0; padNo < 2; ++padNo) {
       const table = kKeyTable[padNo]
       let state = 0

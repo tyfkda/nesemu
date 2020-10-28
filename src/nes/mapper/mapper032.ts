@@ -17,7 +17,7 @@ export class Mapper032 extends Mapper {
     const maxPrg = (options.prgSize >> BANK_BIT) - 1
     const kLast2Bank = maxPrg - 1
 
-    let prgReg = [0, 1 << BANK_BIT]
+    const prgReg = [0, 1 << BANK_BIT]
     let prgMode = 0
 
     const setPrgBank = () => {
@@ -39,7 +39,7 @@ export class Mapper032 extends Mapper {
     // PRG RAM
     const ram = new Uint8Array(0x2000)
     ram.fill(0xbf)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => ram[adr & 0x1fff])
+    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => ram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff, (adr, value) => { ram[adr & 0x1fff] = value })
 
     // Select
