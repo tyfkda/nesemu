@@ -86,7 +86,7 @@ export function watchHtml() {
 export function ts() {
   const config = clone(webpackConfig)
   config.mode = 'development'
-  config.devtool = '#cheap-module-source-map'
+  config.devtool = 'source-map'
   return gulp.src([`${SRC_TS_DIR}/main.ts`])
     .pipe(plumber())
     .pipe(webpackStream(config, webpack))
@@ -97,7 +97,7 @@ export function watchTs() {
   const config = clone(webpackConfig)
   config.mode = 'development'
   config.watch = true
-  config.devtool = '#cheap-module-source-map'
+  config.devtool = 'source-map'
   return gulp.src(SRC_TS_FILES, {base: SRC_TS_DIR})
     .pipe(plumber())
     .pipe(webpackStream(config, webpack))

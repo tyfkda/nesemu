@@ -4,7 +4,7 @@ import webpack from 'webpack'
 module.exports = {
   mode: 'production',
   entry: {
-    lib: ['./src/lib.ts'],
+    _lib: './src/_lib.ts',
     main: './src/main.ts',
   },
   output: {
