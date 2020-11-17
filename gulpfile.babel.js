@@ -205,6 +205,7 @@ export function releaseTs() {
   const config = clone(webpackConfig)
   // delete config.output.sourceMapFilename
   return gulp.src(`${SRC_TS_DIR}/main.ts`)
+    .pipe(plumber())
     .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(RELEASE_ASSETS_DIR))
 }
