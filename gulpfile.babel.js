@@ -15,7 +15,7 @@ import ejs from 'gulp-ejs'
 import htmlmin from 'gulp-htmlmin'
 
 // SASS
-import sass from 'gulp-sass'
+import gulpSass from 'gulp-sass'
 import cssnano from 'gulp-cssnano'
 
 // Unit test
@@ -53,7 +53,7 @@ function convertHtml(buildTarget, dest) {
     .pipe(gulp.dest(dest))
 }
 
-function lint(glob) {
+function checkLint(glob) {
   return gulp.src(glob)
     .pipe(eslint())
     .pipe(eslint.format())
@@ -61,30 +61,29 @@ function lint(glob) {
 }
 
 function buildWhenModified(glob, buildFunc) {
-  gulp.watch(glob, () => {
-    return buildFunc()
-  })
+  return gulp.watch(glob, buildFunc)
 }
 
-gulp.task('reload', (done) => {
+export function reload(done) {
   browserSync.reload()
   done()
-})
+}
 
-gulp.task('watch-reload', () => {
-  gulp.watch([`${DEST_DIR}/*.html`,
-              `${DEST_DIR}/**/*.js`], gulp.series(['reload']))
-})
+export function watchReload() {
+  return gulp.watch([`${DEST_DIR}/*.html`,
+                     `${DEST_DIR}/**/*.js`],
+                    gulp.series([reload]))
+}
 
-gulp.task('html', () => {
+export function html() {
   return convertHtml('debug', DEST_DIR)
-})
+}
 
-gulp.task('watch-html', () => {
-  gulp.watch(SRC_HTML_FILES, gulp.series('html'))
-})
+export function watchHtml() {
+  return gulp.watch(SRC_HTML_FILES, gulp.series(html))
+}
 
-gulp.task('ts', () => {
+export function ts() {
   const config = clone(webpackConfig)
   config.mode = 'development'
   config.devtool = '#cheap-module-source-map'
@@ -92,53 +91,52 @@ gulp.task('ts', () => {
     .pipe(plumber())
     .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(ASSETS_DIR))
-})
+}
 
-gulp.task('watch-ts', () => {
+export function watchTs() {
   const config = clone(webpackConfig)
   config.mode = 'development'
   config.watch = true
   config.devtool = '#cheap-module-source-map'
-  gulp.src(SRC_TS_FILES, {base: SRC_TS_DIR})
+  return gulp.src(SRC_TS_FILES, {base: SRC_TS_DIR})
     .pipe(plumber())
     .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(ASSETS_DIR))
-})
+}
 
-gulp.task('sass', () => {
+export function sass() {
   return gulp.src(SRC_SASS_FILES)
     .pipe(plumber())
-    .pipe(sass())
+    .pipe(gulpSass())
     .pipe(cssnano())
     .pipe(gulp.dest(ASSETS_DIR))
     .pipe(browserSync.stream())
-})
+}
 
-gulp.task('watch-sass', () => {
-  gulp.watch(SRC_SASS_FILES, gulp.series('sass'))
-})
+export function watchSass() {
+  return gulp.watch(SRC_SASS_FILES, gulp.series(sass))
+}
 
-gulp.task('lint', () => {
-  return lint([SRC_TS_FILES,
-               SRC_TEST_FILES,
-               `!${SRC_TS_DIR}/lib.ts`])
+export function lint() {
+  return checkLint([SRC_TS_FILES,
+                    SRC_TEST_FILES,
+                    `!${SRC_TS_DIR}/lib.ts`])
+}
 
-})
-
-gulp.task('watch-lint', () => {
+export function watchLint() {
   const globs = [`${SRC_TS_DIR}/**/*.ts`,
                  `!${SRC_TS_DIR}/lib.ts`]
-  buildWhenModified(globs,
-                    () => lint(globs))
-})
+  return buildWhenModified(globs,
+                           () => checkLint(globs))
+}
 
-gulp.task('copy-res', () => {
+export function copyRes() {
   return gulp.src([`${RES_DIR}/**/*`],
                   {base: RES_DIR})
     .pipe(gulp.dest(DEST_DIR))
-})
+}
 
-gulp.task('server', () => {
+export function server() {
   browserSync.init({
     server: {
       baseDir: DEST_DIR,
@@ -146,10 +144,10 @@ gulp.task('server', () => {
     },
     open: false,
   })
-})
+}
 
 // Unit test.
-gulp.task('test', (done) => {
+export function test() {
   return gulp.src(SRC_TEST_DIR)
     .pipe(jest({
       "transform": {
@@ -165,27 +163,28 @@ gulp.task('test', (done) => {
         "node",
       ],
     }))
-})
-gulp.task('watch-test', () => {
-  gulp.watch(
+}
+export function watchTest() {
+  return gulp.watch(
     [SRC_TS_FILES,
      SRC_TEST_FILES],
-    gulp.series('test'))
-})
+    gulp.series(test))
+}
 
-gulp.task('clean', del.bind(null, [
-  DEST_DIR,
-]))
+export function clean(done) {
+  del(DEST_DIR)
+  done()
+}
 
-gulp.task('watch', gulp.parallel('watch-html', 'watch-ts', 'watch-sass',
-                                 'watch-lint', 'watch-test',
-                                 'watch-reload'))
+export const watch = gulp.parallel(watchHtml, watchTs, watchSass,
+                                   watchLint, watchTest,
+                                   watchReload)
 
-gulp.task('build', gulp.parallel('html', 'ts', 'sass', 'copy-res', 'lint'))
+export const build = gulp.parallel(html, ts, sass, copyRes, lint)
 
-gulp.task('default', gulp.series('build', gulp.parallel('server', 'watch')))
+exports.default = gulp.series(build, gulp.parallel(server, watch))
 
-gulp.task('release-build', gulp.series(gulp.parallel('sass', 'copy-res'), () => {
+export const releaseBuild = gulp.series(gulp.parallel(sass, copyRes), () => {
   // Copy resources.
   return gulp.src([`${DEST_DIR}/**/*.*`,
                    `!${DEST_DIR}/index.html`,
@@ -194,20 +193,20 @@ gulp.task('release-build', gulp.series(gulp.parallel('sass', 'copy-res'), () => 
                   ],
                   {base: DEST_DIR})
     .pipe(gulp.dest(RELEASE_DIR))
-}))
-
-gulp.task('release-html', () => {
-  // Build HTML for release.
-  return convertHtml('release', RELEASE_DIR)
 })
 
-gulp.task('release-ts', () => {
+export function releaseHtml() {
+  // Build HTML for release.
+  return convertHtml('release', RELEASE_DIR)
+}
+
+export function releaseTs() {
   // Concatenate TypeScript into single 'assets/main.ts' file.
   const config = clone(webpackConfig)
   // delete config.output.sourceMapFilename
   return gulp.src(`${SRC_TS_DIR}/main.ts`)
     .pipe(webpackStream(config, webpack))
     .pipe(gulp.dest(RELEASE_ASSETS_DIR))
-})
+}
 
-gulp.task('release', gulp.parallel('release-build', 'release-html', 'release-ts'))
+export const release = gulp.parallel(releaseBuild, releaseHtml, releaseTs)
