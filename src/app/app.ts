@@ -116,7 +116,7 @@ export default class App {
     const link = document.createElement('a')
     document.body.appendChild(link)
     link.href = objectURL
-    link.download = `${this.title}.json`
+    link.download = `${this.title}.sav`
     link.click()
     document.body.removeChild(link)
   }
@@ -142,7 +142,7 @@ export default class App {
   public loadDataFromFile(): void {
     const input = document.createElement('input')
     input.type = 'file'
-    input.accept = '.json, application/json'
+    input.accept = '.sav, application/json'
     input.onchange = _event => {
       if (!input.value)
         return
@@ -150,20 +150,22 @@ export default class App {
       if (fileList) {
         const file = fileList[0]
         DomUtil.loadFile(file)
-          .then(binary => {
-            try {
-              const json = new TextDecoder().decode(binary)
-              const saveData = JSON.parse(json)
-              this.nes.load(saveData)
-            } catch (e) {
-              console.error(e)
-              this.wndMgr.showSnackbar('Error: Load data failed')
-            }
-          })
+          .then(binary => this.loadDataFromBinary(binary))
       }
       input.value = ''
     }
     input.click()
+  }
+
+  public loadDataFromBinary(binary: Uint8Array): void {
+    try {
+      const json = new TextDecoder().decode(binary)
+      const saveData = JSON.parse(json)
+      this.nes.load(saveData)
+    } catch (e) {
+      console.error(e)
+      this.wndMgr.showSnackbar('Error: Load data failed')
+    }
   }
 
   public setupAudioManager(): void {
@@ -177,6 +179,10 @@ export default class App {
     for (const type of channelTypes) {
       this.audioManager.addChannel(type)
     }
+  }
+
+  public isTop(): boolean {
+    return this.screenWnd.isTop()
   }
 
   protected destroy(): void {

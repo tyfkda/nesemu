@@ -81,18 +81,6 @@ export default class DomUtil {
     a.click()
   }
 
-  public static chooseFile(callback: (files: FileList) => void): void {
-    const elem = document.createElement('input')
-    elem.setAttribute('type', 'file')
-    elem.setAttribute('accept', '.sav, application/json')
-    elem.addEventListener('change', function(event) {
-      const input = event.target as HTMLInputElement
-      if (input.files)
-        callback(input.files)
-    })
-    elem.click()
-  }
-
   // Register mouse drag event listener.
   public static setMouseDragListener(mouseMove: any, mouseUp?: any, useCapture?: boolean): void {
     let mouseLeave: ((event: MouseEvent) => void) | null = null

@@ -50,7 +50,7 @@ class Main {
             click: () => {
               const input = document.createElement('input')
               input.type = 'file'
-              input.accept = '.nes,.zip, application/zip'
+              input.accept = '.nes,.sav,.zip, application/zip'
               input.onchange = _event => {
                 if (!input.value)
                   return
@@ -209,7 +209,7 @@ class Main {
       this.apps.push(jsApp)
     }
 
-    const kTargetExts = ['nes', 'bin', 'fds']
+    const kTargetExts = ['nes', 'bin', 'fds', 'sav']
 
     // Unzip and flatten.
     const promises = new Array<Promise<any>>()
@@ -287,10 +287,28 @@ class Main {
             y += 16
           })
         }
+        // Load .sav
+        if (typeMap.sav) {
+          const file = typeMap.sav[0]
+          const app = this.findActiveApp()
+          if (app == null) {
+            throw('Load save data failed: No active app')
+          } else {
+            app.loadDataFromBinary(file.binary)
+          }
+        }
       })
       .catch((e: Error) => {
         this.wndMgr.showSnackbar(e.toString())
       })
+  }
+
+  private findActiveApp() {
+    for (const app of this.apps) {
+      if (app.isTop())
+        return app
+    }
+    return null
   }
 
   private createAppFromRom(romData: Uint8Array, name: string, x: number, y: number): void {
