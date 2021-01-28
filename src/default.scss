@@ -342,7 +342,8 @@ $BUTTON_HEIGHT: 6px;
 .gamepad-btn.pressed {
   box-shadow: none;
   margin-top: $BUTTON_HEIGHT;
-  color: cyan;
+  background-color: #3e3;
+  color: #338;
 }
 
 .snackbar-container {
