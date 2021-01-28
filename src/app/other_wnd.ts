@@ -20,7 +20,7 @@ import * as Stats from 'stats-js'
 import * as githubLogo from '../res/github-logo.svg'
 import * as twitterLogo from '../res/twitter-logo.svg'
 
-const DEFAULT_MASTER_VOLUME = 0.25
+const DEFAULT_MASTER_VOLUME = 0.5
 const KEY_VOLUME = 'volume'
 
 export class FpsWnd extends Wnd {
@@ -706,7 +706,7 @@ export class VolumeWnd extends Wnd {
   }
 
   private static readVolumeFromStorage(): number {
-    return Util.clamp(StorageUtil.getFloat(KEY_VOLUME, 1), 0, 1)
+    return Util.clamp(StorageUtil.getFloat(KEY_VOLUME, 1), 0, 0.5)
   }
 
   constructor(wndMgr: WindowManager, private onClose: () => void) {
