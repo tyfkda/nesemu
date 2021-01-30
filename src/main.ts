@@ -33,7 +33,10 @@ class Main {
   constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
 
-    VolumeWnd.setUp()
+    VolumeWnd.setUp(this.wndMgr, () => {
+      for (const app of this.apps)
+        app.setupAudioManager()
+    })
 
     this.setUpSysmenu()
     this.setUpFileDrop()

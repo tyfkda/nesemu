@@ -20,6 +20,9 @@ import * as Stats from 'stats-js'
 import * as githubLogo from '../res/github-logo.svg'
 import * as twitterLogo from '../res/twitter-logo.svg'
 
+import audioOnImg from '../res/audio_on.png'
+import audioOffImg from '../res/audio_off.png'
+
 const DEFAULT_MASTER_VOLUME = 0.5
 const KEY_VOLUME = 'volume'
 
@@ -689,16 +692,53 @@ export class EqualizerWnd extends Wnd {
 
 export class VolumeWnd extends Wnd {
   private static volume = 0
+  private static muted = false
+  private static focused = true
+  private static audioEnabled = false
 
-  public static setUp(): void {
+  public static setUp(wndMgr: WindowManager, onAudioActivated: () => void): void {
     VolumeWnd.volume = VolumeWnd.readVolumeFromStorage()
     const audioContextClass = window.AudioContext || window.webkitAudioContext
     AudioManager.setUp(audioContextClass)
     AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
+
+    const icon = document.getElementById('audio-toggle-icon') as HTMLImageElement
+    icon.src = audioOffImg
+    DomUtil.setStyles(icon, {visibility: null})
+
+    const button = document.getElementById('audio-toggle')
+    button?.addEventListener('click', _event => {
+      let muted: boolean
+      if (!this.audioEnabled) {
+        AudioManager.enableAudio()
+        onAudioActivated()
+        this.audioEnabled = true
+        muted = false
+      } else {
+        muted = !VolumeWnd.getMuted()
+        VolumeWnd.setMuted(muted)
+      }
+      icon.src = muted ? audioOffImg : audioOnImg
+      wndMgr.setFocus()
+    })
   }
 
-  public static onFocusChanged(focus: boolean): void {
-    if (focus) {
+  public static onFocusChanged(focused: boolean): void {
+    VolumeWnd.focused = focused
+    VolumeWnd.updateVolume()
+  }
+
+  public static setMuted(muted: boolean): void {
+    VolumeWnd.muted = muted
+    VolumeWnd.updateVolume()
+  }
+
+  public static getMuted(): boolean {
+    return VolumeWnd.muted
+  }
+
+  private static updateVolume(): void {
+    if (VolumeWnd.focused && !VolumeWnd.muted) {
       AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
     } else {
       AudioManager.setMasterVolume(0)
@@ -749,7 +789,8 @@ export class VolumeWnd extends Wnd {
         const height = Util.clamp(sliderHeight - y, 0, sliderHeight)
         slider.style.height = `${height}px`
         VolumeWnd.volume = height / sliderHeight
-        AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
+        if (VolumeWnd.focused && !VolumeWnd.muted)
+          AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
       }
       DomUtil.setMouseDragListener({
         move: updateSlider,

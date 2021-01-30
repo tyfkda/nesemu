@@ -9,7 +9,6 @@ import {Scaler, NearestNeighborScaler, ScanlineScaler, EpxScaler} from '../util/
 
 import App from './app'
 import {AppEvent} from './app_event'
-import AudioManager from '../util/audio_manager'
 import PadKeyHandler from '../util/pad_key_handler'
 import GamepadManager from '../util/gamepad_manager'
 import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
@@ -46,8 +45,6 @@ const enum ScalerType {
   SCANLINE,
   EPX,
 }
-
-let isAudioPermissionAcquired = false
 
 function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const img = document.createElement('img') as HTMLImageElement
@@ -127,24 +124,6 @@ export default class ScreenWnd extends Wnd {
     this.contentWidth = (WIDTH - HEDGE * 2) * 2
     this.contentHeight = (HEIGHT - VEDGE * 2) * 2
     this.updateContentSize(this.contentWidth, this.contentHeight)
-
-    if (!isAudioPermissionAcquired) {
-      const button = document.createElement('button')
-      button.innerText = 'Enable audio'
-      DomUtil.setStyles(button, {
-        position: 'absolute',
-        right: 0,
-        top: 0,
-      })
-      button.addEventListener('click', _event => {
-        AudioManager.enableAudio()
-        this.app.setupAudioManager()
-        button.parentNode!.removeChild(button)
-        isAudioPermissionAcquired = true
-        this.wndMgr.setFocus()
-      })
-      this.fullscreenBase.appendChild(button)
-    }
 
     this.fullscreenResizeFunc = () => {
       const bounding = document.body.getBoundingClientRect()

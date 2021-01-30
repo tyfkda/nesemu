@@ -401,3 +401,29 @@ $BUTTON_HEIGHT: 6px;
   width: 100%;
   background-color: #0ff;
 }
+
+.audio-toggle-container {
+  position: absolute;
+
+  button {
+    border: none;
+    background-color: transparent;
+    outline: none;
+    border: none;
+    margin: 0;
+    padding: 8px;
+    display: block;
+
+    &:hover {
+      background-color: #ccc;
+    }
+
+    &:active {
+      background-color: #aaa !important;
+    }
+  }
+}
+
+.icon {
+  display: block;
+}
