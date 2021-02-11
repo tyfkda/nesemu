@@ -5,7 +5,7 @@ const WIDTH = 256
 const HEIGHT = 240
 
 function createCanvas(width: number, height: number): HTMLCanvasElement {
-  const canvas = document.createElement('canvas') as HTMLCanvasElement
+  const canvas = document.createElement('canvas')
   canvas.className = 'full-size'
   canvas.width = width
   canvas.height = height

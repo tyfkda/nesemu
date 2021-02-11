@@ -80,7 +80,7 @@ export class RegisterWnd extends Wnd {
       fontSize: '10px',
       width: '100%',
     })
-    this.valueElems = [] as HTMLInputElement[]
+    this.valueElems = new Array<HTMLInputElement>()
     for (let i = 0; i < kElems.length; ++i) {
       const tr = document.createElement('tr')
       table.appendChild(tr)
@@ -250,28 +250,28 @@ export class ControlWnd extends Wnd {
       height: '32px',
     })
 
-    this.stepBtn = document.createElement('button') as HTMLButtonElement
+    this.stepBtn = document.createElement('button')
     this.stepBtn.innerText = 'Step'
     this.stepBtn.addEventListener('click', () => {
       this.stream.triggerStep()
     })
     root.appendChild(this.stepBtn)
 
-    this.runBtn = document.createElement('button') as HTMLButtonElement
+    this.runBtn = document.createElement('button')
     this.runBtn.innerText = 'Run'
     this.runBtn.addEventListener('click', () => {
       this.stream.triggerRun()
     })
     root.appendChild(this.runBtn)
 
-    this.pauseBtn = document.createElement('button') as HTMLButtonElement
+    this.pauseBtn = document.createElement('button')
     this.pauseBtn.innerText = 'Pause'
     this.pauseBtn.addEventListener('click', () => {
       this.stream.triggerPause()
     })
     root.appendChild(this.pauseBtn)
 
-    const resetBtn = document.createElement('button') as HTMLButtonElement
+    const resetBtn = document.createElement('button')
     resetBtn.innerText = 'Reset'
     resetBtn.addEventListener('click', () => {
       this.stream.triggerReset()

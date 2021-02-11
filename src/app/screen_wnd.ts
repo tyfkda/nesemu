@@ -47,7 +47,7 @@ const enum ScalerType {
 }
 
 function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
-  const img = document.createElement('img') as HTMLImageElement
+  const img = document.createElement('img')
   const title = String(Date.now())
   img.src = screenWnd.capture()
   img.className = 'pixelated full-size'

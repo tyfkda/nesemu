@@ -216,7 +216,7 @@ export class NameTableWnd extends Wnd {
     this.stream = stream
     this.vert = vert
 
-    const canvas = document.createElement('canvas') as HTMLCanvasElement
+    const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
     DomUtil.setStyles(canvas, {
@@ -269,7 +269,7 @@ export class PatternTableWnd extends Wnd {
   private buf = new Uint8Array(2)
 
   private static createCanvas(): HTMLCanvasElement {
-    const canvas = document.createElement('canvas') as HTMLCanvasElement
+    const canvas = document.createElement('canvas')
     canvas.width = 256
     canvas.height = 128
     DomUtil.setStyles(canvas, {
@@ -565,7 +565,7 @@ export class EqualizerWnd extends Wnd {
     const width = 256
     const height = 128
 
-    const canvas = document.createElement('canvas') as HTMLCanvasElement
+    const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
     DomUtil.setStyles(canvas, {

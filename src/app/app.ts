@@ -52,7 +52,7 @@ export default class App {
 
     const screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
     this.screenWnd = screenWnd
-    this.title = (option.title as string) || 'NES'
+    this.title = option.title || 'NES'
     this.screenWnd.setTitle(this.title)
 
     const size = this.screenWnd.getWindowSize()
