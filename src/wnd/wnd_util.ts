@@ -97,7 +97,10 @@ export default class WndUtil {
     const MIN_HEIGHT = 60 + Wnd.TITLEBAR_HEIGHT
     const W = 8
 
-    const table = [
+    type StyleParams = {left?: string, right?: string, top?: string, bottom?: string, cursor?: string}
+    type Horz = 'left'|'right'|'center'
+    type Vert = 'top'|'bottom'|'center'
+    const table: Array<{styleParams: StyleParams, horz: Horz, vert: Vert}> = [
       // Corners
       {
         styleParams: {right: '-1px', bottom: '-1px', cursor: 'nwse-resize'},
@@ -145,8 +148,8 @@ export default class WndUtil {
     table.forEach(param => {
       const resizeBox = document.createElement('div')
       resizeBox.className = 'resize-box'
-      Object.keys(param.styleParams).forEach((key: string) => {
-        resizeBox.style[key] = param.styleParams[key]
+      ;(Object.keys(param.styleParams) as (keyof StyleParams)[]).forEach(key => {
+        resizeBox.style[key] = param.styleParams[key]!
       })
       DomUtil.setStyles(resizeBox, {
         width: param.horz !== 'center' ? `${W}px` : undefined,
