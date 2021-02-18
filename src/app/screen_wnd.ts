@@ -400,6 +400,21 @@ export default class ScreenWnd extends Wnd {
               this.setFullscreen()
             },
           },
+          {label: '----'},
+          {
+            label: 'Edge',
+            checked: () => !this.hideEdge,
+            click: () => {
+              this.toggleEdge()
+            },
+          },
+          {
+            label: 'Sprite flicker',
+            checked: () => !this.nes.getPpu().suppressSpriteFlicker,
+            click: () => {
+              this.toggleSpriteFlicker()
+            },
+          },
         ],
       },
       {
@@ -431,21 +446,6 @@ export default class ScreenWnd extends Wnd {
       {
         label: 'Debug',
         submenu: [
-          {
-            label: 'Edge',
-            checked: () => !this.hideEdge,
-            click: () => {
-              this.toggleEdge()
-            },
-          },
-          {
-            label: 'Sprite flicker',
-            checked: () => !this.nes.getPpu().suppressSpriteFlicker,
-            click: () => {
-              this.toggleSpriteFlicker()
-            },
-          },
-          {label: '----'},
           {
             label: 'Palette',
             click: () => {
