@@ -5,6 +5,9 @@ import {Mapper, MapperOptions} from './mapper'
 import {PpuReg, PpuMaskBit} from '../ppu/types'
 import {Util} from '../../util/util'
 
+import {Address, Byte} from '../types'
+import {PpuCtrlBit} from '../ppu/types'
+
 const VRETURN = 262
 
 export class Mapper005 extends Mapper {
@@ -16,14 +19,54 @@ export class Mapper005 extends Mapper {
   private prgMode = 0  // 0=One 32KB, 1=Two 16KB, 2=One 16KB + two 8KB, 3=Four 8KB
   private chrMode = 0  // 0=8KB pages, 1=4KB pages, 2=2KB pages, 3=1KB pages
   private upperChrBit = 0
-  private irqHlineEnable = false
-  private irqHlineCompare = -1
-  private irqHlineCounter = -1
-  private irqLatch = 0
+  // private irqHlineEnable = false
+  // private irqHlineCompare = -1
+  // private irqHlineCounter = -1
+  // private irqLatch = 0
+
   private ppuInFrame = false
+  private needInFrame = false
+  private ntReadCounter = 0
+  private scanlineCounter = 0
+  private ppuIdleCounter = 0
+  private splitInSplitRegion = false
+  private irqCounterTarget = 0
+  private irqPending = false
+  private irqEnabled = false
+
+  private lastPpuReadAddr: Address = 0
 
   public static create(options: MapperOptions): Mapper {
     return new Mapper005(options)
+  }
+
+  private detectScanlineStart(addr: Address): void {
+    if (addr >= 0x2000 && addr <= 0x2FFF) {
+      if (this.lastPpuReadAddr === addr) {
+        //Count consecutive identical reads
+        ++this.ntReadCounter
+      } else {
+        this.ntReadCounter = 0
+      }
+
+      if (this.ntReadCounter >= 2) {
+        if (!this.ppuInFrame && !this.needInFrame) {
+          this.needInFrame = true
+          this.scanlineCounter = 0
+        } else {
+          ++this.scanlineCounter
+          if (this.irqCounterTarget === this.scanlineCounter) {
+            this.irqPending = true
+            if (this.irqEnabled) {
+              this.options.cpu.requestIrq(IrqType.EXTERNAL)
+            }
+          }
+        }
+        this.splitTileNumber = 0
+      }
+    } else {
+      this.ntReadCounter = 0
+    }
   }
 
   constructor(private options: MapperOptions) {
@@ -38,6 +81,35 @@ export class Mapper005 extends Mapper {
       this.options.ppu.setChrBankOffset(i, i)
 
     this.ram.fill(0xff)
+    this.options.bus.setReadMemory(0x2000, 0x3fff, adr => {  // PPU
+      const isNtFetch = adr >= 0x2000 && adr <= 0x2FFF && (adr & 0x3FF) < 0x3C0
+      if (isNtFetch) {
+        //Nametable data, not an attribute fetch
+        this.splitInSplitRegion = false
+        ++this.splitTileNumber
+
+        if (this.ppuInFrame) {
+          this.updateChrBanks(false)
+        } else if(this.needInFrame) {
+          this.needInFrame = false
+          this.ppuInFrame = true
+          this.updateChrBanks(false)
+        }
+      }
+      this.detectScanlineStart(adr)
+
+      this.ppuIdleCounter = 3
+      this.lastPpuReadAddr = adr
+
+
+
+      const reg = adr & 7
+      return this.options.ppu.read(reg)
+    })
+    // this.options.bus.setWriteMemory(0x2000, 0x3fff, (adr, value) => {  // PPU
+    //   const reg = adr & 7
+    //   this.options.ppu.write(reg, value)
+    // })
     this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
                                     (adr, value) => { this.ram[adr & 0x1fff] = value })
@@ -59,6 +131,7 @@ export class Mapper005 extends Mapper {
         break
       case 0x5101:
         this.chrMode = value & 3
+        this.updateChrBanks(true)
         break
       case 0x5105:
         this.options.ppu.setMirrorModeBit(value)
@@ -122,104 +195,24 @@ export class Mapper005 extends Mapper {
 
       case 0x5120: case 0x5121: case 0x5122: case 0x5123:
       case 0x5124: case 0x5125: case 0x5126: case 0x5127:
-        switch (this.chrMode) {
-        case 0:
-          if (adr === 0x5127) {
-            const v = (value & -8) | (this.upperChrBit << 8)
-            this.options.ppu.setChrBankOffset(0, v)
-            this.options.ppu.setChrBankOffset(1, v + 1)
-            this.options.ppu.setChrBankOffset(2, v + 2)
-            this.options.ppu.setChrBankOffset(3, v + 3)
-            this.options.ppu.setChrBankOffset(4, v + 4)
-            this.options.ppu.setChrBankOffset(5, v + 5)
-            this.options.ppu.setChrBankOffset(6, v + 6)
-            this.options.ppu.setChrBankOffset(7, v + 7)
-          }
-          break
-        case 1:
-          if ((adr & 3) === 3) {
-            const a = adr & 4
-            const v = (value & -4) | (this.upperChrBit << 8)
-            this.options.ppu.setChrBankOffset(a,     v)
-            this.options.ppu.setChrBankOffset(a + 1, v + 1)
-            this.options.ppu.setChrBankOffset(a + 2, v + 2)
-            this.options.ppu.setChrBankOffset(a + 3, v + 3)
-          }
-          break
-        case 2:
-          if ((adr & 1) === 1) {
-            const a = adr & 6
-            const v = (value & -2) | (this.upperChrBit << 8)
-            this.options.ppu.setChrBankOffset(a,     v)
-            this.options.ppu.setChrBankOffset(a + 1, v + 1)
-          }
-          break
-        case 3:
-          {
-            const v = value | (this.upperChrBit << 8)
-            this.options.ppu.setChrBankOffset(adr & 7, v)
-          }
-          break
-        }
+      case 0x5128: case 0x5129: case 0x512a: case 0x512b:
+        this.switchChrBank(adr, value)
         break
-
-      /*case 0x5128: case 0x5129: case 0x512a: case 0x512b:
-        switch (this.chrMode) {
-        case 0:
-          if (adr === 0x512b) {
-            const v = (value & -8) | (this.upperChrBit << 8)
-            this.options.ppu.setChrBankOffset(0, v)
-            this.options.ppu.setChrBankOffset(1, v + 1)
-            this.options.ppu.setChrBankOffset(2, v + 2)
-            this.options.ppu.setChrBankOffset(3, v + 3)
-            this.options.ppu.setChrBankOffset(4, v + 4)
-            this.options.ppu.setChrBankOffset(5, v + 5)
-            this.options.ppu.setChrBankOffset(6, v + 6)
-            this.options.ppu.setChrBankOffset(7, v + 7)
-          }
-          break
-        case 1:
-          if (adr === 0x512b) {
-            const v = (value & -4) | (this.upperChrBit << 8)
-            this.options.ppu.setChrBankOffset(0, v)
-            this.options.ppu.setChrBankOffset(1, v + 1)
-            this.options.ppu.setChrBankOffset(2, v + 2)
-            this.options.ppu.setChrBankOffset(3, v + 3)
-            this.options.ppu.setChrBankOffset(4, v)
-            this.options.ppu.setChrBankOffset(5, v + 1)
-            this.options.ppu.setChrBankOffset(6, v + 2)
-            this.options.ppu.setChrBankOffset(7, v + 3)
-          }
-          break
-        case 2:
-          if ((adr & 1) === 1) {
-            const a = adr & 2
-            const v = (value & -2) | (this.upperChrBit << 8)
-            this.options.ppu.setChrBankOffset(a,     v)
-            this.options.ppu.setChrBankOffset(a + 1, v + 1)
-            this.options.ppu.setChrBankOffset(a + 4, v)
-            this.options.ppu.setChrBankOffset(a + 5, v + 1)
-          }
-          break
-        case 3:
-          {
-            const a = adr & 3
-            const v = value | (this.upperChrBit << 8)
-            this.options.ppu.setChrBankOffset(a    , v)
-            this.options.ppu.setChrBankOffset(a + 4, v)
-          }
-          break
-        }
-        break*/
       case 0x5130:
+//console.log(`Write: 5130: ${Util.hex(value)}`)
         this.upperChrBit = value & 3
         break
 
       case 0x5203:  // IRQ ScanlineCompare Value
-        this.irqHlineCompare = value
+        this.irqCounterTarget = value
         break
       case 0x5204:  // Scanline IRQ Status
-        this.irqHlineEnable = (value & 0x80) !== 0
+        this.irqEnabled = (value & 0x80) === 0x80
+        if (!this.irqEnabled) {
+          this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
+        } else if (this.irqEnabled && this.irqPending) {
+          this.options.cpu.requestIrq(IrqType.EXTERNAL)
+        }
         break
       }
     })
@@ -235,8 +228,12 @@ export class Mapper005 extends Mapper {
         return this.options.readFromApu(adr)
 
       case 0x5204:
-        this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
-        return (this.ppuInFrame ? 0x40 : 0x00)
+        {
+          const value = (this.ppuInFrame ? 0x40 : 0x00) | (this.irqPending ? 0x80 : 0x00)
+          this.irqPending = false
+          this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
+          return value
+        }
       }
     })
 
@@ -305,9 +302,9 @@ export class Mapper005 extends Mapper {
 */
   }
 
-  public reset(): void {
-    this.irqHlineEnable = false
-    this.irqHlineCompare = this.irqHlineCounter = -1
+  public reset() {
+    // this.irqHlineEnable = false
+    // this.irqHlineCompare = this.irqHlineCounter = -1
   }
 
   public save(): object {
@@ -315,10 +312,10 @@ export class Mapper005 extends Mapper {
       regs: Util.convertUint8ArrayToBase64String(this.regs),
       ram: Util.convertUint8ArrayToBase64String(this.ram),
       bankSelect: this.bankSelect,
-      irqHlineEnable: this.irqHlineEnable,
-      irqHlineCompare: this.irqHlineCompare,
-      irqHlineCounter: this.irqHlineCounter,
-      irqLatch: this.irqLatch,
+      // irqHlineEnable: this.irqHlineEnable,
+      // irqHlineCompare: this.irqHlineCompare,
+      // irqHlineCounter: this.irqHlineCounter,
+      // irqLatch: this.irqLatch,
     }
   }
 
@@ -326,13 +323,13 @@ export class Mapper005 extends Mapper {
     this.regs = Util.convertBase64StringToUint8Array(saveData.regs)
     this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
     this.bankSelect = saveData.bankSelect
-    this.irqHlineEnable = saveData.irqHlineEnable
-    this.irqHlineCompare = saveData.irqHlineCompare
-    this.irqHlineCounter = saveData.irqHlineCounter
-    this.irqLatch = saveData.irqLatch
+    // this.irqHlineEnable = saveData.irqHlineEnable
+    // this.irqHlineCompare = saveData.irqHlineCompare
+    // this.irqHlineCounter = saveData.irqHlineCounter
+    // this.irqLatch = saveData.irqLatch
 
     this.setPrgBank(this.bankSelect)
-    this.setChrBank(this.bankSelect)
+    // this.setChrBank(this.bankSelect)
   }
 
   public onHblank(hcount: number): void {
@@ -341,14 +338,14 @@ export class Mapper005 extends Mapper {
     // in order for the countdown to occur.
     const regs = this.options.ppu.getRegs()
     if ((regs[PpuReg.MASK] & (PpuMaskBit.SHOW_SPRITE | PpuMaskBit.SHOW_BG)) !== 0) {
-      this.ppuInFrame = hcount < 240
+      // this.ppuInFrame = hcount < 240
 
       //if (--this.irqHlineCounter === 0 && this.irqHlineEnable) {
-      if (this.irqHlineEnable && this.irqHlineCompare === hcount) {
-        this.options.cpu.requestIrq(IrqType.EXTERNAL)
-      }
+      // if (this.irqHlineEnable && this.irqHlineCompare === hcount) {
+      //   this.options.cpu.requestIrq(IrqType.EXTERNAL)
+      // }
     } else {
-      this.ppuInFrame = false
+      // this.ppuInFrame = false
     }
 
     switch (hcount) {
@@ -372,26 +369,83 @@ export class Mapper005 extends Mapper {
     }
   }
 
-  private setChrBank(swap: number): void {
-    if ((swap & 0x80) === 0) {
-      this.options.ppu.setChrBankOffset(0, this.regs[0] & 0xfe)
-      this.options.ppu.setChrBankOffset(1, this.regs[0] | 1)
-      this.options.ppu.setChrBankOffset(2, this.regs[1] & 0xfe)
-      this.options.ppu.setChrBankOffset(3, this.regs[1] | 1)
-      this.options.ppu.setChrBankOffset(4, this.regs[2])
-      this.options.ppu.setChrBankOffset(5, this.regs[3])
-      this.options.ppu.setChrBankOffset(6, this.regs[4])
-      this.options.ppu.setChrBankOffset(7, this.regs[5])
-    } else {
-      this.options.ppu.setChrBankOffset(4, this.regs[0] & 0xfe)
-      this.options.ppu.setChrBankOffset(5, this.regs[0] | 1)
-      this.options.ppu.setChrBankOffset(6, this.regs[1] & 0xfe)
-      this.options.ppu.setChrBankOffset(7, this.regs[1] | 1)
-      this.options.ppu.setChrBankOffset(0, this.regs[2])
-      this.options.ppu.setChrBankOffset(1, this.regs[3])
-      this.options.ppu.setChrBankOffset(2, this.regs[4])
-      this.options.ppu.setChrBankOffset(3, this.regs[5])
+  private switchChrBank(adr: Address, value: Byte): void {
+    const reg = adr - 0x5120
+    const newValue = value | (this.upperChrBit << 8)
+    if (newValue !== this.chrBanks[reg] || this.lastChrReg !== adr) {
+      this.chrBanks[reg] = newValue
+      this.lastChrReg = adr
+      this.updateChrBanks(true)
     }
+  }
+
+  private chrBanks = new Uint16Array(8)
+  private lastChrReg = 0
+  private prevChrA = false
+  private splitTileNumber = -1
+
+  private updateChrBanks(forceUpdate: boolean): void {
+    //const largeSprites = (_mmc5MemoryHandler->GetReg(0x2000) & 0x20) !== 0
+    const regs = this.options.ppu.getRegs()
+    const largeSprites = (regs[PpuReg.CTRL] & PpuCtrlBit.SPRITE_SIZE) !== 0
+
+    if (!largeSprites) {
+      //Using 8x8 sprites resets the last written to bank logic
+      this.lastChrReg = 0
+    }
+
+    const chrA = !largeSprites || (this.splitTileNumber >= 32 && this.splitTileNumber < 40) ||
+        (!this.ppuInFrame && this.lastChrReg <= 0x5127)
+    if (!forceUpdate && chrA === this.prevChrA) {
+      // return
+    }
+    this.prevChrA = chrA
+
+    switch (this.chrMode) {
+    case 0:
+      this.selectChrPage8x(0, this.chrBanks[chrA ? 0x07 : 0x0B] /*<< 3*/ & -8)
+      break
+    case 1:
+      this.selectChrPage4x(0, this.chrBanks[chrA ? 0x03 : 0x0B] /*<< 2*/ & -4)
+      this.selectChrPage4x(1, this.chrBanks[chrA ? 0x07 : 0x0B] /*<< 2*/ & -4)
+      break
+    case 2:
+      this.selectChrPage2x(0, this.chrBanks[chrA ? 0x01 : 0x09] /*<< 1*/ & -2)
+      this.selectChrPage2x(1, this.chrBanks[chrA ? 0x03 : 0x0B] /*<< 1*/ & -2)
+      this.selectChrPage2x(2, this.chrBanks[chrA ? 0x05 : 0x09] /*<< 1*/ & -2)
+      this.selectChrPage2x(3, this.chrBanks[chrA ? 0x07 : 0x0B] /*<< 1*/ & -2)
+      break
+    case 3:
+      this.selectChrPage(0, this.chrBanks[chrA ? 0x00 : 0x08])
+      this.selectChrPage(1, this.chrBanks[chrA ? 0x01 : 0x09])
+      this.selectChrPage(2, this.chrBanks[chrA ? 0x02 : 0x0A])
+      this.selectChrPage(3, this.chrBanks[chrA ? 0x03 : 0x0B])
+      this.selectChrPage(4, this.chrBanks[chrA ? 0x04 : 0x08])
+      this.selectChrPage(5, this.chrBanks[chrA ? 0x05 : 0x09])
+      this.selectChrPage(6, this.chrBanks[chrA ? 0x06 : 0x0A])
+      this.selectChrPage(7, this.chrBanks[chrA ? 0x07 : 0x0B])
+      break
+    default: break  // assert
+    }
+  }
+
+  private selectChrPage8x(slot: number, page: number): void {
+    this.selectChrPage4x(slot, page)
+    this.selectChrPage4x(slot * 2 + 1, page + 4)
+  }
+
+  private selectChrPage4x(slot: number, page: number): void {
+    this.selectChrPage2x(slot, page)
+    this.selectChrPage2x(slot * 2 + 1, page + 2)
+  }
+
+  private selectChrPage2x(slot: number, page: number): void {
+    this.selectChrPage(slot, page)
+    this.selectChrPage(slot * 2 + 1, page + 1)
+  }
+
+  private selectChrPage(slot: number, page: number): void {
+    this.options.ppu.setChrBankOffset(slot, page)
   }
 
   // private setIrqHlineValue(line: number): void {
