@@ -1,32 +1,36 @@
 import {ChannelType} from '../nes/apu'
 
 abstract class SoundChannel {
+  public abstract destroy(): void
+  public abstract setVolume(_volume: number): void
+  public abstract setFrequency(_frequency: number): void
+  public abstract start(): void
+
+  public setDutyRatio(_ratio: number): void {}
+}
+
+abstract class GainSoundChannel extends SoundChannel {
   protected gainNode: GainNode
 
   public constructor(context: AudioContext) {
+    super()
     this.gainNode = context.createGain()
     this.gainNode.gain.setValueAtTime(0, context.currentTime)
   }
 
-  public destroy() {
+  public destroy(): void {
     if (this.gainNode != null) {
       this.gainNode.disconnect()
       // this.gainNode = null
     }
   }
 
-  public start(): void {}
-
-  public setVolume(volume: number) {
+  public setVolume(volume: number): void {
     this.gainNode.gain.setValueAtTime(volume, this.gainNode.context.currentTime)
   }
-
-  public setFrequency(_frequency: number) {}
-
-  public setDutyRatio(_ratio: number) {}
 }
 
-abstract class OscillatorChannel extends SoundChannel {
+abstract class OscillatorChannel extends GainSoundChannel {
   protected oscillator: OscillatorNode
 
   public constructor(context: AudioContext, destination: AudioNode) {
@@ -36,7 +40,7 @@ abstract class OscillatorChannel extends SoundChannel {
     this.setupOscillator(this.oscillator, context, destination)
   }
 
-  public destroy() {
+  public destroy(): void {
     super.destroy()
     if (this.oscillator != null) {
       this.oscillator.disconnect()
@@ -48,7 +52,7 @@ abstract class OscillatorChannel extends SoundChannel {
     this.oscillator.start()
   }
 
-  public setFrequency(frequency: number) {
+  public setFrequency(frequency: number): void {
     const now = this.oscillator.context.currentTime
     this.oscillator.frequency.setValueAtTime(frequency, now)
   }
@@ -101,7 +105,7 @@ class PulseChannel extends OscillatorChannel {
   private frequency = 1
   private duty = 0.5
 
-  public destroy() {
+  public destroy(): void {
     super.destroy()
     if (this.delay != null) {
       this.delay.disconnect()
@@ -109,7 +113,7 @@ class PulseChannel extends OscillatorChannel {
     }
   }
 
-  public setFrequency(frequency: number) {
+  public setFrequency(frequency: number): void {
     if (this.frequency === frequency)
       return
     this.frequency = frequency
@@ -118,7 +122,7 @@ class PulseChannel extends OscillatorChannel {
     this.updateDelay()
   }
 
-  public setDutyRatio(ratio: number) {
+  public setDutyRatio(ratio: number): void {
     if (this.duty === ratio)
       return
     this.duty = ratio
@@ -142,7 +146,7 @@ class PulseChannel extends OscillatorChannel {
     this.gainNode.connect(destination)
   }
 
-  private updateDelay() {
+  private updateDelay(): void {
     const now = this.delay.context.currentTime
     this.delay.delayTime.setValueAtTime((1.0 - this.duty) / this.frequency, now)
   }
@@ -228,7 +232,7 @@ export default class AudioManager {
     return AudioManager.analyserNode
   }
 
-  private static checkSetUpCalled() {
+  private static checkSetUpCalled(): void {
     if (!AudioManager.initialized) {
       console.error('Audio.setUp must be called!')
     }
