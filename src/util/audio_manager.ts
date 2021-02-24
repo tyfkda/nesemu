@@ -17,8 +17,8 @@ abstract class SoundChannel {
 
   public start(): void {}
 
-  public setVolume(volume: number, context: AudioContext) {
-    this.gainNode.gain.setValueAtTime(volume, context.currentTime)
+  public setVolume(volume: number) {
+    this.gainNode.gain.setValueAtTime(volume, this.gainNode.context.currentTime)
   }
 
   public setFrequency(_frequency: number) {}
@@ -49,7 +49,7 @@ abstract class OscillatorChannel extends SoundChannel {
   }
 
   public setFrequency(frequency: number) {
-    const now = this.gainNode.context.currentTime
+    const now = this.oscillator.context.currentTime
     this.oscillator.frequency.setValueAtTime(frequency, now)
   }
 
@@ -274,7 +274,7 @@ export default class AudioManager {
   public setChannelVolume(channel: number, volume: number): void {
     if (AudioManager.context == null)
       return
-    this.channels[channel].setVolume(volume, AudioManager.context)
+    this.channels[channel].setVolume(volume)
   }
 
   public setChannelDutyRatio(channel: number, ratio: number): void {
