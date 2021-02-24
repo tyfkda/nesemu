@@ -1,4 +1,5 @@
 import {ChannelType} from '../nes/apu'
+import {NoiseSampler} from './apu_util'
 
 abstract class SoundChannel {
   public abstract destroy(): void
@@ -43,6 +44,7 @@ abstract class OscillatorChannel extends GainSoundChannel {
   public destroy(): void {
     super.destroy()
     if (this.oscillator != null) {
+      this.oscillator.stop()
       this.oscillator.disconnect()
       // this.oscillator = null
     }
@@ -79,23 +81,86 @@ class SawtoothChannel extends OscillatorChannel {
   }
 }
 
-class NoiseChannel extends OscillatorChannel {
-  protected setupOscillator(oscillator: OscillatorNode, context: AudioContext,
-                            destination: AudioNode): void {
-    const count = 1024
-    const real = new Float32Array(count)
-    const imag = new Float32Array(count)
-    real[0] = imag[0] = 0  // DC
-    for (let i = 1; i < count; ++i) {
-      const t = Math.random() * (2 * Math.PI)
-      real[i] = Math.cos(t)
-      imag[i] = Math.sin(t)
-    }
-    const wave = context.createPeriodicWave(real, imag)
-    oscillator.setPeriodicWave(wave)
+// ScriptProcessor Noise channel
+const SP_NOISE_BUFFER_SIZE = 256
+class SpNoiseChannel extends SoundChannel {
+  private node: ScriptProcessorNode
+  private sampler: NoiseSampler
 
-    oscillator.connect(this.gainNode)
-    this.gainNode.connect(destination)
+  public constructor(context: AudioContext, destination: AudioNode) {
+    super()
+
+    this.sampler = new NoiseSampler(context.sampleRate)
+
+    this.node = context.createScriptProcessor(SP_NOISE_BUFFER_SIZE, 1, 1)
+    this.node.onaudioprocess = (e) => {
+      const output = e.outputBuffer.getChannelData(0)
+      this.sampler.fillBuffer(output)
+    }
+    this.node.connect(destination)
+  }
+
+  public destroy(): void {
+    if (this.node != null) {
+      // this.node.port.postMessage({action: 'stop'})
+      this.node.disconnect()
+      // this.node = null
+    }
+  }
+
+  public start(): void {
+  }
+
+  public setVolume(volume: number): void {
+    this.sampler.setVolume(volume)
+  }
+
+  public setFrequency(frequency: number): void {
+    this.sampler.setFrequency(frequency)
+  }
+}
+
+// Audio-worklet Noise channel
+const NOISE_WORKER_PASS = 'assets/noise_channel_worker.js'
+class AwNoiseChannel extends SoundChannel {
+  private node?: AudioWorkletNode
+
+  public static create(context: AudioContext, destination: AudioNode): AwNoiseChannel|null {
+    if (typeof(AudioWorkletNode) === 'undefined')
+      return null
+    return new AwNoiseChannel(context, destination)
+  }
+
+  private constructor(context: AudioContext, destination: AudioNode) {
+    super()
+
+    context.audioWorklet.addModule(NOISE_WORKER_PASS)
+      .then(() => {
+        this.node = new AudioWorkletNode(context, 'noise_worklet')
+        this.node.connect(destination)
+      })
+      .catch(console.error)
+  }
+
+  public destroy(): void {
+    if (this.node != null) {
+      this.node.port.postMessage({action: 'stop'})
+      this.node.disconnect()
+      // this.node = null
+    }
+  }
+
+  public start(): void {
+  }
+
+  public setVolume(volume: number): void {
+    if (this.node != null)
+      this.node.port.postMessage({action: 'volume', value: volume})
+  }
+
+  public setFrequency(frequency: number): void {
+    if (this.node != null)
+      this.node.port.postMessage({action: 'frequency', value: frequency})
   }
 }
 
@@ -168,7 +233,8 @@ function createSoundChannel(
   case ChannelType.TRIANGLE:
     return new TriangleChannel(context, destination)
   case ChannelType.NOISE:
-    return new NoiseChannel(context, destination)
+    return AwNoiseChannel.create(context, destination) ||
+        new SpNoiseChannel(context, destination)
   case ChannelType.SAWTOOTH:
     return new SawtoothChannel(context, destination)
   case ChannelType.DMC:

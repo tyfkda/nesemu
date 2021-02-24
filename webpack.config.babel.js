@@ -4,6 +4,7 @@ module.exports = {
   mode: 'production',
   entry: {
     _lib: './src/_lib.ts',
+    noise_channel_worker: './src/noise_channel_worker.ts',
     main: './src/main.ts',
   },
   output: {
