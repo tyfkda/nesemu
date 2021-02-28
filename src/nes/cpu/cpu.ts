@@ -27,6 +27,12 @@ const VEC_NMI: Address = 0xfffa
 const VEC_RESET: Address = 0xfffc
 const VEC_IRQ: Address = 0xfffe
 
+type Bit = 0 | 1
+
+function bit(x: Byte, shift: number) {
+  return ((x >> shift) & 1) as Bit
+}
+
 interface Regs {
   a: Byte
   x: Byte
@@ -42,15 +48,15 @@ export class Cpu {
   private y: Byte  // Y register
   private s: Byte  // Stack pointer
 
-  // Status register [NVRBDIZC], 0|1 as a boolean
-  private negative = 0
-  private overflow = 0
-  private reservedFlag = 0
-  private breakmode = 0
-  private decimal = 0
-  private irqBlocked = 0
-  private zero = 0
-  private carry = 0
+  // Status register [NVRBDIZC]
+  private negative: Bit = 0
+  private overflow: Bit = 0
+  private reservedFlag: Bit = 0
+  private breakmode: Bit = 0
+  private decimal: Bit = 0
+  private irqBlocked: Bit = 0
+  private zero: Bit = 0
+  private carry: Bit = 0
 
   private pc: Address  // Program counter
   private irqRequest = 0
@@ -349,8 +355,8 @@ export class Cpu {
         const result = this.a & value
         this.zero = result === 0 ? 1 : 0
 
-        this.negative = (value >> NEGATIVE_BIT) & 1
-        this.overflow = (value >> OVERFLOW_BIT) & 1
+        this.negative = bit(value, NEGATIVE_BIT)
+        this.overflow = bit(value, OVERFLOW_BIT)
       }
       break
     case OpType.CMP:
@@ -485,14 +491,14 @@ export class Cpu {
   }
 
   private setStatusReg(p: Byte): void {
-    this.negative = (p >> NEGATIVE_BIT) & 1
-    this.overflow = (p >> OVERFLOW_BIT) & 1
-    this.reservedFlag = (p >> RESERVED_BIT) & 1
-    this.breakmode = (p >> BREAK_BIT) & 1
-    this.decimal = (p >> DECIMAL_BIT) & 1
-    this.irqBlocked = (p >> IRQBLK_BIT) & 1
-    this.zero = (p >> ZERO_BIT) & 1
-    this.carry = (p >> CARRY_BIT) & 1
+    this.negative = bit(p, NEGATIVE_BIT)
+    this.overflow = bit(p, OVERFLOW_BIT)
+    this.reservedFlag = bit(p, RESERVED_BIT)
+    this.breakmode = bit(p, BREAK_BIT)
+    this.decimal = bit(p, DECIMAL_BIT)
+    this.irqBlocked = bit(p, IRQBLK_BIT)
+    this.zero = bit(p, ZERO_BIT)
+    this.carry = bit(p, CARRY_BIT)
   }
 
   private read8(adr: Address): Byte {
