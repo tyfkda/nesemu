@@ -23,6 +23,10 @@ import * as twitterLogo from '../res/twitter-logo.svg'
 import audioOnImg from '../res/audio_on.png'
 import audioOffImg from '../res/audio_off.png'
 
+import pluseImg from '../res/pulse.png'
+import triangleImg from '../res/triangle.png'
+import sawtoothImg from '../res/sawtooth.png'
+
 const DEFAULT_MASTER_VOLUME = 0.5
 const KEY_VOLUME = 'volume'
 
@@ -393,6 +397,12 @@ export class GlobalPaletWnd extends Wnd {
 
 const kToneTable = [0, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 5.5, 6, 6.5]  // A A# B | C C# D D# E F F# G G#
 
+const kChannelTypeImages = [
+  pluseImg,
+  triangleImg,
+  sawtoothImg,
+]
+
 export class AudioWnd extends Wnd {
   private static W = 8
   private static H = 32
@@ -410,7 +420,7 @@ export class AudioWnd extends Wnd {
   public constructor(wndMgr: WindowManager, nes: Nes, stream: AppEvent.Stream) {
     const channelTypes = nes.getSoundChannelTypes()
     const channelIndices = [...Array(channelTypes.length).keys()]
-          .filter(ch => channelTypes[ch] !== ChannelType.DMC)
+        .filter(ch => channelTypes[ch] !== ChannelType.DMC && channelTypes[ch] !== ChannelType.NOISE)
     const channelCount = channelIndices.length
 
     super(wndMgr, AudioWnd.W * AudioWnd.OCTAVE * 7, AudioWnd.H * channelCount, 'Audio')
@@ -418,7 +428,7 @@ export class AudioWnd extends Wnd {
     this.stream = stream
     this.channelIndices = channelIndices
 
-    const {root, dots} = this.createDom(channelCount)
+    const {root, dots} = this.createDom(channelCount, channelTypes)
     this.setContent(root)
     this.dots = dots
 
@@ -472,7 +482,9 @@ export class AudioWnd extends Wnd {
     }
   }
 
-  private createDom(channelCount: number): {root: HTMLElement; dots: HTMLElement[]} {
+  private createDom(channelCount: number, channelTypes: ChannelType[]):
+      {root: HTMLElement; dots: HTMLElement[]}
+  {
     const W = AudioWnd.W, H = AudioWnd.H
     const root = document.createElement('div')
     const width = W * AudioWnd.OCTAVE * 7
@@ -528,6 +540,17 @@ export class AudioWnd extends Wnd {
           line.appendChild(blackKey)
         }
       }
+
+      const icon = document.createElement('img')
+      DomUtil.setStyles(icon, {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        display: 'block',
+      })
+      const channelType = channelTypes[this.channelIndices[ch]]
+      icon.src = kChannelTypeImages[channelType]
+      line.appendChild(icon)
     }
 
     const DOT_W = 7
