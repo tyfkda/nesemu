@@ -7,21 +7,16 @@ import {MirrorMode} from './ppu/types'
 import Ppu from './ppu/ppu'
 import {Address, Byte} from './types'
 import Util from '../util/util'
+import {CPU_HZ, VBlank} from './const'
 
 import {Mapper, PrgBankController} from './mapper/mapper'
 import {kMapperTable} from './mapper/mapper_table'
 
 import * as md5 from 'md5'
 
-const CPU_HZ = 1789773
-
 const RAM_SIZE = 0x0800
 
-const VBLANK_START = 240
-const VBLANK_NMI = 241
-const VBLANK_END = 261
-const VRETURN = 262
-const VCYCLE = (VRETURN * 341 / 3) | 0
+const VCYCLE = (VBlank.VRETURN * 341 / 3) | 0
 
 const OAMDMA = 0x4014
 
@@ -279,8 +274,8 @@ export default class Nes implements PrgBankController {
     const beforeHcount = getHblankCount(cycleCount)
     let hcount = getHblankCount(cycleCount2)
     if (hcount > beforeHcount) {
-      if (hcount === VRETURN) {
-        cycleCount2 -= (VRETURN * 341 / 3) | 0
+      if (hcount === VBlank.VRETURN) {
+        cycleCount2 -= (VBlank.VRETURN * 341 / 3) | 0
         hcount = 0
       }
 
@@ -288,14 +283,14 @@ export default class Nes implements PrgBankController {
       this.apu.onHblank(hcount)
 
       switch (hcount) {
-      case VBLANK_START:
+      case VBlank.START:
         this.ppu.setVBlank()
         this.vblankCallback((leftCycles / VCYCLE) | 0)
         break
-      case VBLANK_NMI:
+      case VBlank.NMI:
         this.interruptVBlank()
         break
-      case VBLANK_END:
+      case VBlank.END:
         this.ppu.clearVBlank()
         break
       default:

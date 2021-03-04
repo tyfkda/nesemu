@@ -6,6 +6,7 @@ import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
 import Util from '../../util/util'
+import {CPU_HZ, VBlank} from '../const'
 
 const IRQ_ENABLE_AFTER = 1 << 0
 const IRQ_ENABLE = 1 << 1
@@ -16,9 +17,6 @@ const CH_ENABLE = 1 << 7
 const FREQCTL_HALT = 1 << 0
 const FREQCTL_16X  = 1 << 1
 const FREQCTL_256X = 1 << 2
-
-const CPU_CLOCK = 1789773  // Hz
-const VBLANK_START = 241
 
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
@@ -57,7 +55,7 @@ class PulseChannel extends Channel {
 
   public getFrequency(): number {
     const f = this.regs[1] | ((this.regs[2] & 0x0f) << 8)
-    return ((CPU_CLOCK / 16) / (f + 1)) | 0
+    return ((CPU_HZ / 16) / (f + 1)) | 0
   }
 
   public getDutyRatio(): number {
@@ -111,7 +109,7 @@ class SawToothChannel extends Channel {
 
   public getFrequency(): number {
     const f = this.regs[1] | ((this.regs[2] & 0x0f) << 8)
-    return ((CPU_CLOCK / 14) / (f + 1)) | 0
+    return ((CPU_HZ / 14) / (f + 1)) | 0
   }
 }
 
@@ -262,7 +260,7 @@ class Mapper024Base extends Mapper {
       this.irqCounter = c
     }
 
-    if (hcount === VBLANK_START)
+    if (hcount === VBlank.NMI)
       this.updateSound()
   }
 

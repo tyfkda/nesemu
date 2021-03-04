@@ -2,6 +2,7 @@
 
 import {Address, Byte} from './types'
 import Util from '../util/util'
+import {CPU_HZ, VBlank} from './const'
 
 export const enum PadBit {
   A = 0,
@@ -45,7 +46,6 @@ const CONSTANT_VOLUME = 0x10
 const LENGTH_COUNTER_HALT = 0x20
 const LENGTH_COUNTER_HALT_TRI = 0x80
 const ENVELOPE_LOOP = 0x20
-const CPU_CLOCK = 1789773  // Hz
 
 const DMC_IRQ_ENABLE = 0x80
 
@@ -82,8 +82,6 @@ const kNoiseFrequencies =
       [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068]
 
 const kPulseDutyRatio = [0.125, 0.25, 0.5, -0.25]
-
-const VBLANK_START = 241
 
 // ================================================================
 // GamePad
@@ -192,7 +190,7 @@ class PulseChannel extends Channel {
 
   public getFrequency(): number {
     const value = this.regs[Reg.TIMER_L] + ((this.regs[Reg.TIMER_H] & 7) << 8)
-    return ((CPU_CLOCK / 16) / (value + 1)) | 0
+    return ((CPU_HZ / 16) / (value + 1)) | 0
   }
 
   public getDutyRatio(): number {
@@ -314,7 +312,7 @@ class TriangleChannel extends Channel {
 
   public getFrequency(): number {
     const value = this.regs[Reg.TIMER_L] + ((this.regs[Reg.TIMER_H] & 7) << 8)
-    return ((CPU_CLOCK / 32) / (value + 1)) | 0
+    return ((CPU_HZ / 32) / (value + 1)) | 0
   }
 
   public update(): void {
@@ -592,7 +590,7 @@ export class Apu {
     (this.channels[ApuChannel.DMC] as DmcChannel).onHblank(hcount)
 
     switch (hcount) {
-    case VBLANK_START:
+    case VBlank.NMI:
       this.channels.forEach(channel => channel.update())
       if (this.isIrqEnabled()) {
         this.frameInterrupt = 0x40
