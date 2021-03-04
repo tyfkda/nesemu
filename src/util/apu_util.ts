@@ -18,7 +18,7 @@ export class NoiseSampler {
     let multiplier = 0
     for (; ++multiplier < 0x1000; ) {
       if ((CLK_NTSC * (multiplier + 1) / sampleRate > 0x7ffff) ||
-          (CLK_NTSC * multiplier % sampleRate == 0))
+          (CLK_NTSC * multiplier % sampleRate === 0))
         break
     }
 

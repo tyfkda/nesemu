@@ -5,8 +5,8 @@ import * as JSZip from 'jszip'
 
 function getMapperNo(romData: Buffer): number {
   const NES = 'NES'
-  if (romData[0] != NES.charCodeAt(0) || romData[1] != NES.charCodeAt(1) ||
-      romData[2] != NES.charCodeAt(2) || romData[3] != 0x1a) {
+  if (romData[0] !== NES.charCodeAt(0) || romData[1] !== NES.charCodeAt(1) ||
+      romData[2] !== NES.charCodeAt(2) || romData[3] !== 0x1a) {
     console.error('Invalid format')
     process.exit(1)
   }
