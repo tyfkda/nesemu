@@ -1,13 +1,26 @@
-const CLK_M2_MUL   = 6
-const CLK_NTSC     = 39_375_000 * CLK_M2_MUL
-const CLK_NTSC_DIV = 11
+//import {CPU_HZ} from '../nes/const'
+//const APU_NOISE_HZ = (CPU_HZ / 2) | 0
+const APU_NOISE_HZ = 894887
 
-const RP2A03_CC = 12
-const CPU_CLK_1 = RP2A03_CC
+function gcd(m: number, n: number): number {
+  if (m < n) {
+    const t = m
+    m = n
+    n = t
+  }
+
+  let r: number
+  while ((r = m % n) !== 0) {
+    m = n
+    n = r
+  }
+
+  return n
+}
 
 export class NoiseSampler {
   private volume = 0
-  private frequency = -1
+  private period = -1
   private timer = 0
   private bits = 0x0001  // 15bits
 
@@ -15,23 +28,18 @@ export class NoiseSampler {
   private fixed = 0
 
   constructor(sampleRate: number) {
-    let multiplier = 0
-    for (; ++multiplier < 0x1000; ) {
-      if ((CLK_NTSC * (multiplier + 1) / sampleRate > 0x7ffff) ||
-          (CLK_NTSC * multiplier % sampleRate === 0))
-        break
-    }
-
-    this.rate = CLK_NTSC * multiplier / sampleRate
-    this.fixed = CLK_NTSC_DIV * CPU_CLK_1 * multiplier
+    const g = gcd(APU_NOISE_HZ, sampleRate)
+    const multiplier = Math.min(sampleRate / g, 0x7fff) | 0
+    this.rate = (APU_NOISE_HZ * multiplier / sampleRate) | 0
+    this.fixed = multiplier | 0
   }
 
   public setVolume(volume: number): void {
     this.volume = volume
   }
 
-  public setFrequency(frequency: number): void {
-    this.frequency = frequency * this.fixed
+  public setPeriod(period: number): void {
+    this.period = (period + 1) * this.fixed
   }
 
   public fillBuffer(buffer: Float32Array): void {
@@ -42,31 +50,24 @@ export class NoiseSampler {
 
     const shift = 1
     const rate = this.rate | 0
-    const freq = (this.frequency > 0 ? this.frequency : this.fixed) | 0
+    const period = (this.period > 0 ? this.period : this.rate) | 0
     const volume = this.volume
     let timer = this.timer | 0
     let bits = this.bits | 0
-    let b = 1 - (bits & 1)
-    let v = b * volume
+    let v = (1 - (bits & 1)) * volume
 
     const len = buffer.length
     for (let i = 0; i < len; ++i) {
-      if (timer >= rate) {
-        buffer[i] = v
-        timer -= rate
-      } else {
-        let sum = (timer * b) | 0
-        timer -= rate
+      timer -= rate
+      if (timer < 0) {
         do {
           const x = ((bits ^ (bits >> shift)) & 1) | 0
           bits = ((bits >> 1) | (x << 14)) | 0
-          b = (1 - (bits & 1)) | 0
-          sum += (Math.min(-timer, freq) * b) | 0
-          timer += freq
+          timer += period
         } while (timer < 0)
-        buffer[i] = sum >= (rate >> 1) ? volume : 0
-        v = b * volume
+        v = (1 - (bits & 1)) * volume
       }
+      buffer[i] = v
     }
     this.timer = timer
     this.bits = bits

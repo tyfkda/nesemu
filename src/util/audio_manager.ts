@@ -116,7 +116,7 @@ class SpNoiseChannel extends SoundChannel {
   }
 
   public setFrequency(frequency: number): void {
-    this.sampler.setFrequency(frequency)
+    this.sampler.setPeriod(frequency)
   }
 }
 
@@ -160,7 +160,7 @@ class AwNoiseChannel extends SoundChannel {
 
   public setFrequency(frequency: number): void {
     if (this.node != null)
-      this.node.port.postMessage({action: 'frequency', value: frequency})
+      this.node.port.postMessage({action: 'period', value: frequency})
   }
 }
 

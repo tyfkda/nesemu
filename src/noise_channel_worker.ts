@@ -20,8 +20,8 @@ class NoiseChannelProcessor extends AudioWorkletProcessor {
       case 'volume':
         this.sampler.setVolume(ev.data.value)
         break
-      case 'frequency':
-        this.sampler.setFrequency(ev.data.value)
+      case 'period':
+        this.sampler.setPeriod(ev.data.value)
         break
       }
     }
