@@ -112,6 +112,71 @@ class GamePad {
 }
 
 // ================================================================
+
+class Envelope {
+  private envelopeDivider = 0  // i.e. Envelope counter
+  private envelopeCounter = 0  // i.e. Envelope volume
+  private envelopeReset = false
+  private reg: Byte = 0
+
+  public clear() {
+    this.envelopeDivider = this.envelopeCounter = 0
+  }
+
+  public resetClock() {
+    this.envelopeReset = true
+  }
+
+  public write(value: Byte) {
+    this.reg = value
+    if ((value & CONSTANT_VOLUME) === 0) {
+      this.envelopeDivider = value & 0x0f
+      // this.envelopeCounter = 0x0f
+    }
+  }
+
+  public getVolume(): number {
+    const v = this.reg
+    if ((v & CONSTANT_VOLUME) !== 0)
+      return (v & 15) / 15
+    return this.envelopeCounter / 15
+  }
+
+  public update(): void {
+    if ((this.reg & CONSTANT_VOLUME) !== 0)
+      return
+
+    if (this.envelopeReset) {
+      this.envelopeReset = false
+      this.envelopeCounter = 0x0f
+      this.envelopeDivider = this.reg & 0x0f
+      return
+    }
+
+    const DEC = 4
+    this.envelopeDivider -= DEC
+    if (this.envelopeDivider < 0) {
+      let add = this.reg & 0x0f
+      if (add === 0)
+        add = -this.envelopeDivider
+      do {
+        this.envelopeDivider += add
+        if (this.envelopeCounter > 0) {
+          --this.envelopeCounter
+        } else {
+          if ((this.reg & ENVELOPE_LOOP) !== 0) {
+            this.envelopeCounter = 0x0f
+          } else {
+            this.envelopeCounter = 0
+            this.envelopeDivider = 0
+          }
+        }
+      } while (this.envelopeDivider < 0)
+    }
+  }
+}
+
+// ================================================================
 // Sound channel
 class Channel {
   protected regs = new Uint8Array(4)
@@ -143,15 +208,12 @@ class Channel {
 class PulseChannel extends Channel {
   private lengthCounter = 0
   private sweepCounter = 0
-
-  private envelopeDivider = 0  // i.e. Envelope counter
-  private envelopeCounter = 0  // i.e. Envelope volume
-  private envelopeReset = false
+  private envelope = new Envelope()
 
   public reset() {
     super.reset()
     this.sweepCounter = 0
-    this.envelopeDivider = this.envelopeCounter = 0
+    this.envelope.clear()
   }
 
   public write(reg: Reg, value: Byte) {
@@ -160,10 +222,7 @@ class PulseChannel extends Channel {
     switch (reg) {
     case Reg.STATUS:
       this.stopped = false
-      if ((value & CONSTANT_VOLUME) === 0) {
-        this.envelopeDivider = value & 0x0f
-        this.envelopeCounter = 0x0f
-      }
+      this.envelope.write(value)
       break
     case Reg.SWEEP:
       this.sweepCounter = (value >> 4) & 7
@@ -171,7 +230,7 @@ class PulseChannel extends Channel {
     case Reg.TIMER_H:
       this.lengthCounter = kLengthTable[value >> 3]
       this.stopped = false
-      this.envelopeReset = true
+      this.envelope.resetClock()
       break
     default:
       break
@@ -181,11 +240,7 @@ class PulseChannel extends Channel {
   public getVolume(): number {
     if (this.stopped)
       return 0
-
-    const v = this.regs[Reg.STATUS]
-    if ((v & CONSTANT_VOLUME) !== 0)
-      return (v & 15) / 15
-    return this.envelopeCounter / 15
+    return this.envelope.getVolume()
   }
 
   public getFrequency(): number {
@@ -202,7 +257,7 @@ class PulseChannel extends Channel {
       return
 
     this.updateLength()
-    this.updateEnvelope()
+    this.envelope.update()
     this.sweep()
   }
 
@@ -220,33 +275,6 @@ class PulseChannel extends Channel {
         l = 0
     }
     this.lengthCounter = l
-  }
-
-  private updateEnvelope(): void {
-    if ((this.regs[Reg.STATUS] & CONSTANT_VOLUME) !== 0)
-      return
-
-    if (this.envelopeReset) {
-      this.envelopeReset = false
-      this.envelopeCounter = 0x0f
-      this.envelopeDivider = this.regs[Reg.STATUS] & 0x0f
-      return
-    }
-
-    const DEC = 4
-    this.envelopeDivider -= DEC
-    if (this.envelopeDivider <= 0) {
-      this.envelopeDivider += this.regs[Reg.STATUS] & 0x0f
-      if (this.envelopeCounter > 0) {
-        --this.envelopeCounter
-      } else {
-        if ((this.regs[Reg.STATUS] & ENVELOPE_LOOP) !== 0) {
-          this.envelopeCounter = 0x0f
-        } else {
-          this.envelopeCounter = 0
-        }
-      }
-    }
   }
 
   // APU Sweep: http://wiki.nesdev.com/w/index.php/APU_Sweep
@@ -341,14 +369,25 @@ class TriangleChannel extends Channel {
 
 class NoiseChannel extends Channel {
   private lengthCounter = 0
+  private envelope = new Envelope()
+
+  public reset() {
+    super.reset()
+    this.envelope.clear()
+  }
 
   public write(reg: Reg, value: Byte) {
     super.write(reg, value)
 
     switch (reg) {
+    case Reg.STATUS:
+      this.stopped = false
+      this.envelope.write(value)
+      break
     case Reg.TIMER_H:  // Set length.
       this.lengthCounter = kLengthTable[value >> 3]
       this.stopped = false
+      this.envelope.resetClock()
       break
     default:
       break
@@ -358,11 +397,7 @@ class NoiseChannel extends Channel {
   public getVolume(): number {
     if (this.stopped)
       return 0
-
-    const v = this.regs[Reg.STATUS]
-    if ((v & CONSTANT_VOLUME) !== 0)
-      return (v & 15) / 15
-    return 1
+    return this.envelope.getVolume()
   }
 
   public getFrequency(): number {
@@ -375,6 +410,7 @@ class NoiseChannel extends Channel {
       return
 
     this.updateLength()
+    this.envelope.update()
   }
 
   private updateLength(): void {
