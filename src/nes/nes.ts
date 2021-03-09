@@ -57,6 +57,7 @@ export default class Nes implements PrgBankController {
   private breakPointCallback: () => void
   private prgBank: number[] = []
   private apuChannelCount = 0
+  private soundChannelTypes: ChannelType[]
 
   public static create(): Nes {
     return new Nes()
@@ -72,6 +73,8 @@ export default class Nes implements PrgBankController {
 
     const mapperNo = 0
     this.mapper = this.createMapper(mapperNo, -1)
+    this.soundChannelTypes = this.apu.getChannelTypes()
+    this.apuChannelCount = this.soundChannelTypes.length
     this.setMemoryMap()
   }
 
@@ -103,6 +106,12 @@ export default class Nes implements PrgBankController {
     this.setMemoryMap()
     const romHash = md5(romData)
     this.mapper = this.createMapper(mapperNo, this.prgRom.length, romHash)
+
+    let channels = this.apu.getChannelTypes()
+    const extras = this.mapper.getExtraSoundChannelTypes()
+    if (extras != null)
+      channels = channels.concat(extras)
+    this.soundChannelTypes = channels
 
     return true
   }
@@ -169,10 +178,7 @@ export default class Nes implements PrgBankController {
   }
 
   public getSoundChannelTypes(): ChannelType[] {
-    const channels = this.apu.getChannelTypes()
-    const extras = this.mapper.getExtraSoundChannelTypes()
-    this.apuChannelCount = channels.length
-    return channels.concat(extras)
+    return this.soundChannelTypes
   }
 
   public getSoundVolume(channel: number): number {
@@ -191,6 +197,12 @@ export default class Nes implements PrgBankController {
     if (channel < this.apuChannelCount)
       return this.apu.getDutyRatio(channel)
     return this.mapper.getSoundDutyRatio(channel - this.apuChannelCount)
+  }
+
+  public getSoundNoisePeriod(channel: number): [number, number] {
+    if (channel < this.apuChannelCount)
+      return this.apu.getNoisePeriod(channel)
+    return this.mapper.getSoundNoisePeriod(channel - this.apuChannelCount)
   }
 
   public render(pixels: Uint8Array | Uint8ClampedArray): void {

@@ -14,14 +14,13 @@ class NoiseChannelProcessor extends AudioWorkletProcessor {
     this.port.onmessage = (ev) => {
       switch (ev.data.action) {
       case 'stop':
-        // logic to stop
         this.stopped = true
         break
       case 'volume':
         this.sampler.setVolume(ev.data.value)
         break
       case 'period':
-        this.sampler.setPeriod(ev.data.value)
+        this.sampler.setPeriod(ev.data.period, ev.data.mode)
         break
       }
     }

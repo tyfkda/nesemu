@@ -27,8 +27,8 @@ export class Mapper {
 
   public load(_saveData: any): void {}
 
-  public getExtraSoundChannelTypes(): ChannelType[] {
-    return []
+  public getExtraSoundChannelTypes(): ChannelType[]|null {
+    return null
   }
 
   public getSoundVolume(_channel: number): number {
@@ -40,6 +40,10 @@ export class Mapper {
   }
 
   public getSoundDutyRatio(_channel: number): number {
-    return 0.5
+    throw new Error('Invalid call')
+  }
+
+  public getSoundNoisePeriod(_channel: number): [number, number] {
+    throw new Error('Invalid call')
   }
 }

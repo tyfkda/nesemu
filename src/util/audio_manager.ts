@@ -4,10 +4,11 @@ import {NoiseSampler} from './apu_util'
 abstract class SoundChannel {
   public abstract destroy(): void
   public abstract setVolume(_volume: number): void
-  public abstract setFrequency(_frequency: number): void
   public abstract start(): void
 
-  public setDutyRatio(_ratio: number): void {}
+  public setFrequency(_frequency: number): void { throw new Error('Invalid call') }
+  public setDutyRatio(_ratio: number): void { throw new Error('Invalid call') }
+  public setNoisePeriod(_period: number, _mode: number): void { throw new Error('Invalid call') }
 }
 
 abstract class GainSoundChannel extends SoundChannel {
@@ -115,8 +116,8 @@ class SpNoiseChannel extends SoundChannel {
     this.sampler.setVolume(volume)
   }
 
-  public setFrequency(frequency: number): void {
-    this.sampler.setPeriod(frequency)
+  public setNoisePeriod(period: number, mode: number): void {
+    this.sampler.setPeriod(period, mode)
   }
 }
 
@@ -158,9 +159,9 @@ class AwNoiseChannel extends SoundChannel {
       this.node.port.postMessage({action: 'volume', value: volume})
   }
 
-  public setFrequency(frequency: number): void {
+  public setNoisePeriod(period: number, mode: number): void {
     if (this.node != null)
-      this.node.port.postMessage({action: 'period', value: frequency})
+      this.node.port.postMessage({action: 'period', period, mode})
   }
 }
 
@@ -331,10 +332,6 @@ export default class AudioManager {
     this.channels.push(sc)
   }
 
-  public getChannelCount(): number {
-    return this.channels.length
-  }
-
   public setChannelFrequency(channel: number, frequency: number): void {
     if (AudioManager.context == null)
       return
@@ -351,5 +348,17 @@ export default class AudioManager {
     if (AudioManager.context == null)
       return
     this.channels[channel].setDutyRatio(ratio)
+  }
+
+  public setChannelPeriod(channel: number, period: number, mode: number): void {
+    if (AudioManager.context == null)
+      return
+    this.channels[channel].setNoisePeriod(period, mode)
+  }
+
+  public muteAll(): void {
+    const n = this.channels.length
+    for (let ch = 0; ch < n; ++ch)
+      this.setChannelVolume(ch, 0)
   }
 }

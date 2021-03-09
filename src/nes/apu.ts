@@ -193,7 +193,8 @@ class Channel {
 
   public getVolume(): number { return 0 }
   public getFrequency(): number { return 0 }
-  public getDutyRatio(): number { return 0.5 }
+  public getDutyRatio(): number { throw new Error('Invalid call') }
+  public getNoisePeriod(): [number, number] { throw new Error('Invalid call') }
   public setEnable(value: boolean) {
     if (!value)
       this.stopped = true
@@ -401,8 +402,14 @@ class NoiseChannel extends Channel {
   }
 
   public getFrequency(): number {
-    const period = this.regs[Reg.TIMER_L] & 15
-    return kNoiseFrequencies[period]
+    throw new Error('Invalid call')
+  }
+
+  public getNoisePeriod(): [number, number] {
+    const reg = this.regs[Reg.TIMER_L]
+    const period = kNoiseFrequencies[reg]
+    const mode = (reg >> 7) & 1
+    return [period, mode]
   }
 
   public update() {
@@ -616,6 +623,10 @@ export class Apu {
 
   public getDutyRatio(ch: number): number {
     return this.channels[ch].getDutyRatio()
+  }
+
+  public getNoisePeriod(ch: number): [number, number] {
+    return this.channels[ch].getNoisePeriod()
   }
 
   public setPadStatus(no: number, status: Byte): void {

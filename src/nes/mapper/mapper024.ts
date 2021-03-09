@@ -264,7 +264,7 @@ class Mapper024Base extends Mapper {
       this.updateSound()
   }
 
-  public getExtraSoundChannelTypes(): ChannelType[] {
+  public getExtraSoundChannelTypes(): ChannelType[]|null {
     return kChannelTypes
   }
 

@@ -26,6 +26,7 @@ export class NoiseSampler {
 
   private rate = 0
   private fixed = 0
+  private shift = 1
 
   constructor(sampleRate: number) {
     const g = gcd(APU_NOISE_HZ, sampleRate)
@@ -38,8 +39,9 @@ export class NoiseSampler {
     this.volume = volume
   }
 
-  public setPeriod(period: number): void {
+  public setPeriod(period: number, mode: number): void {
     this.period = (period + 1) * this.fixed
+    this.shift = mode === 0 ? 1 : 6
   }
 
   public fillBuffer(buffer: Float32Array): void {
@@ -48,7 +50,7 @@ export class NoiseSampler {
       return
     }
 
-    const shift = 1
+    const shift = this.shift
     const rate = this.rate | 0
     const period = (this.period > 0 ? this.period : this.rate) | 0
     const volume = this.volume

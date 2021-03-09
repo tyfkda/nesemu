@@ -2,6 +2,7 @@ import Nes from '../nes/nes'
 
 import {AppEvent} from './app_event'
 import AudioManager from '../util/audio_manager'
+import {ChannelType} from '../nes/apu'
 import DomUtil from '../util/dom_util'
 import Fds from '../nes/fds/fds'
 import ScreenWnd from './screen_wnd'
@@ -272,20 +273,35 @@ export default class App {
     if (audioManager == null)
       return
 
-    const count = audioManager.getChannelCount()
-    for (let ch = 0; ch < count; ++ch) {
+    const channelTypes = this.nes.getSoundChannelTypes()
+    for (let ch = 0; ch < channelTypes.length; ++ch) {
       const volume = this.nes.getSoundVolume(ch)
       audioManager.setChannelVolume(ch, volume)
       if (volume > 0) {
-        audioManager.setChannelFrequency(ch, this.nes.getSoundFrequency(ch))
-        audioManager.setChannelDutyRatio(ch, this.nes.getSoundDutyRatio(ch))
+        switch (channelTypes[ch]) {
+        case ChannelType.PULSE:
+          audioManager.setChannelFrequency(ch, this.nes.getSoundFrequency(ch))
+          audioManager.setChannelDutyRatio(ch, this.nes.getSoundDutyRatio(ch))
+          break
+        case ChannelType.TRIANGLE:
+        case ChannelType.SAWTOOTH:
+          audioManager.setChannelFrequency(ch, this.nes.getSoundFrequency(ch))
+          break
+        case ChannelType.NOISE:
+          {
+            const [period, mode] = this.nes.getSoundNoisePeriod(ch)
+            audioManager.setChannelPeriod(ch, period, mode)
+          }
+          break
+        case ChannelType.DMC:
+          // TODO:
+          break
+        }
       }
     }
   }
 
   protected muteAudio(): void {
-    const n = this.audioManager.getChannelCount()
-    for (let ch = 0; ch < n; ++ch)
-      this.audioManager.setChannelVolume(ch, 0)
+    this.audioManager.muteAll()
   }
 }
