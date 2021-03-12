@@ -83,6 +83,7 @@ export class ScanlineScaler extends Scaler {
     // Copy per scanline
     const src = this.orgImageData.data
     const dst = this.imageData.data
+    const s = 187
     for (let y = 0; y < HEIGHT; ++y) {
       // Even line: original color
       let si = y * (WIDTH * 4)
@@ -98,9 +99,9 @@ export class ScanlineScaler extends Scaler {
       // Odd line: half color
       si = y * (WIDTH * 4)
       for (let x = 0; x < WIDTH; ++x) {
-        dst[di + 0] = src[si + 0] >> 1  // R
-        dst[di + 1] = src[si + 1] >> 1  // G
-        dst[di + 2] = src[si + 2] >> 1  // B
+        dst[di + 0] = (src[si + 0] * s) >> 8  // R
+        dst[di + 1] = (src[si + 1] * s) >> 8  // G
+        dst[di + 2] = (src[si + 2] * s) >> 8  // B
         si += 4
         di += 4
       }
