@@ -29,7 +29,9 @@
   "exclude": [
     "node_modules",
     "nodejs",
+    "typings",
     "dist",
+    "public",
   ],
   "compileOnSave": false,
   "buildOnSave": false,
