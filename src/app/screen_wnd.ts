@@ -20,7 +20,7 @@ import * as Pubsub from '../util/pubsub'
 
 const WIDTH = 256 | 0
 const HEIGHT = 240 | 0
-const HEDGE = 0 | 0
+const HEDGE = 4 | 0
 const VEDGE = 8 | 0
 
 const TRANSITION_DURATION = '0.1s'
@@ -73,7 +73,7 @@ export default class ScreenWnd extends Wnd {
   private fullscreenBase: HTMLElement
   private canvasHolder: HTMLElement
   private scaler: Scaler
-  private hideEdge = true
+  private overscan = true
   private contentWidth = 0  // Content size, except fullscreen
   private contentHeight = 0
   private menuItems: Array<MenuItemInfo>
@@ -291,8 +291,8 @@ export default class ScreenWnd extends Wnd {
   }
 
   protected setClientScale(scale: number): Wnd {
-    const w = ((WIDTH - (this.hideEdge ? HEDGE * 2 : 0)) * scale) | 0
-    const h = ((HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)) * scale) | 0
+    const w = ((WIDTH - (this.overscan ? HEDGE * 2 : 0)) * scale) | 0
+    const h = ((HEIGHT - (this.overscan ? VEDGE * 2 : 0)) * scale) | 0
     return this.setClientSize(w, h)
   }
 
@@ -300,10 +300,10 @@ export default class ScreenWnd extends Wnd {
     if (!this.fullscreenBase)
       return
 
-    const w = !this.hideEdge ? width : (width * (WIDTH / (WIDTH - HEDGE * 2))) | 0
-    const h = !this.hideEdge ? height : (height * (HEIGHT / (HEIGHT - VEDGE * 2))) | 0
-    const left = !this.hideEdge ? 0 : -(w * HEDGE / WIDTH) | 0
-    const top = !this.hideEdge ? 0 : -(h * VEDGE / HEIGHT) | 0
+    const w = !this.overscan ? width : (width * (WIDTH / (WIDTH - HEDGE * 2))) | 0
+    const h = !this.overscan ? height : (height * (HEIGHT / (HEIGHT - VEDGE * 2))) | 0
+    const left = !this.overscan ? 0 : -(w * HEDGE / WIDTH) | 0
+    const top = !this.overscan ? 0 : -(h * VEDGE / HEIGHT) | 0
     DomUtil.setStyles(this.canvasHolder, {
       position: 'absolute',
       width: `${w}px`,
@@ -402,10 +402,10 @@ export default class ScreenWnd extends Wnd {
           },
           {label: '----'},
           {
-            label: 'Edge',
-            checked: () => !this.hideEdge,
+            label: 'Overscan',
+            checked: () => this.overscan,
             click: () => {
-              this.toggleEdge()
+              this.toggleOverscan()
             },
           },
           {
@@ -508,8 +508,8 @@ export default class ScreenWnd extends Wnd {
     const maxWidth = winWidth - 2  // -2 for border size
     const maxHeight = winHeight - Wnd.TITLEBAR_HEIGHT - Wnd.MENUBAR_HEIGHT - 2
 
-    const w = Math.round(WIDTH - (this.hideEdge ? HEDGE * 2 : 0))
-    const h = Math.round(HEIGHT - (this.hideEdge ? VEDGE * 2 : 0))
+    const w = Math.round(WIDTH - (this.overscan ? HEDGE * 2 : 0))
+    const h = Math.round(HEIGHT - (this.overscan ? VEDGE * 2 : 0))
     const [width, height] = fitAspectRatio(maxWidth, maxHeight, w / h)
 
     const x = (winWidth - (width + 2)) / 2
@@ -602,8 +602,8 @@ export default class ScreenWnd extends Wnd {
 
   private isAspectRatio(scale: number): boolean {
     const rect = this.contentHolder.getBoundingClientRect()
-    const w = WIDTH - (this.hideEdge ? HEDGE * 2 : 0)
-    const h = HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)
+    const w = WIDTH - (this.overscan ? HEDGE * 2 : 0)
+    const h = HEIGHT - (this.overscan ? VEDGE * 2 : 0)
 
     if (scale > 0)
       return Math.abs(rect.width - w * scale) < 0.5 && Math.abs(rect.height - h * scale) < 0.5
@@ -612,14 +612,14 @@ export default class ScreenWnd extends Wnd {
 
   private adjustAspectRatio() {
     const rect = this.contentHolder.getBoundingClientRect()
-    const w = WIDTH - (this.hideEdge ? HEDGE * 2 : 0)
-    const h = HEIGHT - (this.hideEdge ? VEDGE * 2 : 0)
+    const w = WIDTH - (this.overscan ? HEDGE * 2 : 0)
+    const h = HEIGHT - (this.overscan ? VEDGE * 2 : 0)
     const [width, height] = fitAspectRatio(rect.width, rect.height, w / h)
     this.setClientSize(width, height)
   }
 
-  private toggleEdge() {
-    this.hideEdge = !this.hideEdge
+  private toggleOverscan() {
+    this.overscan = !this.overscan
     this.updateContentSize(this.contentHolder.offsetWidth, this.contentHolder.offsetHeight)
   }
 
