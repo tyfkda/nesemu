@@ -12,7 +12,7 @@ function loadPrgRom(romData: Uint8Array): Uint8Array {
   return new Uint8Array(prg)
 }
 
-function insert<T>(array: Array<T>, value: any, fn: (elem: any, value: any) => boolean) {
+function insert<T>(array: Array<T>, value: any, fn: (elem: any, value: any) => boolean): void {
   const n = array.length
   let i
   for (i = 0; i < n; ++i) {
@@ -22,7 +22,7 @@ function insert<T>(array: Array<T>, value: any, fn: (elem: any, value: any) => b
   array.splice(i, 0, value)
 }
 
-function isBranch(opType: OpType) {
+function isBranch(opType: OpType): boolean {
   switch (opType) {
   case OpType.BCC:
   case OpType.BCS:
@@ -224,7 +224,7 @@ class Analyzer {
     }
   }
 
-  private step(mem: Uint8Array, pc: number) {
+  private step(mem: Uint8Array, pc: number): number {
     const op = mem[pc]
     const inst = kInstTable[op]
 
@@ -319,7 +319,7 @@ class Analyzer {
   }
 }
 
-function main() {
+function main(): void {
   argv.option({
     name: 'config',
     short: 'c',

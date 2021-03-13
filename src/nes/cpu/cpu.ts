@@ -624,11 +624,10 @@ export default class Cpu {
     return ((pc ^ newPc) & 0x0100) > 0 ? 2 : 1
   }
 
-  private handleIrq() {
+  private handleIrq(): void {
     this.push16(this.pc)
     this.push(this.getStatusReg() & ~BREAK_FLAG)
     this.pc = this.read16(VEC_IRQ)
     this.irqBlocked = 1
-    return true
   }
 }

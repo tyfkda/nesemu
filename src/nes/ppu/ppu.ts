@@ -419,7 +419,7 @@ export default class Ppu {
     return this.chrData === this.vram
   }
 
-  private renderOffscreen(offscreen: Uint8Array) {
+  private renderOffscreen(offscreen: Uint8Array): void {
     const h = this.hstatusMgr.lastFrame
     const n = this.hevents.getCount()
     let sprChrStart = 0

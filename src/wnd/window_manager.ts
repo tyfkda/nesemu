@@ -7,7 +7,7 @@ import fscreen from 'fscreen'
 
 const BASE_PRIORITY = 100
 
-function setWindowZIndex(wnd: Wnd, i: number, n: number) {
+function setWindowZIndex(wnd: Wnd, i: number, n: number): void {
   wnd.getRootNode().style.zIndex = String(BASE_PRIORITY + (n - 1 - i))
 }
 

@@ -7,7 +7,7 @@ const SDL_audio = NS.require('SDL_audio')
 
 class AudioParam {
   public value = 0
-  public setValueAtTime(value: number, _time: number) {
+  public setValueAtTime(value: number, _time: number): void {
     this.value = value
   }
 }
@@ -65,7 +65,7 @@ export class OscillatorNode extends AudioNode {
     }
   }
 
-  setPeriodicWave(_wave: PeriodicWave) {
+  setPeriodicWave(_wave: PeriodicWave): void {
     this.oscType = OscillatorType.PERIODIC_WAVE
     //this.wave = wave
   }

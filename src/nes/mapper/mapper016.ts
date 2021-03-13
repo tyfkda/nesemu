@@ -104,12 +104,12 @@ export class Mapper016 extends Mapper {
     }
   }
 
-  private setPrgBank(bank: number) {
+  private setPrgBank(bank: number): void {
     this.options.prgBankCtrl.setPrgBank(0, bank * 2)
     this.options.prgBankCtrl.setPrgBank(1, bank * 2 + 1)
   }
 
-  private setChrBank(bank: number, value: number) {
+  private setChrBank(bank: number, value: number): void {
     this.options.ppu.setChrBankOffset(bank, value)
   }
 }

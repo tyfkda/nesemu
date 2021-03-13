@@ -234,7 +234,7 @@ export default class Wnd {
     return root
   }
 
-  private createTitleBar(title: string) {
+  private createTitleBar(title: string): {titleBar: HTMLElement, titleBtnHolder: HTMLElement, titleElem: HTMLElement} {
     const titleBar = document.createElement('div')
     titleBar.className = 'title-bar'
 

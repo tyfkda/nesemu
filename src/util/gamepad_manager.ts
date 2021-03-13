@@ -85,7 +85,7 @@ export default class GamepadManager {
     GamepadManager.saveSetting()
   }
 
-  private static saveSetting() {
+  private static saveSetting(): void {
     const data: {[key: string]: {button?: number; axis?: number; direction?: number}} = {}
     GamepadManager.padSettings.forEach((s, i) => {
       const key = kKeyTable[i]
@@ -108,7 +108,7 @@ export default class GamepadManager {
     StorageUtil.putObject('pad0', data)
   }
 
-  private static loadSetting() {
+  private static loadSetting(): void {
     const data = StorageUtil.getObject('pad0', {})
     if (typeof data === 'object') {
       Object.keys(data).forEach(key => {

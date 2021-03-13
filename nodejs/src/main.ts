@@ -116,7 +116,7 @@ function createMyApp() {
       this.nes.runMilliseconds(et)
     }
 
-    private onVblank(leftV: number) {
+    private onVblank(leftV: number): void {
       if (leftV < 1)
         this.render()
       this.updateAudio()
@@ -132,7 +132,7 @@ function createMyApp() {
       this.win.render.present()
     }
 
-    private setupAudioManager() {
+    private setupAudioManager(): void {
       const channelTypes = this.nes.getSoundChannelTypes()
       for (const type of channelTypes) {
         this.audioManager.addChannel(type)
@@ -157,7 +157,7 @@ function createMyApp() {
   return new MyApp()
 }
 
-function run(fileName: string) {
+function run(fileName: string): void {
   // TODO: Use util.promisify
   new Promise(
     (resolve, reject) => {

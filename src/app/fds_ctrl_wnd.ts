@@ -47,7 +47,7 @@ export class FdsCtrlWnd extends Wnd {
     return select
   }
 
-  private createOptions(select: HTMLSelectElement, sideCount: number) {
+  private createOptions(select: HTMLSelectElement, sideCount: number): void {
     const side = ['A', 'B']
     for (let i = 0; i < sideCount; ++i) {
       const option = document.createElement('option')

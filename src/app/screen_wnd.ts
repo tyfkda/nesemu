@@ -610,7 +610,7 @@ export default class ScreenWnd extends Wnd {
     return Math.abs(rect.width / rect.height - w / h) < 0.005
   }
 
-  private adjustAspectRatio() {
+  private adjustAspectRatio(): void {
     const rect = this.contentHolder.getBoundingClientRect()
     const w = WIDTH - (this.overscan ? HEDGE * 2 : 0)
     const h = HEIGHT - (this.overscan ? VEDGE * 2 : 0)
@@ -618,12 +618,12 @@ export default class ScreenWnd extends Wnd {
     this.setClientSize(width, height)
   }
 
-  private toggleOverscan() {
+  private toggleOverscan(): void {
     this.overscan = !this.overscan
     this.updateContentSize(this.contentHolder.offsetWidth, this.contentHolder.offsetHeight)
   }
 
-  private toggleSpriteFlicker() {
+  private toggleSpriteFlicker(): void {
     const ppu = this.nes.getPpu()
     ppu.suppressSpriteFlicker = !ppu.suppressSpriteFlicker
   }

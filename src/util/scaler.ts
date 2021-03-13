@@ -16,7 +16,7 @@ function createCanvas(width: number, height: number): HTMLCanvasElement {
   return canvas
 }
 
-function clearCanvasImage(imageData: ImageData) {
+function clearCanvasImage(imageData: ImageData): void {
   for (let i = 0, n = imageData.width * imageData.height * 4; i < n; ++i) {
     imageData.data[i * 4 + 0] = 0
     imageData.data[i * 4 + 1] = 0

@@ -119,15 +119,15 @@ class Envelope {
   private envelopeReset = false
   private reg: Byte = 0
 
-  public clear() {
+  public clear(): void {
     this.envelopeDivider = this.envelopeCounter = 0
   }
 
-  public resetClock() {
+  public resetClock(): void {
     this.envelopeReset = true
   }
 
-  public write(value: Byte) {
+  public write(value: Byte): void {
     this.reg = value
     if ((value & CONSTANT_VOLUME) === 0) {
       this.envelopeDivider = value & 0x0f
@@ -180,12 +180,12 @@ class Channel {
   protected regs = new Uint8Array(4)
   protected stopped = true
 
-  public reset() {
+  public reset(): void {
     this.regs.fill(0)
     this.stopped = true
   }
 
-  public write(reg: Reg, value: Byte) {
+  public write(reg: Reg, value: Byte): void {
     this.regs[reg] = value
   }
 
@@ -193,7 +193,7 @@ class Channel {
   public getFrequency(): number { return 0 }
   public getDutyRatio(): number { throw new Error('Invalid call') }
   public getNoisePeriod(): [number, number] { throw new Error('Invalid call') }
-  public setEnable(value: boolean) {
+  public setEnable(value: boolean): void {
     if (!value)
       this.stopped = true
   }
@@ -209,13 +209,13 @@ class PulseChannel extends Channel {
   private sweepCounter = 0
   private envelope = new Envelope()
 
-  public reset() {
+  public reset(): void {
     super.reset()
     this.sweepCounter = 0
     this.envelope.clear()
   }
 
-  public write(reg: Reg, value: Byte) {
+  public write(reg: Reg, value: Byte): void {
     super.write(reg, value)
 
     switch (reg) {
@@ -317,7 +317,7 @@ class PulseChannel extends Channel {
 class TriangleChannel extends Channel {
   private lengthCounter = 0
 
-  public write(reg: Reg, value: Byte) {
+  public write(reg: Reg, value: Byte): void {
     super.write(reg, value)
 
     switch (reg) {
@@ -370,12 +370,12 @@ class NoiseChannel extends Channel {
   private lengthCounter = 0
   private envelope = new Envelope()
 
-  public reset() {
+  public reset(): void {
     super.reset()
     this.envelope.clear()
   }
 
-  public write(reg: Reg, value: Byte) {
+  public write(reg: Reg, value: Byte): void {
     super.write(reg, value)
 
     switch (reg) {
@@ -410,7 +410,7 @@ class NoiseChannel extends Channel {
     return [period, mode]
   }
 
-  public update() {
+  public update(): void {
     if (this.stopped)
       return
 
@@ -445,7 +445,7 @@ class DmcChannel extends Channel {
     super()
   }
 
-  public setEnable(value: boolean) {
+  public setEnable(value: boolean): void {
     this.stopped = !value
     if (value) {
       if (this.dmaLengthCounter === 0) {
@@ -456,7 +456,7 @@ class DmcChannel extends Channel {
     }
   }
 
-  public write(reg: Reg, value: Byte) {
+  public write(reg: Reg, value: Byte): void {
     super.write(reg, value)
 
     switch (reg) {
@@ -484,7 +484,7 @@ class DmcChannel extends Channel {
     return kNoiseFrequencies[period]
   }
 
-  public update() {
+  public update(): void {
     if (this.stopped)
       return
   }

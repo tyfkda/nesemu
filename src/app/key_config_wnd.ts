@@ -123,7 +123,7 @@ abstract class GamepadBaseWnd extends Wnd {
     this.updateGamepadPressed(pad)
   }
 
-  private updateGamepadPressed(pad: number) {
+  private updateGamepadPressed(pad: number): void {
     for (let i = 0; i < kGamepadButtons.length; ++i) {
       const button = this.buttons[i]
       if ((pad & (1 << kGamepadButtons[i].padbit)) === 0) {
@@ -268,7 +268,7 @@ export class KeyConfigWnd extends GamepadBaseWnd {
     }
   }
 
-  private static saveSetting() {
+  private static saveSetting(): void {
     const data = new Array<(string | null)[]>(2)
     for (let padNo = 0; padNo < 2; ++padNo) {
       const table = PadKeyHandler.getMapping(padNo)

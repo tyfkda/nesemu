@@ -284,7 +284,7 @@ export class Mapper005 extends Mapper {
 */
   }
 
-  public reset() {
+  public reset(): void {
     this.irqHlineEnable = false
     this.irqHlineCompare = this.irqHlineCounter = -1
   }
@@ -339,7 +339,7 @@ export class Mapper005 extends Mapper {
     }
   }
 
-  private setPrgBank(swap: number) {
+  private setPrgBank(swap: number): void {
     if ((swap & 0x40) === 0) {
       this.options.prgBankCtrl.setPrgBank(0, this.regs[6])
       this.options.prgBankCtrl.setPrgBank(1, this.regs[7])
@@ -351,7 +351,7 @@ export class Mapper005 extends Mapper {
     }
   }
 
-  private setChrBank(swap: number) {
+  private setChrBank(swap: number): void {
     if ((swap & 0x80) === 0) {
       this.options.ppu.setChrBankOffset(0, this.regs[0] & 0xfe)
       this.options.ppu.setChrBankOffset(1, this.regs[0] | 1)

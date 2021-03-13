@@ -116,12 +116,12 @@ export class Mapper001 extends Mapper {
     this.setPrgBank(saveData.prgReg, this.chrBank[0])
   }
 
-  private resetRegister() {
+  private resetRegister(): void {
     this.register = 0
     this.counter = 0
   }
 
-  private setChrBank(hilo: number, bank: number) {
+  private setChrBank(hilo: number, bank: number): void {
     if (this.chrBank4k) {
       const chr = hilo << 2
       const b = bank << 2
@@ -134,7 +134,7 @@ export class Mapper001 extends Mapper {
     this.chrBank[hilo] = bank
   }
 
-  private setPrgBank(reg: number, chrBank0: number) {
+  private setPrgBank(reg: number, chrBank0: number): void {
     this.prgReg = reg
     const highBit = chrBank0 & (0x10 & this.maxPrg)
     const bank = ((reg & 0x0f) | highBit) & this.maxPrg

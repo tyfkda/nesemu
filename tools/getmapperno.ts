@@ -46,7 +46,7 @@ function dumpMapper(fn: string): void {
   }
 }
 
-function main() {
+function main(): void {
   const argv = process.argv
   if (argv.length < 3) {
     console.error('Please specify .nes or .zip file(s).')

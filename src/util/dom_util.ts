@@ -37,7 +37,7 @@ export default class DomUtil {
   public static handleFileDrop(dropZone: HTMLElement,
                                onDropped: (files: FileList, x: number, y: number) => void): void
   {
-    function onDrop(event: DragEvent) {
+    function onDrop(event: DragEvent): boolean {
       if (event.dataTransfer) {
         event.stopPropagation()
         event.preventDefault()
@@ -49,7 +49,7 @@ export default class DomUtil {
       return false
     }
 
-    function onDragOver(event: DragEvent) {
+    function onDragOver(event: DragEvent): boolean {
       if (event.dataTransfer) {
         event.stopPropagation()
         event.preventDefault()

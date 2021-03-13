@@ -40,7 +40,7 @@ class Channel {
     this.regs[reg] = value
   }
 
-  public update() {}
+  public update(): void {}
   public getVolume(): number { return 0 }
   public getFrequency(): number { return 0 }
   public getDutyRatio(): number { return 0.5 }
@@ -70,7 +70,7 @@ class SawToothChannel extends Channel {
   private acc = 0
   private count = 0
 
-  public write(reg: number, value: number) {
+  public write(reg: number, value: number): void {
     super.write(reg, value)
     switch (reg) {
     case 2:
@@ -82,7 +82,7 @@ class SawToothChannel extends Channel {
     }
   }
 
-  public update() {
+  public update(): void {
     if ((this.regs[2] & CH_ENABLE) !== 0) {
       this.acc += this.regs[0] & 0x3f
       if (this.acc >= 256) {
@@ -211,7 +211,7 @@ class Mapper024Base extends Mapper {
     this.setupAudio()
   }
 
-  public reset() {
+  public reset(): void {
     this.irqControl = 0
     this.irqLatch = this.irqCounter = 0
   }
@@ -288,13 +288,13 @@ class Mapper024Base extends Mapper {
     return this.channels[channel].getDutyRatio()
   }
 
-  private setPrgBank(prgBank: number) {
+  private setPrgBank(prgBank: number): void {
     this.prgBank = prgBank
     this.options.prgBankCtrl.setPrgBank(0, prgBank)
     this.options.prgBankCtrl.setPrgBank(1, prgBank + 1)
   }
 
-  private setChrBank() {
+  private setChrBank(): void {
     const table = kChrBankTable[this.ppuBankMode]
     for (let i = 0; i < 8; ++i)
       this.options.ppu.setChrBankOffset(i, this.chrRegs[table[i]])
@@ -304,7 +304,7 @@ class Mapper024Base extends Mapper {
     this.channels[channel].write(reg, value)
   }
 
-  private setupAudio() {
+  private setupAudio(): void {
     for (let i = 0; i < this.channels.length; ++i) {
       const type = kChannelTypes[i]
       let channel: Channel
@@ -322,7 +322,7 @@ class Mapper024Base extends Mapper {
     }
   }
 
-  private updateSound() {
+  private updateSound(): void {
     for (const channel of this.channels) {
       channel.update()
     }

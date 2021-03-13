@@ -2,7 +2,7 @@
 
 import * as readline from 'readline'
 
-function readAllLine(input: NodeJS.ReadStream, lineCb: (_: string) => void, endCb: () => void) {
+function readAllLine(input: NodeJS.ReadStream, lineCb: (_: string) => void, endCb: () => void): void {
   const reader = readline.createInterface({
     input,
   })
@@ -15,7 +15,7 @@ function readAllLine(input: NodeJS.ReadStream, lineCb: (_: string) => void, endC
   })
 }
 
-function formatNumLiteral(literal: string) {
+function formatNumLiteral(literal: string): string|null {
   let p = literal
 
   function parseAtom(): string|null {
@@ -79,7 +79,7 @@ class Comment extends Line {
     super()
   }
 
-  public toString() {
+  public toString(): string {
     return `// ${this.comment}`
   }
 }
@@ -89,7 +89,7 @@ class Definition extends Line {
     super()
   }
 
-  public toString() {
+  public toString(): string {
     const valStr = formatNumLiteral(this.value)
     return `${this.name} = ${valStr}  ${this.comment ? '// ' + this.comment : ''}`
   }
@@ -100,7 +100,7 @@ class Directive extends Line {
     super()
   }
 
-  public toString() {
+  public toString(): string {
     return `\t//${this.opcode}${this.operand ? '\t' + this.operand : ''}  ${this.comment ? '// ' + this.comment : ''}`
   }
 }
@@ -113,7 +113,7 @@ class Label extends Line {
     super()
   }
 
-  public toString() {
+  public toString(): string {
     return `${this.name}: (${this.pcNo})  ${this.comment ? '// ' + this.comment : ''}`
   }
 }
@@ -128,7 +128,7 @@ class Op extends Line {
     this.comment = comment
   }
 
-  public toString() {
+  public toString(): string {
     switch (this.opcode) {
     case 'LDA':
     case 'LDX':
@@ -178,7 +178,7 @@ class Op extends Line {
     }
   }
 
-  private toStringLD() {
+  private toStringLD(): string {
     const operands = this.operand.split(',')
     switch (operands.length) {
     case 1:
@@ -209,7 +209,7 @@ class Op extends Line {
     return `\t${this.opcode}(${this.operand ? this.operand : ''})  ${this.comment ? '// ' + this.comment : ''}`
   }
 
-  private toStringST() {
+  private toStringST(): string {
     const operands = this.operand.split(',')
     switch (operands.length) {
     case 1:
@@ -240,7 +240,7 @@ class Op extends Line {
     return `\t${this.opcode}(${this.operand ? this.operand : ''})  ${this.comment ? '// ' + this.comment : ''}`
   }
 
-  private toStringARITH() {
+  private toStringARITH(): string {
     if (!this.operand)
       return `\t${this.opcode}()  ${this.comment ? '// ' + this.comment : ''}`
 
@@ -274,7 +274,7 @@ class Op extends Line {
     return `\t${this.opcode}(${this.operand ? this.operand : ''})  ${this.comment ? '// ' + this.comment : ''}`
   }
 
-  private toStringJMP() {
+  private toStringJMP(): string {
     const m = this.operand.match(/^\((.*)\)$/)
     if (m) {
       return `\tpc=${this.opcode}_indirect(${formatNumLiteral(m[1])}); break  ${this.comment ? '// ' + this.comment : ''}`
@@ -300,7 +300,7 @@ class ByteData {
     this.data = data
   }
 
-  public getSize() {
+  public getSize(): number {
     return this.data.length
   }
 }
@@ -360,11 +360,11 @@ class Converter {
   constructor(private lines: Line[]) {
   }
 
-  public buildLabels() {
+  public buildLabels(): void {
     this.doOutputProgram(0)
   }
 
-  public outputLabels() {
+  public outputLabels(): void {
     // Call after buildLabels()
     console.log('  // Lables')
     for (let line of this.lines) {
@@ -380,7 +380,7 @@ class Converter {
     }
   }
 
-  public outputDefinitions() {
+  public outputDefinitions(): void {
     console.log('  // Definitions')
     for (let line of this.lines) {
       if (line instanceof Definition) {
@@ -389,7 +389,7 @@ class Converter {
     }
   }
 
-  public listupRomData() {
+  public listupRomData(): void {
     let addr = 0x8000
     this.romData = []
     for (let i = 0; i < this.lines.length; ++i) {
@@ -432,7 +432,7 @@ class Converter {
     }
   }
 
-  public outputRomData() {
+  public outputRomData(): void {
     console.log(`
   // Rom data
   const ROM_DATA = [`)
@@ -450,7 +450,7 @@ class Converter {
     console.log(`  ]  // Total size: ${totalSize}`)
   }
 
-  public outputProgram() {
+  public outputProgram(): void {
     console.log(`
 function step(pc) {
   switch (pc) {
@@ -466,7 +466,7 @@ function step(pc) {
 }`)
   }
 
-  private doOutputProgram(pass: number) {
+  private doOutputProgram(pass: number): number {
     let pc = 0
     let emptyLineCount = 0
     for (let i = 0; i < this.lines.length; ++i) {

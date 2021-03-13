@@ -127,7 +127,7 @@ class Mapper023Base extends Mapper {
                                     (adr, value) => { this.ram[adr & 0x1fff] = value })
   }
 
-  public reset() {
+  public reset(): void {
     this.irqControl = 0
     this.irqLatch = this.irqCounter = 0
   }
@@ -175,12 +175,12 @@ class Mapper023Base extends Mapper {
     }
   }
 
-  private setPrgBank(bank: number, value: number) {
+  private setPrgBank(bank: number, value: number): void {
     this.prgBank[bank] = value
     this.options.prgBankCtrl.setPrgBank(bank, value)
   }
 
-  private setChrBankOffset(bank: number, value: number) {
+  private setChrBankOffset(bank: number, value: number): void {
     this.chrBank[bank] = value
     this.options.ppu.setChrBankOffset(bank, value)
   }

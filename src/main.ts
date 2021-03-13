@@ -306,7 +306,7 @@ class Main {
       })
   }
 
-  private findActiveApp() {
+  private findActiveApp(): App|null {
     for (const app of this.apps) {
       if (app.isTop())
         return app

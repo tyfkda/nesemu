@@ -665,7 +665,7 @@ export class EqualizerWnd extends Wnd {
     }
   }
 
-  private renderFrequency() {
+  private renderFrequency(): void {
     const canvasCtx = this.context
     const WIDTH = 256, HEIGHT = 128
 
@@ -688,7 +688,7 @@ export class EqualizerWnd extends Wnd {
     }
   }
 
-  private renderTimeDomain() {
+  private renderTimeDomain(): void {
     const dataArray = this.dataArray
     const bufferLength = dataArray.length
     this.analyserNode.getByteTimeDomainData(dataArray)
