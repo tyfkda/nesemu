@@ -149,16 +149,13 @@ class Envelope {
     if (this.envelopeReset) {
       this.envelopeReset = false
       this.envelopeCounter = 0x0f
-      this.envelopeDivider = this.reg & 0x0f
       return
     }
 
     const DEC = 4
     this.envelopeDivider -= DEC
     if (this.envelopeDivider < 0) {
-      let add = this.reg & 0x0f
-      if (add === 0)
-        add = -this.envelopeDivider
+      const add = (this.reg & 0x0f) + 1
       do {
         this.envelopeDivider += add
         if (this.envelopeCounter > 0) {
@@ -169,6 +166,7 @@ class Envelope {
           } else {
             this.envelopeCounter = 0
             this.envelopeDivider = 0
+            break
           }
         }
       } while (this.envelopeDivider < 0)
