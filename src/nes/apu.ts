@@ -316,15 +316,17 @@ class PulseChannel extends Channel {
 
 class TriangleChannel extends Channel {
   private lengthCounter = 0
+  private linearCounter = 0
+  private linearReload = false
 
   public write(reg: Reg, value: Byte): void {
     super.write(reg, value)
 
     switch (reg) {
-    case Reg.STATUS:
     case Reg.TIMER_H:
-      this.lengthCounter = this.regs[Reg.STATUS] & 0x7f
-      this.stopped = this.lengthCounter <= 0
+      this.lengthCounter = kLengthTable[value >> 3]
+      this.stopped = false
+      this.linearReload = true
       break
     default:
       break
@@ -332,7 +334,7 @@ class TriangleChannel extends Channel {
   }
 
   public getVolume(): number {
-    if (this.stopped)
+    if (this.stopped || this.linearCounter <= 0)
       return 0
     return 1
   }
@@ -350,19 +352,24 @@ class TriangleChannel extends Channel {
   }
 
   private updateLength(): void {
-    const v = this.regs[Reg.STATUS]
-    if ((v & LENGTH_COUNTER_HALT_TRI) !== 0)
-      return
-    let l = this.lengthCounter
-    if (l <= 0) {
-      l = 0
-      this.stopped = true
+    if (this.linearReload) {
+      this.linearCounter = this.regs[Reg.STATUS] & 0x7f
     } else {
-      l -= 4
-      if (l <= 0)
+      let l = this.linearCounter - 4
+      if (l <= 0) {
         l = 0
+        this.stopped = true
+      }
+      this.linearCounter = l
     }
-    this.lengthCounter = l
+
+    if ((this.regs[Reg.STATUS] & LENGTH_COUNTER_HALT_TRI) === 0) {
+      this.linearReload = false
+      if (this.lengthCounter < 2)
+        this.stopped = true
+    }
+
+    this.lengthCounter = Math.max(this.lengthCounter - 2, 0)
   }
 }
 
