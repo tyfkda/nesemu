@@ -216,7 +216,8 @@ export class JsApp extends App {
   public setFile(file: File): void {
     this.jsNes.setFile(file)
       .then(() => {
-        this.audioManager = new AudioManager()
+        const bus = this.nes.getBus()
+        this.audioManager = new AudioManager(bus.read8.bind(bus))
         this.setupAudioManager()
       })
   }

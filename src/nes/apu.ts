@@ -53,7 +53,8 @@ const LENGTH_COUNTER_HALT = 0x20
 const LENGTH_COUNTER_HALT_TRI = 0x80
 const ENVELOPE_LOOP = 0x20
 
-const DMC_IRQ_ENABLE = 0x80
+export const DMC_LOOP_ENABLE = 0x40
+export const DMC_IRQ_ENABLE = 0x80
 
 const CHANNEL_COUNT = 5
 const enum ApuChannel {
@@ -64,11 +65,16 @@ const enum ApuChannel {
   DMC = 4,
 }
 
-const enum Reg {
+export const enum Reg {
   STATUS = 0,
   SWEEP = 1,
   TIMER_L = 2,
   TIMER_H = 3,
+
+  // DMC
+  DIRECT_LOAD = 1,
+  SAMPLE_ADDRESS = 2,
+  SAMPLE_LENGTH = 3,
 }
 
 export const kWaveTypes: WaveType[] = [
@@ -213,6 +219,10 @@ export interface IPulseChannel {
 
 export interface INoiseChannel {
   getNoisePeriod(): [number, number]
+}
+
+export interface IDeltaModulationChannel {
+  getWriteBuf(): ReadonlyArray<number>
 }
 
 class PulseChannel extends Channel implements IPulseChannel {
@@ -455,9 +465,13 @@ class NoiseChannel extends Channel implements INoiseChannel {
   }
 }
 
-class DmcChannel extends Channel {
+// DMC
+class DeltaModulationChannel extends Channel implements IDeltaModulationChannel {
   private regsLengthCounter = 1
   private dmaLengthCounter = 0
+
+  private currWriteBuf: number[] = []
+  private prevWriteBuf: number[] = []
 
   public constructor(private triggerIrq: () => void) {
     super()
@@ -472,43 +486,46 @@ class DmcChannel extends Channel {
     } else {
       this.dmaLengthCounter = 0
     }
+
+    // Put enable setting to command buffer.
+    this.currWriteBuf.push((0xff << 8) | (value ? 1 : 0))
   }
 
   public write(reg: Reg, value: Byte): void {
     super.write(reg, value)
+    this.currWriteBuf.push((reg << 8) | value)
 
     switch (reg) {
     case Reg.TIMER_H:  // Set length.
       this.regsLengthCounter = ((value << 4) + 1) * 8
-      this.stopped = false
       break
     default:
       break
     }
   }
 
-  public getVolume(): number {
-    if (this.stopped)
-      return 0
+  public getWriteBuf(): ReadonlyArray<number> {
+    return this.prevWriteBuf
+  }
 
-    const v = this.regs[Reg.STATUS]
-    if ((v & CONSTANT_VOLUME) !== 0)
-      return (v & 15) / 15
-    return 1
+  public getVolume(): number {
+    return this.stopped ? 0 : 1
   }
 
   public getFrequency(): number {
-    const period = this.regs[Reg.TIMER_L] & 15
-    return kNoiseFrequencies[period]
+    throw new Error('Invalid call')
   }
 
-  public update(): void {
-    if (this.stopped)
-      return
-  }
-
-  public onHblank(_hcount: number): void {
+  public onHblank(hcount: number): void {
     this.updateLength()
+
+    if (hcount === VBlank.NMI) {
+      // Swap buffers
+      const tmp = this.currWriteBuf
+      this.currWriteBuf = this.prevWriteBuf
+      this.prevWriteBuf = tmp
+      this.currWriteBuf.length = 0
+    }
   }
 
   private updateLength(): void {
@@ -518,7 +535,7 @@ class DmcChannel extends Channel {
     let l = this.dmaLengthCounter
     if (l <= 0) {
       l = 0
-      if ((this.regs[0] & 0x40) === 0) {
+      if ((this.regs[0] & DMC_LOOP_ENABLE) === 0) {
         this.stopped = true
         if ((this.regs[0] & DMC_IRQ_ENABLE) !== 0)
           this.triggerIrq()
@@ -547,7 +564,7 @@ export class Apu {
     this.channels[ApuChannel.PULSE2] = new PulseChannel()
     this.channels[ApuChannel.TRIANGLE] = new TriangleChannel()
     this.channels[ApuChannel.NOISE] = new NoiseChannel()
-    this.channels[ApuChannel.DMC] = new DmcChannel(triggerIrq)
+    this.channels[ApuChannel.DMC] = new DeltaModulationChannel(triggerIrq)
   }
 
   public getWaveTypes(): WaveType[] {
@@ -632,7 +649,7 @@ export class Apu {
   }
 
   public onHblank(hcount: number): void {
-    (this.channels[ApuChannel.DMC] as DmcChannel).onHblank(hcount)
+    (this.channels[ApuChannel.DMC] as DeltaModulationChannel).onHblank(hcount)
 
     switch (hcount) {
     case VBlank.NMI:

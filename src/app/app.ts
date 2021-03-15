@@ -2,7 +2,7 @@ import {Nes} from '../nes/nes'
 
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
-import {INoiseChannel, IPulseChannel, WaveType} from '../nes/apu'
+import {IDeltaModulationChannel, INoiseChannel, IPulseChannel, WaveType} from '../nes/apu'
 import {DomUtil} from '../util/dom_util'
 import {Fds} from '../nes/fds/fds'
 import {ScreenWnd} from './screen_wnd'
@@ -170,7 +170,8 @@ export class App {
 
   public setupAudioManager(): void {
     if (this.audioManager == null) {
-      this.audioManager = new AudioManager()
+      const bus = this.nes.getBus()
+      this.audioManager = new AudioManager(bus.read8.bind(bus))
     } else {
       this.audioManager.releaseAllChannels()
     }
@@ -305,7 +306,10 @@ export class App {
           }
           break
         case WaveType.DMC:
-          // TODO:
+          {
+            const dmc = channel as unknown as IDeltaModulationChannel
+            audioManager.setChannelDmcWrite(ch, dmc.getWriteBuf())
+          }
           break
         }
       }

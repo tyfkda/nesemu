@@ -1,4 +1,4 @@
-import {WaveType} from '../nes/apu'
+import {Reg, WaveType, DMC_LOOP_ENABLE, DMC_IRQ_ENABLE} from '../nes/apu'
 import {NoiseSampler} from './apu_util'
 
 const GLOBAL_MASTER_VOLUME = 0.5
@@ -11,6 +11,7 @@ abstract class SoundChannel {
   public setFrequency(_frequency: number): void { throw new Error('Invalid call') }
   public setDutyRatio(_dutyRatio: number): void { throw new Error('Invalid call') }
   public setNoisePeriod(_period: number, _mode: number): void { throw new Error('Invalid call') }
+  public setDmcWrite(_reg: number, _value: number): void { throw new Error('Invalid call') }
   public setBlockiness(_context: AudioContext, _destination: AudioNode, _blockiness: boolean): void {}
 }
 
@@ -135,7 +136,7 @@ class SawtoothChannel extends OscillatorChannel {
 }
 
 // ScriptProcessor Noise channel
-const SP_NOISE_BUFFER_SIZE = 256
+const SP_NOISE_BUFFER_SIZE = 512
 class SpNoiseChannel extends SoundChannel {
   private node: ScriptProcessorNode
   private sampler: NoiseSampler
@@ -145,7 +146,7 @@ class SpNoiseChannel extends SoundChannel {
 
     this.sampler = new NoiseSampler(context.sampleRate)
 
-    this.node = context.createScriptProcessor(SP_NOISE_BUFFER_SIZE, 1, 1)
+    this.node = context.createScriptProcessor(SP_NOISE_BUFFER_SIZE, 0, 1)
     this.node.onaudioprocess = (e) => {
       const output = e.outputBuffer.getChannelData(0)
       this.sampler.fillBuffer(output)
@@ -155,7 +156,6 @@ class SpNoiseChannel extends SoundChannel {
 
   public destroy(): void {
     if (this.node != null) {
-      // this.node.port.postMessage({action: 'stop'})
       this.node.disconnect()
       // this.node = null
     }
@@ -280,10 +280,174 @@ class PulseChannel extends OscillatorChannel {
   }
 }
 
-class DmcChannel extends OscillatorChannel {
-  protected setupOscillator(_oscillator: OscillatorNode, _context: AudioContext,
-                            _destination: AudioNode): void {
-    // TODO: Implement
+// ScriptProcessor DMC channel
+const SP_DMC_BUFFER_SIZE = 512
+const kDmcRateTable = [
+  428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54
+]
+
+function gcd(m: number, n: number): number {
+  if (m < n) {
+    const t = m
+    m = n
+    n = t
+  }
+
+  let r: number
+  while ((r = m % n) !== 0) {
+    m = n
+    n = r
+  }
+  return n
+}
+
+class SpDmcChannel extends SoundChannel {
+  private node: ScriptProcessorNode
+  private regs = new Uint8Array(4)
+  private volume = 0
+  private sampleStep = 0
+  private rateTable: Float32Array
+  private rate = 0
+
+  private dmaAddress = 0xc000
+  private dmaLengthCounter = 1
+  private dmaBuffered = false
+  private dmaBuffer = 0
+  private outActive = false
+  private outShifter = 0
+  private outDac = 0
+  private outBuffer = 0
+  private timer = 0
+
+  public constructor(private triggerDma: (adr: number) => number, context: AudioContext, destination: AudioNode) {
+    super()
+
+    const APU_NOISE_HZ = 894887 * 2
+    const sampleRate = context.sampleRate
+    const g = gcd(APU_NOISE_HZ, sampleRate)
+    const multiplier = Math.min(sampleRate / g, 0x7fff) | 0
+    this.sampleStep = (APU_NOISE_HZ * multiplier / sampleRate) | 0
+
+    this.rateTable = new Float32Array(kDmcRateTable.map(x => x * multiplier))
+    this.rate = this.rateTable[0]
+
+    this.node = context.createScriptProcessor(SP_DMC_BUFFER_SIZE, 0, 1)
+    this.node.onaudioprocess = (e) => {
+      const output = e.outputBuffer.getChannelData(0)
+      if (this.volume <= 0) {
+        output.fill(this.outDac * (4.0 / 127))
+        return
+      }
+
+      const volume = this.volume * (4.0 / 127)
+      const sampleStep = this.sampleStep | 0
+      const rate = this.rate | 0
+      let timer = this.timer | 0
+      let value = this.outDac * volume
+      for (let i = 0; i < output.length; ++i) {
+        timer -= sampleStep
+        if (timer < 0) {
+          do {
+            this.clockDac()
+            this.clockDma()
+            timer += rate
+          } while (timer < 0)
+          value = this.outDac * volume
+        }
+        output[i] = value
+      }
+      this.timer = timer
+    }
+    this.node.connect(destination)
+  }
+
+  public destroy(): void {
+    if (this.node != null) {
+      this.node.disconnect()
+      // this.node = null
+    }
+  }
+
+  public start(): void {
+  }
+
+  public setVolume(volume: number): void {
+    this.volume = volume
+  }
+
+  public setDmcWrite(reg: number, value: number): void {
+    if (reg >= 4) {
+      switch (reg) {
+      case 0xff:
+        if (value === 0) {
+          this.dmaLengthCounter = 0
+        } else if (this.dmaLengthCounter <= 0) {
+          this.dmaLengthCounter = (this.regs[Reg.SAMPLE_LENGTH] << 4) + 1
+          this.dmaAddress = 0xc000 + (this.regs[Reg.SAMPLE_ADDRESS] << 6)
+          if (!this.dmaBuffered)
+            this.doDma()
+        }
+        break
+      default:
+        break
+      }
+      return
+    }
+
+    this.regs[reg] = value
+    switch (reg) {
+    case Reg.STATUS:
+      this.rate = this.rateTable[value & 0x0f]
+      break
+    case Reg.DIRECT_LOAD:
+      this.outDac = value & 0x7f
+      break
+    case Reg.SAMPLE_ADDRESS:
+      break
+    case Reg.SAMPLE_LENGTH:
+      break
+    }
+  }
+
+  private clockDac(): boolean {
+    if (this.outActive) {
+      const n = this.outDac + ((this.outBuffer & 1) << 2) - 2  // +2 or -2
+      this.outBuffer >>= 1
+      if (0 <= n && n <= 0x7f && n != this.outDac) {
+        this.outDac = n
+        return true
+      }
+    }
+    return false
+  }
+
+  private clockDma(): void {
+    if (this.outShifter <= 0) {
+      this.outShifter = 8
+      this.outActive = this.dmaBuffered
+      if (this.outActive) {
+        this.dmaBuffered = false
+        this.outBuffer = this.dmaBuffer
+        if (this.dmaLengthCounter !== 0)
+          this.doDma()
+      }
+    }
+    --this.outShifter
+  }
+
+  private doDma(): void {
+    this.dmaBuffer = this.triggerDma(this.dmaAddress)
+    this.dmaAddress = 0x8000 | ((this.dmaAddress + 1) & 0x7fff)
+    this.dmaBuffered = true
+    this.dmaLengthCounter -= 1
+    if (this.dmaLengthCounter <= 0) {
+      if (this.regs[Reg.STATUS] & DMC_LOOP_ENABLE) {
+        this.dmaLengthCounter = this.regs[Reg.SAMPLE_LENGTH] * 16 + 1
+        this.dmaAddress = 0xc000 + this.regs[Reg.SAMPLE_ADDRESS] * 64
+      } else if (this.regs[Reg.STATUS] & DMC_IRQ_ENABLE) {
+        // this.cpu.do_irq(CPU::IRQ_DMC, this.cpu.current_clock)
+      }
+    }
   }
 }
 
@@ -298,10 +462,10 @@ function createSoundChannel(
   case WaveType.NOISE:
     return AwNoiseChannel.create(context, destination) ||
         new SpNoiseChannel(context, destination)
-  case WaveType.DMC:
-    return new DmcChannel(context, destination)
   case WaveType.SAWTOOTH:
     return new SawtoothChannel(context, destination)
+  default:
+    throw Error('Unhandled')
   }
 }
 
@@ -369,7 +533,7 @@ export class AudioManager {
     }
   }
 
-  constructor() {
+  constructor(private triggerDma: (adr: number) => number) {
     AudioManager.checkSetUpCalled()
   }
 
@@ -391,7 +555,12 @@ export class AudioManager {
     if (context == null)
       return
 
-    const sc = createSoundChannel(context, AudioManager.masterGainNode, type)
+    let sc: SoundChannel
+    if (type === WaveType.DMC) {
+      sc = new SpDmcChannel(this.triggerDma, context, AudioManager.masterGainNode)
+    } else {
+      sc = createSoundChannel(context, AudioManager.masterGainNode, type)
+    }
     sc.start()
     this.channels.push(sc)
   }
@@ -432,6 +601,17 @@ export class AudioManager {
     if (AudioManager.context == null)
       return
     this.channels[channel].setNoisePeriod(period, mode)
+  }
+
+  public setChannelDmcWrite(channel: number, buf: ReadonlyArray<number>): void {
+    if (AudioManager.context == null)
+      return
+    for (let i = 0; i < buf.length; ++i) {
+      const d = buf[i]
+      const r = d >> 8
+      const v = d & 0xff
+      this.channels[channel].setDmcWrite(r, v)
+    }
   }
 
   public muteAll(): void {
