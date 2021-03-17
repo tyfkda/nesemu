@@ -133,8 +133,8 @@ function createMyApp() {
     }
 
     private setupAudioManager(): void {
-      const channelTypes = this.nes.getSoundChannelTypes()
-      for (const type of channelTypes) {
+      const waveTypes = this.nes.getChannelWaveTypes()
+      for (const type of waveTypes) {
         this.audioManager.addChannel(type)
       }
     }

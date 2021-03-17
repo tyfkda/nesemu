@@ -1,4 +1,4 @@
-import {ChannelType} from '../nes/apu'
+import {WaveType} from '../nes/apu'
 import {NoiseSampler} from './apu_util'
 
 abstract class SoundChannel {
@@ -226,19 +226,19 @@ class DmcChannel extends OscillatorChannel {
 }
 
 function createSoundChannel(
-    context: AudioContext, destination: AudioNode, type: ChannelType,
+    context: AudioContext, destination: AudioNode, type: WaveType,
 ): SoundChannel {
   switch (type) {
-  case ChannelType.PULSE:
+  case WaveType.PULSE:
     return new PulseChannel(context, destination)
-  case ChannelType.TRIANGLE:
+  case WaveType.TRIANGLE:
     return new TriangleChannel(context, destination)
-  case ChannelType.NOISE:
+  case WaveType.NOISE:
     return AwNoiseChannel.create(context, destination) ||
         new SpNoiseChannel(context, destination)
-  case ChannelType.SAWTOOTH:
+  case WaveType.SAWTOOTH:
     return new SawtoothChannel(context, destination)
-  case ChannelType.DMC:
+  case WaveType.DMC:
     return new DmcChannel(context, destination)
   }
 }
@@ -322,7 +322,7 @@ export default class AudioManager {
     }
   }
 
-  public addChannel(type: ChannelType): void {
+  public addChannel(type: WaveType): void {
     const context = AudioManager.context
     if (context == null)
       return

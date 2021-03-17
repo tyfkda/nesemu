@@ -2,7 +2,7 @@ import Nes from '../nes/nes'
 
 import {AppEvent} from './app_event'
 import AudioManager from '../util/audio_manager'
-import {ChannelType} from '../nes/apu'
+import {WaveType} from '../nes/apu'
 import DomUtil from '../util/dom_util'
 import Fds from '../nes/fds/fds'
 import ScreenWnd from './screen_wnd'
@@ -176,8 +176,8 @@ export default class App {
       this.audioManager.releaseAllChannels()
     }
 
-    const channelTypes = this.nes.getSoundChannelTypes()
-    for (const type of channelTypes) {
+    const waveTypes = this.nes.getChannelWaveTypes()
+    for (const type of waveTypes) {
       this.audioManager.addChannel(type)
     }
   }
@@ -273,27 +273,27 @@ export default class App {
     if (audioManager == null)
       return
 
-    const channelTypes = this.nes.getSoundChannelTypes()
-    for (let ch = 0; ch < channelTypes.length; ++ch) {
+    const waveTypes = this.nes.getChannelWaveTypes()
+    for (let ch = 0; ch < waveTypes.length; ++ch) {
       const volume = this.nes.getSoundVolume(ch)
       audioManager.setChannelVolume(ch, volume)
       if (volume > 0) {
-        switch (channelTypes[ch]) {
-        case ChannelType.PULSE:
+        switch (waveTypes[ch]) {
+        case WaveType.PULSE:
           audioManager.setChannelFrequency(ch, this.nes.getSoundFrequency(ch))
           audioManager.setChannelDutyRatio(ch, this.nes.getSoundDutyRatio(ch))
           break
-        case ChannelType.TRIANGLE:
-        case ChannelType.SAWTOOTH:
+        case WaveType.TRIANGLE:
+        case WaveType.SAWTOOTH:
           audioManager.setChannelFrequency(ch, this.nes.getSoundFrequency(ch))
           break
-        case ChannelType.NOISE:
+        case WaveType.NOISE:
           {
             const [period, mode] = this.nes.getSoundNoisePeriod(ch)
             audioManager.setChannelPeriod(ch, period, mode)
           }
           break
-        case ChannelType.DMC:
+        case WaveType.DMC:
           // TODO:
           break
         }

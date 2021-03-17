@@ -26,7 +26,7 @@ export const enum PadValue {
   R = 1 << PadBit.R,
 }
 
-export const enum ChannelType {
+export const enum WaveType {
   PULSE,
   TRIANGLE,
   SAWTOOTH,
@@ -65,12 +65,12 @@ const enum Reg {
   TIMER_H = 3,
 }
 
-export const kChannelTypes: ChannelType[] = [
-  ChannelType.PULSE,
-  ChannelType.PULSE,
-  ChannelType.TRIANGLE,
-  ChannelType.NOISE,
-  ChannelType.DMC,
+export const kWaveTypes: WaveType[] = [
+  WaveType.PULSE,
+  WaveType.PULSE,
+  WaveType.TRIANGLE,
+  WaveType.NOISE,
+  WaveType.DMC,
 ]
 
 const kLengthTable = [
@@ -540,8 +540,8 @@ export class Apu {
     this.channels[ApuChannel.DMC] = new DmcChannel(triggerIrq)
   }
 
-  public getChannelTypes(): ChannelType[] {
-    return kChannelTypes
+  public getWaveTypes(): WaveType[] {
+    return kWaveTypes
   }
 
   public reset(): void {

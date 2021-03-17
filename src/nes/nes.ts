@@ -1,6 +1,6 @@
 // NES: Nintendo Entertainment System
 
-import {Apu, ChannelType} from './apu'
+import {Apu, WaveType} from './apu'
 import Bus from './bus'
 import Cpu, {IrqType} from './cpu/cpu'
 import {MirrorMode} from './ppu/types'
@@ -57,7 +57,7 @@ export default class Nes implements PrgBankController {
   private breakPointCallback: () => void
   private prgBank: number[] = []
   private apuChannelCount = 0
-  private soundChannelTypes: ChannelType[]
+  private channelWaveTypes: WaveType[]
 
   public static create(): Nes {
     return new Nes()
@@ -73,8 +73,8 @@ export default class Nes implements PrgBankController {
 
     const mapperNo = 0
     this.mapper = this.createMapper(mapperNo, -1)
-    this.soundChannelTypes = this.apu.getChannelTypes()
-    this.apuChannelCount = this.soundChannelTypes.length
+    this.channelWaveTypes = this.apu.getWaveTypes()
+    this.apuChannelCount = this.channelWaveTypes.length
     this.setMemoryMap()
   }
 
@@ -107,11 +107,11 @@ export default class Nes implements PrgBankController {
     const romHash = md5(romData)
     this.mapper = this.createMapper(mapperNo, this.prgRom.length, romHash)
 
-    let channels = this.apu.getChannelTypes()
-    const extras = this.mapper.getExtraSoundChannelTypes()
+    let channels = this.apu.getWaveTypes()
+    const extras = this.mapper.getExtraChannelWaveTypes()
     if (extras != null)
       channels = channels.concat(extras)
-    this.soundChannelTypes = channels
+    this.channelWaveTypes = channels
 
     return true
   }
@@ -177,8 +177,8 @@ export default class Nes implements PrgBankController {
     return cycle
   }
 
-  public getSoundChannelTypes(): ChannelType[] {
-    return this.soundChannelTypes
+  public getChannelWaveTypes(): WaveType[] {
+    return this.channelWaveTypes
   }
 
   public getSoundVolume(channel: number): number {

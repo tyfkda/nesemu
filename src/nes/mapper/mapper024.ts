@@ -1,7 +1,7 @@
 // VRC6
 // http://wiki.nesdev.com/w/index.php/VRC6
 
-import {ChannelType} from '../../nes/apu'
+import {WaveType} from '../../nes/apu'
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
@@ -27,10 +27,10 @@ const kChrBankTable = [
   [0, 1, 2, 3, 4, 4, 5, 5],
 ]
 
-const kChannelTypes: ChannelType[] = [
-  ChannelType.PULSE,
-  ChannelType.PULSE,
-  ChannelType.SAWTOOTH,
+const kWaveTypes: WaveType[] = [
+  WaveType.PULSE,
+  WaveType.PULSE,
+  WaveType.SAWTOOTH,
 ]
 
 class Channel {
@@ -124,7 +124,7 @@ class Mapper024Base extends Mapper {
   private irqLatch = 0
   private irqCounter = 0
 
-  private channels: Channel[] = new Array<Channel>(kChannelTypes.length)
+  private channels: Channel[] = new Array<Channel>(kWaveTypes.length)
   private frequencyScaling = 0
 
   constructor(private options: MapperOptions, mapping: {[key: number]: number}) {
@@ -264,8 +264,8 @@ class Mapper024Base extends Mapper {
       this.updateSound()
   }
 
-  public getExtraSoundChannelTypes(): ChannelType[]|null {
-    return kChannelTypes
+  public getExtraChannelWaveTypes(): WaveType[]|null {
+    return kWaveTypes
   }
 
   public getSoundVolume(channel: number): number {
@@ -306,13 +306,13 @@ class Mapper024Base extends Mapper {
 
   private setupAudio(): void {
     for (let i = 0; i < this.channels.length; ++i) {
-      const type = kChannelTypes[i]
+      const type = kWaveTypes[i]
       let channel: Channel
       switch (type) {
-      case ChannelType.PULSE:
+      case WaveType.PULSE:
         channel = new PulseChannel()
         break
-      case ChannelType.SAWTOOTH:
+      case WaveType.SAWTOOTH:
         channel = new SawToothChannel()
         break
       default:

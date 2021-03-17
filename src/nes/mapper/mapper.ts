@@ -1,5 +1,5 @@
 import Bus from '../bus'
-import {ChannelType} from '../apu'
+import {WaveType} from '../apu'
 import Cpu from '../cpu/cpu'
 import Ppu from '../ppu/ppu'
 import {Address, Byte} from '../types'
@@ -30,7 +30,7 @@ export class Mapper {
 
   public load(_saveData: any): void {}
 
-  public getExtraSoundChannelTypes(): ChannelType[]|null {
+  public getExtraChannelWaveTypes(): WaveType[]|null {
     return null
   }
 

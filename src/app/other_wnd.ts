@@ -3,7 +3,7 @@ import Wnd from '../wnd/wnd'
 import {WndEvent} from '../wnd/types'
 
 import AudioManager from '../util/audio_manager'
-import {ChannelType} from '../nes/apu'
+import {WaveType} from '../nes/apu'
 import DomUtil from '../util/dom_util'
 import Nes from '../nes/nes'
 import Ppu from '../nes/ppu/ppu'
@@ -397,7 +397,7 @@ export class GlobalPaletWnd extends Wnd {
 
 const kToneTable = [0, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 5.5, 6, 6.5]  // A A# B | C C# D D# E F F# G G#
 
-const kChannelTypeImages = [
+const kWaveTypeImages = [
   pluseImg,
   triangleImg,
   sawtoothImg,
@@ -418,9 +418,9 @@ export class AudioWnd extends Wnd {
   private dots: Array<HTMLElement>
 
   public constructor(wndMgr: WindowManager, nes: Nes, stream: AppEvent.Stream) {
-    const channelTypes = nes.getSoundChannelTypes()
-    const channelIndices = [...Array(channelTypes.length).keys()]
-        .filter(ch => channelTypes[ch] !== ChannelType.DMC && channelTypes[ch] !== ChannelType.NOISE)
+    const waveTypes = nes.getChannelWaveTypes()
+    const channelIndices = [...Array(waveTypes.length).keys()]
+        .filter(ch => waveTypes[ch] !== WaveType.DMC && waveTypes[ch] !== WaveType.NOISE)
     const channelCount = channelIndices.length
 
     super(wndMgr, AudioWnd.W * AudioWnd.OCTAVE * 7, AudioWnd.H * channelCount, 'Audio')
@@ -428,7 +428,7 @@ export class AudioWnd extends Wnd {
     this.stream = stream
     this.channelIndices = channelIndices
 
-    const {root, dots} = this.createDom(channelCount, channelTypes)
+    const {root, dots} = this.createDom(channelCount, waveTypes)
     this.setContent(root)
     this.dots = dots
 
@@ -482,7 +482,7 @@ export class AudioWnd extends Wnd {
     }
   }
 
-  private createDom(channelCount: number, channelTypes: ChannelType[]):
+  private createDom(channelCount: number, waveTypes: WaveType[]):
       {root: HTMLElement; dots: HTMLElement[]}
   {
     const W = AudioWnd.W, H = AudioWnd.H
@@ -548,8 +548,8 @@ export class AudioWnd extends Wnd {
         top: 0,
         display: 'block',
       })
-      const channelType = channelTypes[this.channelIndices[ch]]
-      icon.src = kChannelTypeImages[channelType]
+      const waveType = waveTypes[this.channelIndices[ch]]
+      icon.src = kWaveTypeImages[waveType]
       line.appendChild(icon)
     }
 
