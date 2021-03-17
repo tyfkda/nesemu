@@ -176,7 +176,7 @@ class Envelope {
 
 // ================================================================
 // Sound channel
-class Channel {
+export class Channel {
   protected regs = new Uint8Array(4)
   protected stopped = true
 

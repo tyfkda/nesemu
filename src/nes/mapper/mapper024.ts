@@ -1,7 +1,7 @@
 // VRC6
 // http://wiki.nesdev.com/w/index.php/VRC6
 
-import {WaveType} from '../../nes/apu'
+import {Channel, WaveType} from '../../nes/apu'
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
@@ -33,20 +33,7 @@ const kWaveTypes: WaveType[] = [
   WaveType.SAWTOOTH,
 ]
 
-class Channel {
-  protected regs = new Uint8Array(4)
-
-  public write(reg: number, value: number) {
-    this.regs[reg] = value
-  }
-
-  public update(): void {}
-  public getVolume(): number { return 0 }
-  public getFrequency(): number { return 0 }
-  public getDutyRatio(): number { return 0.5 }
-}
-
-class PulseChannel extends Channel {
+class VrcPulseChannel extends Channel {
   public getVolume(): number {
     if ((this.regs[2] & CH_ENABLE) === 0)
       return 0
@@ -310,7 +297,7 @@ class Mapper024Base extends Mapper {
       let channel: Channel
       switch (type) {
       case WaveType.PULSE:
-        channel = new PulseChannel()
+        channel = new VrcPulseChannel()
         break
       case WaveType.SAWTOOTH:
         channel = new SawToothChannel()
