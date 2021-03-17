@@ -1,5 +1,5 @@
 import Bus from '../bus'
-import {WaveType} from '../apu'
+import {Channel, WaveType} from '../apu'
 import Cpu from '../cpu/cpu'
 import Ppu from '../ppu/ppu'
 import {Address, Byte} from '../types'
@@ -34,19 +34,7 @@ export class Mapper {
     return null
   }
 
-  public getSoundVolume(_channel: number): number {
-    return 0
-  }
-
-  public getSoundFrequency(_channel: number): number {
-    return 0
-  }
-
-  public getSoundDutyRatio(_channel: number): number {
-    throw new Error('Invalid call')
-  }
-
-  public getSoundNoisePeriod(_channel: number): [number, number] {
+  public getSoundChannel(_ch: number): Channel {
     throw new Error('Invalid call')
   }
 }

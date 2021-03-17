@@ -176,7 +176,7 @@ class Envelope {
 
 // ================================================================
 // Sound channel
-export class Channel {
+export abstract class Channel {
   protected regs = new Uint8Array(4)
   protected stopped = true
 
@@ -190,9 +190,7 @@ export class Channel {
   }
 
   public getVolume(): number { return 0 }
-  public getFrequency(): number { return 0 }
-  public getDutyRatio(): number { throw new Error('Invalid call') }
-  public getNoisePeriod(): [number, number] { throw new Error('Invalid call') }
+  public getFrequency(): number { return 1 }
   public setEnable(value: boolean): void {
     if (!value)
       this.stopped = true
@@ -204,7 +202,15 @@ export class Channel {
   }
 }
 
-class PulseChannel extends Channel {
+export interface IPulseChannel {
+  getDutyRatio(): number
+}
+
+export interface INoiseChannel {
+  getNoisePeriod(): [number, number]
+}
+
+class PulseChannel extends Channel implements IPulseChannel {
   private lengthCounter = 0
   private sweepCounter = 0
   private envelope = new Envelope()
@@ -373,7 +379,7 @@ class TriangleChannel extends Channel {
   }
 }
 
-class NoiseChannel extends Channel {
+class NoiseChannel extends Channel implements INoiseChannel {
   private lengthCounter = 0
   private envelope = new Envelope()
 
@@ -544,6 +550,10 @@ export class Apu {
     return kWaveTypes
   }
 
+  public getChannel(ch: number): Channel {
+    return this.channels[ch]
+  }
+
   public reset(): void {
     this.regs.fill(0)
     this.regs[FRAME_COUNTER] = IRQ_INHIBIT
@@ -614,24 +624,6 @@ export class Apu {
     default:
       break
     }
-  }
-
-  public getVolume(ch: number): number {
-    if ((this.regs[STATUS_REG] & (1 << ch)) === 0)
-      return 0
-    return this.channels[ch].getVolume()
-  }
-
-  public getFrequency(ch: number): number {
-    return this.channels[ch].getFrequency()
-  }
-
-  public getDutyRatio(ch: number): number {
-    return this.channels[ch].getDutyRatio()
-  }
-
-  public getNoisePeriod(ch: number): [number, number] {
-    return this.channels[ch].getNoisePeriod()
   }
 
   public setPadStatus(no: number, status: Byte): void {

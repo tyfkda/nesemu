@@ -461,9 +461,10 @@ export class AudioWnd extends Wnd {
     const DOT_W = 7
     for (let ich = 0; ich < this.channelIndices.length; ++ich) {
       const ch = this.channelIndices[ich]
+      const channel = this.nes.getSoundChannel(ch)
       const dot = this.dots[ich]
-      const vol = this.nes.getSoundVolume(ch)
-      const freq = this.nes.getSoundFrequency(ch)
+      const vol = channel.getVolume()
+      const freq = channel.getFrequency()
       const toneIndex = Math.log(freq) * logScale - AudioWnd.kBaseTone + 0.5
       if ((toneIndex >= -1 && toneIndex <= AudioWnd.OCTAVE * 12) || vol <= 0) {
         const offset = kToneTable[(toneIndex | 0) % 12]

@@ -1,7 +1,7 @@
 // VRC6
 // http://wiki.nesdev.com/w/index.php/VRC6
 
-import {Channel, WaveType} from '../../nes/apu'
+import {Channel, IPulseChannel, WaveType} from '../../nes/apu'
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
@@ -33,16 +33,21 @@ const kWaveTypes: WaveType[] = [
   WaveType.SAWTOOTH,
 ]
 
-class VrcPulseChannel extends Channel {
+abstract class VrcChannel extends Channel {
+  halt = false
+  frequencyScaling = 0
+}
+
+class VrcPulseChannel extends VrcChannel implements IPulseChannel {
   public getVolume(): number {
-    if ((this.regs[2] & CH_ENABLE) === 0)
+    if (this.halt || (this.regs[2] & CH_ENABLE) === 0)
       return 0
     return (this.regs[0] & 15) / (15 * 2)
   }
 
   public getFrequency(): number {
     const f = this.regs[1] | ((this.regs[2] & 0x0f) << 8)
-    return ((CPU_HZ / 16) / (f + 1)) | 0
+    return (CPU_HZ / 16) / (f + 1) * this.frequencyScaling
   }
 
   public getDutyRatio(): number {
@@ -53,7 +58,7 @@ class VrcPulseChannel extends Channel {
   }
 }
 
-class SawToothChannel extends Channel {
+class SawToothChannel extends VrcChannel {
   private acc = 0
   private count = 0
 
@@ -88,7 +93,7 @@ class SawToothChannel extends Channel {
   }
 
   public getVolume(): number {
-    if ((this.regs[2] & CH_ENABLE) === 0)
+    if (this.halt || (this.regs[2] & CH_ENABLE) === 0)
       return 0
     // TODO: Use distorted wave.
     return Math.min((this.regs[0] & 0x3f) * (6 / 255), 1)
@@ -96,7 +101,7 @@ class SawToothChannel extends Channel {
 
   public getFrequency(): number {
     const f = this.regs[1] | ((this.regs[2] & 0x0f) << 8)
-    return ((CPU_HZ / 14) / (f + 1)) | 0
+    return (CPU_HZ / 14) / (f + 1) * this.frequencyScaling
   }
 }
 
@@ -111,8 +116,7 @@ class Mapper024Base extends Mapper {
   private irqLatch = 0
   private irqCounter = 0
 
-  private channels: Channel[] = new Array<Channel>(kWaveTypes.length)
-  private frequencyScaling = 0
+  private channels = new Array<VrcChannel>(kWaveTypes.length)
 
   constructor(private options: MapperOptions, mapping: {[key: number]: number}) {
     super()
@@ -130,7 +134,14 @@ class Mapper024Base extends Mapper {
       } else if (0x9000 <= adr && adr <= 0x9002) {
         this.writeSound(0, adr & 3, value)
       } else if (adr === 0x9003) {
-        this.frequencyScaling = value
+        const halt = (value & FREQCTL_HALT) !== 0
+        const scale: number =
+            ((value & FREQCTL_256X) !== 0) ? 256 :
+            ((value & FREQCTL_16X) !== 0) ? 16 : 1
+        for (const channel of this.channels) {
+          channel.halt = halt
+          channel.frequencyScaling = scale
+        }
       }
     })
     this.options.bus.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
@@ -255,24 +266,8 @@ class Mapper024Base extends Mapper {
     return kWaveTypes
   }
 
-  public getSoundVolume(channel: number): number {
-    const halt = (this.frequencyScaling & FREQCTL_HALT) !== 0
-    if (halt)
-      return 0
-    return this.channels[channel].getVolume()
-  }
-
-  public getSoundFrequency(channel: number): number {
-    let f = this.channels[channel].getFrequency()
-    if ((this.frequencyScaling & FREQCTL_256X) !== 0)
-      f *= 256
-    else if ((this.frequencyScaling & FREQCTL_16X) !== 0)
-      f *= 16
-    return f
-  }
-
-  public getSoundDutyRatio(channel: number): number {
-    return this.channels[channel].getDutyRatio()
+  public getSoundChannel(ch: number): Channel {
+    return this.channels[ch]
   }
 
   private setPrgBank(prgBank: number): void {
@@ -294,7 +289,7 @@ class Mapper024Base extends Mapper {
   private setupAudio(): void {
     for (let i = 0; i < this.channels.length; ++i) {
       const type = kWaveTypes[i]
-      let channel: Channel
+      let channel: VrcChannel
       switch (type) {
       case WaveType.PULSE:
         channel = new VrcPulseChannel()

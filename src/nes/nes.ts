@@ -1,6 +1,6 @@
 // NES: Nintendo Entertainment System
 
-import {Apu, WaveType} from './apu'
+import {Apu, Channel, WaveType} from './apu'
 import Bus from './bus'
 import Cpu, {IrqType} from './cpu/cpu'
 import {MirrorMode} from './ppu/types'
@@ -181,28 +181,10 @@ export default class Nes implements PrgBankController {
     return this.channelWaveTypes
   }
 
-  public getSoundVolume(channel: number): number {
-    if (channel < this.apuChannelCount)
-      return this.apu.getVolume(channel)
-    return this.mapper.getSoundVolume(channel - this.apuChannelCount)
-  }
-
-  public getSoundFrequency(channel: number): number {
-    if (channel < this.apuChannelCount)
-      return this.apu.getFrequency(channel)
-    return this.mapper.getSoundFrequency(channel - this.apuChannelCount)
-  }
-
-  public getSoundDutyRatio(channel: number): number {
-    if (channel < this.apuChannelCount)
-      return this.apu.getDutyRatio(channel)
-    return this.mapper.getSoundDutyRatio(channel - this.apuChannelCount)
-  }
-
-  public getSoundNoisePeriod(channel: number): [number, number] {
-    if (channel < this.apuChannelCount)
-      return this.apu.getNoisePeriod(channel)
-    return this.mapper.getSoundNoisePeriod(channel - this.apuChannelCount)
+  public getSoundChannel(ch: number): Channel {
+    if (ch < this.apuChannelCount)
+      return this.apu.getChannel(ch)
+    return this.mapper.getSoundChannel(ch - this.apuChannelCount)
   }
 
   public render(pixels: Uint8Array | Uint8ClampedArray): void {
