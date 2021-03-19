@@ -72,7 +72,6 @@ export default class App {
     this.setupAudioManager()
 
     this.nes.reset()
-    this.nes.getCpu().pause(false)
     this.screenWnd.getContentHolder().focus()
 
     return true
