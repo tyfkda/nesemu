@@ -66,7 +66,7 @@ export class Nes implements PrgBankController {
   constructor() {
     this.bus = new Bus()
     this.cpu = new Cpu(this.bus)
-    this.ppu = new Ppu()
+    this.ppu = new Ppu(this.cpu.nmi.bind(this.cpu))
     this.apu = new Apu(() => this.cpu.requestIrq(IrqType.APU))
     this.vblankCallback = _leftV => {}
     this.breakPointCallback = () => {}
@@ -273,33 +273,11 @@ export class Nes implements PrgBankController {
       this.ppu.setHcount(hcount)
       this.apu.onHblank(hcount)
 
-      switch (hcount) {
-      case VBlank.START:
-        this.ppu.setVBlank()
+      if (hcount === VBlank.START)
         this.vblankCallback((leftCycles / VCYCLE) | 0)
-        break
-      case VBlank.NMI:
-        this.interruptVBlank()
-        break
-      case VBlank.END:
-        this.ppu.clearVBlank()
-        break
-      default:
-        break
-      }
 
       this.mapper.onHblank(hcount)
     }
     this.cycleCount = nextCycleCount
-  }
-
-  private interruptVBlank(): void {
-    if (!this.ppu.interruptEnable())
-      return
-    this.interruptNmi()
-  }
-
-  private interruptNmi(): void {
-    this.cpu.nmi()
   }
 }

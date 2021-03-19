@@ -11,6 +11,7 @@ import {Ppu} from '../nes/ppu/ppu'
 import {ScreenWnd} from './screen_wnd'
 import {Util} from '../util/util'
 import {WindowManager} from '../wnd/window_manager'
+import {VBlank} from '../nes/const'
 
 const WIDTH = 256
 const HEIGHT = 240
@@ -263,11 +264,12 @@ export class JsApp extends App {
     if (frameCount > 0) {
       const ppu = this.jsNes.getPpu()
       for (let i = 0; i < frameCount; ++i) {
-        ppu.clearVBlank()
         this.jsNes.update()
         this.updateAudio()
-        ppu.setHcount(240)
+        // ppu.setHcount(VBlank.START)
+        // ppu.setHcount(VBlank.NMI)
         ppu.setVBlank()
+        ppu.setHcount(VBlank.END)
       }
       this.jsScreenWnd.render()
 

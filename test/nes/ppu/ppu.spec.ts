@@ -3,7 +3,7 @@ import {PpuReg} from '../../../src/nes/ppu/types'
 
 describe('ppu', () => {
   it('Vram read is buffered', () => {
-    const ppu = new Ppu()
+    const ppu = new Ppu(() => {})
 
     ppu.write(PpuReg.CTRL, 0x00)
     ppu.read(PpuReg.STATUS)  // Reset latch
@@ -21,7 +21,7 @@ describe('ppu', () => {
   })
 
   it('Palet read is not buffered', () => {
-    const ppu = new Ppu()
+    const ppu = new Ppu(() => {})
 
     ppu.write(PpuReg.CTRL, 0x00)
     ppu.read(PpuReg.STATUS)  // Reset latch

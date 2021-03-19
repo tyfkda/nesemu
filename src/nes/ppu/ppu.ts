@@ -10,6 +10,7 @@ import {HEventType, HEvents, HStatusMgr} from './hevent'
 import {MirrorMode, PpuReg, PpuCtrlBit, PpuMaskBit, PpuStatusBit, OamElem,
         OamAttrBit} from './types'
 import {Util} from '../../util/util'
+import {VBlank} from '../const'
 
 const REGISTER_COUNT = 8
 const VRAM_SIZE = 0x4000
@@ -137,7 +138,7 @@ export class Ppu {
 
   private offscreen = new Uint8Array(Const.WIDTH * Const.HEIGHT)
 
-  constructor() {
+  constructor(private triggerNmi: () => void) {
     // `palet` is part of `vram`, and shares its content using ArrayBuffer.
     const vramBuffer = new ArrayBuffer(VRAM_SIZE)
     this.vram = new Uint8Array(vramBuffer)
@@ -358,13 +359,24 @@ export class Ppu {
       this.addHevent(HEventType.SCROLL_CURR, this.ppuAddr)
   }
 
-  public interruptEnable(): boolean {
-    return (this.regs[PpuReg.CTRL] & PpuCtrlBit.VINT_ENABLE) !== 0
-  }
-
   public setHcount(hcount: number): void {
     this.hcount = hcount
     this.checkSprite0Hit(hcount)
+
+    switch (hcount) {
+    case VBlank.START:
+      this.setVBlank()
+      break
+    case VBlank.NMI:
+      if ((this.regs[PpuReg.CTRL] & PpuCtrlBit.VINT_ENABLE) !== 0)
+        this.triggerNmi()
+      break
+    case VBlank.END:
+      this.clearVBlank()
+      break
+    default:
+      break
+    }
   }
 
   public render(pixels: Uint8Array | Uint8ClampedArray): void {
