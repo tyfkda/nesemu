@@ -1,4 +1,4 @@
-export default class KeyboardManager {
+export class KeyboardManager {
   private pressingKeys: {[key: string]: boolean} = {}
   private lastPressing: string | null = null
 

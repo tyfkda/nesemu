@@ -1,10 +1,10 @@
 import {Mapper020} from './mapper020'
-import Nes from '../nes'
+import {Nes} from '../nes'
 import {PrgBankController} from '../mapper/mapper'
 import {Address, Byte} from '../types'
 
 // Famicom Disk System
-export default class Fds implements PrgBankController {
+export class Fds implements PrgBankController {
   private mapper: Mapper020
 
   constructor(biosData: Uint8Array, private nes: Nes) {

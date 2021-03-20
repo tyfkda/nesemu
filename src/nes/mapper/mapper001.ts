@@ -2,7 +2,7 @@
 
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
-import Util from '../../util/util'
+import {Util} from '../../util/util'
 
 const kMirrorTable = [
   MirrorMode.SINGLE0,

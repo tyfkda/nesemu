@@ -1,9 +1,9 @@
-import DomUtil from '../util/dom_util'
-import WindowManager from './window_manager'
-import WndUtil from './wnd_util'
+import {DomUtil} from '../util/dom_util'
+import {WindowManager} from './window_manager'
+import {WndUtil} from './wnd_util'
 import {MenuItemInfo, WndEvent, Z_MENUBAR} from './types'
 
-export default class Wnd {
+export class Wnd {
   public static TITLEBAR_HEIGHT = 20
   public static MENUBAR_HEIGHT = 14
 

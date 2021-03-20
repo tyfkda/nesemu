@@ -1,4 +1,4 @@
-import Ppu from '../../../src/nes/ppu/ppu'
+import {Ppu} from '../../../src/nes/ppu/ppu'
 import {PpuReg} from '../../../src/nes/ppu/types'
 
 describe('ppu', () => {

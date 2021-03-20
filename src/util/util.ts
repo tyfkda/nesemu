@@ -10,7 +10,7 @@ const _atob = typeof atob !== 'undefined' ? atob : (function(str: string): strin
   return new Buffer(str, 'base64').toString('binary')
 })
 
-export default class Util {
+export class Util {
   public static hex(x: number, order = 2): string {
     const s = x.toString(16)
     const dif = s.length - order

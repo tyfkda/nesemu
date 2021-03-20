@@ -1,6 +1,6 @@
-import DomUtil from '../util/dom_util'
-import KeyboardManager from '../util/keyboard_manager'
-import Wnd from './wnd'
+import {DomUtil} from '../util/dom_util'
+import {KeyboardManager} from '../util/keyboard_manager'
+import {Wnd} from './wnd'
 import {WndEvent} from './types'
 
 import fscreen from 'fscreen'
@@ -11,7 +11,7 @@ function setWindowZIndex(wnd: Wnd, i: number, n: number): void {
   wnd.getRootNode().style.zIndex = String(BASE_PRIORITY + (n - 1 - i))
 }
 
-export default class WindowManager {
+export class WindowManager {
   private windows: Wnd[] = []
   private keyboardManager = new KeyboardManager()
 

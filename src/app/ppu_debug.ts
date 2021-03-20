@@ -1,4 +1,4 @@
-import Ppu, {getNameTable, getBgPatternTableAddress, getBgPat} from '../nes/ppu/ppu'
+import {Ppu, getNameTable, getBgPatternTableAddress, getBgPat} from '../nes/ppu/ppu'
 import {PpuReg, PpuCtrlBit} from '../nes/ppu/types'
 import {Const} from '../nes/const'
 import {kPaletColors} from '../nes/ppu/const'
@@ -27,7 +27,7 @@ function render8x8Chip(
   }
 }
 
-export default class PpuDebug {
+export class PpuDebug {
   public static renderNameTable1(ppu: Ppu, pixels: Uint8ClampedArray, lineWidth: number,
                                  startX: number, startY: number, page: number): void
   {

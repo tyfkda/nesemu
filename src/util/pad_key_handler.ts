@@ -1,5 +1,5 @@
 import {PadValue} from '../nes/apu'
-import KeyboardManager from './keyboard_manager'
+import {KeyboardManager} from './keyboard_manager'
 
 const kKeyTable = [
   [
@@ -24,7 +24,7 @@ const kKeyTable = [
   ],
 ]
 
-export default class PadKeyHandler {
+export class PadKeyHandler {
   private status = new Uint8Array(2)
 
   public static getMapping(padNo: number): {key: string; bit: PadValue}[] {

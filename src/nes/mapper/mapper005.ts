@@ -3,7 +3,7 @@
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {PpuReg, PpuMaskBit} from '../ppu/types'
-import Util from '../../util/util'
+import {Util} from '../../util/util'
 
 const VRETURN = 262
 

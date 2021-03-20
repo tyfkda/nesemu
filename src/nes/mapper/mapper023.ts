@@ -4,7 +4,7 @@
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
-import Util from '../../util/util'
+import {Util} from '../../util/util'
 
 const IRQ_ENABLE_AFTER = 1 << 0
 const IRQ_ENABLE = 1 << 1

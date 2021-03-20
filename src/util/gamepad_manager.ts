@@ -1,4 +1,4 @@
-import StorageUtil from '../util/storage_util'
+import {StorageUtil} from '../util/storage_util'
 
 // Type
 const enum Type {
@@ -11,7 +11,7 @@ const kKeyTable: string[] = ['A', 'B', 'SELECT', 'START', 'U', 'D', 'L', 'R']
 // ================================================
 // Manager.
 
-export default class GamepadManager {
+export class GamepadManager {
   public static AXIS_THRESHOLD = 0.5
 
   private static initialized = false

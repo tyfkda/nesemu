@@ -3,7 +3,7 @@
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode, PpuReg, PpuMaskBit} from '../ppu/types'
-import Util from '../../util/util'
+import {Util} from '../../util/util'
 
 export class Mapper004 extends Mapper {
   protected regs = new Uint8Array(8)

@@ -1,4 +1,4 @@
-export default class MemoryStorage extends Storage {
+export class MemoryStorage extends Storage {
   private storage: {[key: string]: string} = {}
 
   constructor() {

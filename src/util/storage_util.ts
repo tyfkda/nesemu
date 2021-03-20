@@ -1,5 +1,5 @@
 // Local storage
-import MemoryStorage from './memory_storage'
+import {MemoryStorage} from './memory_storage'
 
 let storage: Storage = window.localStorage
 let keyPrefix = ''
@@ -22,7 +22,7 @@ function getKey(key: string): string {
   return `${keyPrefix}${key}`
 }
 
-export default class StorageUtil {
+export class StorageUtil {
   // Set key prefix.
   public static setKeyPrefix(prefix: string): void {
     keyPrefix = prefix

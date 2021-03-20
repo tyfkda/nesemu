@@ -1,15 +1,15 @@
-import Nes from '../nes/nes'
+import {Nes} from '../nes/nes'
 
 import {AppEvent} from './app_event'
-import AudioManager from '../util/audio_manager'
+import {AudioManager} from '../util/audio_manager'
 import {INoiseChannel, IPulseChannel, WaveType} from '../nes/apu'
-import DomUtil from '../util/dom_util'
-import Fds from '../nes/fds/fds'
-import ScreenWnd from './screen_wnd'
-import StorageUtil from '../util/storage_util'
-import Util from '../util/util'
-import WindowManager from '../wnd/window_manager'
-import Wnd from '../wnd/wnd'
+import {DomUtil} from '../util/dom_util'
+import {Fds} from '../nes/fds/fds'
+import {ScreenWnd} from './screen_wnd'
+import {StorageUtil} from '../util/storage_util'
+import {Util} from '../util/util'
+import {WindowManager} from '../wnd/window_manager'
+import {Wnd} from '../wnd/wnd'
 
 import * as Pubsub from '../util/pubsub'
 
@@ -22,7 +22,7 @@ export class Option {
   public onClosed?: (app: App) => void
 }
 
-export default class App {
+export class App {
   protected destroying = false
   protected isPaused = false
   protected nes: Nes

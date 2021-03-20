@@ -9,7 +9,7 @@ import {kPaletColors, kStaggered, kFlipXBits} from './const'
 import {HEventType, HEvents, HStatusMgr} from './hevent'
 import {MirrorMode, PpuReg, PpuCtrlBit, PpuMaskBit, PpuStatusBit, OamElem,
         OamAttrBit} from './types'
-import Util from '../../util/util'
+import {Util} from '../../util/util'
 
 const REGISTER_COUNT = 8
 const VRAM_SIZE = 0x4000
@@ -131,7 +131,7 @@ function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8Cl
   }
 }
 
-export default class Ppu {
+export class Ppu {
   public suppressSpriteFlicker = true
 
   private chrData = new Uint8Array(0)

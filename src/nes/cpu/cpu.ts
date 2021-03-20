@@ -1,8 +1,8 @@
 // CPU: MOS 6502
 
 import {Addressing, OpType, kInstTable} from './inst'
-import IBus from './ibus'
-import Util from '../../util/util'
+import {IBus} from './ibus'
+import {Util} from '../../util/util'
 import {Address, Byte, Word} from '../types'
 
 export const enum IrqType {
@@ -36,7 +36,7 @@ interface Regs {
   pc: Address
 }
 
-export default class Cpu {
+export class Cpu {
   private a: Byte  // A register
   private x: Byte  // X register
   private y: Byte  // Y register

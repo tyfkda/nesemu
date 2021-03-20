@@ -1,7 +1,7 @@
-import Bus from '../bus'
+import {Bus} from '../bus'
 import {Channel, WaveType} from '../apu'
-import Cpu from '../cpu/cpu'
-import Ppu from '../ppu/ppu'
+import {Cpu} from '../cpu/cpu'
+import {Ppu} from '../ppu/ppu'
 import {Address, Byte} from '../types'
 
 export interface PrgBankController {

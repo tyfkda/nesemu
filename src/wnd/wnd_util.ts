@@ -1,9 +1,9 @@
-import DomUtil from '../util/dom_util'
-import Util from '../util/util'
+import {DomUtil} from '../util/dom_util'
+import {Util} from '../util/util'
 import {MenuItemInfo, WndEvent, Z_MENU_SUBITEM} from './types'
-import Wnd from './wnd'
+import {Wnd} from './wnd'
 
-export default class WndUtil {
+export class WndUtil {
   public static getOffsetRect(
     parent: HTMLElement, target: HTMLElement,
   ): {left: number; top: number; right: number; bottom: number} {

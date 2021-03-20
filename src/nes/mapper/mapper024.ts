@@ -5,7 +5,7 @@ import {Channel, IPulseChannel, WaveType} from '../../nes/apu'
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
-import Util from '../../util/util'
+import {Util} from '../../util/util'
 import {CPU_HZ, VBlank} from '../const'
 
 const IRQ_ENABLE_AFTER = 1 << 0

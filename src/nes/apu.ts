@@ -1,7 +1,7 @@
 // APU: Audio Processing Unit
 
 import {Address, Byte} from './types'
-import Util from '../util/util'
+import {Util} from '../util/util'
 import {CPU_HZ, VBlank} from './const'
 
 export const enum PadBit {

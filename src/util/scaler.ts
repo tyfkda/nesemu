@@ -1,5 +1,5 @@
-import DomUtil from '../util/dom_util'
-import Nes from '../nes/nes'
+import {DomUtil} from '../util/dom_util'
+import {Nes} from '../nes/nes'
 
 const WIDTH = 256
 const HEIGHT = 240

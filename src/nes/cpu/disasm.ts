@@ -1,6 +1,6 @@
 import {Addressing, Instruction, OpType, kInstTable, kIllegalInstruction} from './inst'
-import IBus from './ibus'
-import Util from '../../util/util'
+import {IBus} from './ibus'
+import {Util} from '../../util/util'
 
 export const kOpcode: {[key: number]: string} = {
   [OpType.LDA]: 'LDA',
@@ -71,7 +71,7 @@ export const kOpcode: {[key: number]: string} = {
   [OpType.NOP]: 'NOP',
 }
 
-export default function disassemble(
+export function disassemble(
   inst: Instruction, mem: Uint8Array, start: number, pc: number): string
 {
   let operand = ''

@@ -3,7 +3,7 @@
 
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
-import Util from '../../util/util'
+import {Util} from '../../util/util'
 
 export class Mapper073 extends Mapper {
   private ram = new Uint8Array(0x2000)

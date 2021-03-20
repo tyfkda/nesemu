@@ -1,4 +1,4 @@
-export default class DomUtil {
+export class DomUtil {
   public static clearCanvas(canvas: HTMLCanvasElement): void {
     const context = canvas.getContext('2d')
     if (context == null)

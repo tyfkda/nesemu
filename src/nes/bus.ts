@@ -1,13 +1,13 @@
 import {Address, Byte} from './types'
-import IBus from './cpu/ibus'
-import Util from '../util/util'
+import {IBus} from './cpu/ibus'
+import {Util} from '../util/util'
 
 const BLOCK_SIZE = 0x2000
 
 type Reader = (adr: Address) => Byte
 type Writer = (adr: Address, value: Byte) => void
 
-export default class Bus implements IBus {
+export class Bus implements IBus {
   private readerTable = new Array<Reader>(0x10000 / BLOCK_SIZE)
   private writerTable = new Array<Writer>(0x10000 / BLOCK_SIZE)
   private readErrorReported = false

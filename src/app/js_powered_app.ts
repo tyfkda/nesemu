@@ -1,16 +1,16 @@
 // JS-powered NES
 // Run JavaScript code, instead of 6502 CPU.
 
-import App, {Option} from './app'
+import {App, Option} from './app'
 import {AppEvent} from './app_event'
-import AudioManager from '../util/audio_manager'
-import Bus from '../nes/bus'
-import DomUtil from '../util/dom_util'
-import Nes from '../nes/nes'
-import Ppu from '../nes/ppu/ppu'
-import ScreenWnd from './screen_wnd'
-import Util from '../util/util'
-import WindowManager from '../wnd/window_manager'
+import {AudioManager} from '../util/audio_manager'
+import {Bus} from '../nes/bus'
+import {DomUtil} from '../util/dom_util'
+import {Nes} from '../nes/nes'
+import {Ppu} from '../nes/ppu/ppu'
+import {ScreenWnd} from './screen_wnd'
+import {Util} from '../util/util'
+import {WindowManager} from '../wnd/window_manager'
 
 const WIDTH = 256
 const HEIGHT = 240
@@ -186,7 +186,7 @@ class JsScreenWnd extends ScreenWnd {
   }
 }
 
-export default class JsApp extends App {
+export class JsApp extends App {
   private jsNes: JsNes
   private jsScreenWnd: JsScreenWnd
   private leftTime = 0

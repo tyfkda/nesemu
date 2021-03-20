@@ -1,4 +1,4 @@
-import Util from '../../src/util/util'
+import {Util} from '../../src/util/util'
 
 describe('util', () => {
   it('hex', () => {
