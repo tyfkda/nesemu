@@ -275,7 +275,7 @@ class PulseChannel extends Channel implements IPulseChannel {
       l = 0
       this.stopped = true
     } else {
-      l -= 4
+      l -= 2
       if (l < 0)
         l = 0
     }
