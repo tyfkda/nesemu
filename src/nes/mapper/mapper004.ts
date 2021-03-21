@@ -225,7 +225,7 @@ export class Mapper088 extends Mapper004 {
   }
 }
 
-const kMirrorModeTable95 = [
+const kMirrorModeTable95: MirrorMode[] = [
   MirrorMode.SINGLE0, MirrorMode.REVERSE_HORZ,
   MirrorMode.HORZ, MirrorMode.SINGLE1,
 ]

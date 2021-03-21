@@ -10,7 +10,7 @@ const IRQ_ENABLE_AFTER = 1 << 0
 const IRQ_ENABLE = 1 << 1
 const IRQ_MODE = 1 << 2
 
-const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
+const kMirrorTable: MirrorMode[] = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
 class Mapper023Base extends Mapper {
   private ram = new Uint8Array(0x2000)

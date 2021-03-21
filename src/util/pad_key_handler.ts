@@ -2,7 +2,7 @@ import {PadValue} from '../nes/apu'
 import {KeyboardManager} from './keyboard_manager'
 import {StorageUtil} from '../util/storage_util'
 
-const kKeyTable = [
+const kKeyTable: {key: string, bit: number}[][] = [
   [
     {key: 'KeyX',        bit: PadValue.A},
     {key: 'KeyZ',        bit: PadValue.B},

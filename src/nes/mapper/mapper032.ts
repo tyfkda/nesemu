@@ -3,7 +3,7 @@
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
 
-const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ]
+const kMirrorTable: MirrorMode[] = [MirrorMode.VERT, MirrorMode.HORZ]
 
 export class Mapper032 extends Mapper {
   public static create(options: MapperOptions): Mapper {
@@ -17,7 +17,7 @@ export class Mapper032 extends Mapper {
     const maxPrg = (options.prgSize >> BANK_BIT) - 1
     const kLast2Bank = maxPrg - 1
 
-    const prgReg = [0, 1 << BANK_BIT]
+    const prgReg: number[] = [0, 1 << BANK_BIT]
     let prgMode = 0
 
     const setPrgBank = () => {

@@ -53,7 +53,7 @@ export interface Instruction {
   cycle: number
 }
 
-const kTable = [
+const kTable: [number, OpType, Addressing, number, number][] = [
   [0xea, OpType.NOP, Addressing.IMPLIED, 1, 2],
   // LDA
   [0xa9, OpType.LDA, Addressing.IMMEDIATE, 2, 2],

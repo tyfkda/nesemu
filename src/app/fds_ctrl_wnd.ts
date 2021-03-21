@@ -48,7 +48,7 @@ export class FdsCtrlWnd extends Wnd {
   }
 
   private createOptions(select: HTMLSelectElement, sideCount: number): void {
-    const side = ['A', 'B']
+    const side: string[] = ['A', 'B']
     for (let i = 0; i < sideCount; ++i) {
       const option = document.createElement('option')
       option.innerText = `${((i / 2) | 0) + 1}-${side[i & 1]}`

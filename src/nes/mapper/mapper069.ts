@@ -3,7 +3,7 @@
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
 
-const kMirrorTable = [
+const kMirrorTable: MirrorMode[] = [
   MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1,
 ]
 

@@ -79,15 +79,15 @@ export const kWaveTypes: WaveType[] = [
   WaveType.DMC,
 ]
 
-const kLengthTable = [
+const kLengthTable: number[] = [
   0x0a, 0xfe, 0x14, 0x02, 0x28, 0x04, 0x50, 0x06, 0xa0, 0x08, 0x3c, 0x0a, 0x0e, 0x0c, 0x1a, 0x0e,
   0x0c, 0x10, 0x18, 0x12, 0x30, 0x14, 0x60, 0x16, 0xc0, 0x18, 0x48, 0x1a, 0x10, 0x1c, 0x20, 0x1e,
 ]
 
-const kNoiseFrequencies =
+const kNoiseFrequencies: number[] =
       [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068]
 
-const kPulseDutyRatio = [0.125, 0.25, 0.5, -0.25]
+const kPulseDutyRatio: number[] = [0.125, 0.25, 0.5, -0.25]
 
 // ================================================================
 // GamePad

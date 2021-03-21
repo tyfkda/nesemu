@@ -213,7 +213,7 @@ class Main {
       this.apps.push(jsApp)
     }
 
-    const kTargetExts = ['nes', 'bin', 'fds', 'sav']
+    const kTargetExts: string[] = ['nes', 'bin', 'fds', 'sav']
 
     // Unzip and flatten.
     const promises = new Array<Promise<any>>()

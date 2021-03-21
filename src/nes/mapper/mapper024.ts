@@ -18,9 +18,9 @@ const FREQCTL_HALT = 1 << 0
 const FREQCTL_16X  = 1 << 1
 const FREQCTL_256X = 1 << 2
 
-const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
+const kMirrorTable: MirrorMode[] = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
-const kChrBankTable = [
+const kChrBankTable: number[][] = [
   [0, 1, 2, 3, 4, 5, 6, 7],
   [0, 0, 1, 1, 2, 2, 3, 3],
   [0, 1, 2, 3, 4, 4, 5, 5],

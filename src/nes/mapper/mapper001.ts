@@ -19,7 +19,7 @@ export class Mapper001 extends Mapper {
   private prgBankMode = 3
   private prgReg = 0
   private chrBank4k = true
-  private chrBank = [0 << 2, 1 << 2]
+  private chrBank: number[] = [0 << 2, 1 << 2]
 
   public static create(options: MapperOptions): Mapper {
     return new Mapper001(options)

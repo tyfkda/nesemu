@@ -66,7 +66,7 @@ export class RegisterWnd extends Wnd {
     const root = document.createElement('div')
     root.className = 'fixed-font'
 
-    const kElems = [
+    const kElems: {name: string}[] = [
       {name: 'PC'},
       {name: 'A'},
       {name: 'X'},
