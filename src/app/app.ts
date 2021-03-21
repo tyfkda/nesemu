@@ -215,7 +215,7 @@ export class App {
       this.muteAudio()
       break
     case AppEvent.Type.STEP:
-      this.nes.step(0)
+      this.nes.runMilliseconds(0)
       break
     case AppEvent.Type.RESET:
       this.nes.reset()

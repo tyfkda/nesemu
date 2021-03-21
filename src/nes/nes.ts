@@ -153,28 +153,22 @@ export class Nes implements PrgBankController {
   }
 
   public runMilliseconds(msec: number): number {
-    const cycles = (msec * (CPU_HZ / 1000)) | 0
+    let leftCycles = (msec * (CPU_HZ / 1000)) | 0
     try {
-      let leftCycles = cycles
-      while (leftCycles > 0) {
-        const c = this.step(leftCycles)
-        leftCycles -= c
+      do {
+        const cycle = this.cpu.step()
+        leftCycles -= cycle
+        this.tryHblankEvent(cycle, leftCycles)
         if (this.cpu.isPaused()) {  // Hit break point.
           this.breakPointCallback()
           return 0
         }
-      }
-      return -cycles
+      } while (leftCycles > 0)
+      return -leftCycles
     } catch (e) {
       this.cpu.pause(true)
       throw e
     }
-  }
-
-  public step(leftCycles: number): number {
-    const cycle = this.cpu.step()
-    this.cycleCount = this.tryHblankEvent(this.cycleCount, cycle, leftCycles)
-    return cycle
   }
 
   public getChannelWaveTypes(): WaveType[] {
@@ -265,13 +259,13 @@ export class Nes implements PrgBankController {
     bus.setWriteMemory(0x0000, 0x1fff, (adr, value) => { this.ram[adr & (RAM_SIZE - 1)] = value })
   }
 
-  private tryHblankEvent(cycleCount: number, cycle: number, leftCycles: number): number {
-    let cycleCount2 = cycleCount + cycle
-    const beforeHcount = getHblankCount(cycleCount)
-    let hcount = getHblankCount(cycleCount2)
-    if (hcount > beforeHcount) {
-      if (hcount === VBlank.VRETURN) {
-        cycleCount2 -= (VBlank.VRETURN * 341 / 3) | 0
+  private tryHblankEvent(cycle: number, leftCycles: number): void {
+    let nextCycleCount = this.cycleCount + cycle
+    const prevHcount = getHblankCount(this.cycleCount)
+    let hcount = getHblankCount(nextCycleCount)
+    if (hcount > prevHcount) {
+      if (hcount >= VBlank.VRETURN) {
+        nextCycleCount -= VCYCLE
         hcount = 0
       }
 
@@ -295,7 +289,7 @@ export class Nes implements PrgBankController {
 
       this.mapper.onHblank(hcount)
     }
-    return cycleCount2
+    this.cycleCount = nextCycleCount
   }
 
   private interruptVBlank(): void {
