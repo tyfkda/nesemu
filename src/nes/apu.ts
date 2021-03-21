@@ -13,6 +13,9 @@ export const enum PadBit {
   D = 5,
   L = 6,
   R = 7,
+
+  REPEAT_A = 8,
+  REPEAT_B = 9,
 }
 
 export const enum PadValue {
@@ -24,6 +27,9 @@ export const enum PadValue {
   D = 1 << PadBit.D,
   L = 1 << PadBit.L,
   R = 1 << PadBit.R,
+
+  REPEAT_A = 1 << PadBit.REPEAT_A,
+  REPEAT_B = 1 << PadBit.REPEAT_B,
 }
 
 export const enum WaveType {
@@ -96,7 +102,7 @@ class GamePad {
       status &= ~LR
     if ((status & UD) === UD)
       status &= ~UD
-    this.status[no] = status
+    this.status[no] = status & 0xff
   }
 
   public latch(): void {

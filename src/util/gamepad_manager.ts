@@ -18,12 +18,14 @@ export class GamepadManager {
   private static padSettings: {type: Type; index: number; direction?: number}[] = [
     {type: Type.BUTTON, index: 0},  // A
     {type: Type.BUTTON, index: 1},  // B
-    {type: Type.BUTTON, index: 2},  // SELECT
-    {type: Type.BUTTON, index: 3},  // START
+    {type: Type.BUTTON, index: 4},  // SELECT
+    {type: Type.BUTTON, index: 5},  // START
     {type: Type.AXIS, index: 1, direction: -1},  // U
     {type: Type.AXIS, index: 1, direction:  1},  // D
     {type: Type.AXIS, index: 0, direction: -1},  // L
     {type: Type.AXIS, index: 0, direction:  1},  // R
+    {type: Type.BUTTON, index: 2},  // REPEAT A
+    {type: Type.BUTTON, index: 3},  // REPEAT B
   ]
 
   public static setUp(): void {

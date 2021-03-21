@@ -22,22 +22,26 @@ interface GamepadButtonDef {
 }
 
 const kGamepadButtons: GamepadButtonDef[] = [
-  {x: 175, y:  40, padbit: PadBit.A, opt: {type: 'round'}},
-  {x: 130, y:  40, padbit: PadBit.B, opt: {type: 'round'}},
+  {x: 175, y:  55, padbit: PadBit.A, opt: {type: 'round'}},
+  {x: 130, y:  55, padbit: PadBit.B, opt: {type: 'round'}},
   {x:  50, y: 110, padbit: PadBit.SELECT, opt: {width: 60, height: 20}},
   {x: 120, y: 110, padbit: PadBit.START, opt: {width: 60, height: 20}},
   {x:  40, y:  10, padbit: PadBit.U},
   {x:  40, y:  70, padbit: PadBit.D},
   {x:  10, y:  40, padbit: PadBit.L},
   {x:  70, y:  40, padbit: PadBit.R},
+
+  {x: 175, y: 15, padbit: PadBit.REPEAT_A, opt: {type: 'round'}},
+  {x: 130, y: 15, padbit: PadBit.REPEAT_B, opt: {type: 'round'}},
 ]
 
 abstract class GamepadBaseWnd extends Wnd {
-  private buttons: HTMLElement[]
+  protected content: HTMLElement
+  protected buttons: HTMLElement[]
   private selectedButton: HTMLElement | null = null
 
-  private static createButton(parent: HTMLElement, x: number, y: number, name: string,
-                              opt: GamepadButtonOption = {}): HTMLElement
+  protected static createButton(parent: HTMLElement, x: number, y: number, name: string,
+                                opt: GamepadButtonOption = {}): HTMLElement
   {
     const btn = document.createElement('div')
     btn.className = 'gamepad-btn'
@@ -67,6 +71,7 @@ abstract class GamepadBaseWnd extends Wnd {
       height: '150px',
     })
     this.setContent(content)
+    this.content = content
 
     content.addEventListener('click', () => {
       this.setSelectedButton(null)
@@ -133,7 +138,7 @@ abstract class GamepadBaseWnd extends Wnd {
     }
   }
 
-  private setSelectedButton(btn: HTMLElement | null): void {
+  protected setSelectedButton(btn: HTMLElement | null): void {
     if (this.selectedButton != null) {
       this.selectedButton.classList.remove('selected')
     }
@@ -161,6 +166,9 @@ const kGamepadLabels: string[] = [
   '&darr;',  // PadBit.D
   '&larr;',  // PadBit.L
   '&rarr;',  // PadBit.R
+
+  'X', // PadBit.REPEAT_A
+  'Y', // PadBit.REPEAT_B
 ]
 
 export class GamepadWnd extends GamepadBaseWnd {

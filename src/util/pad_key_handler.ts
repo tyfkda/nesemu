@@ -12,10 +12,13 @@ const kKeyTable = [
     {key: 'ArrowDown',   bit: PadValue.D},
     {key: 'ArrowLeft',   bit: PadValue.L},
     {key: 'ArrowRight',  bit: PadValue.R},
+
+    {key: 'KeyS',        bit: PadValue.REPEAT_A},
+    {key: 'KeyA',        bit: PadValue.REPEAT_B},
   ],
   [
-    {key: 'KeyW',      bit: PadValue.A},
-    {key: 'KeyQ',      bit: PadValue.B},
+    {key: 'KeyH',      bit: PadValue.A},
+    {key: 'KeyG',      bit: PadValue.B},
     {key: 'KeyO',      bit: PadValue.SELECT},
     {key: 'KeyP',      bit: PadValue.START},
     {key: 'KeyI',      bit: PadValue.U},
@@ -26,7 +29,7 @@ const kKeyTable = [
 ]
 
 export class PadKeyHandler {
-  private status = new Uint8Array(2)
+  private status = new Uint16Array(2)
 
   public static setUp(): void {
     PadKeyHandler.loadSetting()
@@ -49,8 +52,9 @@ export class PadKeyHandler {
       const table = kKeyTable[padNo]
       let state = 0
       for (let i = 0; i < table.length; ++i) {
-        if (keyboardManager.getKeyPressing(table[i].key))
-          state |= table[i].bit
+        const elem = table[i]
+        if (keyboardManager.getKeyPressing(elem.key))
+          state |= elem.bit
       }
       this.status[padNo] = state
     }

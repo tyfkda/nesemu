@@ -9,6 +9,7 @@ import {Scaler, NearestNeighborScaler, ScanlineScaler, EpxScaler} from '../util/
 
 import {App} from './app'
 import {AppEvent} from './app_event'
+import {PadBit, PadValue} from '../nes/apu'
 import {PadKeyHandler} from '../util/pad_key_handler'
 import {GamepadManager} from '../util/gamepad_manager'
 import {RegisterWnd, TraceWnd, ControlWnd} from './debug_wnd'
@@ -92,6 +93,7 @@ export class ScreenWnd extends Wnd {
   private padKeyHandler = new PadKeyHandler()
   private timeScale = 1
   private fullscreenResizeFunc: () => void
+  private repeatBtnFrame = false
 
   protected wndMap = new Array<Wnd | null>()
 
@@ -223,6 +225,8 @@ export class ScreenWnd extends Wnd {
         this.stream.triggerStartCalc()
         this.stream.triggerUpdate(elapsed)
         this.stream.triggerEndCalc()
+
+        this.repeatBtnFrame = !this.repeatBtnFrame
       }
       break
     case WndEvent.FOCUS:
@@ -259,7 +263,10 @@ export class ScreenWnd extends Wnd {
   public getPadStatus(padNo: number): number {
     if (!this.isTop() || this.wndMgr.isBlur())
       return 0
-    return this.padKeyHandler.getStatus(padNo) | GamepadManager.getState(padNo)
+    let state = this.padKeyHandler.getStatus(padNo) | GamepadManager.getState(padNo)
+    if (this.repeatBtnFrame)
+      state |= (state & (PadValue.REPEAT_A | PadValue.REPEAT_B)) >> (PadBit.REPEAT_A - PadBit.A)
+    return state
   }
 
   public setFullscreen(callback?: (isFullscreen: boolean) => boolean): boolean {
