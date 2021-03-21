@@ -199,7 +199,7 @@ export class JsApp extends App {
       this.jsScreenWnd.setTitle(option.title as string)
 
     this.subscription = this.stream
-      .subscribe((type, param?) => this.handleAppEvent(type, param))
+      .subscribe(this.handleAppEvent.bind(this))
 
     this.nes = this.jsNes
     this.screenWnd = this.jsScreenWnd

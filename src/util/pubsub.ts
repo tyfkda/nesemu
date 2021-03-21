@@ -31,7 +31,7 @@ export class Subject<Type> {
     }
   }
 
-  public next(type: Type, param?: any): void {
+  protected next(type: Type, param?: any): void {
     ++this.nestCount
     for (const s of this.subscribers)
       if (s != null)

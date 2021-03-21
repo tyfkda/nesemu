@@ -49,7 +49,7 @@ export class App {
     this.nes.setBreakPointCallback(() => this.onBreakPoint())
 
     this.subscription = this.stream
-      .subscribe((type, param?) => this.handleAppEvent(type, param))
+      .subscribe(this.handleAppEvent.bind(this))
 
     const screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
     this.screenWnd = screenWnd
