@@ -56,7 +56,7 @@ export class NoiseSampler {
     const volume = this.volume
     let timer = this.timer | 0
     let bits = this.bits | 0
-    let v = (1 - (bits & 1)) * volume
+    let v = (1 - ((bits & 1) << 1)) * volume
 
     const len = buffer.length
     for (let i = 0; i < len; ++i) {
@@ -67,7 +67,7 @@ export class NoiseSampler {
           bits = ((bits >> 1) | (x << 14)) | 0
           timer += period
         } while (timer < 0)
-        v = (1 - (bits & 1)) * volume
+        v = (1 - ((bits & 1) << 1)) * volume
       }
       buffer[i] = v
     }
