@@ -2,6 +2,7 @@ import {App, Option} from './app/app'
 import {AboutWnd, EqualizerWnd, GlobalPaletWnd, VolumeWnd} from './app/other_wnd'
 import {DomUtil} from './util/dom_util'
 import {JsApp} from './app/js_powered_app'
+import {PadKeyHandler} from './util/pad_key_handler'
 import {GamepadManager} from './util/gamepad_manager'
 import {KeyConfigWnd, GamepadWnd} from './app/key_config_wnd'
 import {StorageUtil} from './util/storage_util'
@@ -440,6 +441,7 @@ class Main {
 
 window.addEventListener('load', () => {
   StorageUtil.setKeyPrefix('nesemu:')
+  PadKeyHandler.setUp()
   GamepadManager.setUp()
 
   const root = document.getElementById('nesroot')

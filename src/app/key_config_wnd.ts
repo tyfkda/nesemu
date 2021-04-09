@@ -2,7 +2,6 @@ import {DomUtil} from '../util/dom_util'
 import {GamepadManager} from '../util/gamepad_manager'
 import {PadBit} from '../nes/apu'
 import {PadKeyHandler} from '../util/pad_key_handler'
-import {StorageUtil} from '../util/storage_util'
 import {WindowManager} from '../wnd/window_manager'
 import {Wnd} from '../wnd/wnd'
 import {WndEvent} from '../wnd/types'
@@ -252,35 +251,6 @@ const kKeyLabels: {[key: string]: string} = (() => {
 })()
 
 export class KeyConfigWnd extends GamepadBaseWnd {
-  public static loadSetting(): void {
-    const data = StorageUtil.getObject('keymap', null)
-    if (Array.isArray(data)) {
-      for (let padNo = 0; padNo < 2; ++padNo) {
-        if (padNo >= data.length || !Array.isArray(data[padNo]))
-          break
-        const table = PadKeyHandler.getMapping(padNo)
-        for (let i = 0; i < data[padNo].length; ++i) {
-          const index = table.findIndex(t => t.bit === 1 << i)
-          if (index >= 0)
-            table[index].key = data[padNo][i]
-        }
-      }
-    }
-  }
-
-  private static saveSetting(): void {
-    const data = new Array<(string | null)[]>(2)
-    for (let padNo = 0; padNo < 2; ++padNo) {
-      const table = PadKeyHandler.getMapping(padNo)
-      const mapping: (string | null)[] = [...Array(8).keys()].map(i => {
-        const index = table.findIndex(t => t.bit === 1 << i)
-        return index >= 0 ? table[index].key : null
-      })
-      data[padNo] = mapping
-    }
-    StorageUtil.putObject('keymap', data)
-  }
-
   public constructor(wndMgr: WindowManager, onClose?: () => void) {
     super(wndMgr, 'Key Config', kGamepadLabels, onClose)
     this.updateLabels()
@@ -313,7 +283,7 @@ export class KeyConfigWnd extends GamepadBaseWnd {
       if (index >= 0) {
         table[index].key = key
         this.updateLabels()
-        KeyConfigWnd.saveSetting()
+        PadKeyHandler.saveSetting()
         return true
       }
     }

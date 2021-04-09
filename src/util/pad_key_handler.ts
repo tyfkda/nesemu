@@ -1,5 +1,6 @@
 import {PadValue} from '../nes/apu'
 import {KeyboardManager} from './keyboard_manager'
+import {StorageUtil} from '../util/storage_util'
 
 const kKeyTable = [
   [
@@ -27,6 +28,10 @@ const kKeyTable = [
 export class PadKeyHandler {
   private status = new Uint8Array(2)
 
+  public static setUp(): void {
+    PadKeyHandler.loadSetting()
+  }
+
   public static getMapping(padNo: number): {key: string; bit: PadValue}[] {
     return kKeyTable[padNo]
   }
@@ -48,6 +53,35 @@ export class PadKeyHandler {
           state |= table[i].bit
       }
       this.status[padNo] = state
+    }
+  }
+
+  public static saveSetting(): void {
+    const data = new Array<(string | null)[]>(2)
+    for (let padNo = 0; padNo < 2; ++padNo) {
+      const table = PadKeyHandler.getMapping(padNo)
+      const mapping: (string | null)[] = [...Array(table.length).keys()].map(i => {
+        const index = table.findIndex(t => t.bit === 1 << i)
+        return index >= 0 ? table[index].key : null
+      })
+      data[padNo] = mapping
+    }
+    StorageUtil.putObject('keymap', data)
+  }
+
+  private static loadSetting(): void {
+    const data = StorageUtil.getObject('keymap', null)
+    if (Array.isArray(data)) {
+      for (let padNo = 0; padNo < 2; ++padNo) {
+        if (padNo >= data.length || !Array.isArray(data[padNo]))
+          break
+        const table = PadKeyHandler.getMapping(padNo)
+        for (let i = 0; i < data[padNo].length; ++i) {
+          const index = table.findIndex(t => t.bit === 1 << i)
+          if (index >= 0)
+            table[index].key = data[padNo][i]
+        }
+      }
     }
   }
 }
