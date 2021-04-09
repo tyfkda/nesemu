@@ -802,8 +802,10 @@ export class VolumeWnd extends Wnd {
 
     let dragging = false
 
-    container.addEventListener('mousedown', event => {
-      if (event.button !== 0 || dragging)
+    const onDown = event => {
+      if (dragging ||
+          (event.type === 'mousedown' && event.button !== 0) ||
+          (event.type === 'touchstart' && event.changedTouches[0].identifier !== 0))
         return
       dragging = true
       const sliderHeight = (slider.parentNode as HTMLElement).getBoundingClientRect().height
@@ -825,7 +827,9 @@ export class VolumeWnd extends Wnd {
         },
       })
       updateSlider(event)
-    })
+    }
+    container.addEventListener('mousedown', onDown)
+    container.addEventListener('touchstart', onDown)
 
     // Set initial slider height.
     slider.style.height = `${Math.round(VolumeWnd.volume * (120 - 3 * 2))}px`

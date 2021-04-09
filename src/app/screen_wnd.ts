@@ -68,6 +68,17 @@ function fitAspectRatio(width: number, height: number, ratio: number): [number, 
   return [width, height]
 }
 
+function maxSize(wndMgr: WindowManager, overscan: boolean): {rootRect: DOMRect, width: number, height: number} {
+  const rootRect = wndMgr.getRootClientRect()
+  const maxWidth = rootRect.width - 2  // -2 for border size
+  const maxHeight = rootRect.height - Wnd.TITLEBAR_HEIGHT - Wnd.MENUBAR_HEIGHT - 2
+
+  const w = Math.round(WIDTH - (overscan ? HEDGE * 2 : 0))
+  const h = Math.round(HEIGHT - (overscan ? VEDGE * 2 : 0))
+  const [width, height] = fitAspectRatio(maxWidth, maxHeight, w / h)
+  return {rootRect, width, height}
+}
+
 export class ScreenWnd extends Wnd {
   protected subscription: Pubsub.Subscription
   private fullscreenBase: HTMLElement
@@ -132,6 +143,13 @@ export class ScreenWnd extends Wnd {
     this.contentWidth = (WIDTH - HEDGE * 2) * 2
     this.contentHeight = (HEIGHT - VEDGE * 2) * 2
     this.updateContentSize(this.contentWidth, this.contentHeight)
+
+    {
+      const {width, height} = maxSize(this.wndMgr, this.overscan)
+      if (width < (WIDTH - HEDGE * 2) * 2) {
+        this.setClientSize(width, height)
+      }
+    }
 
     this.fullscreenResizeFunc = () => {
       const bounding = document.body.getBoundingClientRect()
@@ -508,18 +526,9 @@ export class ScreenWnd extends Wnd {
   }
 
   protected maximize(): void {
-    const rootRect = this.wndMgr.getRootClientRect()
-    const winWidth = rootRect.width
-    const winHeight = rootRect.height
-    const maxWidth = winWidth - 2  // -2 for border size
-    const maxHeight = winHeight - Wnd.TITLEBAR_HEIGHT - Wnd.MENUBAR_HEIGHT - 2
-
-    const w = Math.round(WIDTH - (this.overscan ? HEDGE * 2 : 0))
-    const h = Math.round(HEIGHT - (this.overscan ? VEDGE * 2 : 0))
-    const [width, height] = fitAspectRatio(maxWidth, maxHeight, w / h)
-
-    const x = (winWidth - (width + 2)) / 2
-    const y = (winHeight - (height + Wnd.TITLEBAR_HEIGHT + Wnd.MENUBAR_HEIGHT + 2)) / 2
+    const {rootRect, width, height} = maxSize(this.wndMgr, this.overscan)
+    const x = (rootRect.width - (width + 2)) / 2
+    const y = (rootRect.height - (height + Wnd.TITLEBAR_HEIGHT + Wnd.MENUBAR_HEIGHT + 2)) / 2
     this.setPos(Math.round(x), Math.round(y))
     this.setClientSize(width, height)
   }

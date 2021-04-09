@@ -52,15 +52,27 @@ export class WndUtil {
     element: HTMLElement, grip: HTMLElement, getClientRect: () => DOMRect,
     onEvent: (event: WndEvent, param?: any) => void,
   ): void {
-    grip.addEventListener('mousedown', event => {
-      if (event.button !== 0)
+    const onDown = (event: MouseEvent|TouchEvent) => {
+      switch(event.type) {
+      case 'mousedown':
+        if ((event as MouseEvent).button !== 0)
+          return false
+        break
+      case 'touchstart':
+        if ((event as TouchEvent).changedTouches.length <= 0 ||
+            (event as TouchEvent).changedTouches[0].identifier !== 0)
+          return false
+        break
+      default:
         return false
+      }
 
       onEvent(WndEvent.DRAG_BEGIN)
 
       const rootRect = getClientRect()
 
-      event.preventDefault()
+      if (event.cancelable)
+        event.preventDefault()
       const [mx, my] = DomUtil.getMousePosIn(event, element)
       const dragOfsX = -mx
       const dragOfsY = -my
@@ -86,7 +98,9 @@ export class WndUtil {
         },
       })
       return true
-    })
+    }
+    grip.addEventListener('mousedown', onDown)
+    grip.addEventListener('touchstart', onDown)
   }
 
   public static makeResizable(
@@ -156,9 +170,19 @@ export class WndUtil {
         height: param.vert !== 'center' ? `${W}px` : undefined,
         zIndex: '2000',
       })
-      resizeBox.addEventListener('mousedown', event => {
-        if (event.button !== 0)
+      const onDown = event => {
+        switch(event.type) {
+        case 'mousedown':
+          if (event.button !== 0)
+            return false
+          break
+        case 'touchstart':
+          if (event.changedTouches.length <= 0 || event.changedTouches[0].identifier !== 0)
+            return false
+          break
+        default:
           return false
+        }
 
         event.stopPropagation()
         event.preventDefault()
@@ -213,7 +237,10 @@ export class WndUtil {
         })
 
         return true
-      })
+      }
+      resizeBox.addEventListener('mousedown', onDown)
+      resizeBox.addEventListener('touchstart', onDown)
+
       element.appendChild(resizeBox)
     })
   }

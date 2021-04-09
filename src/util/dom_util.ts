@@ -98,11 +98,14 @@ export class DomUtil {
     const unlisten = () => {
       document.removeEventListener('mousemove', mouseMove, useCapture)
       document.removeEventListener('mouseup', mouseUpDelegate, useCapture)
-      if (mouseLeaveDelegate && mouseLeaveTarget)
+      document.removeEventListener('touchmove', mouseMove, useCapture)
+      document.removeEventListener('touchend', mouseUpDelegate, useCapture)
+        if (mouseLeaveDelegate != null && mouseLeaveTarget) {
         mouseLeaveTarget.removeEventListener('mouseleave', mouseLeaveDelegate, useCapture)
+      }
     }
 
-    const mouseUpDelegate = ($event: MouseEvent) => {
+    const mouseUpDelegate = ($event: MouseEvent|TouchEvent) => {
       if (mouseUp)
         mouseUp($event)
       unlisten()
@@ -115,15 +118,30 @@ export class DomUtil {
 
     document.addEventListener('mousemove', mouseMove, useCapture)
     document.addEventListener('mouseup', mouseUpDelegate, useCapture)
-    if (mouseLeaveDelegate && mouseLeaveTarget)
+    document.addEventListener('touchmove', mouseMove, useCapture)
+    document.addEventListener('touchend', mouseUpDelegate, useCapture)
+    if (mouseLeaveDelegate != null && mouseLeaveTarget) {
       mouseLeaveTarget.addEventListener('mouseleave', mouseLeaveDelegate, useCapture)
+    }
   }
 
-  public static getMousePosIn(event: MouseEvent, elem: HTMLElement): [number, number] {
+  public static getMousePosIn(event: MouseEvent|TouchEvent, elem: HTMLElement): [number, number] {
+    let pageX: number
+    let pageY: number
+    if ((event as TouchEvent).changedTouches != null) {
+      const touch = (event as TouchEvent).changedTouches[0]
+      pageX = touch.pageX
+      pageY = touch.pageY
+    } else {
+      const me = event as MouseEvent
+      pageX = me.pageX
+      pageY = me.pageY
+    }
+
     const rect = elem.getBoundingClientRect()
     const scrollLeft = document.body.scrollLeft
     const scrollTop = document.body.scrollTop
-    return [event.pageX - rect.left - scrollLeft,
-            event.pageY - rect.top - scrollTop]
+    return [pageX - rect.left - scrollLeft,
+            pageY - rect.top - scrollTop]
   }
 }

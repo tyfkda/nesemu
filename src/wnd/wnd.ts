@@ -1,5 +1,6 @@
 import {DomUtil} from '../util/dom_util'
 import {WindowManager} from './window_manager'
+import {Util} from '../util/util'
 import {WndUtil} from './wnd_util'
 import {MenuItemInfo, WndEvent, Z_MENUBAR} from './types'
 
@@ -52,6 +53,11 @@ export class Wnd {
   }
 
   public setPos(x: number, y: number): Wnd {
+    const rootRect = this.wndMgr.getRootClientRect()
+    const {width, height} = this.getWindowSize()
+    x = Util.clamp(x, rootRect.left, rootRect.right - width)
+    y = Util.clamp(y, rootRect.top, rootRect.bottom - height)
+
     DomUtil.setStyles(this.root, {
       left: `${x}px`,
       top: `${y}px`,
@@ -110,9 +116,9 @@ export class Wnd {
         const prev = itemElems[activeSubmenuIndex]
         prev.classList.remove('opened')
         activeSubmenuIndex = -1
+        this.onEvent(WndEvent.CLOSE_MENU)
       }
       closeSubmenu = null
-      this.onEvent(WndEvent.CLOSE_MENU)
     }
 
     const showSubmenu = (index: number) => {
@@ -144,6 +150,19 @@ export class Wnd {
       itemElem.classList.add('opened')
     }
 
+    const onClickMenu = (menuItem: MenuItemInfo, index: number) => {
+      if ('submenu' in menuItem) {
+        if (activeSubmenuIndex < 0) {
+          this.onEvent(WndEvent.OPEN_MENU)
+          showSubmenu(index)
+        } else {
+          if (closeSubmenu)
+            closeSubmenu()
+          onClose()
+        }
+      }
+    }
+
     menu.forEach((menuItem: MenuItemInfo, index: number) => {
       const itemElem = document.createElement('div')
       itemElem.className = 'menu-item pull-left'
@@ -151,25 +170,37 @@ export class Wnd {
       itemElem.style.height = '100%'
       itemElem.addEventListener('click', event => {
         event.stopPropagation()
-        if ('submenu' in menuItem) {
-          if (activeSubmenuIndex < 0) {
-            this.onEvent(WndEvent.OPEN_MENU)
-            showSubmenu(index)
-          } else {
-            if (closeSubmenu)
-              closeSubmenu()
-            onClose()
-          }
-        }
+        onClickMenu(menuItem, index)
       })
-      this.menuBar.appendChild(itemElem)
-      itemElems.push(itemElem)
-
       itemElem.addEventListener('mouseenter', _event => {
         if (activeSubmenuIndex >= 0 && activeSubmenuIndex !== index && 'submenu' in menuItem) {
           showSubmenu(index)
         }
       })
+      itemElem.addEventListener('touchstart', event => {
+        if (event.changedTouches[0].identifier === 0) {
+          event.preventDefault()
+          itemElem.classList.add('opened')
+        }
+      })
+      itemElem.addEventListener('touchend', event => {
+        if (event.changedTouches[0].identifier === 0) {
+          const [x, y] = DomUtil.getMousePosIn(event, itemElem)
+          const rect = itemElem.getBoundingClientRect()
+          if (x >= 0 && y >= 0 && x < rect.width && y < rect.height) {
+            if (activeSubmenuIndex < 0 || activeSubmenuIndex === index)
+              onClickMenu(menuItem, index)
+            else
+              showSubmenu(index)
+          } else {
+            if (activeSubmenuIndex !== index)
+              itemElem.classList.remove('opened')
+          }
+        }
+      })
+
+      this.menuBar.appendChild(itemElem)
+      itemElems.push(itemElem)
     })
     upper.appendChild(this.menuBar)
 
@@ -255,6 +286,7 @@ export class Wnd {
         switch (event) {
         case WndEvent.DRAG_BEGIN:
           this.root.style.transitionProperty = 'none'  // To change position immediately.
+          this.wndMgr.moveToTop(this)
           break
         case WndEvent.DRAG_END:
           this.root.style.transitionProperty = ''
@@ -274,6 +306,9 @@ export class Wnd {
     button.addEventListener('click', clickCallback)
     button.addEventListener('mousedown', event => {
       event.preventDefault()
+      event.stopPropagation()
+    })
+    button.addEventListener('touchstart', event => {
       event.stopPropagation()
     })
     parent.appendChild(button)
