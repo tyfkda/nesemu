@@ -110,13 +110,21 @@ export class ScreenWnd extends Wnd {
     this.addResizeBox()
 
     this.subscription = this.stream
-      .subscribe(type => {
+      .subscribe((type: AppEvent.Type, param?: any) => {
         switch (type) {
         case AppEvent.Type.RENDER:
           this.render()
           break
         case AppEvent.Type.RESET:
           this.scaler.reset()
+          break
+        case AppEvent.Type.CLOSE_WND:
+          {
+            const wnd = param as Wnd
+            const i = this.wndMap.indexOf(wnd)
+            if (i >= 0)
+              this.wndMap[i] = null
+          }
           break
         }
       })
@@ -277,11 +285,9 @@ export class ScreenWnd extends Wnd {
   }
 
   public createFdsCtrlWnd(fds: Fds): boolean {
-    if (this.wndMap[WndType.FDS_CTRL] != null)
-      return false
-    const fdsCtrlWnd = new FdsCtrlWnd(this.wndMgr, fds)
-    this.wndMap[WndType.FDS_CTRL] = fdsCtrlWnd
-    return true
+    return this.createSubWnd(WndType.FDS_CTRL, () => {
+      return new FdsCtrlWnd(this.wndMgr, fds)
+    })
   }
 
   protected closeChildrenWindows(): void {
@@ -518,86 +524,82 @@ export class ScreenWnd extends Wnd {
     this.setClientSize(width, height)
   }
 
-  protected createPaletWnd(): boolean {
-    if (this.wndMap[WndType.PALET] != null)
+  protected createSubWnd(wndType: WndType, generate: () => Wnd): boolean {
+    if (this.wndMap[wndType] != null) {
+      this.wndMgr.moveToTop(this.wndMap[wndType]!)
       return false
-    const paletWnd = new PaletWnd(this.wndMgr, this.nes, this.stream)
-    paletWnd.setPos(520, 0)
-    this.wndMap[WndType.PALET] = paletWnd
+    }
+    const wnd = generate()
+    this.wndMap[wndType] = wnd
     return true
+  }
+
+  protected createPaletWnd(): boolean {
+    return this.createSubWnd(WndType.PALET, () => {
+      const wnd = new PaletWnd(this.wndMgr, this.nes, this.stream)
+      wnd.setPos(520, 0)
+      return wnd
+    })
   }
 
   protected createNameTableWnd(): boolean {
-    if (this.wndMap[WndType.NAME] != null)
-      return false
-
-    const ppu = this.nes.getPpu()
-    const nameTableWnd = new NameTableWnd(this.wndMgr, ppu, this.stream,
-                                          ppu.getMirrorMode() === MirrorMode.HORZ)
-    nameTableWnd.setPos(520, 40)
-    this.wndMap[WndType.NAME] = nameTableWnd
-    return true
+    return this.createSubWnd(WndType.NAME, () => {
+      const ppu = this.nes.getPpu()
+      const wnd = new NameTableWnd(this.wndMgr, ppu, this.stream,
+                                   ppu.getMirrorMode() === MirrorMode.HORZ)
+      wnd.setPos(520, 40)
+      return wnd
+    })
   }
 
   protected createPatternTableWnd(): boolean {
-    if (this.wndMap[WndType.PATTERN] != null)
-      return false
-
-    const getSelectedPalets = (buf: Uint8Array): boolean => {
-      const paletWnd = this.wndMap[WndType.PALET] as PaletWnd
-      if (paletWnd == null)
-        return false
-      paletWnd.getSelectedPalets(buf)
-      return true
-    }
-    const patternTableWnd = new PatternTableWnd(this.wndMgr, this.nes.getPpu(), this.stream,
-                                                getSelectedPalets)
-    patternTableWnd.setPos(520, 300)
-    this.wndMap[WndType.PATTERN] = patternTableWnd
-    return true
+    return this.createSubWnd(WndType.PATTERN, () => {
+      const getSelectedPalets = (buf: Uint8Array): boolean => {
+        const paletWnd = this.wndMap[WndType.PALET] as PaletWnd
+        if (paletWnd == null)
+          return false
+        paletWnd.getSelectedPalets(buf)
+        return true
+      }
+      const wnd = new PatternTableWnd(this.wndMgr, this.nes.getPpu(), this.stream,
+                                      getSelectedPalets)
+      wnd.setPos(520, 300)
+      return wnd
+    })
   }
 
   protected createAudioWnd(): boolean {
-    if (this.wndMap[WndType.AUDIO] != null)
-      return false
-    const wnd = new AudioWnd(this.wndMgr, this.nes, this.stream)
-    this.wndMap[WndType.AUDIO] = wnd
-    return true
+    return this.createSubWnd(WndType.AUDIO, () =>
+        new AudioWnd(this.wndMgr, this.nes, this.stream))
   }
 
   protected createTraceWnd(): boolean {
-    if (this.wndMap[WndType.TRACE] != null)
-      return false
-    const traceWnd = new TraceWnd(this.wndMgr, this.nes, this.stream)
-    traceWnd.setPos(0, 500)
-    this.wndMap[WndType.TRACE] = traceWnd
-    return true
+    return this.createSubWnd(WndType.TRACE, () => {
+      const wnd = new TraceWnd(this.wndMgr, this.nes, this.stream)
+      wnd.setPos(0, 500)
+      return wnd
+    })
   }
 
   protected createRegisterWnd(): boolean {
-    if (this.wndMap[WndType.REGISTER] != null)
-      return false
-    const registerWnd = new RegisterWnd(this.wndMgr, this.nes, this.stream)
-    registerWnd.setPos(410, 500)
-    this.wndMap[WndType.REGISTER] = registerWnd
-    return true
+    return this.createSubWnd(WndType.REGISTER, () => {
+      const wnd = new RegisterWnd(this.wndMgr, this.nes, this.stream)
+      wnd.setPos(410, 500)
+      return wnd
+    })
   }
 
   protected createControlWnd(): boolean {
-    if (this.wndMap[WndType.CONTROL] != null)
-      return false
-    const ctrlWnd = new ControlWnd(this.wndMgr, this.stream)
-    ctrlWnd.setPos(520, 500)
-    this.wndMap[WndType.CONTROL] = ctrlWnd
-    return true
+    return this.createSubWnd(WndType.CONTROL, () => {
+      const wnd = new ControlWnd(this.wndMgr, this.stream)
+      wnd.setPos(520, 500)
+      return wnd
+    })
   }
 
   protected createFpsWnd(): boolean {
-    if (this.wndMap[WndType.FPS] != null)
-      return false
-    const fpsWnd = new FpsWnd(this.wndMgr, this.stream)
-    this.wndMap[WndType.FPS] = fpsWnd
-    return true
+    return this.createSubWnd(WndType.FPS, () =>
+        new FpsWnd(this.wndMgr, this.stream))
   }
 
   private isAspectRatio(scale: number): boolean {
