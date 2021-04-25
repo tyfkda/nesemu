@@ -2,6 +2,11 @@
 
 import {Const} from '../const'
 
+const kInitialPalette = Uint8Array.from([
+  0x09, 0x01, 0x00, 0x01, 0x00, 0x02, 0x02, 0x0d, 0x08, 0x10, 0x08, 0x24, 0x00, 0x00, 0x04, 0x2c,
+  0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 0x08, 0x3a, 0x00, 0x02, 0x00, 0x20, 0x2c, 0x08,
+])
+
 export const enum HEventType {
   DUMMY,
   PPU_CTRL,
@@ -10,6 +15,7 @@ export const enum HEventType {
   MIRROR_MODE_BIT,
   SCROLL_CURR,
   SCROLL_FINE_X,
+  PALET,
 }
 
 interface HEvent {
@@ -111,6 +117,7 @@ export class HStatus {
   public mirrorModeBit = 0x44  // 2bit x 4screen
   public scrollCurr = 0
   public scrollFineX = 0
+  public palet = new Uint8Array(32)
 
   constructor() {
     this.reset()
@@ -124,6 +131,9 @@ export class HStatus {
 
     for (let i = 0; i < 8; ++i)
       this.chrBankOffset[i] = i << 10
+
+    for (let i = 0; i < this.palet.length; ++i)
+      this.palet[i] = kInitialPalette[i]
   }
 
   public copy(h: HStatus): void {
@@ -134,6 +144,8 @@ export class HStatus {
       this.chrBankOffset[i] = h.chrBankOffset[i]
     this.scrollCurr = h.scrollCurr
     this.scrollFineX = h.scrollFineX
+    for (let i = 0; i < 32; ++i)
+      this.palet[i] = h.palet[i]
   }
 
   public set(type: HEventType, value: number, index: number): boolean {
@@ -169,6 +181,11 @@ export class HStatus {
       if (this.scrollFineX === value)
         return false
       this.scrollFineX = value
+      break
+    case HEventType.PALET:
+      if (this.palet[index] === value)
+        return false
+      this.palet[index] = value
       break
     default:
       console.error(`ERROR: type=${type}`)

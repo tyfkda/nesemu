@@ -25,12 +25,7 @@ const PALET_END_ADR = 0x3fff
 
 const kMirrorModeBitTable = Uint8Array.from([0x50, 0x44, 0x00, 0x55, 0x05])
 
-const kInitialPalette = Uint8Array.from([
-  0x09, 0x01, 0x00, 0x01, 0x00, 0x02, 0x02, 0x0d, 0x08, 0x10, 0x08, 0x24, 0x00, 0x00, 0x04, 0x2c,
-  0x09, 0x01, 0x34, 0x03, 0x00, 0x04, 0x00, 0x14, 0x08, 0x3a, 0x00, 0x02, 0x00, 0x20, 0x2c, 0x08,
-])
-
-const SPRITE_MASK = 0x80
+const SPRITE_MASK = 0x10
 const kSpritePriorityMask = Uint8Array.from([SPRITE_MASK, 0xff])
 
 export function getNameTable(baseNameTable: Address, bx: number, by: number,
@@ -105,29 +100,23 @@ function getSpritePat(chrData: Uint8Array, chridx: number, py: number, flipHorz:
   return kStaggered[patLo] | (kStaggered[patHi] << 1)
 }
 
-function clearBg(offscreen: Uint8Array, hline0: number, hline1: number, x: number): void {
-  const LINE_BYTES = Const.WIDTH
-  for (let i = hline0; i < hline1; ++i) {
-    const index = i * LINE_BYTES
-    for (let j = 0; j < x; ++j)
-      offscreen[index + j] = 0
-  }
-}
-
-function copyOffscreenToPixels(offscreen: Uint8Array, pixels: Uint8Array|Uint8ClampedArray,
-                               greyscale: boolean, palet: Uint8Array): void
+function clearBg(hline0: number, hline1: number, x: number,
+    pixels: Uint8Array|Uint8ClampedArray, colorMask: number, palet: Uint8Array): void
 {
-  const n = Const.WIDTH * Const.HEIGHT
-  let index = 0
-  const colorMask = greyscale ? 0x20 : 0x3f
-  for (let i = 0; i < n; ++i) {
-    const pal = offscreen[i] & 0x1f
-    const col = palet[pal] & colorMask
-    const c = kPaletColors[col]
-    pixels[index + 0] =  c >> 16
-    pixels[index + 1] = (c >>  8) & 0xff
-    pixels[index + 2] =  c        & 0xff
-    index += 4
+  const LINE_BYTES = Const.WIDTH * 4
+  const col = palet[0] & colorMask
+  const c = kPaletColors[col]
+  const r =  c >> 16
+  const g = (c >>  8) & 0xff
+  const b =  c        & 0xff
+  for (let i = hline0; i < hline1; ++i) {
+    let index = i * LINE_BYTES
+    for (let j = 0; j < x; ++j) {
+      pixels[index    ] = r
+      pixels[index + 1] = g
+      pixels[index + 2] = b
+      index += 4
+    }
   }
 }
 
@@ -137,7 +126,6 @@ export class Ppu {
   private chrData = new Uint8Array(0)
   private regs = new Uint8Array(REGISTER_COUNT)
   private vram: Uint8Array
-  private palet: Uint8Array
   private oam = new Uint8Array(OAM_SIZE)  // Object Attribute Memory
   private mirrorMode = MirrorMode.VERT
   private hcount = 0
@@ -153,7 +141,6 @@ export class Ppu {
     // `palet` is part of `vram`, and shares its content using ArrayBuffer.
     const vramBuffer = new ArrayBuffer(VRAM_SIZE)
     this.vram = new Uint8Array(vramBuffer)
-    this.palet = new Uint8Array(vramBuffer, PALET_ADR)
 
     this.reset()
   }
@@ -169,9 +156,6 @@ export class Ppu {
     this.hevents.clear()
     this.hstatusMgr.reset()
     this.offscreen.fill(0)
-
-    for (let i = 0; i < 16 * 2; ++i)
-      this.palet[i] = kInitialPalette[i]
   }
 
   public save(): object {
@@ -213,6 +197,8 @@ export class Ppu {
     this.hstatusMgr.current.set(HEventType.PPU_MASK, this.regs[PpuReg.MASK], -1)
     this.hstatusMgr.current.set(HEventType.MIRROR_MODE_BIT,
                                 kMirrorModeBitTable[this.mirrorMode], -1)
+    for (let i = 0; i < 32; ++i)
+      this.hstatusMgr.current.set(HEventType.PALET, this.vram[PALET_ADR + i], i)
   }
 
   public setChrData(chrData: Uint8Array): void {
@@ -338,6 +324,8 @@ export class Ppu {
         const ppuAddr = this.hstatusMgr.current.scrollCurr
         const addr = getPpuAddr(ppuAddr, this.hstatusMgr.current.mirrorModeBit)
         this.vram[addr] = value
+        if (PALET_ADR <= addr && addr < PALET_ADR + 32)
+          this.addHevent(HEventType.PALET, value, addr - PALET_ADR)
         this.addHevent(HEventType.SCROLL_CURR, incPpuAddr(ppuAddr, this.regs[PpuReg.CTRL]))
       }
       break
@@ -380,10 +368,9 @@ export class Ppu {
   }
 
   public render(pixels: Uint8Array | Uint8ClampedArray): void {
-    this.renderOffscreen(this.offscreen)
-
     const greyscale = (this.regs[PpuReg.MASK] & PpuMaskBit.GREYSCALE) !== 0
-    copyOffscreenToPixels(this.offscreen, pixels, greyscale, this.palet)
+    const colorMask = greyscale ? 0x20 : 0x3f
+    this.renderOffscreen(this.offscreen, pixels, colorMask)
   }
 
   public writePpuDirect(addr: Address, value: Byte): void {
@@ -396,7 +383,8 @@ export class Ppu {
   }
 
   public getPaletTable(): Readonly<Uint8Array> {
-    return this.palet
+    const h = this.hstatusMgr.lastFrame
+    return h.palet
   }
 
   public getRegs(): Readonly<Uint8Array> {
@@ -419,7 +407,11 @@ export class Ppu {
     return this.chrData === this.vram
   }
 
-  private renderOffscreen(offscreen: Uint8Array): void {
+  private renderOffscreen(offscreen: Uint8Array,
+                          pixels: Uint8Array|Uint8ClampedArray, colorMask: number): void
+  {
+    offscreen.fill(0)
+
     const h = this.hstatusMgr.lastFrame
     const n = this.hevents.getCount()
     let sprChrStart = 0
@@ -434,21 +426,22 @@ export class Ppu {
 
       // BG
       if ((h.ppuMask & PpuMaskBit.SHOW_BG) === 0) {
-        clearBg(offscreen, hline0, hline1, Const.WIDTH)
+        clearBg(hline0, hline1, Const.WIDTH, pixels, colorMask, h.palet)
       } else {
         const baseNameTable = (h.scrollCurr & 0x0c00) >> 10
         const bgChrStart = getBgPatternTableAddress(h.ppuCtrl)
         let x0 = 0
         if ((h.ppuMask & PpuMaskBit.SHOW_BG_LEFT_8PX) === 0) {
           x0 = 8
-          clearBg(offscreen, hline0, hline1, x0)
+          clearBg(hline0, hline1, x0, pixels, colorMask, h.palet)
         }
 
         const scrollX = h.scrollFineX | ((h.scrollCurr & 0x001f) << 3)
         const scrollY = ((h.scrollCurr & 0x7000) >> 12) | ((h.scrollCurr & 0x03e0) >> (5 - 3))
 
         this.renderBg(offscreen, scrollX, scrollY, baseNameTable, hline0, hline1, x0,
-                      h.chrBankOffset, h.mirrorModeBit, bgChrStart)
+                      h.chrBankOffset, h.mirrorModeBit, bgChrStart,
+                      pixels, colorMask, h.palet)
       }
 
       // Sprite
@@ -456,14 +449,16 @@ export class Ppu {
         if ((h.ppuCtrl & PpuCtrlBit.SPRITE_SIZE) === 0)
           sprChrStart = (h.ppuCtrl & PpuCtrlBit.SPRITE_PATTERN_TABLE_ADDRESS) << 9
         const x0 = (h.ppuMask & PpuMaskBit.SHOW_SPRITE_LEFT_8PX) ? 0 : 8
-        this.renderSprite(offscreen, hline0, hline1, x0, h.chrBankOffset, sprChrStart)
+        this.renderSprite(offscreen, hline0, hline1, x0, h.chrBankOffset, sprChrStart,
+                          pixels, colorMask, h.palet)
       }
     }
   }
 
   private renderBg(offscreen: Uint8Array, scrollX: number, scrollY: number,
                    baseNameTable: Address, hline0: number, hline1: number, x0: number,
-                   chrBankOffset: number[], mirrorModeBit: Byte, chrStart: Address): void
+                   chrBankOffset: number[], mirrorModeBit: Byte, chrStart: Address,
+                   pixels: Uint8Array|Uint8ClampedArray, colorMask: number, palet: Uint8Array): void
   {
     scrollX |= 0
     scrollY |= 0
@@ -471,6 +466,7 @@ export class Ppu {
     hline1 |= 0
     x0 |= 0
     mirrorModeBit |= 0
+    colorMask |= 0
 
     const W = 8
     const LINE_WIDTH = Const.WIDTH | 0
@@ -510,6 +506,13 @@ export class Ppu {
 
           const index = yy * LINE_WIDTH + xx
           offscreen[index] = pal
+
+          const col = palet[pal] & colorMask
+          const c = kPaletColors[col]
+          const index2 = index * 4
+          pixels[index2 + 0] =  c >> 16
+          pixels[index2 + 1] = (c >>  8) & 0xff
+          pixels[index2 + 2] =  c        & 0xff
         }
       }
     }
@@ -520,7 +523,8 @@ export class Ppu {
   }
 
   private renderSprite(offscreen: Uint8Array, hline0: number, hline1: number, x0: number,
-                       chrBankOffset: number[], chrStart: Address): void
+                       chrBankOffset: number[], chrStart: Address,
+                       pixels: Uint8Array|Uint8ClampedArray, colorMask: number, palet: Uint8Array): void
   {
     const W = 8
     const LINE_WIDTH = Const.WIDTH
@@ -547,7 +551,7 @@ export class Ppu {
         const chridx = (isSprite8x16
                         ? (oamIndex & 0xfe) * 16 + ((oamIndex & 1) << 12)
                         : oamIndex * 16 + chrStart)
-        const paletHigh = (((attr & PALET) << 2) | (0x10 | SPRITE_MASK))
+        const paletHigh = ((attr & PALET) << 2) | SPRITE_MASK
 
         const py = h - y
         const px0 = Math.max(x0 - x, 0)
@@ -555,7 +559,7 @@ export class Ppu {
         const ppy = flipVert ? (sh - 1) - py : py
         const pat = getSpritePat(this.chrData, chridx, ppy, flipHorz, chrBankOffset)
         for (let px = px0; px < px1; ++px) {
-          const pal = (pat >> ((W - 1 - px) << 1)) & 3
+          let pal = (pat >> ((W - 1 - px) << 1)) & 3
           if (pal === 0)
             continue
           const pixelIndex = (y + py) * LINE_WIDTH + (x + px)
@@ -563,7 +567,15 @@ export class Ppu {
             offscreen[pixelIndex] |= SPRITE_MASK
             continue
           }
-          offscreen[pixelIndex] = paletHigh + pal
+          pal |= paletHigh
+          offscreen[pixelIndex] = pal
+
+          const col = palet[pal] & colorMask
+          const c = kPaletColors[col]
+          const index2 = pixelIndex * 4
+          pixels[index2 + 0] =  c >> 16
+          pixels[index2 + 1] = (c >>  8) & 0xff
+          pixels[index2 + 2] =  c        & 0xff
         }
 
         if (++n >= MAX_SPRITE_ON_SCANLINE && !this.suppressSpriteFlicker) {
