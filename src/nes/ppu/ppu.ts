@@ -628,7 +628,7 @@ export class Ppu {
       return
 
     let hcount = this.hcount + 1
-    if (hcount >= Const.HEIGHT) {
+    if (hcount > Const.HEIGHT) {
       hcount = 0
     }
     this.hevents.add(hcount, type, value, index)
