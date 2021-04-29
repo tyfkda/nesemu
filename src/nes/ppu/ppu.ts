@@ -368,7 +368,8 @@ export class Ppu {
       this.setVBlank()
       break
     case VBlank.NMI:
-      if ((this.regs[PpuReg.CTRL] & PpuCtrlBit.VINT_ENABLE) !== 0)
+      if ((this.regs[PpuReg.CTRL] & PpuCtrlBit.VINT_ENABLE) !== 0 &&
+          (this.regs[PpuReg.STATUS] & PpuStatusBit.VBLANK) !== 0)
         this.triggerNmi()
       break
     case VBlank.END:
