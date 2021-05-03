@@ -397,9 +397,11 @@ export class GlobalPaletWnd extends Wnd {
 
 const kToneTable = [0, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 5.5, 6, 6.5]  // A A# B | C C# D D# E F F# G G#
 
-const kWaveTypeImages = [
+const kWaveTypeImages: string[] = [
   pluseImg,
   triangleImg,
+  '',
+  '',
   sawtoothImg,
 ]
 

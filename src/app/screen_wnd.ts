@@ -475,6 +475,25 @@ export class ScreenWnd extends Wnd {
         ],
       },
       {
+        label: 'Audio',
+        submenu: [
+          {
+            label: 'Quantized Triangle',
+            checked: () => this.app.getAudioBlockiness(),
+            click: () => {
+              this.app.toggleAudioBlockiness()
+            },
+          },
+          {label: '----'},
+          {
+            label: 'Keyboard',
+            click: () => {
+              this.createAudioWnd()
+            },
+          },
+        ],
+      },
+      {
         label: 'Debug',
         submenu: [
           {
@@ -493,12 +512,6 @@ export class ScreenWnd extends Wnd {
             label: 'PatternTable',
             click: () => {
               this.createPatternTableWnd()
-            },
-          },
-          {
-            label: 'Audio',
-            click: () => {
-              this.createAudioWnd()
             },
           },
           {

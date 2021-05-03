@@ -9,6 +9,7 @@ abstract class SoundChannel {
   public setFrequency(_frequency: number): void { throw new Error('Invalid call') }
   public setDutyRatio(_dutyRatio: number): void { throw new Error('Invalid call') }
   public setNoisePeriod(_period: number, _mode: number): void { throw new Error('Invalid call') }
+  public setBlockiness(_context: AudioContext, _destination: AudioNode, _blockiness: boolean): void {}
 }
 
 abstract class GainSoundChannel extends SoundChannel {
@@ -74,10 +75,49 @@ abstract class OscillatorChannel extends GainSoundChannel {
                                      destination: AudioNode): void
 }
 
+function createQuantizedTriangleWave(div: number, N: number): {an: number[], bn: number[]} {
+  const an = new Array<number>(N + 1)
+  an[0] = 0
+  const coeff = 2 / (div - 1)
+  for (let i = 1; i <= N; ++i) {
+    let a = 0
+    const fa = (x: number) => 1 / (2 * i * Math.PI) *  Math.sin(2 * i * Math.PI * x)
+    for (let j = 0; j < div * 2; ++j) {
+      const k = j < div ? 1 - j * coeff : -1 + (j - div) * coeff
+      a += k * (fa((j + 1) / (2 * div)) - fa(j / (2 * div)))
+    }
+    an[i] = 2 * a
+  }
+  const bn = new Array<number>(N + 1)
+  bn.fill(0)
+  return {an, bn}
+}
+
 class TriangleChannel extends OscillatorChannel {
-  protected setupOscillator(oscillator: OscillatorNode, _context: AudioContext,
+  protected setupOscillator(oscillator: OscillatorNode, context: AudioContext,
                             destination: AudioNode): void {
-    oscillator.type = 'triangle'
+    this.setOscillatorBlockiness(context, destination, oscillator, false)
+  }
+
+  public setBlockiness(context: AudioContext, destination: AudioNode, blocky: boolean): void {
+    this.oscillator.disconnect()
+
+    const oscillator = this.oscillator = context.createOscillator()
+    this.setOscillatorBlockiness(context, destination, oscillator, blocky)
+    this.oscillator.frequency.setValueAtTime(this.frequency, context.currentTime)
+    this.oscillator.start()
+  }
+
+  private setOscillatorBlockiness(
+      context: AudioContext, destination: AudioNode, oscillator: OscillatorNode, blocky: boolean
+  ): void {
+    if (blocky) {
+      const {an, bn} = createQuantizedTriangleWave(16, 128)
+      const wave = context.createPeriodicWave(an, bn)
+      oscillator.setPeriodicWave(wave)
+    } else {
+      oscillator.type = 'triangle'
+    }
     oscillator.connect(this.gainNode)
     this.gainNode.connect(destination)
   }
@@ -261,6 +301,7 @@ export class AudioManager {
   private static masterVolume = 1.0
 
   private channels = new Array<SoundChannel>()
+  private blockiness = false
 
   public static setUp(audioContextClass: any): void {
     if (AudioManager.initialized)
@@ -339,6 +380,18 @@ export class AudioManager {
     const sc = createSoundChannel(context, AudioManager.masterGainNode, type)
     sc.start()
     this.channels.push(sc)
+  }
+
+  public toggleBlockiness(): void {
+    this.blockiness = !this.blockiness
+    if (AudioManager.context != null) {
+      for (const channel of this.channels)
+      channel.setBlockiness(AudioManager.context, AudioManager.masterGainNode, this.blockiness)
+    }
+  }
+
+  public getBlockiness(): boolean {
+    return this.blockiness
   }
 
   public setChannelFrequency(channel: number, frequency: number): void {
