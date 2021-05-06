@@ -281,7 +281,11 @@ export class Wnd {
 
     WndUtil.makeDraggable(
       this.root, titleBar,
-      () => this.wndMgr.getRootClientRect(),
+      () => {
+        const rc = this.wndMgr.getRootClientRect()
+        const WIN_BORDER = 1
+        return new DOMRect(rc.x, rc.y, rc.width - WIN_BORDER * 2, rc.height - WIN_BORDER * 2)
+      },
       (event, param?) => {
         switch (event) {
         case WndEvent.DRAG_BEGIN:
