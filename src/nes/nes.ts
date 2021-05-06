@@ -155,11 +155,12 @@ export class Nes implements PrgBankController {
   public runMilliseconds(msec: number): number {
     let leftCycles = (msec * (CPU_HZ / 1000)) | 0
     try {
+      const notPaused = !this.cpu.isPaused()
       do {
         const cycle = this.cpu.step()
         leftCycles -= cycle
         this.tryHblankEvent(cycle, leftCycles)
-        if (this.cpu.isPaused()) {  // Hit break point.
+        if (notPaused && this.cpu.isPaused()) {  // Hit break point.
           this.breakPointCallback()
           return 0
         }
