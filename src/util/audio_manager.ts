@@ -7,12 +7,13 @@ abstract class SoundChannel {
   public abstract start(): void
 
   public setFrequency(_frequency: number): void { throw new Error('Invalid call') }
-  public setDutyRatio(_ratio: number): void { throw new Error('Invalid call') }
+  public setDutyRatio(_dutyRatio: number): void { throw new Error('Invalid call') }
   public setNoisePeriod(_period: number, _mode: number): void { throw new Error('Invalid call') }
 }
 
 abstract class GainSoundChannel extends SoundChannel {
   protected gainNode: GainNode
+  protected volume = 1
 
   public constructor(context: AudioContext) {
     super()
@@ -28,12 +29,17 @@ abstract class GainSoundChannel extends SoundChannel {
   }
 
   public setVolume(volume: number): void {
+    if (volume === this.volume)
+      return
+    this.volume = volume
+
     this.gainNode.gain.setValueAtTime(volume, this.gainNode.context.currentTime)
   }
 }
 
 abstract class OscillatorChannel extends GainSoundChannel {
   protected oscillator: OscillatorNode
+  protected frequency = 1
 
   public constructor(context: AudioContext, destination: AudioNode) {
     super(context)
@@ -56,6 +62,10 @@ abstract class OscillatorChannel extends GainSoundChannel {
   }
 
   public setFrequency(frequency: number): void {
+    if (frequency === this.frequency)
+      return
+    this.frequency = frequency
+
     const now = this.oscillator.context.currentTime
     this.oscillator.frequency.setValueAtTime(frequency, now)
   }
@@ -165,11 +175,10 @@ class AwNoiseChannel extends SoundChannel {
   }
 }
 
-// Pulse with duty control.
+// Pulse with duty ratio control.
 class PulseChannel extends OscillatorChannel {
   private delay: DelayNode
-  private frequency = 1
-  private duty = 0.5
+  private dutyRatio = 0.5
 
   public destroy(): void {
     super.destroy()
@@ -182,16 +191,16 @@ class PulseChannel extends OscillatorChannel {
   public setFrequency(frequency: number): void {
     if (this.frequency === frequency)
       return
-    this.frequency = frequency
     super.setFrequency(frequency)
 
     this.updateDelay()
   }
 
-  public setDutyRatio(ratio: number): void {
-    if (this.duty === ratio)
+  public setDutyRatio(dutyRatio: number): void {
+    if (dutyRatio === this.dutyRatio)
       return
-    this.duty = ratio
+    this.dutyRatio = dutyRatio
+
     this.updateDelay()
   }
 
@@ -214,7 +223,7 @@ class PulseChannel extends OscillatorChannel {
 
   private updateDelay(): void {
     const now = this.delay.context.currentTime
-    this.delay.delayTime.setValueAtTime((1.0 - this.duty) / this.frequency, now)
+    this.delay.delayTime.setValueAtTime((1.0 - this.dutyRatio) / this.frequency, now)
   }
 }
 
@@ -344,10 +353,10 @@ export class AudioManager {
     this.channels[channel].setVolume(volume)
   }
 
-  public setChannelDutyRatio(channel: number, ratio: number): void {
+  public setChannelDutyRatio(channel: number, dutyRatio: number): void {
     if (AudioManager.context == null)
       return
-    this.channels[channel].setDutyRatio(ratio)
+    this.channels[channel].setDutyRatio(dutyRatio)
   }
 
   public setChannelPeriod(channel: number, period: number, mode: number): void {
