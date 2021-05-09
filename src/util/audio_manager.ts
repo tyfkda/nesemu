@@ -13,12 +13,12 @@ abstract class SoundChannel {
 
 abstract class GainSoundChannel extends SoundChannel {
   protected gainNode: GainNode
-  protected volume = 1
+  protected volume = 0
 
   public constructor(context: AudioContext) {
     super()
     this.gainNode = context.createGain()
-    this.gainNode.gain.setValueAtTime(0, context.currentTime)
+    this.gainNode.gain.setValueAtTime(this.volume, context.currentTime)
   }
 
   public destroy(): void {
@@ -245,10 +245,10 @@ function createSoundChannel(
   case WaveType.NOISE:
     return AwNoiseChannel.create(context, destination) ||
         new SpNoiseChannel(context, destination)
-  case WaveType.SAWTOOTH:
-    return new SawtoothChannel(context, destination)
   case WaveType.DMC:
     return new DmcChannel(context, destination)
+  case WaveType.SAWTOOTH:
+    return new SawtoothChannel(context, destination)
   }
 }
 

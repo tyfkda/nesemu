@@ -35,9 +35,9 @@ export const enum PadValue {
 export const enum WaveType {
   PULSE,
   TRIANGLE,
-  SAWTOOTH,
   NOISE,
   DMC,
+  SAWTOOTH,
 }
 
 const BASE = 0x4000

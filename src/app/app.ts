@@ -282,10 +282,9 @@ export class App {
         case WaveType.PULSE:
           {
             const pulse = channel as unknown as IPulseChannel
-            audioManager.setChannelFrequency(ch, channel.getFrequency())
             audioManager.setChannelDutyRatio(ch, pulse.getDutyRatio())
           }
-          break
+          // Fallthrough
         case WaveType.TRIANGLE:
         case WaveType.SAWTOOTH:
           audioManager.setChannelFrequency(ch, channel.getFrequency())
