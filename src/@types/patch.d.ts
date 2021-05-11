@@ -6,6 +6,6 @@ interface Window {
 
   webkitAudioContext: any
 
-  app: App
+  app: any
   $DEBUG: boolean
 }
