@@ -19,6 +19,7 @@ interface OscillatorNode extends AudioNode {
   frequency: AudioParam
 
   setPeriodicWave(wave: PeriodicWave)
+  stop()
 }
 
 interface GainNode extends AudioNode {
@@ -32,12 +33,24 @@ interface DelayNode extends AudioNode {
 interface AudioDestinationNode extends AudioNode {
 }
 
+interface AnalyserNode extends AudioNode {
+}
+
+type ScriptProcessorNode = any
+declare const ScriptProcessorNode: ScriptProcessorNode
+type AudioWorkletNode = any
+declare const AudioWorkletNode: AudioWorkletNode
+
 interface AudioContext {
   readonly currentTime: number
   readonly destination: AudioDestinationNode
+  readonly sampleRate: number
+  readonly audioWorklet: any
 
   createGain(): GainNode
   createOscillator(): OscillatorNode
   createPeriodicWave(real: Float32Array, imag: Float32Array): PeriodicWave
   createDelay(): DelayNode
+  createAnalyser(): AnalyserNode
+  createScriptProcessor(size: number, a: number, b: number): ScriptProcessorNode
 }

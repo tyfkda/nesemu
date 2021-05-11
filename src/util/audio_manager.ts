@@ -75,8 +75,8 @@ abstract class OscillatorChannel extends GainSoundChannel {
                                      destination: AudioNode): void
 }
 
-function createQuantizedTriangleWave(div: number, N: number): {an: number[], bn: number[]} {
-  const an = new Array<number>(N + 1)
+function createQuantizedTriangleWave(div: number, N: number): {an: Float32Array, bn: Float32Array} {
+  const an = new Float32Array(N + 1)
   an[0] = 0
   const coeff = 2 / (div - 1)
   for (let i = 1; i <= N; ++i) {
@@ -88,7 +88,7 @@ function createQuantizedTriangleWave(div: number, N: number): {an: number[], bn:
     }
     an[i] = 2 * a
   }
-  const bn = new Array<number>(N + 1)
+  const bn = new Float32Array(N + 1)
   bn.fill(0)
   return {an, bn}
 }

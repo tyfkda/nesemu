@@ -4,7 +4,7 @@ const fs = __non_webpack_require__('fs')
 
 import * as JSZip from 'jszip'
 import {Nes} from '../../src/nes/nes'
-import {PadValue} from '../../src/nes/apu'
+import {INoiseChannel, IPulseChannel, PadValue, WaveType} from '../../src/nes/apu'
 import {Util} from '../../src/util/util'
 import {AudioManager} from '../../src/util/audio_manager'
 
@@ -142,13 +142,35 @@ function createMyApp() {
     private updateAudio(): void {
       const audioManager = this.audioManager
       const nes = this.nes
-      const count = audioManager.getChannelCount()
+      const waveTypes = this.nes.getChannelWaveTypes()
+      const count = waveTypes.length
       for (let ch = 0; ch < count; ++ch) {
-        const volume = nes.getSoundVolume(ch)
+        const channel = nes.getSoundChannel(ch)
+        const volume = channel.getVolume()
         audioManager.setChannelVolume(ch, volume)
         if (volume > 0) {
-          audioManager.setChannelFrequency(ch, nes.getSoundFrequency(ch))
-          audioManager.setChannelDutyRatio(ch, nes.getSoundDutyRatio(ch))
+          switch (waveTypes[ch]) {
+          case WaveType.PULSE:
+            {
+              const pulse = channel as unknown as IPulseChannel
+              audioManager.setChannelDutyRatio(ch, pulse.getDutyRatio())
+            }
+            // Fallthrough
+          case WaveType.TRIANGLE:
+          case WaveType.SAWTOOTH:
+            audioManager.setChannelFrequency(ch, channel.getFrequency())
+            break
+          case WaveType.NOISE:
+            {
+              const noise = channel as unknown as INoiseChannel
+              const [period, mode] = noise.getNoisePeriod()
+              audioManager.setChannelPeriod(ch, period, mode)
+            }
+            break
+          case WaveType.DMC:
+            // TODO:
+            break
+          }
         }
       }
     }
