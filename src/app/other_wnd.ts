@@ -804,15 +804,15 @@ export class VolumeWnd extends Wnd {
 
     let dragging = false
 
-    const onDown = event => {
+    const onDown = (event: MouseEvent|TouchEvent) => {
       if (dragging ||
-          (event.type === 'mousedown' && event.button !== 0) ||
-          (event.type === 'touchstart' && event.changedTouches[0].identifier !== 0))
+          (event.type === 'mousedown' && (event as MouseEvent).button !== 0) ||
+          (event.type === 'touchstart' && (event as TouchEvent).changedTouches[0].identifier !== 0))
         return
       dragging = true
       const sliderHeight = (slider.parentNode as HTMLElement).getBoundingClientRect().height
 
-      const updateSlider = (event2: MouseEvent) => {
+      const updateSlider = (event2: MouseEvent|TouchEvent) => {
         const [, y] = DomUtil.getMousePosIn(event2, slider.parentNode as HTMLElement)
         const height = Util.clamp(sliderHeight - y, 0, sliderHeight)
         slider.style.height = `${height}px`

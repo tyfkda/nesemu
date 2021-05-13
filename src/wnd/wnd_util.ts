@@ -170,14 +170,15 @@ export class WndUtil {
         height: param.vert !== 'center' ? `${W}px` : undefined,
         zIndex: '2000',
       })
-      const onDown = event => {
+      const onDown = (event: MouseEvent|TouchEvent) => {
         switch(event.type) {
         case 'mousedown':
-          if (event.button !== 0)
+          if ((event as MouseEvent).button !== 0)
             return false
           break
         case 'touchstart':
-          if (event.changedTouches.length <= 0 || event.changedTouches[0].identifier !== 0)
+          if ((event as TouchEvent).changedTouches.length <= 0 ||
+              (event as TouchEvent).changedTouches[0].identifier !== 0)
             return false
           break
         default:
