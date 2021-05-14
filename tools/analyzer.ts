@@ -14,7 +14,7 @@ function loadPrgRom(romData: Uint8Array): Uint8Array {
 
 function insert<T>(array: Array<T>, value: any, fn: (elem: any, value: any) => boolean): void {
   const n = array.length
-  let i
+  let i: number
   for (i = 0; i < n; ++i) {
     if (fn(array[i], value))
       break
@@ -170,7 +170,7 @@ class Analyzer {
   private analyzeEntry(adr: number): void {
     this.addLabel(adr, true)
     const block = this.createBlock(adr)
-    for (;;) {
+    while (adr <= 0xffff) {
       const op = this.read8(adr)
       const inst = kInstTable[op]
       if (inst == null) {
@@ -214,6 +214,11 @@ class Analyzer {
       const block = this.blocks[i]
       for (let j = i; ++j < this.blocks.length; ++j) {
         const block2 = this.blocks[j]
+        if (block2.isJumpTable) {
+          block.end = block2.start
+          continue
+        }
+
         if (block2.start < block.end && block2.end <= block.end) {
           // Contained, remove.
           this.blocks.splice(j, 1)
@@ -340,8 +345,6 @@ function main(): void {
 
     const analyzer = new Analyzer()
     analyzer.loadProgram(loadPrgRom(data), 0x8000)
-    analyzer.addEntryPoint(analyzer.read16(0xfffc))  // Reset vector
-    analyzer.addEntryPoint(analyzer.read16(0xfffa))  // NMI vector
     analyzer.addJumpTable(0xfffa, 3)
 
     if (options.config) {

@@ -1,9 +1,9 @@
-const fs = require('fs')
-const path = require('path')
-const {promisify} = require('util')
+import * as fs from 'fs';
+import * as path from 'path'
+import {promisify} from 'util'
 import * as JSZip from 'jszip'
 
-function getMapperNo(romData: Buffer): number {
+function getMapperNo(romData: Uint8Array): number {
   const NES = 'NES'
   if (romData[0] !== NES.charCodeAt(0) || romData[1] !== NES.charCodeAt(1) ||
       romData[2] !== NES.charCodeAt(2) || romData[3] !== 0x1a) {
@@ -35,7 +35,7 @@ function dumpMapper(fn: string): void {
         }
         return Promise.reject(`${fn}: .nes not included`)
       })
-      .then((unzipped: Buffer) => {
+      .then((unzipped: Uint8Array) => {
         console.log(`"${path.basename(fn)}"\tmapper=${getMapperNo(unzipped)}`)
       })
     break
