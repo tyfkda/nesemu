@@ -1,6 +1,6 @@
 // NES: Nintendo Entertainment System
 
-import {Apu, Channel, WaveType} from './apu'
+import {Apu, Channel, GamePad, WaveType} from './apu'
 import {Bus} from './bus'
 import {Cpu, IrqType} from './cpu/cpu'
 import {MirrorMode} from './ppu/types'
@@ -58,6 +58,7 @@ export class Nes implements PrgBankController {
   private prgBank: number[] = []
   private apuChannelCount = 0
   private channelWaveTypes: WaveType[]
+  private gamePads = [new GamePad(), new GamePad()]
 
   public static create(): Nes {
     return new Nes()
@@ -67,7 +68,7 @@ export class Nes implements PrgBankController {
     this.bus = new Bus()
     this.cpu = new Cpu(this.bus)
     this.ppu = new Ppu(this.cpu.nmi.bind(this.cpu))
-    this.apu = new Apu(() => this.cpu.requestIrq(IrqType.APU))
+    this.apu = new Apu(this.gamePads, () => this.cpu.requestIrq(IrqType.APU))
     this.vblankCallback = _leftV => {}
     this.breakPointCallback = () => {}
 
@@ -149,7 +150,7 @@ export class Nes implements PrgBankController {
   }
 
   public setPadStatus(no: number, status: number): void {
-    this.apu.setPadStatus(no, status)
+    this.gamePads[no].setStatus(status)
   }
 
   public runMilliseconds(msec: number): number {

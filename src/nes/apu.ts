@@ -91,28 +91,27 @@ const kPulseDutyRatio = [0.125, 0.25, 0.5, -0.25]
 
 // ================================================================
 // GamePad
-class GamePad {
-  private status = new Uint8Array(2)
-  private tmp = new Uint8Array(2)
+export class GamePad {
+  private status = 0
+  private tmp = 0
 
-  public setStatus(no: number, status: Byte): void {
+  public setStatus(status: Byte): void {
     // Prevent simultaneous pressing on LR and UD.
     const LR = PadValue.L | PadValue.R, UD = PadValue.U | PadValue.D
     if ((status & LR) === LR)
       status &= ~LR
     if ((status & UD) === UD)
       status &= ~UD
-    this.status[no] = status & 0xff
+    this.status = status & 0xff
   }
 
   public latch(): void {
-    this.tmp[0] = this.status[0]
-    this.tmp[1] = this.status[1]
+    this.tmp = this.status
   }
 
-  public shift(no: number): number {
-    const value = this.tmp[no]
-    this.tmp[no] = value >> 1
+  public shift(): number {
+    const value = this.tmp
+    this.tmp = value >> 1
     return value & 1
   }
 }
@@ -542,9 +541,8 @@ export class Apu {
   private channels = new Array<Channel>(CHANNEL_COUNT)
   private frameInterrupt = 0  // 0=not occurred, 0x40=occurred
   private dmcInterrupt = 0x80  // 0=not occurred, 0x80=occurred
-  private gamePad = new GamePad()
 
-  constructor(private triggerIrq: () => void) {
+  constructor(private gamePads: GamePad[], private triggerIrq: () => void) {
     this.channels[ApuChannel.PULSE1] = new PulseChannel()
     this.channels[ApuChannel.PULSE2] = new PulseChannel()
     this.channels[ApuChannel.TRIANGLE] = new TriangleChannel()
@@ -597,7 +595,7 @@ export class Apu {
       }
     case PAD1_REG:
     case PAD2_REG:
-      return this.gamePad.shift(reg - PAD1_REG)
+      return this.gamePads[reg - PAD1_REG].shift()
     default:
       return 0
     }
@@ -624,16 +622,13 @@ export class Apu {
       break
     case PAD1_REG:  // Pad status. bit0 = Controller shift register strobe
       if ((value & 1) === 0) {
-        this.gamePad.latch()
+        for (const pad of this.gamePads)
+          pad.latch()
       }
       break
     default:
       break
     }
-  }
-
-  public setPadStatus(no: number, status: Byte): void {
-    this.gamePad.setStatus(no, status)
   }
 
   public onHblank(hcount: number): void {
