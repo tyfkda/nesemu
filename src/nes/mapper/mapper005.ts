@@ -10,6 +10,7 @@ const VRETURN = 262
 export class Mapper005 extends Mapper {
   private regs = new Uint8Array(8)
   private ram = new Uint8Array(0x2000)  // PRG RAM
+  private exram = new Uint8Array(0x0400)  // Expansion RAM
   private maxPrg = 0
   private bankSelect = 0
   private prgMode = 0  // 0=One 32KB, 1=Two 16KB, 2=One 16KB + two 8KB, 3=Four 8KB
@@ -44,6 +45,11 @@ export class Mapper005 extends Mapper {
     // Select
     this.options.bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
 //console.log(`Write ${Util.hex(adr, 4)} = ${Util.hex(value, 2)}`)
+      if (adr >= 0x5c00 /*&& adr <= 0x5fff*/) {
+        this.exram[adr - 0x5c00] = value
+        return
+      }
+
       switch (adr) {
       default:
         this.options.writeToApu(adr, value)
@@ -157,9 +163,21 @@ export class Mapper005 extends Mapper {
         }
         break
 
-      case 0x5128: case 0x5129: case 0x512a: case 0x512b:
+      /*case 0x5128: case 0x5129: case 0x512a: case 0x512b:
         switch (this.chrMode) {
         case 0:
+          if (adr === 0x512b) {
+            const v = (value & -8) | (this.upperChrBit << 8)
+            this.options.ppu.setChrBankOffset(0, v)
+            this.options.ppu.setChrBankOffset(1, v + 1)
+            this.options.ppu.setChrBankOffset(2, v + 2)
+            this.options.ppu.setChrBankOffset(3, v + 3)
+            this.options.ppu.setChrBankOffset(4, v + 4)
+            this.options.ppu.setChrBankOffset(5, v + 5)
+            this.options.ppu.setChrBankOffset(6, v + 6)
+            this.options.ppu.setChrBankOffset(7, v + 7)
+          }
+          break
         case 1:
           if (adr === 0x512b) {
             const v = (value & -4) | (this.upperChrBit << 8)
@@ -192,9 +210,8 @@ export class Mapper005 extends Mapper {
           }
           break
         }
-        break
+        break*/
       case 0x5130:
-        console.log(`Write: 5130: ${Util.hex(value)}`)
         this.upperChrBit = value & 3
         break
 
@@ -207,8 +224,12 @@ export class Mapper005 extends Mapper {
       }
     })
 
-    this.options.bus.setReadMemory(0x4000, 0x4fff, (adr) => {
+    this.options.bus.setReadMemory(0x4000, 0x5fff, (adr) => {
 //console.log(`Read ${Util.hex(adr, 4)}`)
+      if (adr >= 0x5c00 /*&& adr <= 0x5fff*/) {
+        return this.exram[adr - 0x5c00]
+      }
+
       switch (adr) {
       default:
         return this.options.readFromApu(adr)
