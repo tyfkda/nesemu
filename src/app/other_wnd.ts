@@ -785,6 +785,15 @@ export class SettingWnd extends Wnd {
         },
       },
       {
+        type: Type.CHECKBOX,
+        message: 'Mute on inactive',
+        getValue: () => GlobalSetting.muteOnInactive,
+        onchange(_event) {
+          GlobalSetting.muteOnInactive = (this as any).checked
+          GlobalSetting.saveToStorage()
+        },
+      },
+      {
         type: Type.RANGE,
         message: 'Volume',
         max: 100,

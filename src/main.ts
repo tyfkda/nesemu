@@ -436,10 +436,12 @@ class Main {
 
   private setUpBlur(): void {
     window.addEventListener('blur', () => {
-      this.onFocusChanged(false)
+      if (GlobalSetting.muteOnInactive)
+        this.onFocusChanged(false)
     })
     window.addEventListener('focus', () => {
-      this.onFocusChanged(true)
+      if (GlobalSetting.muteOnInactive)
+        this.onFocusChanged(true)
     })
   }
 
