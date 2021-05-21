@@ -1,6 +1,8 @@
 import {WaveType} from '../nes/apu'
 import {NoiseSampler} from './apu_util'
 
+const GLOBAL_MASTER_VOLUME = 0.5
+
 abstract class SoundChannel {
   public abstract destroy(): void
   public abstract setVolume(_volume: number): void
@@ -329,11 +331,12 @@ export class AudioManager {
       return
     const audioContextClass: any = AudioManager.audioContextClass
     if (audioContextClass != null) {
-      AudioManager.context = new audioContextClass() as AudioContext
-      AudioManager.masterGainNode = AudioManager.context.createGain()
+      const context = new audioContextClass() as AudioContext
+      AudioManager.context = context
+      AudioManager.masterGainNode = context.createGain()
       AudioManager.masterGainNode.gain.setValueAtTime(
-        AudioManager.masterVolume, AudioManager.context.currentTime)
-      AudioManager.masterGainNode.connect(AudioManager.context.destination)
+        AudioManager.masterVolume * GLOBAL_MASTER_VOLUME, context.currentTime)
+      AudioManager.masterGainNode.connect(context.destination)
       AudioManager.initialized = true
     }
   }
@@ -344,7 +347,7 @@ export class AudioManager {
 
     const context = AudioManager.context
     if (context)
-      AudioManager.masterGainNode.gain.setValueAtTime(volume, context.currentTime)
+      AudioManager.masterGainNode.gain.setValueAtTime(volume * GLOBAL_MASTER_VOLUME, context.currentTime)
   }
 
   public static createAnalyser(): AnalyserNode | null {

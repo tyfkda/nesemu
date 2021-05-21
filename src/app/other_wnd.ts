@@ -5,12 +5,11 @@ import {WndEvent} from '../wnd/types'
 import {AudioManager} from '../util/audio_manager'
 import {WaveType} from '../nes/apu'
 import {DomUtil} from '../util/dom_util'
+import {GlobalSetting} from './global_setting'
 import {Nes} from '../nes/nes'
 import {Ppu} from '../nes/ppu/ppu'
 import {PpuDebug} from './ppu_debug'
 import {kPaletColors} from '../nes/ppu/const'
-import {StorageUtil} from '../util/storage_util'
-import {Util} from '../util/util'
 
 import {AppEvent} from './app_event'
 
@@ -20,15 +19,9 @@ import * as Stats from 'stats-js'
 import * as githubLogo from '../res/github-logo.svg'
 import * as twitterLogo from '../res/twitter-logo.svg'
 
-import audioOnImg from '../res/audio_on.png'
-import audioOffImg from '../res/audio_off.png'
-
 import pluseImg from '../res/pulse.png'
 import triangleImg from '../res/triangle.png'
 import sawtoothImg from '../res/sawtooth.png'
-
-const DEFAULT_MASTER_VOLUME = 0.5
-const KEY_VOLUME = 'volume'
 
 export class FpsWnd extends Wnd {
   private subscription: Pubsub.Subscription
@@ -716,130 +709,6 @@ export class EqualizerWnd extends Wnd {
   }
 }
 
-export class VolumeWnd extends Wnd {
-  private static volume = 0
-  private static muted = false
-  private static focused = true
-  private static audioEnabled = false
-
-  public static setUp(wndMgr: WindowManager, onAudioActivated: () => void): void {
-    VolumeWnd.volume = VolumeWnd.readVolumeFromStorage()
-    const audioContextClass = window.AudioContext || window.webkitAudioContext
-    AudioManager.setUp(audioContextClass)
-    AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
-
-    const icon = document.getElementById('audio-toggle-icon') as HTMLImageElement
-    icon.src = audioOffImg
-    DomUtil.setStyles(icon, {visibility: null})
-
-    const button = document.getElementById('audio-toggle')
-    button?.addEventListener('click', _event => {
-      let muted: boolean
-      if (!this.audioEnabled) {
-        AudioManager.enableAudio()
-        onAudioActivated()
-        this.audioEnabled = true
-        muted = false
-      } else {
-        muted = !VolumeWnd.getMuted()
-        VolumeWnd.setMuted(muted)
-      }
-      icon.src = muted ? audioOffImg : audioOnImg
-      wndMgr.setFocus()
-    })
-  }
-
-  public static onFocusChanged(focused: boolean): void {
-    VolumeWnd.focused = focused
-    VolumeWnd.updateVolume()
-  }
-
-  public static setMuted(muted: boolean): void {
-    VolumeWnd.muted = muted
-    VolumeWnd.updateVolume()
-  }
-
-  public static getMuted(): boolean {
-    return VolumeWnd.muted
-  }
-
-  private static updateVolume(): void {
-    if (VolumeWnd.focused && !VolumeWnd.muted) {
-      AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
-    } else {
-      AudioManager.setMasterVolume(0)
-    }
-  }
-
-  private static readVolumeFromStorage(): number {
-    return Util.clamp(StorageUtil.getFloat(KEY_VOLUME, 0.5), 0, 1)
-  }
-
-  constructor(wndMgr: WindowManager, private onClose: () => void) {
-    super(wndMgr, 32, 120, 'V')
-
-    const container = this.createDom()
-    this.setContent(container)
-  }
-
-  public close(): void {
-    this.onClose()
-    super.close()
-  }
-
-  private createDom(): HTMLElement {
-    const container = document.createElement('div')
-    container.id = 'volume-slider-container'
-    container.className = 'volume-slider-container full-size'
-
-    const div = document.createElement('div')
-    div.className = 'full-size'
-    container.appendChild(div)
-
-    const slider = document.createElement('div')
-    slider.id = 'volume-slider'
-    slider.className = 'volume-slider'
-    slider.style.height = '100px'
-    div.appendChild(slider)
-
-    let dragging = false
-
-    const onDown = (event: MouseEvent|TouchEvent) => {
-      if (dragging ||
-          (event.type === 'mousedown' && (event as MouseEvent).button !== 0) ||
-          (event.type === 'touchstart' && (event as TouchEvent).changedTouches[0].identifier !== 0))
-        return
-      dragging = true
-      const sliderHeight = (slider.parentNode as HTMLElement).getBoundingClientRect().height
-
-      const updateSlider = (event2: MouseEvent|TouchEvent) => {
-        const [, y] = DomUtil.getMousePosIn(event2, slider.parentNode as HTMLElement)
-        const height = Util.clamp(sliderHeight - y, 0, sliderHeight)
-        slider.style.height = `${height}px`
-        VolumeWnd.volume = height / sliderHeight
-        if (VolumeWnd.focused && !VolumeWnd.muted)
-          AudioManager.setMasterVolume(VolumeWnd.volume * DEFAULT_MASTER_VOLUME)
-      }
-      DomUtil.setMouseDragListener({
-        move: updateSlider,
-        up: (_event2: MouseEvent) => {
-          dragging = false
-          VolumeWnd.volume = Math.round(VolumeWnd.volume * 100) / 100
-          StorageUtil.put(KEY_VOLUME, VolumeWnd.volume)
-        },
-      })
-      updateSlider(event)
-    }
-    container.addEventListener('mousedown', onDown)
-    container.addEventListener('touchstart', onDown)
-
-    // Set initial slider height.
-    slider.style.height = `${Math.round(VolumeWnd.volume * (120 - 3 * 2))}px`
-
-    return container
-  }
-}
-
 export class AboutWnd extends Wnd {
   constructor(wndMgr: WindowManager, private onClose: () => void) {
     super(wndMgr, 200, 128, 'About')
@@ -874,5 +743,107 @@ export class AboutWnd extends Wnd {
   public close(): void {
     this.onClose()
     super.close()
+  }
+}
+
+export class SettingWnd extends Wnd {
+  protected valueElems = new Array<HTMLInputElement>()
+
+  public constructor(wndMgr: WindowManager, private onClose: () => void) {
+    super(wndMgr, 256, 160, 'Setting')
+
+    const content = this.createContent()
+    this.setContent(content)
+
+    wndMgr.add(this)
+  }
+
+  public close(): void {
+    this.onClose()
+    super.close()
+  }
+
+  protected createContent(): HTMLElement {
+    const container = document.createElement('div')
+    DomUtil.setStyles(container, {
+      padding: '8px',
+    })
+
+    const enum Type {
+      CHECKBOX,
+      RANGE,
+    }
+
+    const table = [
+      {
+        type: Type.CHECKBOX,
+        message: 'Pause on menu',
+        getValue: () => GlobalSetting.pauseOnMenu,
+        onchange(_event) {
+          GlobalSetting.pauseOnMenu = !!(this as any).checked
+          GlobalSetting.saveToStorage()
+        },
+      },
+      {
+        type: Type.RANGE,
+        message: 'Volume',
+        max: 100,
+        getValue: () => GlobalSetting.volume,
+        onchange(_event) {
+          const volume = ((this as any).value) / 100
+          AudioManager.setMasterVolume(volume)
+          GlobalSetting.volume = volume
+        },
+        onfinish(_event) {
+          GlobalSetting.saveToStorage()
+        },
+      },
+    ]
+    for (const elem of table) {
+      const row = document.createElement('div')
+      switch (elem.type) {
+      case Type.CHECKBOX:
+        {
+          const input = document.createElement('input')
+          input.type = 'checkbox'
+          input.id = elem.message
+          input.checked = elem.getValue() as boolean
+          input.onchange = elem.onchange!
+          row.appendChild(input)
+
+          const label = document.createElement('label')
+          label.setAttribute('for', elem.message)
+          const text = document.createTextNode(elem.message)
+          label.appendChild(text)
+          row.appendChild(label)
+        }
+        break
+      case Type.RANGE:
+        {
+          const text = document.createTextNode(elem.message)
+          row.appendChild(text)
+
+          const input = document.createElement('input')
+          input.type = 'range'
+          input.oninput = elem.onchange!
+          input.onmouseup = elem.onfinish!
+          input.ontouchend = elem.onfinish!
+          if (elem.max)
+            input.max = elem.max.toString()
+          input.value = ((elem.getValue() as number) * 100).toString()
+          row.appendChild(input)
+        }
+        break
+      }
+      container.append(row)
+    }
+
+    const root = document.createElement('div')
+    root.className = 'full-size'
+    DomUtil.setStyles(root, {
+      backgroundColor: 'white',
+    })
+    root.append(container)
+    return root
   }
 }

@@ -1,9 +1,11 @@
 import {App, Option} from './app/app'
-import {AboutWnd, EqualizerWnd, GlobalPaletWnd, VolumeWnd} from './app/other_wnd'
+import {AboutWnd, EqualizerWnd, GlobalPaletWnd, SettingWnd} from './app/other_wnd'
+import {AudioManager} from './util/audio_manager'
 import {DomUtil} from './util/dom_util'
 import {JsApp} from './app/js_powered_app'
 import {PadKeyHandler} from './util/pad_key_handler'
 import {GamepadManager} from './util/gamepad_manager'
+import {GlobalSetting} from './app/global_setting'
 import {KeyConfigWnd, GamepadWnd} from './app/key_config_wnd'
 import {StorageUtil} from './util/storage_util'
 import {Util} from './util/util'
@@ -12,6 +14,9 @@ import {WndUtil} from './wnd/wnd_util'
 import {MenuItemInfo} from './wnd/types'
 import './util/polyfill'
 import * as JSZip from 'jszip'
+
+import audioOnImg from './res/audio_on.png'
+import audioOffImg from './res/audio_off.png'
 
 // Request Animation Frame
 window.requestAnimationFrame =
@@ -28,17 +33,18 @@ class Main {
   private gamepadWnd: GamepadWnd | null = null
   private globalPaletWnd: GlobalPaletWnd | null = null
   private equalizerWnd: EqualizerWnd | null = null
-  private volumeWnd: VolumeWnd | null = null
+  private settingWnd: SettingWnd | null = null
   private aboutWnd: AboutWnd | null = null
+
+  private muted = false
+  private focused = true
+  private audioEnabled = false
 
   constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
 
-    VolumeWnd.setUp(this.wndMgr, () => {
-      for (const app of this.apps)
-        app.setupAudioManager()
-    })
-
+    GlobalSetting.loadFromStorage()
+    this.setUpAudio()
     this.setUpSysmenu()
     this.setUpFileDrop()
     this.setUpBlur()
@@ -82,12 +88,12 @@ class Main {
             disabled: !GamepadManager.isSupported(),
           },
           {
-            label: 'Volume',
-            click: () => this.openVolumeWnd(),
-          },
-          {
             label: 'Equalizer',
             click: () => this.openEqualizerWnd(),
+          },
+          {
+            label: 'Setting',
+            click: () => this.openSettingWnd(),
           },
           {
             label: 'About',
@@ -408,14 +414,13 @@ class Main {
     }
   }
 
-  private openVolumeWnd(): void {
-    if (this.volumeWnd == null) {
-      this.volumeWnd = new VolumeWnd(this.wndMgr, () => {
-        this.volumeWnd = null
+  private openSettingWnd(): void {
+    if (this.settingWnd == null) {
+      this.settingWnd = new SettingWnd(this.wndMgr, () => {
+        this.settingWnd = null
       })
-      this.wndMgr.add(this.volumeWnd)
     } else {
-      this.wndMgr.moveToTop(this.volumeWnd)
+      this.wndMgr.moveToTop(this.settingWnd)
     }
   }
 
@@ -431,11 +436,56 @@ class Main {
 
   private setUpBlur(): void {
     window.addEventListener('blur', () => {
-      VolumeWnd.onFocusChanged(false)
+      this.onFocusChanged(false)
     })
     window.addEventListener('focus', () => {
-      VolumeWnd.onFocusChanged(true)
+      this.onFocusChanged(true)
     })
+  }
+
+  private setUpAudio(): void {
+    const audioContextClass = window.AudioContext || window.webkitAudioContext
+    AudioManager.setUp(audioContextClass)
+    AudioManager.setMasterVolume(GlobalSetting.volume)
+
+    const icon = document.getElementById('audio-toggle-icon') as HTMLImageElement
+    icon.src = audioOffImg
+    DomUtil.setStyles(icon, {visibility: null})
+
+    const button = document.getElementById('audio-toggle')
+    button?.addEventListener('click', _event => {
+      let muted: boolean
+      if (!this.audioEnabled) {
+        AudioManager.enableAudio()
+        for (const app of this.apps)
+          app.setupAudioManager()
+        this.audioEnabled = true
+        muted = false
+      } else {
+        muted = !this.muted
+        this.setMuted(muted)
+      }
+      icon.src = muted ? audioOffImg : audioOnImg
+      this.wndMgr.setFocus()
+    })
+  }
+
+  private onFocusChanged(focused: boolean): void {
+    this.focused = focused
+    this.updateVolume()
+  }
+
+  private setMuted(muted: boolean): void {
+    this.muted = muted
+    this.updateVolume()
+  }
+
+  private updateVolume(): void {
+    if (this.focused && !this.muted) {
+      AudioManager.setMasterVolume(GlobalSetting.volume)
+    } else {
+      AudioManager.setMasterVolume(0)
+    }
   }
 }
 

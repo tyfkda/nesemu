@@ -9,6 +9,7 @@ import {Scaler, NearestNeighborScaler, ScanlineScaler, EpxScaler} from '../util/
 
 import {App} from './app'
 import {AppEvent} from './app_event'
+import {GlobalSetting} from './global_setting'
 import {PadBit, PadValue} from '../nes/apu'
 import {PadKeyHandler} from '../util/pad_key_handler'
 import {GamepadManager} from '../util/gamepad_manager'
@@ -189,18 +190,22 @@ export class ScreenWnd extends Wnd {
   public onEvent(event: WndEvent, param?: any): any {
     switch (event) {
     case WndEvent.DRAG_BEGIN:
-      this.stream.triggerPauseApp()
+      if (GlobalSetting.pauseOnMenu)
+        this.stream.triggerPauseApp()
       break
     case WndEvent.DRAG_END:
-      this.stream.triggerResumeApp()
+      if (GlobalSetting.pauseOnMenu)
+        this.stream.triggerResumeApp()
       break
     case WndEvent.RESIZE_BEGIN:
       this.canvasHolder.style.transitionDuration = '0s'
-      this.stream.triggerPauseApp()
+      if (GlobalSetting.pauseOnMenu)
+        this.stream.triggerPauseApp()
       break
     case WndEvent.RESIZE_END:
       this.canvasHolder.style.transitionDuration = TRANSITION_DURATION
-      this.stream.triggerResumeApp()
+      if (GlobalSetting.pauseOnMenu)
+        this.stream.triggerResumeApp()
       break
     case WndEvent.RESIZE_MOVE:
       {
@@ -209,10 +214,12 @@ export class ScreenWnd extends Wnd {
       }
       break
     case WndEvent.OPEN_MENU:
-      this.stream.triggerPauseApp()
+      if (GlobalSetting.pauseOnMenu)
+        this.stream.triggerPauseApp()
       break
     case WndEvent.CLOSE_MENU:
-      this.stream.triggerResumeApp()
+      if (GlobalSetting.pauseOnMenu)
+        this.stream.triggerResumeApp()
       break
     case WndEvent.UPDATE_FRAME:
       {
