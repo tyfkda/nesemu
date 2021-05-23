@@ -219,6 +219,7 @@ class AwNoiseChannel extends SoundChannel {
 class PulseChannel extends OscillatorChannel {
   private delay: DelayNode
   private dutyRatio = 0.5
+  private negate = 1  // +1 or -1
 
   public destroy(): void {
     super.destroy()
@@ -226,6 +227,14 @@ class PulseChannel extends OscillatorChannel {
       this.delay.disconnect()
       // this.delay = null
     }
+  }
+
+  public setVolume(volume: number): void {
+    if (volume === this.volume)
+      return
+    this.volume = volume
+
+    this.gainNode.gain.setValueAtTime(volume * this.negate, this.gainNode.context.currentTime)
   }
 
   public setFrequency(frequency: number): void {
@@ -240,6 +249,7 @@ class PulseChannel extends OscillatorChannel {
     if (dutyRatio === this.dutyRatio)
       return
     this.dutyRatio = dutyRatio
+    this.negate = dutyRatio <= 0.5 ? 1 : -1
 
     this.updateDelay()
   }
@@ -263,7 +273,8 @@ class PulseChannel extends OscillatorChannel {
 
   private updateDelay(): void {
     const now = this.delay.context.currentTime
-    this.delay.delayTime.setValueAtTime((1.0 - this.dutyRatio) / this.frequency, now)
+    const dutyRatio = this.dutyRatio <= 0.5 ? this.dutyRatio : 1 - this.dutyRatio
+    this.delay.delayTime.setValueAtTime(dutyRatio / this.frequency, now)
   }
 }
 

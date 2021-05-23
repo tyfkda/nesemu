@@ -87,7 +87,7 @@ const kLengthTable = [
 const kNoiseFrequencies =
       [4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068]
 
-const kPulseDutyRatio = [0.125, 0.25, 0.5, -0.25]
+const kPulseDutyRatio = [0.125, 0.25, 0.5, 0.75]
 
 // ================================================================
 // GamePad
