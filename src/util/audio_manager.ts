@@ -408,6 +408,8 @@ export class AudioManager {
   public setChannelFrequency(channel: number, frequency: number): void {
     if (AudioManager.context == null)
       return
+
+    frequency = Math.min(frequency, AudioManager.context.sampleRate * 0.5)
     this.channels[channel].setFrequency(frequency)
   }
 
