@@ -182,7 +182,7 @@ export class Wnd {
           event.preventDefault()
           itemElem.classList.add('opened')
         }
-      })
+      }, {passive: false})
       itemElem.addEventListener('touchend', event => {
         if (event.changedTouches[0].identifier === 0) {
           const [x, y] = DomUtil.getMousePosIn(event, itemElem)
@@ -314,7 +314,7 @@ export class Wnd {
     })
     button.addEventListener('touchstart', event => {
       event.stopPropagation()
-    })
+    }, {passive: true})
     parent.appendChild(button)
     return button
   }

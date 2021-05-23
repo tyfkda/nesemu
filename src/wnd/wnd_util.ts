@@ -100,7 +100,7 @@ export class WndUtil {
       return true
     }
     grip.addEventListener('mousedown', onDown)
-    grip.addEventListener('touchstart', onDown)
+    grip.addEventListener('touchstart', onDown, {passive: true})
   }
 
   public static makeResizable(
@@ -175,18 +175,19 @@ export class WndUtil {
         case 'mousedown':
           if ((event as MouseEvent).button !== 0)
             return false
+          event.preventDefault()
           break
         case 'touchstart':
           if ((event as TouchEvent).changedTouches.length <= 0 ||
               (event as TouchEvent).changedTouches[0].identifier !== 0)
             return false
+          // Cannot call event.preventDefault() because touch event is used in passive mode.
           break
         default:
           return false
         }
 
         event.stopPropagation()
-        event.preventDefault()
         const rootRect = getClientRect()
         const [mx, my] = DomUtil.getMousePosIn(event, resizeBox)
         const dragOfsX = param.horz === 'left' ? -mx : W - mx
@@ -240,7 +241,7 @@ export class WndUtil {
         return true
       }
       resizeBox.addEventListener('mousedown', onDown)
-      resizeBox.addEventListener('touchstart', onDown)
+      resizeBox.addEventListener('touchstart', onDown, {passive: true})
 
       element.appendChild(resizeBox)
     })
