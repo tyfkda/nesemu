@@ -772,7 +772,7 @@ export class VolumeWnd extends Wnd {
   }
 
   private static readVolumeFromStorage(): number {
-    return Util.clamp(StorageUtil.getFloat(KEY_VOLUME, 1), 0, 0.5)
+    return Util.clamp(StorageUtil.getFloat(KEY_VOLUME, 0.5), 0, 1)
   }
 
   constructor(wndMgr: WindowManager, private onClose: () => void) {
