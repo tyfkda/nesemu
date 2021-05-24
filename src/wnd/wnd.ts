@@ -224,6 +224,7 @@ export class Wnd {
     this.root.classList.add('resizable')
 
     this.addTitleButton(this.titleBtnHolder, 'maximize', () => {
+      this.wndMgr.moveToTop(this)
       this.maximize()
     })
 
