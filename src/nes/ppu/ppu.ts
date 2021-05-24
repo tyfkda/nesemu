@@ -364,10 +364,10 @@ export class Ppu {
     this.checkSprite0Hit(hcount)
 
     switch (hcount) {
-    case VBlank.START:
-      this.setVBlank()
-      break
+    // case VBlank.START:
+    //   break
     case VBlank.NMI:
+      this.setVBlank()
       if ((this.regs[PpuReg.CTRL] & PpuCtrlBit.VINT_ENABLE) !== 0)
         this.triggerNmi()
       break
