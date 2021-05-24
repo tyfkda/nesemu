@@ -321,6 +321,8 @@ const kIllegalInstruction: Instruction = {
   addressing: Addressing.UNKNOWN,
   bytes: 1,
   cycle: 0,
+  read: false,
+  write: false,
 }
 
 export class TraceWnd extends Wnd {

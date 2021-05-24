@@ -158,8 +158,73 @@ export class Cpu {
     }
 
     this.pc += inst.bytes
-    const adr = this.getAdr(pc, inst.addressing)
     let cycle = inst.cycle
+    let adr: Address  // = this.getAdr(pc, inst.addressing)
+    {
+      switch (inst.addressing) {
+      case Addressing.IMMEDIATE:
+      case Addressing.RELATIVE:
+        adr = pc
+        break
+      case Addressing.ZEROPAGE:
+        adr = this.read8(pc)
+        break
+      case Addressing.ZEROPAGE_X:
+        adr = (this.read8(pc) + this.x) & 0xff
+        break
+      case Addressing.ZEROPAGE_Y:
+        adr = (this.read8(pc) + this.y) & 0xff
+        break
+      case Addressing.ABSOLUTE:
+        adr = this.read16(pc)
+        break
+      case Addressing.ABSOLUTE_X:
+        {
+          const base = this.read16(pc)
+          adr = (base + this.x) & 0xffff
+          if (!inst.write)
+            cycle += (((adr ^ base) >> 8) & 1)  // 1 if page crossed or 0
+        }
+        break
+      case Addressing.ABSOLUTE_Y:
+        {
+          const base = this.read16(pc)
+          adr = (base + this.y) & 0xffff
+          if (!inst.write)
+            cycle += (((adr ^ base) >> 8) & 1)  // 1 if page crossed or 0
+        }
+        break
+      case Addressing.INDIRECT_X:
+        {
+          const zeroPageAdr = this.read8(pc)
+          adr = this.read16Indirect((zeroPageAdr + this.x) & 0xff)
+        }
+        break
+      case Addressing.INDIRECT_Y:
+        {
+          const zeroPageAdr = this.read8(pc)
+          const base = this.read16Indirect(zeroPageAdr)
+          adr = (base + this.y) & 0xffff
+          if (!inst.write)
+            cycle += (((adr ^ base) >> 8) & 1)  // 1 if page crossed or 0
+        }
+        break
+      case Addressing.INDIRECT:
+        {
+          const indirect = this.read16(pc)
+          adr = this.read16Indirect(indirect)
+        }
+        break
+      default:
+        console.error(`Illegal addressing: ${inst.addressing}, pc=${Util.hex(pc, 4)}`)
+        this.paused = true
+        // Fallthrough
+      case Addressing.ACCUMULATOR:
+      case Addressing.IMPLIED:
+        adr = 0  // Dummy.
+        break
+      }
+    }
 
     // ========================================================
     // Dispatch
@@ -678,49 +743,6 @@ export class Cpu {
     this.overflow = value ? 1 : 0
   }
 
-  private getAdr(pc: Address, addressing: Addressing): Address {
-    switch (addressing) {
-    case Addressing.ACCUMULATOR:
-    case Addressing.IMPLIED:
-      return 0  // Dummy.
-    case Addressing.IMMEDIATE:
-    case Addressing.RELATIVE:
-      return pc
-    case Addressing.ZEROPAGE:
-      return this.read8(pc)
-    case Addressing.ZEROPAGE_X:
-      return (this.read8(pc) + this.x) & 0xff
-    case Addressing.ZEROPAGE_Y:
-      return (this.read8(pc) + this.y) & 0xff
-    case Addressing.ABSOLUTE:
-      return this.read16(pc)
-    case Addressing.ABSOLUTE_X:
-      return (this.read16(pc) + this.x) & 0xffff
-    case Addressing.ABSOLUTE_Y:
-      return (this.read16(pc) + this.y) & 0xffff
-    case Addressing.INDIRECT_X:
-      {
-        const zeroPageAdr = this.read8(pc)
-        return this.read16Indirect((zeroPageAdr + this.x) & 0xff)
-      }
-    case Addressing.INDIRECT_Y:
-      {
-        const zeroPageAdr = this.read8(pc)
-        const base = this.read16Indirect(zeroPageAdr)
-        return (base + this.y) & 0xffff
-      }
-    case Addressing.INDIRECT:
-      {
-        const adr = this.read16(pc)
-        return this.read16Indirect(adr)
-      }
-    default:
-      console.error(`Illegal addressing: ${addressing}, pc=${Util.hex(pc, 4)}`)
-      this.paused = true
-      return 0
-    }
-  }
-
   private branch(adr: Address, cond: boolean): number {
     if (!cond)
       return 0
@@ -728,7 +750,7 @@ export class Cpu {
     const offset = this.read8(adr)
     const newPc = (pc + (offset < 0x80 ? offset : offset - 0x100)) & 0xffff
     this.pc = newPc
-    return ((pc ^ newPc) & 0x0100) > 0 ? 2 : 1
+    return 1 + (((pc ^ newPc) >> 8) & 1)
   }
 
   private handleIrq(): void {
