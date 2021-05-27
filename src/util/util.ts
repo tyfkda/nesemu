@@ -7,19 +7,15 @@ const _btoa = typeof btoa !== 'undefined' ? btoa : (function(str: string | Buffe
 })
 
 const _atob = typeof atob !== 'undefined' ? atob : (function(str: string): string {
-  return new Buffer(str, 'base64').toString('binary')
+  return Buffer.from(str, 'base64').toString('binary')
 })
 
 export class Util {
   public static hex(x: number, order = 2): string {
-    const s = x.toString(16)
-    const dif = s.length - order
-    if (dif > 0)
-      return s.substring(dif)
-    if (dif === 0)
-      return s
-    const zeros = '0000000'
-    return zeros.substring(zeros.length + dif) + s
+    let s = x.toString(16).padStart(order, '0')
+    if (s.length > order)
+      s = s.substring(s.length - order)
+    return s
   }
 
   public static clamp(x: number, min: number, max: number): number {
@@ -42,9 +38,9 @@ export class Util {
 
   public static convertBase64StringToUint8Array(src: string): Uint8Array {
     const decoded = _atob(src)
-    const array = new Array<number>(decoded.length)
+    const u8array = new Uint8Array(decoded.length)
     for (let i = 0; i < decoded.length; ++i)
-      array[i] = decoded.charCodeAt(i)
-    return new Uint8Array(array)
+      u8array[i] = decoded.charCodeAt(i)
+    return u8array
   }
 }
