@@ -125,24 +125,24 @@ export class GamePad {
 // ================================================================
 
 class Envelope {
-  private envelopeDivider = 0  // i.e. Envelope counter
-  private envelopeCounter = 0  // i.e. Envelope volume
-  private envelopeReset = false
+  private divider = 0
+  private counter = 0
+  private reset = false
   private reg: Byte = 0
 
   public clear(): void {
-    this.envelopeDivider = this.envelopeCounter = 0
+    this.divider = this.counter = 0
   }
 
   public resetClock(): void {
-    this.envelopeReset = true
+    this.reset = true
   }
 
   public write(value: Byte): void {
     this.reg = value
     if ((value & CONSTANT_VOLUME) === 0) {
-      this.envelopeDivider = value & 0x0f
-      // this.envelopeCounter = 0x0f
+      this.divider = value & 0x0f
+      // this.counter = 0x0f
     }
   }
 
@@ -150,37 +150,37 @@ class Envelope {
     const v = this.reg
     if ((v & CONSTANT_VOLUME) !== 0)
       return (v & 15) / 15
-    return this.envelopeCounter / 15
+    return this.counter / 15
   }
 
   public update(): void {
     if ((this.reg & CONSTANT_VOLUME) !== 0)
       return
 
-    if (this.envelopeReset) {
-      this.envelopeReset = false
-      this.envelopeCounter = 0x0f
+    if (this.reset) {
+      this.reset = false
+      this.counter = 0x0f
       return
     }
 
     const DEC = 4
-    this.envelopeDivider -= DEC
-    if (this.envelopeDivider < 0) {
+    this.divider -= DEC
+    if (this.divider < 0) {
       const add = (this.reg & 0x0f) + 1
       do {
-        this.envelopeDivider += add
-        if (this.envelopeCounter > 0) {
-          --this.envelopeCounter
+        this.divider += add
+        if (this.counter > 0) {
+          --this.counter
         } else {
           if ((this.reg & ENVELOPE_LOOP) !== 0) {
-            this.envelopeCounter = 0x0f
+            this.counter = 0x0f
           } else {
-            this.envelopeCounter = 0
-            this.envelopeDivider = 0
+            this.counter = 0
+            this.divider = 0
             break
           }
         }
-      } while (this.envelopeDivider < 0)
+      } while (this.divider < 0)
     }
   }
 }
