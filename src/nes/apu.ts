@@ -555,16 +555,25 @@ class DeltaModulationChannel extends Channel implements IDeltaModulationChannel 
 // Apu
 export class Apu {
   private regs = new Uint8Array(0x20)
-  private channels = new Array<Channel>(CHANNEL_COUNT)
+  private channels: Array<Channel>
   private frameInterrupt = 0  // 0=not occurred, 0x40=occurred
   private dmcInterrupt = 0x80  // 0=not occurred, 0x80=occurred
 
   constructor(private gamePads: GamePad[], private triggerIrq: () => void) {
-    this.channels[ApuChannel.PULSE1] = new PulseChannel()
-    this.channels[ApuChannel.PULSE2] = new PulseChannel()
-    this.channels[ApuChannel.TRIANGLE] = new TriangleChannel()
-    this.channels[ApuChannel.NOISE] = new NoiseChannel()
-    this.channels[ApuChannel.DMC] = new DeltaModulationChannel(triggerIrq)
+    this.channels = kWaveTypes.map((t: WaveType): Channel => {
+      switch (t) {
+      case WaveType.PULSE:
+        return new PulseChannel()
+      case WaveType.TRIANGLE:
+        return new TriangleChannel()
+      case WaveType.NOISE:
+        return new NoiseChannel()
+      case WaveType.DMC:
+        return new DeltaModulationChannel(triggerIrq)
+      default:
+        throw new Error('Illegal wave type')
+      }
+    })
   }
 
   public getWaveTypes(): WaveType[] {
