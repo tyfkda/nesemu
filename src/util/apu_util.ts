@@ -35,6 +35,11 @@ export class NoiseSampler {
     this.fixed = multiplier | 0
   }
 
+  public setEnable(enable: boolean): void {
+    if (!enable)
+      this.volume = 0
+  }
+
   public setVolume(volume: number): void {
     this.volume = volume
   }

@@ -189,6 +189,7 @@ class Envelope {
 // Sound channel
 export abstract class Channel {
   protected regs = new Uint8Array(4)
+  protected enabled = true
   protected stopped = true
 
   public reset(): void {
@@ -203,10 +204,15 @@ export abstract class Channel {
   public getVolume(): number { return 0 }
   public getFrequency(): number { return 1 }
   public setEnable(value: boolean): void {
+    this.enabled = value
     if (!value)
       this.stopped = true
   }
   public update(): void {}
+
+  public isEnabled(): boolean {
+    return this.enabled
+  }
 
   public isPlaying(): boolean {
     return !this.stopped
@@ -478,6 +484,7 @@ class DeltaModulationChannel extends Channel implements IDeltaModulationChannel 
   }
 
   public setEnable(value: boolean): void {
+    this.enabled = value
     this.stopped = !value
     if (value) {
       if (this.dmaLengthCounter === 0) {

@@ -5,7 +5,8 @@ const GLOBAL_MASTER_VOLUME = 0.5
 
 abstract class SoundChannel {
   public abstract destroy(): void
-  public abstract setVolume(_volume: number): void
+  public abstract setEnable(enable: boolean): void
+  public abstract setVolume(volume: number): void
   public abstract start(): void
 
   public setFrequency(_frequency: number): void { throw new Error('Invalid call') }
@@ -17,6 +18,7 @@ abstract class SoundChannel {
 
 abstract class GainSoundChannel extends SoundChannel {
   protected gainNode: GainNode
+  protected enable = true
   protected volume = 0
 
   public constructor(context: AudioContext) {
@@ -30,6 +32,15 @@ abstract class GainSoundChannel extends SoundChannel {
       this.gainNode.disconnect()
       // this.gainNode = null
     }
+  }
+
+  public setEnable(enable: boolean): void {
+    if (enable === this.enable)
+      return
+    this.enable = enable
+
+    if (!enable)
+      this.gainNode.gain.setValueAtTime(0, this.gainNode.context.currentTime)
   }
 
   public setVolume(volume: number): void {
@@ -164,6 +175,10 @@ class SpNoiseChannel extends SoundChannel {
   public start(): void {
   }
 
+  public setEnable(enable: boolean): void {
+    this.sampler.setEnable(enable)
+  }
+
   public setVolume(volume: number): void {
     this.sampler.setVolume(volume)
   }
@@ -204,6 +219,11 @@ class AwNoiseChannel extends SoundChannel {
   }
 
   public start(): void {
+  }
+
+  public setEnable(enable: boolean): void {
+    if (this.node != null)
+      this.node.port.postMessage({action: 'enable', value: enable})
   }
 
   public setVolume(volume: number): void {
@@ -302,8 +322,9 @@ function gcd(m: number, n: number): number {
 }
 
 class SpDmcChannel extends SoundChannel {
-  private node: ScriptProcessorNode
+  private node?: ScriptProcessorNode
   private regs = new Uint8Array(4)
+  private enabled = false
   private volume = 0
   private sampleStep = 0
   private rateTable: Float32Array
@@ -319,7 +340,7 @@ class SpDmcChannel extends SoundChannel {
   private outBuffer = 0
   private timer = 0
 
-  public constructor(private triggerDma: (adr: number) => number, context: AudioContext, destination: AudioNode) {
+  public constructor(private triggerDma: (adr: number) => number, private context: AudioContext, private destination: AudioNode) {
     super()
 
     const APU_NOISE_HZ = 894887 * 2
@@ -330,9 +351,11 @@ class SpDmcChannel extends SoundChannel {
 
     this.rateTable = new Float32Array(kDmcRateTable.map(x => x * multiplier))
     this.rate = this.rateTable[0]
+  }
 
-    this.node = context.createScriptProcessor(SP_DMC_BUFFER_SIZE, 0, 1)
-    this.node.onaudioprocess = (e) => {
+  private createNode(context: AudioContext, destination: AudioNode): ScriptProcessorNode {
+    const node = context.createScriptProcessor(SP_DMC_BUFFER_SIZE, 0, 1)
+    node.onaudioprocess = (e) => {
       const output = e.outputBuffer.getChannelData(0)
       if (this.volume <= 0) {
         output.fill(this.outDac * (4.0 / 127))
@@ -358,7 +381,8 @@ class SpDmcChannel extends SoundChannel {
       }
       this.timer = timer
     }
-    this.node.connect(destination)
+    node.connect(destination)
+    return node
   }
 
   public destroy(): void {
@@ -369,6 +393,16 @@ class SpDmcChannel extends SoundChannel {
   }
 
   public start(): void {
+  }
+
+  public setEnable(enable: boolean): void {
+    this.enabled = enable
+    if (!enable)
+      this.volume = 0
+
+    if (this.node == null && this.enabled) {
+      this.node = this.createNode(this.context, this.destination)
+    }
   }
 
   public setVolume(volume: number): void {
@@ -465,7 +499,7 @@ function createSoundChannel(
   case WaveType.SAWTOOTH:
     return new SawtoothChannel(context, destination)
   default:
-    throw Error('Unhandled')
+    throw new Error('Unhandled')
   }
 }
 
@@ -575,6 +609,12 @@ export class AudioManager {
 
   public getBlockiness(): boolean {
     return this.blockiness
+  }
+
+  public setChannelEnable(channel: number, enable: boolean): void {
+    if (AudioManager.context == null)
+      return
+    this.channels[channel].setEnable(enable)
   }
 
   public setChannelFrequency(channel: number, frequency: number): void {

@@ -284,6 +284,11 @@ export class App {
     const waveTypes = this.nes.getChannelWaveTypes()
     for (let ch = 0; ch < waveTypes.length; ++ch) {
       const channel = this.nes.getSoundChannel(ch)
+      const enabled = channel.isEnabled()
+      audioManager.setChannelEnable(ch, enabled)
+      if (!enabled)
+        continue
+
       const volume = channel.getVolume()
       audioManager.setChannelVolume(ch, volume)
       if (volume > 0) {

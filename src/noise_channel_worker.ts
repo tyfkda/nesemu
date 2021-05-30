@@ -16,6 +16,9 @@ class NoiseChannelProcessor extends AudioWorkletProcessor {
       case 'stop':
         this.stopped = true
         break
+      case 'enable':
+        this.sampler.setEnable(ev.data.value)
+        break
       case 'volume':
         this.sampler.setVolume(ev.data.value)
         break
