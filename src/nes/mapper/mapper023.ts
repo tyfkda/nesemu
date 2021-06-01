@@ -15,8 +15,8 @@ const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, Mirr
 class Mapper023Base extends Mapper {
   private ram = new Uint8Array(0x2000)
   private prgBankMode = 0
-  private prgBank = new Array(4)
-  private chrBank = new Array(8)
+  private prgBank = new Array<number>(4)
+  private chrBank = new Array<number>(8)
   private irqControl = 0
   private irqLatch = 0
   private irqCounter = 0
