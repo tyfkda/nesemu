@@ -16,8 +16,7 @@ import {AppEvent} from './app_event'
 import * as Pubsub from '../util/pubsub'
 import * as Stats from 'stats-js'
 
-import * as githubLogo from '../res/github-logo.svg'
-import * as twitterLogo from '../res/twitter-logo.svg'
+import aboutHtmlContent from '../res/about.html'
 
 import pluseImg from '../res/pulse.png'
 import triangleImg from '../res/triangle.png'
@@ -719,20 +718,7 @@ export class AboutWnd extends Wnd {
       background: 'white',
     })
 
-    root.innerHTML = `<div class="full-size" style="display:flex; align-items:center; justify-content:center;">
-  <div>
-    <div>NES Emulator</div>
-    <div>Version: 0.9.0</div>
-    <div style="height:8px"></div>
-    <div>
-      <center>
-        <a href="https://github.com/tyfkda/nesemu/" target="_blank" rel="noopener noreferrer">${githubLogo}</a
-        ><div style="display:inline-block; width:8px; height:8px"></div
-        ><a href="https://twitter.com/tyfkda/" target="_blank" rel="noopener noreferrer">${twitterLogo} </a>
-      </center>
-    </div>
-  </div>
-</div>`
+    root.innerHTML = aboutHtmlContent
 
     this.setContent(root)
 
