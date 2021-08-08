@@ -15,7 +15,7 @@ import ejs from 'gulp-ejs'
 import htmlmin from 'gulp-htmlmin'
 
 // SASS
-import gulpSass from 'gulp-sass'
+const gulpSass = require('gulp-sass')(require('sass'))
 import cssnano from 'gulp-cssnano'
 
 // Unit test
