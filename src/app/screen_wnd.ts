@@ -223,17 +223,8 @@ export class ScreenWnd extends Wnd {
       break
     case WndEvent.UPDATE_FRAME:
       {
-        this.padKeyHandler.update(this.wndMgr.getKeyboardManager())
-        const speedUp = (this.isTop() &&
-                         this.wndMgr.getKeyboardManager().getKeyPressing('ShiftLeft'))
-        this.timeScale = speedUp ? TIME_SCALE_FAST : TIME_SCALE_NORMAL
-
         const elapsed = param as number
-        this.stream.triggerStartCalc()
-        this.stream.triggerUpdate(elapsed)
-        this.stream.triggerEndCalc()
-
-        this.repeatBtnFrame = !this.repeatBtnFrame
+        this.update(elapsed)
       }
       break
     case WndEvent.FOCUS:
@@ -636,6 +627,19 @@ export class ScreenWnd extends Wnd {
   protected createFpsWnd(): boolean {
     return this.createSubWnd(WndType.FPS, () =>
         new FpsWnd(this.wndMgr, this.stream))
+  }
+
+  private update(elapsedTime: number) {
+    this.padKeyHandler.update(this.wndMgr.getKeyboardManager())
+    const speedUp = (this.isTop() &&
+                     this.wndMgr.getKeyboardManager().getKeyPressing('ShiftLeft'))
+    this.timeScale = speedUp ? TIME_SCALE_FAST : TIME_SCALE_NORMAL
+
+    this.stream.triggerStartCalc()
+    this.stream.triggerUpdate(elapsedTime)
+    this.stream.triggerEndCalc()
+
+    this.repeatBtnFrame = !this.repeatBtnFrame
   }
 
   private isAspectRatio(scale: number): boolean {
