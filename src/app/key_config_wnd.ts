@@ -98,7 +98,7 @@ abstract class GamepadBaseWnd extends Wnd {
 
   public onEvent(event: WndEvent, _param?: any): any {
     switch (event) {
-    case WndEvent.UPDATE_FRAME:
+    case WndEvent.REQUEST_ANIMATION_FRAME:
       this.updateGamepad()
       break
     default:

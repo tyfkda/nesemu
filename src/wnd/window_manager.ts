@@ -224,7 +224,7 @@ export class WindowManager {
       // Deriver RAF to all windows.
       for (let i = 0; i < this.windows.length; ++i) {
         const wnd = this.windows[i]
-        wnd.onEvent(WndEvent.UPDATE_FRAME, elapsedTime)
+        wnd.onEvent(WndEvent.REQUEST_ANIMATION_FRAME, elapsedTime)
       }
       this.rafId = requestAnimationFrame(loopFn)
     }

@@ -100,6 +100,9 @@ export class ScreenWnd extends Wnd {
 
   protected wndMap = new Array<Wnd | null>()
 
+  private timerId = 0
+  private renderOk = false
+
   constructor(wndMgr: WindowManager, protected app: App, protected nes: Nes,
               protected stream: AppEvent.Stream)
   {
@@ -129,7 +132,7 @@ export class ScreenWnd extends Wnd {
       .subscribe((type: AppEvent.Type, param?: any) => {
         switch (type) {
         case AppEvent.Type.RENDER:
-          this.render()
+          this.renderOk = true
           break
         case AppEvent.Type.RESET:
           this.scaler.reset()
@@ -144,6 +147,14 @@ export class ScreenWnd extends Wnd {
           break
         }
       })
+
+    let lastTime = window.performance.now()
+    this.timerId = window.setInterval(() => {
+      const curTime = window.performance.now()
+      const elapsedTime = curTime - lastTime
+      lastTime = curTime
+      this.update(elapsedTime)
+    }, 1000.0 / 60)
 
     this.contentWidth = (WIDTH - HEDGE * 2) * 2
     this.contentHeight = (HEIGHT - VEDGE * 2) * 2
@@ -191,6 +202,12 @@ export class ScreenWnd extends Wnd {
 
   public onEvent(event: WndEvent, param?: any): any {
     switch (event) {
+    case WndEvent.CLOSE:
+      if (this.timerId > 0) {
+        window.clearInterval(this.timerId)
+        this.timerId = 0
+      }
+      break
     case WndEvent.DRAG_BEGIN:
       if (GlobalSetting.pauseOnMenu)
         this.stream.triggerPauseApp()
@@ -223,10 +240,12 @@ export class ScreenWnd extends Wnd {
       if (GlobalSetting.pauseOnMenu)
         this.stream.triggerResumeApp()
       break
-    case WndEvent.UPDATE_FRAME:
-      {
-        const elapsed = param as number
-        this.update(elapsed)
+    case WndEvent.REQUEST_ANIMATION_FRAME:
+      if (this.renderOk) {
+        this.renderOk = false
+        this.stream.triggerStartCalc()
+        this.render()
+        this.stream.triggerEndCalc()
       }
       break
     case WndEvent.FOCUS:
@@ -660,9 +679,7 @@ export class ScreenWnd extends Wnd {
                      this.wndMgr.getKeyboardManager().getKeyPressing('ShiftLeft'))
     this.timeScale = speedUp ? TIME_SCALE_FAST : TIME_SCALE_NORMAL
 
-    this.stream.triggerStartCalc()
     this.stream.triggerUpdate(elapsedTime)
-    this.stream.triggerEndCalc()
 
     this.repeatBtnFrame = !this.repeatBtnFrame
   }
