@@ -21,7 +21,7 @@ import audioOffImg from './res/audio_off.png'
 // Request Animation Frame
 window.requestAnimationFrame =
   (window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-   window.webkitRequestAnimationFrame || window.msRequestAnimationFrame)
+   /*window.webkitRequestAnimationFrame ||*/ window.msRequestAnimationFrame)
 
 class Main {
   private wndMgr: WindowManager

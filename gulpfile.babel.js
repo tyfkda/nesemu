@@ -15,7 +15,8 @@ import ejs from 'gulp-ejs'
 import htmlmin from 'gulp-htmlmin'
 
 // SASS
-const gulpSass = require('gulp-sass')(require('sass'))
+import sassPlugin from 'sass'
+import gulpSass from 'gulp-sass'
 import cssnano from 'gulp-cssnano'
 
 // Unit test
@@ -107,7 +108,7 @@ export function watchTs() {
 export function sass() {
   return gulp.src(SRC_SASS_FILES)
     .pipe(plumber())
-    .pipe(gulpSass())
+    .pipe(gulpSass(sassPlugin)())
     .pipe(cssnano())
     .pipe(gulp.dest(ASSETS_DIR))
     .pipe(browserSync.stream())
