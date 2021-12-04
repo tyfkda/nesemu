@@ -463,7 +463,7 @@ export class AudioWnd extends Wnd {
       if ((toneIndex >= -1 && toneIndex <= AudioWnd.OCTAVE * 12) || vol <= 0) {
         const offset = kToneTable[(toneIndex | 0) % 12]
         const x = (offset + ((toneIndex / 12) | 0) * 7 + (toneIndex % 1)) * xScale
-        const y = ich * h + ((offset | 0) === offset ? yWhite : yBlack)
+        const y = (offset | 0) === offset ? yWhite : yBlack
         DomUtil.setStyles(dot, {
           left: `${x - DOT_W / 2}px`,
           top: `${y - DOT_W / 2}px`,
@@ -494,27 +494,23 @@ export class AudioWnd extends Wnd {
 
     const kBlackKeys = [0, 2, 3, 5, 6]
 
+    const DOT_W = 7
+    const dots = new Array<HTMLElement>(channelCount)
+
     for (let ch = 0; ch < channelCount; ++ch) {
       const line = document.createElement('div')
-      line.className = 'pull-left clearfix'
+      line.className = 'keyboard'
       DomUtil.setStyles(line, {
-        width: '100%',
-        height: `${H}px`,
-        backgroundColor: 'white',
-        overflow: 'hidden',
-        position: 'relative',
+        height: `${H - 1}px`,
       })
       root.appendChild(line)
 
       for (let note = 0; note < AudioWnd.OCTAVE * 7; ++note) {
         const whiteKey = document.createElement('div')
-        whiteKey.className = 'pull-left'
+        whiteKey.className = 'white-key'
         DomUtil.setStyles(whiteKey, {
+          left: `${note * W}px`,
           width: `${W - 1}px`,
-          height: `${H - 1}px`,
-          backgroundColor: 'white',
-          borderLeft: 'black solid 1px',
-          borderBottom: 'black solid 1px',
         })
         line.appendChild(whiteKey)
       }
@@ -524,13 +520,11 @@ export class AudioWnd extends Wnd {
         for (let i = start; i < kBlackKeys.length; ++i) {
           const note = octave * 7 + kBlackKeys[i]
           const blackKey = document.createElement('div')
+          blackKey.className = 'black-key'
           DomUtil.setStyles(blackKey, {
-            position: 'absolute',
             left: `${note * W + W / 2 + 1}px`,
-            top: '0',
             width: `${W - 2}px`,
             height: `${H / 2}px`,
-            backgroundColor: 'black',
           })
           line.appendChild(blackKey)
         }
@@ -546,22 +540,15 @@ export class AudioWnd extends Wnd {
       const waveType = waveTypes[this.channelIndices[ch]]
       icon.src = kWaveTypeImages[waveType]
       line.appendChild(icon)
-    }
 
-    const DOT_W = 7
-    const dots = new Array<HTMLElement>(channelCount)
-    for (let ch = 0; ch < channelCount; ++ch) {
       const dot = document.createElement('div')
+      dot.className = 'note'
       DomUtil.setStyles(dot, {
-        position: 'absolute',
-        left: '0',
-        top: '0',
         width: `${DOT_W}px`,
         height: `${DOT_W}px`,
-        backgroundColor: 'red',
         borderRadius: `${DOT_W}px`,
       })
-      root.appendChild(dot)
+      line.appendChild(dot)
       dots[ch] = dot
     }
 

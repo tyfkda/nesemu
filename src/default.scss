@@ -427,3 +427,31 @@ $BUTTON_HEIGHT: 6px;
 .icon {
   display: block;
 }
+
+.keyboard {
+  width: 100%;
+  background-color: white;
+  overflow: hidden;
+  position: relative;
+  border-bottom: black solid 1px;
+
+  .white-key {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    border-left: black solid 1px;
+  }
+
+  .black-key {
+    position: absolute;
+    top: 0;
+    background-color: black;
+  }
+
+  .note {
+    position: absolute;
+    left: 0;
+    top: 0;
+    background-color: red;
+  }
+}
