@@ -23,6 +23,7 @@ export interface SubmenuItemInfo {
   click?: () => void
   checked?: boolean | (() => boolean)
   disabled?: boolean | (() => boolean)
+  submenu?: Array<SubmenuItemInfo>
 }
 
 export interface MenuItemInfo {
