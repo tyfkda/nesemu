@@ -101,6 +101,10 @@ hr {
   .submenu-row {
     position: relative;
 
+    &:hover {
+      color: white;
+    }
+
     .submenu-check {
       position: absolute;
       left: 0;
