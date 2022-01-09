@@ -1,5 +1,7 @@
 import {DomUtil} from '../util/dom_util'
 import {KeyboardManager} from '../util/keyboard_manager'
+import {SubmenuItemInfo} from './types'
+import {StartMenu} from './start_menu'
 import {Wnd} from './wnd'
 import {WndEvent} from './types'
 
@@ -19,6 +21,7 @@ export class WindowManager {
   private onKeyUp: (event: KeyboardEvent) => void
   private blurred = false
   private rafId = 0  // requestAnimationFrame
+  private startMenu: StartMenu
 
   public constructor(private root: HTMLElement) {
     this.onKeyDown = (event: KeyboardEvent) => {
@@ -43,8 +46,13 @@ export class WindowManager {
     this.root.addEventListener('keydown', this.onKeyDown)
     this.root.addEventListener('keyup', this.onKeyUp)
 
+    this.startMenu = new StartMenu(this.root, document.getElementById('start-menu-bar')!)
     this.setUpBlur()
     this.setFocus()
+  }
+
+  public setUpStartMenu(label: string, submenu: Array<SubmenuItemInfo>): void {
+    this.startMenu.setUp(label, submenu)
   }
 
   public setFocus(): void {

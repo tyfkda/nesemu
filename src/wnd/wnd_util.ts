@@ -1,6 +1,6 @@
 import {DomUtil} from '../util/dom_util'
 import {Util} from '../util/util'
-import {MenuItemInfo, WndEvent, Z_MENU_SUBITEM} from './types'
+import {SubmenuItemInfo, WndEvent, Z_MENU_SUBITEM} from './types'
 import {Wnd} from './wnd'
 
 export class WndUtil {
@@ -248,7 +248,7 @@ export class WndUtil {
   }
 
   public static openSubmenu(
-    menuItem: MenuItemInfo,
+    submenu: Array<SubmenuItemInfo>,
     pos: {left?: string; bottom?: string},
     parent: HTMLElement,
     option: {className?: string; onClose?: () => void},
@@ -257,7 +257,7 @@ export class WndUtil {
     if (option.className != null)
       subItemHolder.className = option.className
     subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
-    menuItem.submenu.forEach(submenuItem => {
+    submenu.forEach(submenuItem => {
       const submenuRow = document.createElement('div')
       submenuRow.className = 'submenu-row clearfix'
       const subItemElem = document.createElement('div')

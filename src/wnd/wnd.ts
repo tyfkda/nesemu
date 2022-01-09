@@ -146,7 +146,7 @@ export class Wnd {
         onClose,
       }
       closeSubmenu = WndUtil.openSubmenu(
-        menuItem, pos, this.root, option)
+        menuItem.submenu, pos, this.root, option)
       itemElem.classList.add('opened')
     }
 

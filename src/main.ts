@@ -10,8 +10,6 @@ import {KeyConfigWnd, GamepadWnd} from './app/key_config_wnd'
 import {StorageUtil} from './util/storage_util'
 import {Util} from './util/util'
 import {WindowManager} from './wnd/window_manager'
-import {WndUtil} from './wnd/wnd_util'
-import {MenuItemInfo} from './wnd/types'
 import './util/polyfill'
 import * as JSZip from 'jszip'
 
@@ -25,7 +23,6 @@ window.requestAnimationFrame =
 
 class Main {
   private wndMgr: WindowManager
-  private menuItems: Array<MenuItemInfo>
   private apps: App[] = []
   private diskBios: Uint8Array | null = null
   private uninsertedApp: App | null = null
@@ -45,141 +42,60 @@ class Main {
 
     GlobalSetting.loadFromStorage()
     this.setUpAudio()
-    this.setUpSysmenu()
+    this.setUpStartMenu()
     this.setUpFileDrop()
     this.setUpBlur()
   }
 
-  private setUpSysmenu(): void {
-    this.menuItems = [
+  private setUpStartMenu(): void {
+    const submenuItems = [
       {
-        label: '👾',
-        submenu: [
-          {
-            label: 'Open',
-            click: () => {
-              const input = document.createElement('input')
-              input.type = 'file'
-              input.accept = '.nes,.sav,.zip, application/zip'
-              input.onchange = _event => {
-                if (!input.value)
-                  return
-                const fileList = input.files
-                if (fileList)
-                  this.createAppFromFiles(fileList, 0, 0)
+        label: 'Open',
+        click: () => {
+          const input = document.createElement('input')
+          input.type = 'file'
+          input.accept = '.nes,.sav,.zip, application/zip'
+          input.onchange = _event => {
+            if (!input.value)
+              return
+            const fileList = input.files
+            if (fileList)
+              this.createAppFromFiles(fileList, 0, 0)
 
-                // Clear.
-                input.value = ''
-              }
-              input.click()
-            },
-          },
-          {
-            label: 'Global palet',
-            click: () => this.openGlobalPaletWnd(),
-          },
-          {
-            label: 'Key config',
-            click: () => this.openKeyConfigWnd(),
-          },
-          {
-            label: 'Gamepad',
-            click: () => this.openGamepadWnd(),
-            disabled: !GamepadManager.isSupported(),
-          },
-          {
-            label: 'Equalizer',
-            click: () => this.openEqualizerWnd(),
-          },
-          {
-            label: 'Setting',
-            click: () => this.openSettingWnd(),
-          },
-          {
-            label: 'About',
-            click: () => this.openAboutWnd(),
-          },
-        ],
+            // Clear.
+            input.value = ''
+          }
+          input.click()
+        },
+      },
+      {
+        label: 'Global palet',
+        click: () => this.openGlobalPaletWnd(),
+      },
+      {
+        label: 'Key config',
+        click: () => this.openKeyConfigWnd(),
+      },
+      {
+        label: 'Gamepad',
+        click: () => this.openGamepadWnd(),
+        disabled: !GamepadManager.isSupported(),
+      },
+      {
+        label: 'Equalizer',
+        click: () => this.openEqualizerWnd(),
+      },
+      {
+        label: 'Setting',
+        click: () => this.openSettingWnd(),
+      },
+      {
+        label: 'About',
+        click: () => this.openAboutWnd(),
       },
     ]
 
-    const bar = document.getElementById('sysmenu-bar')
-    if (bar == null)
-      return
-
-    const itemElems: HTMLElement[] = []
-    let activeSubmenuIndex = -1
-    let closeSubmenu: (() => void) | null
-
-    const onClose = () => {
-      if (activeSubmenuIndex >= 0) {
-        const prev = itemElems[activeSubmenuIndex]
-        prev.classList.remove('opened')
-        activeSubmenuIndex = -1
-      }
-      closeSubmenu = null
-      bar.classList.remove('selected')
-    }
-
-    const showSubmenu = (index: number) => {
-      const menuItem = this.menuItems[index]
-      if (!('submenu' in menuItem) || activeSubmenuIndex === index)
-        return
-
-      if (closeSubmenu != null)
-        closeSubmenu()
-
-      if (activeSubmenuIndex >= 0) {
-        const prev = itemElems[activeSubmenuIndex]
-        prev.classList.remove('opened')
-      }
-      const itemElem = itemElems[index]
-      activeSubmenuIndex = index
-      closeSubmenu = this.openSubmenu(menuItem, itemElem, onClose)
-      itemElem.classList.add('opened')
-      bar.classList.add('selected')
-    }
-
-    this.menuItems.forEach((menuItem: MenuItemInfo, index: number) => {
-      const itemElem = document.createElement('div')
-      itemElem.className = 'sysmenu-item pull-left'
-      itemElem.innerText = menuItem.label
-      itemElem.addEventListener('click', event => {
-        event.stopPropagation()
-        if ('submenu' in menuItem) {
-          if (activeSubmenuIndex < 0) {
-            showSubmenu(index)
-          } else {
-            if (closeSubmenu)
-              closeSubmenu()
-            onClose()
-          }
-        }
-      })
-      bar.appendChild(itemElem)
-      itemElems.push(itemElem)
-
-      itemElem.addEventListener('mouseenter', _event => {
-        if (activeSubmenuIndex >= 0 && activeSubmenuIndex !== index && 'submenu' in menuItem) {
-          showSubmenu(index)
-        }
-      })
-    })
-  }
-
-  private openSubmenu(menuItem: MenuItemInfo, itemElem: HTMLElement,
-                      onClose?: () => void): () => void
-  {
-    const rect = WndUtil.getOffsetRect(this.root, itemElem)
-    const pos = {
-      left: `${rect.left}px`,
-      bottom: '0',
-    }
-    const option = {
-      className: 'sysmenu menu-subitem-holder bottom',
-      onClose,
-    }
-    return WndUtil.openSubmenu(menuItem, pos, this.root, option)
+    this.wndMgr.setUpStartMenu('👾', submenuItems)
   }
 
   private setUpFileDrop(): void {

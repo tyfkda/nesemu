@@ -1,6 +1,6 @@
 $BG_COLOR: #ddd;
 
-$SYSMENU_BAR_HEIGHT: 30px;
+$START_MENU_BAR_HEIGHT: 30px;
 $BUTTON_HIGHLIGHT: #fff;
 $BUTTON_SHADOW: #888;
 
@@ -66,7 +66,7 @@ body {
   position: absolute;
   width: 100%;
   top: 0;
-  bottom: $SYSMENU_BAR_HEIGHT;
+  bottom: $START_MENU_BAR_HEIGHT;
   overflow: hidden;
 }
 
@@ -142,9 +142,9 @@ hr {
   }
 }
 
-.sysmenu-bar {
+.start-menu-bar {
   position: absolute;
-  height: $SYSMENU_BAR_HEIGHT;
+  height: $START_MENU_BAR_HEIGHT;
   width: 100%;
   left: 0;
   bottom: 0;
@@ -153,7 +153,7 @@ hr {
   border-top: 2px solid #eee;
   box-sizing: border-box;
 
-  .sysmenu-item {
+  .start-menu-item {
     padding: 0 16px;
     cursor: pointer;
     height: 100%;
@@ -174,14 +174,14 @@ hr {
       border-bottom: 2px solid $BUTTON_HIGHLIGHT;
     }
   }
-  &.selected > .sysmenu-item:hover {
+  &.selected > .start-menu-item:hover {
     color: white;
     background-color: #22f;
   }
 }
 
 
-.sysmenu.menu-subitem-holder {
+.start-menu.menu-subitem-holder {
   @supports (backdrop-filter: none) {
     background-color: rgba(255,255,255,0.8);
   }
