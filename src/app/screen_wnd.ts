@@ -412,25 +412,56 @@ export class ScreenWnd extends Wnd {
         label: 'View',
         submenu: [
           {
-            label: '1x1',
-            checked: () => this.isAspectRatio(1),
-            click: () => {
-              this.setClientScale(1)
-            },
+            label: 'Window size',
+            submenu: [
+              {
+                label: '1x1',
+                checked: () => this.isAspectRatio(1),
+                click: () => {
+                  this.setClientScale(1)
+                },
+              },
+              {
+                label: '2x2',
+                checked: () => this.isAspectRatio(2),
+                click: () => {
+                  this.setClientScale(2)
+                },
+              },
+              {
+                label: 'Adjust aspect ratio',
+                disabled: () => this.isAspectRatio(0),
+                click: () => {
+                  this.adjustAspectRatio()
+                },
+              },
+            ],
           },
           {
-            label: '2x2',
-            checked: () => this.isAspectRatio(2),
-            click: () => {
-              this.setClientScale(2)
-            },
-          },
-          {
-            label: 'Adjust aspect ratio',
-            disabled: () => this.isAspectRatio(0),
-            click: () => {
-              this.adjustAspectRatio()
-            },
+            label: 'Scaler',
+            submenu: [
+              {
+                label: 'Nearest',
+                checked: () => this.scalerType === ScalerType.NEAREST,
+                click: () => {
+                  this.setScaler(ScalerType.NEAREST)
+                },
+              },
+              {
+                label: 'Scanline',
+                checked: () => this.scalerType === ScalerType.SCANLINE,
+                click: () => {
+                  this.setScaler(ScalerType.SCANLINE)
+                },
+              },
+              {
+                label: 'Epx',
+                checked: () => this.scalerType === ScalerType.EPX,
+                click: () => {
+                  this.setScaler(ScalerType.EPX)
+                },
+              },
+            ],
           },
           {label: '----'},
           {
@@ -452,32 +483,6 @@ export class ScreenWnd extends Wnd {
             checked: () => !this.nes.getPpu().suppressSpriteFlicker,
             click: () => {
               this.toggleSpriteFlicker()
-            },
-          },
-        ],
-      },
-      {
-        label: 'Scaler',
-        submenu: [
-          {
-            label: 'Nearest',
-            checked: () => this.scalerType === ScalerType.NEAREST,
-            click: () => {
-              this.setScaler(ScalerType.NEAREST)
-            },
-          },
-          {
-            label: 'Scanline',
-            checked: () => this.scalerType === ScalerType.SCANLINE,
-            click: () => {
-              this.setScaler(ScalerType.SCANLINE)
-            },
-          },
-          {
-            label: 'Epx',
-            checked: () => this.scalerType === ScalerType.EPX,
-            click: () => {
-              this.setScaler(ScalerType.EPX)
             },
           },
         ],
