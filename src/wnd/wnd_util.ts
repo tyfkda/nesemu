@@ -9,6 +9,12 @@ export type ResizeOption = {
   cornerOnly?: boolean;
 }
 
+export interface SubmenuOption {
+  className?: string
+  onClose?: () => void
+  onSelect?: () => void
+}
+
 export class WndUtil {
   public static getOffsetRect(
     parent: HTMLElement, target: HTMLElement,
@@ -259,9 +265,9 @@ export class WndUtil {
 
   public static openSubmenu(
     submenu: Array<SubmenuItemInfo>,
-    pos: {left?: string; bottom?: string},
+    pos: {left?: string; bottom?: string; top?: string; right?: string},
     parent: HTMLElement,
-    option: {className?: string; onClose?: () => void},
+    option: SubmenuOption = {},
   ): () => void {
     const subItemHolder = document.createElement('div')
     if (option.className != null)
@@ -272,10 +278,32 @@ export class WndUtil {
     })
 
     let closed = false
+    let closeChildMenu: (() => void) | null = null
+    let activeChildIndex = -1
+    let activeChildRow: HTMLElement | null = null
+    let activeChildItemElem: HTMLElement | null = null
+
+    const closeChild = () => {
+      if (closeChildMenu != null) {
+        closeChildMenu()
+        closeChildMenu = null
+      }
+      if (activeChildRow != null) {
+        activeChildRow.classList.remove('opened')
+        activeChildRow = null
+      }
+      if (activeChildItemElem != null) {
+        activeChildItemElem.classList.remove('opened')
+        activeChildItemElem = null
+      }
+      activeChildIndex = -1
+    }
+
     const close = () => {
       if (closed)
         return
       closed = true
+      closeChild()
       if (subItemHolder.parentNode != null)
         subItemHolder.parentNode.removeChild(subItemHolder)
       document.removeEventListener('click', onClickOther)
@@ -287,12 +315,64 @@ export class WndUtil {
       if (submenuItem.click)
         submenuItem.click()
 
-      close()
-      if (option.onClose != null)
-        option.onClose()
+      if (option.onSelect != null) {
+        option.onSelect()
+      } else {
+        close()
+        if (option.onClose != null)
+          option.onClose()
+      }
     }
 
-    submenu.forEach(submenuItem => {
+    const openChild = (
+      index: number,
+      item: SubmenuItemInfo,
+      row: HTMLElement,
+      itemElem: HTMLElement,
+    ) => {
+      if (activeChildIndex === index)
+        return
+      closeChild()
+      if (item.submenu == null)
+        return
+
+      activeChildIndex = index
+      activeChildRow = row
+      activeChildItemElem = itemElem
+      row.classList.add('opened')
+      itemElem.classList.add('opened')
+
+      const rect1 = WndUtil.getOffsetRect(parent, subItemHolder)
+      const rect2 = WndUtil.getOffsetRect(parent, row)
+      const childPos = {
+        left: `${rect1.right - 1}px`,
+        top: `${rect2.top}px`,
+      }
+      const childOption: SubmenuOption = {
+        className: 'menu-subitem-holder child-menu',
+        onClose: () => {
+          row.classList.remove('opened')
+          itemElem.classList.remove('opened')
+          if (activeChildRow === row) {
+            activeChildRow = null
+            activeChildItemElem = null
+            activeChildIndex = -1
+          }
+        },
+        onSelect: () => {
+          if (option.onSelect != null) {
+            option.onSelect()
+          } else {
+            close()
+            if (option.onClose != null)
+              option.onClose()
+          }
+        },
+      }
+      closeChildMenu = WndUtil.openSubmenu(item.submenu, childPos, parent, childOption)
+    }
+
+    submenu.forEach((submenuItem, index) => {
       const submenuRow = document.createElement('div')
       submenuRow.className = 'submenu-row clearfix'
       const subItemElem = document.createElement('div')
@@ -321,22 +401,53 @@ export class WndUtil {
           subItemElem.className = 'menu-item disabled'
         } else {
           subItemElem.className = 'menu-item'
-          const trigger = (event: MouseEvent) => {
-            if (event.button !== 0)
-              return
-            event.stopPropagation()
-            selectItem(submenuItem)
+          if (submenuItem.submenu != null) {
+            const triggerSubmenu = (event: MouseEvent) => {
+              if (event.button !== 0)
+                return
+              event.stopPropagation()
+              openChild(index, submenuItem, submenuRow, subItemElem)
+            }
+            submenuRow.addEventListener('click', triggerSubmenu)
+            submenuRow.addEventListener('mouseup', (event: MouseEvent) => {
+              if (event.button !== 0)
+                return
+              event.stopPropagation()
+            })
+          } else {
+            const trigger = (event: MouseEvent) => {
+              if (event.button !== 0)
+                return
+              event.stopPropagation()
+              selectItem(submenuItem)
+            }
+            submenuRow.addEventListener('click', trigger)
+            submenuRow.addEventListener('mouseup', trigger)
           }
-          submenuRow.addEventListener('click', trigger)
-          submenuRow.addEventListener('mouseup', trigger)
+
+          submenuRow.addEventListener('mouseenter', _event => {
+            if (submenuItem.submenu != null) {
+              openChild(index, submenuItem, submenuRow, subItemElem)
+            } else {
+              closeChild()
+            }
+          })
         }
       } else {
         const hr = document.createElement('hr')
         hr.className = 'submenu-splitter'
         submenuRow.style.padding = '4px 0'
         submenuRow.appendChild(hr)
+        submenuRow.addEventListener('mouseenter', _event => {
+          closeChild()
+        })
       }
       submenuRow.appendChild(subItemElem)
+      if (submenuItem.submenu != null) {
+        const nextElem = document.createElement('div')
+        nextElem.className = 'submenu-next'
+        submenuRow.appendChild(nextElem)
+      }
       subItemHolder.appendChild(submenuRow)
     })
     parent.appendChild(subItemHolder)

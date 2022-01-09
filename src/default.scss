@@ -105,11 +105,14 @@ hr {
     border-radius: 4px 4px 0 0;
     padding: 4px 0 2px;
   }
+  &.child-menu {
+    border-radius: 4px;
+  }
 
   .submenu-row {
     position: relative;
 
-    &:hover {
+    &:hover, &.opened {
       color: white;
     }
 
@@ -117,9 +120,22 @@ hr {
       position: absolute;
       left: 0;
       top: 0;
+      pointer-events: none;
 
       &:after {
         content: '✓';
+      }
+    }
+
+    .submenu-next {
+      position: absolute;
+      right: 4px;
+      top: 0;
+      pointer-events: none;
+
+      &:after {
+        content: '▶';
+        font-size: 8px;
       }
     }
 
