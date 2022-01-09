@@ -567,28 +567,58 @@ export class ScreenWnd extends Wnd {
         label: 'View',
         submenu: [
           {
-            label: '1x1',
-            checked: () => this.isAspectRatio(1),
-            click: () => {
-              const size = this.setClientScale(1)
-              this.saveClientSize(size)
-            },
+            label: 'Window size',
+            submenu: [
+              {
+                label: '1x1',
+                checked: () => this.isAspectRatio(1),
+                click: () => {
+                  const size = this.setClientScale(1)
+                  this.saveClientSize(size)
+                },
+              },
+              {
+                label: '2x2',
+                checked: () => this.isAspectRatio(2),
+                click: () => {
+                  const size = this.setClientScale(2)
+                  this.saveClientSize(size)
+                },
+              },
+              {
+                label: 'Adjust aspect ratio',
+                disabled: () => this.isAspectRatio(0),
+                click: () => {
+                  const size = this.adjustAspectRatio()
+                  this.saveClientSize(size)
+                },
+              },
+            ],
           },
           {
-            label: '2x2',
-            checked: () => this.isAspectRatio(2),
-            click: () => {
-              const size = this.setClientScale(2)
-              this.saveClientSize(size)
-            },
-          },
-          {
-            label: 'Adjust aspect ratio',
-            disabled: () => this.isAspectRatio(0),
-            click: () => {
-              const size = this.adjustAspectRatio()
-              this.saveClientSize(size)
-            },
+            label: 'Scaler',
+            submenu: [
+              {
+                label: 'Nearest',
+                checked: () => this.scalerType === ScalerType.NEAREST,
+                click: () => this.updateScaler(ScalerType.NEAREST),
+              },
+              {
+                label: 'Scanline',
+                checked: () => this.scalerType === ScalerType.SCANLINE,
+                click: () => this.updateScaler(ScalerType.SCANLINE),
+              },
+              {
+                label: 'Crt',
+                checked: () => this.scalerType === ScalerType.CRT,
+                click: () => this.updateScaler(ScalerType.CRT),
+              },
+              {
+                label: 'Epx',
+                checked: () => this.scalerType === ScalerType.EPX,
+                click: () => this.updateScaler(ScalerType.EPX),
+              },
+            ],
           },
           {label: '----'},
           {
@@ -613,31 +643,6 @@ export class ScreenWnd extends Wnd {
               this.toggleSpriteFlicker()
               GlobalSetting.spriteFlicker = this.nes.getPpu().spriteFlicker
             },
-          },
-        ],
-      },
-      {
-        label: 'Scaler',
-        submenu: [
-          {
-            label: 'Nearest',
-            checked: () => this.scalerType === ScalerType.NEAREST,
-            click: () => this.updateScaler(ScalerType.NEAREST),
-          },
-          {
-            label: 'Scanline',
-            checked: () => this.scalerType === ScalerType.SCANLINE,
-            click: () => this.updateScaler(ScalerType.SCANLINE),
-          },
-          {
-            label: 'Crt',
-            checked: () => this.scalerType === ScalerType.CRT,
-            click: () => this.updateScaler(ScalerType.CRT),
-          },
-          {
-            label: 'Epx',
-            checked: () => this.scalerType === ScalerType.EPX,
-            click: () => this.updateScaler(ScalerType.EPX),
           },
         ],
       },

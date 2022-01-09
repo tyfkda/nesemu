@@ -271,6 +271,7 @@ export class WndUtil {
       event.stopPropagation()
     })
 
+    let closeChildMenu: (() => void) | null = null
     submenu.forEach(submenuItem => {
       const submenuRow = document.createElement('div')
       submenuRow.className = 'submenu-row clearfix'
@@ -300,13 +301,28 @@ export class WndUtil {
           subItemElem.className = 'menu-item disabled'
         } else {
           subItemElem.className = 'menu-item'
-          submenuRow.addEventListener('click', _event => {
-            if (submenuItem.click)
+          submenuRow.addEventListener('click', event => {
+            if (submenuItem.submenu != null) {
+              event.stopPropagation()
+              if (closeChildMenu != null) {
+                closeChildMenu()
+                closeChildMenu = null
+              } else {
+                const rect1 = WndUtil.getOffsetRect(parent, subItemHolder)
+                const rect2 = WndUtil.getOffsetRect(parent, submenuRow)
+                const pos = {
+                  left: `${rect1.right}px`,  // For border size
+                  top: `${rect2.top}px`,
+                }
+                closeChildMenu = WndUtil.openSubmenu(submenuItem.submenu, pos, parent, option)
+              }
+            } else if (submenuItem.click) {
               submenuItem.click()
 
-            close()
-            if (option.onClose != null)
-              option.onClose()
+              close()
+              if (option.onClose != null)
+                option.onClose()
+            }
           })
         }
       } else {
@@ -316,6 +332,11 @@ export class WndUtil {
         submenuRow.appendChild(hr)
       }
       submenuRow.appendChild(subItemElem)
+      if (submenuItem.submenu != null) {
+        const nextElem = document.createElement('div')
+        nextElem.className = 'submenu-next'
+        submenuRow.appendChild(nextElem)
+      }
       subItemHolder.appendChild(submenuRow)
     })
     parent.appendChild(subItemHolder)
@@ -323,6 +344,10 @@ export class WndUtil {
     DomUtil.setStyles(subItemHolder, pos)
 
     const close = () => {
+      if (closeChildMenu != null) {
+        closeChildMenu()
+        closeChildMenu = null
+      }
       if (subItemHolder.parentNode != null)
         subItemHolder.parentNode.removeChild(subItemHolder)
       document.removeEventListener('click', onClickOther)
