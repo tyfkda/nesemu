@@ -261,7 +261,7 @@ export class WndUtil {
     submenu: Array<SubmenuItemInfo>,
     pos: {left?: string; bottom?: string},
     parent: HTMLElement,
-    option: {className?: string; onClose?: () => void},
+    option: {className?: string; onClose?: () => void, root?: HTMLElement},
   ): () => void {
     const subItemHolder = document.createElement('div')
     if (option.className != null)
@@ -329,12 +329,21 @@ export class WndUtil {
     }
 
     // To handle earlier than menu open, pass useCapture=true
-    const onClickOther = (_event: MouseEvent) => {
+    const root = option.root || document
+    const onClickOther = (event: Event) => {
+      if (event.type === 'mousedown' && (event as MouseEvent).button !== 0)
+        return
+      event.stopPropagation()
+      event.preventDefault()
       close()
       if (option.onClose != null)
         option.onClose()
+      root.removeEventListener('mousedown', onClickOther)
+      root.removeEventListener('touchstart', onClickOther)
+      return false
     }
-    document.addEventListener('click', onClickOther /*, true*/)
+    root.addEventListener('mousedown', onClickOther /*, true*/)
+    root.addEventListener('touchstart', onClickOther /*, true*/)
 
     return close
   }

@@ -149,6 +149,8 @@ export class Wnd {
     let closeSubmenu: (() => void) | null
 
     const onClose = () => {
+      const parent = this.wndMgr.getMenuRootNode()
+parent.style.pointerEvents = 'none'
       if (activeSubmenuIndex >= 0) {
         const prev = itemElems[activeSubmenuIndex]
         prev.classList.remove('opened')
@@ -173,17 +175,20 @@ export class Wnd {
       const itemElem = itemElems[index]
       activeSubmenuIndex = index
 
-      const rect = WndUtil.getOffsetRect(this.root, itemElem)
+      const parent = this.wndMgr.getMenuRootNode()
+parent.style.pointerEvents = 'all'
+      const rect = WndUtil.getOffsetRect(parent, itemElem)
       const pos = {
         left: `${rect.left - 1}px`,  // For border size
         top: `${rect.bottom - 1}px`,
       }
       const option = {
-        className: 'menu-subitem-holder',
+        className: 'wndmenu menu-subitem-holder',
         onClose,
+root: parent,
       }
       closeSubmenu = WndUtil.openSubmenu(
-        menuItem.submenu, pos, this.root, option)
+        menuItem.submenu, pos, parent, option)
       itemElem.classList.add('opened')
     }
 

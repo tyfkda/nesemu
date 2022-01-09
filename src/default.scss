@@ -280,16 +280,6 @@ hr {
     background-color: #ccc;
     font-size: 10px;
   }
-
-  .menu-subitem-holder {
-    font-size: 10px;
-    @supports (backdrop-filter: none) {
-      background-color: rgba(204,204,204,0.8);
-    }
-    @supports not (backdrop-filter: none) {
-      background-color: rgb(204,204,204);
-    }
-  }
 }
 .wnd.top {
   box-shadow: 0px 0px 20px rgba(0, 0, 0, .8);
@@ -309,6 +299,16 @@ $RESIZABLE_RADIUS: 4px;
   }
   .content-holder {
     border-radius:0 0 $RESIZABLE_RADIUS $RESIZABLE_RADIUS;
+  }
+}
+
+.wndmenu.menu-subitem-holder {
+  font-size: 10px;
+  @supports (backdrop-filter: none) {
+    background-color: rgba(204,204,204,0.8);
+  }
+  @supports not (backdrop-filter: none) {
+    background-color: rgb(204,204,204);
   }
 }
 
