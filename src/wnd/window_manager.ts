@@ -14,6 +14,7 @@ function setWindowZIndex(wnd: Wnd, i: number, n: number): void {
 }
 
 export class WindowManager {
+  private menuRoot: HTMLElement
   private windows: Wnd[] = []
   private keyboardManager = new KeyboardManager()
 
@@ -24,6 +25,9 @@ export class WindowManager {
   private startMenu: StartMenu
 
   public constructor(private root: HTMLElement) {
+    this.menuRoot = document.getElementById('menu-root')!
+    this.menuRoot.style.zIndex = '1000'
+
     this.onKeyDown = (event: KeyboardEvent) => {
       if (event.ctrlKey) {  // Ctrl+W: Quit
         if (event.code === 'KeyW') {
@@ -180,6 +184,10 @@ export class WindowManager {
 
   public getRootClientRect(): DOMRect {
     return this.root.getBoundingClientRect()
+  }
+
+  public getMenuRootNode(): HTMLElement {
+    return this.menuRoot
   }
 
   private removeWnd(wnd: Wnd): void {
