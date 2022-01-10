@@ -261,7 +261,7 @@ export class WndUtil {
     submenu: Array<SubmenuItemInfo>,
     pos: {left?: string; bottom?: string},
     parent: HTMLElement,
-    option: {className?: string; onClose?: () => void},
+    option: {className?: string; onClose?: () => boolean},
   ): () => void {
     const subItemHolder = document.createElement('div')
     if (option.className != null)
@@ -330,9 +330,10 @@ export class WndUtil {
 
     // To handle earlier than menu open, pass useCapture=true
     const onClickOther = (_event: MouseEvent) => {
-      close()
       if (option.onClose != null)
-        option.onClose()
+        if (!option.onClose())
+          return
+      close()
     }
     document.addEventListener('click', onClickOther /*, true*/)
 

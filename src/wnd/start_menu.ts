@@ -34,12 +34,13 @@ export class StartMenu {
     this.bar.appendChild(itemElem)
   }
 
-  private onClose(): void {
+  private onClose(): boolean {
     if (this.closeSubmenu != null) {
       this.itemElem.classList.remove('opened')
       this.closeSubmenu = null
     }
     this.bar.classList.remove('selected')
+    return true
   }
 
   private showSubmenu(): void {
@@ -51,7 +52,7 @@ export class StartMenu {
     this.bar.classList.add('selected')
   }
 
-  private openSubmenu(itemElem: HTMLElement, onClose?: () => void): () => void {
+  private openSubmenu(itemElem: HTMLElement, onClose?: () => boolean): () => void {
     const rect = WndUtil.getOffsetRect(this.root, itemElem)
     const pos = {
       left: `${rect.left}px`,

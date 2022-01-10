@@ -148,7 +148,17 @@ export class Wnd {
     let activeSubmenuIndex = -1
     let closeSubmenu: (() => void) | null
 
+    const ClickThresholdMs = 500
+    let downTime = -1
+    let downTarget: EventTarget | null = null
+    let keepSubmenu = false
+
     const onClose = () => {
+console.log(`onClose: ${keepSubmenu}`)
+      if (keepSubmenu) {
+        keepSubmenu = false
+        return false
+      }
       if (activeSubmenuIndex >= 0) {
         const prev = itemElems[activeSubmenuIndex]
         prev.classList.remove('opened')
@@ -156,6 +166,7 @@ export class Wnd {
         this.onEvent(WndEvent.CLOSE_MENU)
       }
       closeSubmenu = null
+      return true
     }
 
     const showSubmenu = (index: number) => {
@@ -205,10 +216,46 @@ export class Wnd {
       itemElem.className = 'menu-item pull-left'
       itemElem.innerText = menuItem.label
       itemElem.style.height = '100%'
-      itemElem.addEventListener('click', event => {
+
+
+      itemElem.addEventListener('mousedown', event => {
+        if (event.button !== 0)
+          return
+        downTime = window.performance.now()
+        downTarget = event.target
         event.stopPropagation()
         onClickMenu(menuItem, index)
       })
+      itemElem.addEventListener('mouseup', event => {
+        if (event.button !== 0)
+          return
+        const now = window.performance.now()
+        event.stopPropagation()
+        event.preventDefault()
+        if (now - downTime < ClickThresholdMs) {
+          // onClick相当
+          keepSubmenu = true
+        } else {
+          // ダウン直接選択
+          // if (closeSubmenu)
+          //   closeSubmenu()
+          // onClose()
+
+          if (downTarget === event.target) {
+            // console.log(`selected!`)
+            keepSubmenu = false
+          } else {
+            // 他のものが選択された
+          }
+        }
+      })
+
+
+
+      // itemElem.addEventListener('click', event => {
+      //   event.stopPropagation()
+      //   onClickMenu(menuItem, index)
+      // })
       itemElem.addEventListener('mouseenter', _event => {
         if (activeSubmenuIndex >= 0 && activeSubmenuIndex !== index && 'submenu' in menuItem) {
           showSubmenu(index)
