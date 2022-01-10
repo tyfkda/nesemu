@@ -257,6 +257,10 @@ export class WndUtil {
     if (option.className != null)
       subItemHolder.className = option.className
     subItemHolder.style.zIndex = String(Z_MENU_SUBITEM)
+    subItemHolder.addEventListener('click', event => {
+      event.stopPropagation()
+    })
+
     submenu.forEach(submenuItem => {
       const submenuRow = document.createElement('div')
       submenuRow.className = 'submenu-row clearfix'
@@ -277,23 +281,21 @@ export class WndUtil {
           disabled = submenuItem.disabled()
         if (disabled) {
           subItemElem.className = 'menu-item disabled'
-          submenuRow.addEventListener('click', event => {
-            event.stopPropagation()
-          })
         } else {
           subItemElem.className = 'menu-item'
           submenuRow.addEventListener('click', _event => {
             if (submenuItem.click)
               submenuItem.click()
+
+            close()
+            if (option.onClose != null)
+              option.onClose()
           })
         }
       } else {
         const hr = document.createElement('hr')
         hr.className = 'submenu-splitter'
         submenuRow.style.padding = '4px 0'
-        submenuRow.addEventListener('click', event => {
-          event.stopPropagation()
-        })
         submenuRow.appendChild(hr)
       }
       submenuRow.appendChild(subItemElem)
