@@ -117,31 +117,27 @@ class Main {
   }
 
   private async createAppFromFiles(files: FileList, x: number, y: number): Promise<void> {
-    // Load .js files
-    for (let i = 0; i < files.length; ++i) {
-      const file = files[i]
-      const ext = Util.getExt(file.name).toLowerCase()
-      if (ext !== 'js')
-        continue
-      const jsApp = new JsApp(this.wndMgr, {
-        title: file.name,
-        centerX: x,
-        centerY: y,
-        onClosed: app => {
-          this.removeApp(app)
-        },
-      })
-      jsApp.setFile(file)
-      this.apps.push(jsApp)
-    }
-
     const kTargetExts = ['nes', 'bin', 'fds', 'sav']
 
     // Unzip and flatten.
     type Result = {type: string; binary: Uint8Array; fileName: string}
     const promises = Array.from(files)
       .map(file => { return {file, ext: Util.getExt(file.name).toLowerCase()} })
-      .filter(({ext}) => ext !== 'js')
+      .filter(({file, ext}) => {
+        if (ext !== 'js')
+          return true
+
+        // Create .js app
+        const jsApp = new JsApp(this.wndMgr, {
+          title: file.name,
+          centerX: x,
+          centerY: y,
+          onClosed: app => this.removeApp(app),
+        })
+        jsApp.setFile(file)
+        this.apps.push(jsApp)
+        return false
+      })
       .map(async ({file, ext}) => {
         if (ext === 'zip') {
           const binary = await DomUtil.loadFile(file)
