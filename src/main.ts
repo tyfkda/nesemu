@@ -116,117 +116,103 @@ class Main {
     })
   }
 
-  private createAppFromFiles(files: FileList, x: number, y: number): void {
-    // Load .js files
-    for (let i = 0; i < files.length; ++i) {
-      const file = files[i]
-      const ext = Util.getExt(file.name).toLowerCase()
-      if (ext !== 'js')
-        continue
-      const jsApp = new JsApp(this.wndMgr, {
-        title: file.name,
-        centerX: x,
-        centerY: y,
-        onClosed: app => {
-          this.removeApp(app)
-        },
-      })
-      jsApp.setFile(file)
-      this.apps.push(jsApp)
-    }
-
-    const kTargetExts = ['nes', 'bin', 'fds', 'sav']
+  private async createAppFromFiles(files: FileList, x: number, y: number): Promise<void> {
+    const kTargetExts = new Set(['nes', 'bin', 'fds', 'sav'])
 
     // Unzip and flatten.
-    const promises = new Array<Promise<any>>()
-    for (let i = 0; i < files.length; ++i) {
-      const file = files[i]
-      let promise: Promise<any> | null = null
-      const ext = Util.getExt(file.name).toLowerCase()
-      if (ext === 'js') {
-        // Skip, because already processed.
-      } else if (ext === 'zip') {
-        promise = DomUtil.loadFile(file)
-          .then(binary => {
-            const zip = new JSZip()
-            return zip.loadAsync(binary)
-          })
-          .then((loadedZip: JSZip) => {
-            for (const fileName of Object.keys(loadedZip.files)) {
-              const ext2 = Util.getExt(fileName).toLowerCase()
-              if (kTargetExts.indexOf(ext2) >= 0) {
-                return loadedZip.files[fileName]
-                  .async('uint8array')
-                  .then(unzipped => Promise.resolve({type: ext2, binary: unzipped, fileName}))
-              }
-            }
-            return Promise.reject(`No .nes file included: ${file.name}`)
-          })
-      } else if (kTargetExts.indexOf(ext) >= 0) {
-        promise = DomUtil.loadFile(file)
-          .then(binary => Promise.resolve({type: ext, binary, fileName: file.name}))
-      } else {
-        promise = Promise.reject(`Unsupported file: ${file.name}`)
-      }
-      if (promise)
-        promises.push(promise)
-    }
-    Promise.all(promises)
-      .then(results => {
-        const typeMap: {[key: string]: Array<any>} = {}
-        ; (results as {type: string; binary: Uint8Array; fileName: string}[]).forEach(result => {
-          if (!typeMap[result.type])
-            typeMap[result.type] = []
-          typeMap[result.type].push(result)
-        })
-        // .bin: Disk BIOS
-        if (typeMap.bin) {
-          this.diskBios = typeMap.bin[0].binary as Uint8Array
-          if (!typeMap.fds) {  // Boot disk system without inserting disk.
-            this.uninsertedApp = this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
-          }
-        }
-        // Load .nes files.
-        if (typeMap.nes) {
-          typeMap.nes.forEach(file => {
-            this.createAppFromRom(file.binary, file.fileName, x, y)
-            x += 16
-            y += 16
-          })
-        }
-        // Load .fds
-        if (typeMap.fds) {
-          const diskBios = this.diskBios
-          if (diskBios == null) {
-            this.wndMgr.showSnackbar('.fds needs BIOS file (.bin) for Disk System')
-            return
-          }
+    type Result = {type: string; binary: Uint8Array; fileName: string}
+    const promises = Array.from(files)
+      .map(file => { return {file, ext: Util.getExt(file.name).toLowerCase()} })
+      .filter(({file, ext}) => {
+        if (ext !== 'js')
+          return true
 
-          typeMap.fds.forEach(file => {
-            if (this.uninsertedApp != null) {
-              this.uninsertedApp.setDiskImage(file.binary)
-              this.uninsertedApp = null
-            } else {
-              this.bootDiskImage(diskBios, file.binary, file.fileName, x, y)
+        // Create .js app
+        const jsApp = new JsApp(this.wndMgr, {
+          title: file.name,
+          centerX: x,
+          centerY: y,
+          onClosed: app => this.removeApp(app),
+        })
+        jsApp.setFile(file)
+        this.apps.push(jsApp)
+        return false
+      })
+      .map(async ({file, ext}) => {
+        if (ext === 'zip') {
+          const binary = await DomUtil.loadFile(file)
+          const zip = new JSZip()
+          const loadedZip = await zip.loadAsync(binary)
+          for (const fileName2 of Object.keys(loadedZip.files)) {
+            const ext2 = Util.getExt(fileName2).toLowerCase()
+            if (kTargetExts.has(ext2)) {
+              const unzipped = await loadedZip.files[fileName2].async('uint8array')
+              return {type: ext2, binary: unzipped, fileName: fileName2}
             }
-            x += 16
-            y += 16
-          })
-        }
-        // Load .sav
-        if (typeMap.sav) {
-          const file = typeMap.sav[0]
-          const app = this.findActiveApp()
-          if (app == null) {
-            throw('Load save data failed: No active app')
-          } else {
-            app.loadDataFromBinary(file.binary)
           }
+          return Promise.reject(`No .nes file included: ${file.name}`)
+        } else if (kTargetExts.has(ext)) {
+          const binary = await DomUtil.loadFile(file)
+          return {type: ext, binary, fileName: file.name}
+        } else {
+          return Promise.reject(`Unsupported file: ${file.name}`)
         }
       })
-      .catch((e: Error) => {
-        this.wndMgr.showSnackbar(e.toString())
+    try {
+      const results = await Promise.all(promises)
+      const typeMap: {[key: string]: Array<Result>} = {}
+      results.forEach(result => {
+        if (!typeMap[result.type])
+          typeMap[result.type] = []
+        typeMap[result.type].push(result)
       })
+      // .bin: Disk BIOS
+      if (typeMap.bin) {
+        this.diskBios = typeMap.bin[0].binary
+        if (!typeMap.fds) {  // Boot disk system without inserting disk.
+          this.uninsertedApp = this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
+        }
+      }
+      // Load .nes files.
+      if (typeMap.nes) {
+        typeMap.nes.forEach(file => {
+          this.createAppFromRom(file.binary, file.fileName, x, y)
+          x += 16
+          y += 16
+        })
+      }
+      // Load .fds
+      if (typeMap.fds) {
+        const diskBios = this.diskBios
+        if (diskBios == null) {
+          this.wndMgr.showSnackbar('.fds needs BIOS file (.bin) for Disk System')
+          return
+        }
+
+        typeMap.fds.forEach(file => {
+          if (this.uninsertedApp != null) {
+            this.uninsertedApp.setDiskImage(file.binary)
+            this.uninsertedApp = null
+          } else {
+            this.bootDiskImage(diskBios, file.binary, file.fileName, x, y)
+          }
+          x += 16
+          y += 16
+        })
+      }
+      // Load .sav
+      if (typeMap.sav) {
+        const file = typeMap.sav[0]
+        const app = this.findActiveApp()
+        if (app == null) {
+          throw('Load save data failed: No active app')
+        } else {
+          app.loadDataFromBinary(file.binary)
+        }
+      }
+    } catch (e) {
+      this.wndMgr.showSnackbar(e.toString())
+    }
   }
 
   private findActiveApp(): App|null {
