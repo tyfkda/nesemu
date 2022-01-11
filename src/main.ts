@@ -139,39 +139,29 @@ class Main {
 
     // Unzip and flatten.
     type Result = {type: string; binary: Uint8Array; fileName: string}
-    const promises = new Array<Promise<Result>>()
-    for (let i = 0; i < files.length; ++i) {
-      const file = files[i]
-      let promise: Promise<Result> | null = null
-      const ext = Util.getExt(file.name).toLowerCase()
-      if (ext === 'js') {
-        // Skip, because already processed.
-      } else if (ext === 'zip') {
-        promise = DomUtil.loadFile(file)
-          .then(binary => {
-            const zip = new JSZip()
-            return zip.loadAsync(binary)
-          })
-          .then((loadedZip: JSZip) => {
-            for (const fileName of Object.keys(loadedZip.files)) {
-              const ext2 = Util.getExt(fileName).toLowerCase()
-              if (kTargetExts.indexOf(ext2) >= 0) {
-                return loadedZip.files[fileName]
-                  .async('uint8array')
-                  .then(unzipped => Promise.resolve({type: ext2, binary: unzipped, fileName}))
-              }
+    const promises = Array.from(files)
+      .map(file => { return {file, ext: Util.getExt(file.name).toLowerCase()} })
+      .filter(({ext}) => ext !== 'js')
+      .map(async ({file, ext}) => {
+        if (ext === 'zip') {
+          const binary = await DomUtil.loadFile(file)
+          const zip = new JSZip()
+          const loadedZip = await zip.loadAsync(binary)
+          for (const fileName2 of Object.keys(loadedZip.files)) {
+            const ext2 = Util.getExt(fileName2).toLowerCase()
+            if (kTargetExts.indexOf(ext2) >= 0) {
+              const unzipped = await loadedZip.files[fileName2].async('uint8array')
+              return {type: ext2, binary: unzipped, fileName: fileName2}
             }
-            return Promise.reject(`No .nes file included: ${file.name}`)
-          })
-      } else if (kTargetExts.indexOf(ext) >= 0) {
-        promise = DomUtil.loadFile(file)
-          .then(binary => Promise.resolve({type: ext, binary, fileName: file.name}))
-      } else {
-        promise = Promise.reject(`Unsupported file: ${file.name}`)
-      }
-      if (promise)
-        promises.push(promise)
-    }
+          }
+          return Promise.reject(`No .nes file included: ${file.name}`)
+        } else if (kTargetExts.indexOf(ext) >= 0) {
+          const binary = await DomUtil.loadFile(file)
+          return {type: ext, binary, fileName: file.name}
+        } else {
+          return Promise.reject(`Unsupported file: ${file.name}`)
+        }
+      })
     Promise.all(promises)
       .then(results => {
         const typeMap: {[key: string]: Array<Result>} = {}
