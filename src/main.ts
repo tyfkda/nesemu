@@ -138,10 +138,11 @@ class Main {
     const kTargetExts = ['nes', 'bin', 'fds', 'sav']
 
     // Unzip and flatten.
-    const promises = new Array<Promise<any>>()
+    type Result = {type: string; binary: Uint8Array; fileName: string}
+    const promises = new Array<Promise<Result>>()
     for (let i = 0; i < files.length; ++i) {
       const file = files[i]
-      let promise: Promise<any> | null = null
+      let promise: Promise<Result> | null = null
       const ext = Util.getExt(file.name).toLowerCase()
       if (ext === 'js') {
         // Skip, because already processed.
@@ -173,15 +174,15 @@ class Main {
     }
     Promise.all(promises)
       .then(results => {
-        const typeMap: {[key: string]: Array<any>} = {}
-        ; (results as {type: string; binary: Uint8Array; fileName: string}[]).forEach(result => {
+        const typeMap: {[key: string]: Array<Result>} = {}
+        results.forEach(result => {
           if (!typeMap[result.type])
             typeMap[result.type] = []
           typeMap[result.type].push(result)
         })
         // .bin: Disk BIOS
         if (typeMap.bin) {
-          this.diskBios = typeMap.bin[0].binary as Uint8Array
+          this.diskBios = typeMap.bin[0].binary
           if (!typeMap.fds) {  // Boot disk system without inserting disk.
             this.uninsertedApp = this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
           }
