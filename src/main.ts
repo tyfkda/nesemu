@@ -117,7 +117,7 @@ class Main {
   }
 
   private async createAppFromFiles(files: FileList, x: number, y: number): Promise<void> {
-    const kTargetExts = ['nes', 'bin', 'fds', 'sav']
+    const kTargetExts = new Set(['nes', 'bin', 'fds', 'sav'])
 
     // Unzip and flatten.
     type Result = {type: string; binary: Uint8Array; fileName: string}
@@ -145,13 +145,13 @@ class Main {
           const loadedZip = await zip.loadAsync(binary)
           for (const fileName2 of Object.keys(loadedZip.files)) {
             const ext2 = Util.getExt(fileName2).toLowerCase()
-            if (kTargetExts.indexOf(ext2) >= 0) {
+            if (kTargetExts.has(ext2)) {
               const unzipped = await loadedZip.files[fileName2].async('uint8array')
               return {type: ext2, binary: unzipped, fileName: fileName2}
             }
           }
           return Promise.reject(`No .nes file included: ${file.name}`)
-        } else if (kTargetExts.indexOf(ext) >= 0) {
+        } else if (kTargetExts.has(ext)) {
           const binary = await DomUtil.loadFile(file)
           return {type: ext, binary, fileName: file.name}
         } else {
