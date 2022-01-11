@@ -116,7 +116,7 @@ class Main {
     })
   }
 
-  private createAppFromFiles(files: FileList, x: number, y: number): void {
+  private async createAppFromFiles(files: FileList, x: number, y: number): Promise<void> {
     // Load .js files
     for (let i = 0; i < files.length; ++i) {
       const file = files[i]
@@ -162,62 +162,61 @@ class Main {
           return Promise.reject(`Unsupported file: ${file.name}`)
         }
       })
-    Promise.all(promises)
-      .then(results => {
-        const typeMap: {[key: string]: Array<Result>} = {}
-        results.forEach(result => {
-          if (!typeMap[result.type])
-            typeMap[result.type] = []
-          typeMap[result.type].push(result)
+    try {
+      const results = await Promise.all(promises)
+      const typeMap: {[key: string]: Array<Result>} = {}
+      results.forEach(result => {
+        if (!typeMap[result.type])
+          typeMap[result.type] = []
+        typeMap[result.type].push(result)
+      })
+      // .bin: Disk BIOS
+      if (typeMap.bin) {
+        this.diskBios = typeMap.bin[0].binary
+        if (!typeMap.fds) {  // Boot disk system without inserting disk.
+          this.uninsertedApp = this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
+        }
+      }
+      // Load .nes files.
+      if (typeMap.nes) {
+        typeMap.nes.forEach(file => {
+          this.createAppFromRom(file.binary, file.fileName, x, y)
+          x += 16
+          y += 16
         })
-        // .bin: Disk BIOS
-        if (typeMap.bin) {
-          this.diskBios = typeMap.bin[0].binary
-          if (!typeMap.fds) {  // Boot disk system without inserting disk.
-            this.uninsertedApp = this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
-          }
+      }
+      // Load .fds
+      if (typeMap.fds) {
+        const diskBios = this.diskBios
+        if (diskBios == null) {
+          this.wndMgr.showSnackbar('.fds needs BIOS file (.bin) for Disk System')
+          return
         }
-        // Load .nes files.
-        if (typeMap.nes) {
-          typeMap.nes.forEach(file => {
-            this.createAppFromRom(file.binary, file.fileName, x, y)
-            x += 16
-            y += 16
-          })
-        }
-        // Load .fds
-        if (typeMap.fds) {
-          const diskBios = this.diskBios
-          if (diskBios == null) {
-            this.wndMgr.showSnackbar('.fds needs BIOS file (.bin) for Disk System')
-            return
-          }
 
-          typeMap.fds.forEach(file => {
-            if (this.uninsertedApp != null) {
-              this.uninsertedApp.setDiskImage(file.binary)
-              this.uninsertedApp = null
-            } else {
-              this.bootDiskImage(diskBios, file.binary, file.fileName, x, y)
-            }
-            x += 16
-            y += 16
-          })
-        }
-        // Load .sav
-        if (typeMap.sav) {
-          const file = typeMap.sav[0]
-          const app = this.findActiveApp()
-          if (app == null) {
-            throw('Load save data failed: No active app')
+        typeMap.fds.forEach(file => {
+          if (this.uninsertedApp != null) {
+            this.uninsertedApp.setDiskImage(file.binary)
+            this.uninsertedApp = null
           } else {
-            app.loadDataFromBinary(file.binary)
+            this.bootDiskImage(diskBios, file.binary, file.fileName, x, y)
           }
+          x += 16
+          y += 16
+        })
+      }
+      // Load .sav
+      if (typeMap.sav) {
+        const file = typeMap.sav[0]
+        const app = this.findActiveApp()
+        if (app == null) {
+          throw('Load save data failed: No active app')
+        } else {
+          app.loadDataFromBinary(file.binary)
         }
-      })
-      .catch((e: Error) => {
-        this.wndMgr.showSnackbar(e.toString())
-      })
+      }
+    } catch (e) {
+      this.wndMgr.showSnackbar(e.toString())
+    }
   }
 
   private findActiveApp(): App|null {
