@@ -267,7 +267,7 @@ export class ScreenWnd extends Wnd {
     return state
   }
 
-  public setFullscreen(callback?: (isFullscreen: boolean) => boolean): boolean {
+  public setFullscreen(): boolean {
     window.addEventListener('resize', this.fullscreenResizeFunc)
     return this.wndMgr.setFullscreen(this.contentHolder, isFullscreen => {
       if (!isFullscreen) {
@@ -288,8 +288,6 @@ export class ScreenWnd extends Wnd {
           display: 'flex',  // To locate vertically middle.
         })
       }
-      if (callback)
-        callback(isFullscreen)
       this.contentHolder.focus()
     })
   }

@@ -159,8 +159,7 @@ export class WindowManager {
         element.removeEventListener('keyup', this.onKeyUp)
       }
 
-      if (callback)
-        callback(isFullscreen)
+      callback(isFullscreen)
       if (isFullscreen) {
         element.focus()
       } else {  // End
