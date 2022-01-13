@@ -45,6 +45,8 @@ class Main {
     this.setUpStartMenu()
     this.setUpFileDrop()
     this.setUpBlur()
+
+    window.addEventListener('resize', _ => this.wndMgr.onResizeWindow())
   }
 
   private setUpStartMenu(): void {

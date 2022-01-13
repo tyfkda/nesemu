@@ -90,6 +90,20 @@ export class Wnd {
     DomUtil.setStyles(this.root, styles)
   }
 
+  public clampPos(rootRect: DOMRect): void {
+    const rect = this.root.getBoundingClientRect()
+    const left = Util.clamp(rect.left, 0, Math.floor(rootRect.width - rect.width))
+    const top = Util.clamp(rect.top, 0, Math.floor(rootRect.height - rect.height))
+    if (left !== rect.left || top !== rect.top) {
+      const styles = {}
+      if (left !== rect.left)
+        styles['left'] = `${left}px`;
+      if (top !== rect.top)
+        styles['top'] = `${top}px`;
+      DomUtil.setStyles(this.root, styles)
+    }
+  }
+
   public getWindowSize(): {width: number; height: number} {
     const width = parseInt(this.root.style.width || '-1', 10)
     const height = parseInt(this.root.style.height || '-1', 10)

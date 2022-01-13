@@ -172,6 +172,12 @@ export class WindowManager {
     return true
   }
 
+  public onResizeWindow(): void {
+    const rootRect = this.root.getBoundingClientRect()
+    for (const wnd of this.windows)
+      wnd.clampPos(rootRect)
+  }
+
   public getRootClientRect(): DOMRect {
     return this.root.getBoundingClientRect()
   }
