@@ -4,6 +4,8 @@ import {Util} from '../util/util'
 import {WndUtil} from './wnd_util'
 import {MenuItemInfo, WndEvent, Z_MENUBAR} from './types'
 
+const WIN_BORDER = 1
+
 export class Wnd {
   public static TITLEBAR_HEIGHT = 20
   public static MENUBAR_HEIGHT = 14
@@ -71,10 +73,24 @@ export class Wnd {
   }
 
   public setClientSize(width: number, height: number): Wnd {
-    DomUtil.setStyles(this.root, {
-      width: `${width + this.clientMarginWidth}px`,
-      height: `${height + this.clientMarginHeight}px`,
-    })
+    const rect = this.root.getBoundingClientRect()
+    const rootRect = this.wndMgr.getRootClientRect()
+
+    width += this.clientMarginWidth
+    height += this.clientMarginHeight
+    const styles = {
+      width: `${width}px`,
+      height: `${height}px`,
+    }
+
+    const left = Util.clamp(rect.left, 0, Math.floor(rootRect.width - width - WIN_BORDER * 2))
+    const top = Util.clamp(rect.top, 0, Math.floor(rootRect.height - height - WIN_BORDER * 2))
+    if (left !== rect.left)
+      styles['left'] = `${left}px`;
+    if (top !== rect.top)
+      styles['top'] = `${top}px`;
+
+    DomUtil.setStyles(this.root, styles)
     return this
   }
 
@@ -284,7 +300,6 @@ export class Wnd {
       this.root, titleBar,
       () => {
         const rc = this.wndMgr.getRootClientRect()
-        const WIN_BORDER = 1
         return new DOMRect(rc.x, rc.y, rc.width - WIN_BORDER * 2, rc.height - WIN_BORDER * 2)
       },
       (event, param?) => {

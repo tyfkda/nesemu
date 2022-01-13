@@ -547,8 +547,8 @@ export class ScreenWnd extends Wnd {
     const {rootRect, width, height} = maxSize(this.wndMgr, this.overscan)
     const x = (rootRect.width - (width + 2)) / 2
     const y = (rootRect.height - (height + Wnd.TITLEBAR_HEIGHT + Wnd.MENUBAR_HEIGHT + 2)) / 2
-    this.setPos(Math.round(x), Math.round(y))
     this.setClientSize(width, height)
+    this.setPos(Math.round(x), Math.round(y))
   }
 
   protected createSubWnd(wndType: WndType, generate: () => Wnd): boolean {
