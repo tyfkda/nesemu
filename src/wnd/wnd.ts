@@ -40,10 +40,9 @@ export class Wnd {
     this.setClientSize(width, height)
   }
 
-  public setContent(content: HTMLElement): Wnd {
+  public setContent(content: HTMLElement): void {
     DomUtil.removeAllChildren(this.contentHolder)
     this.contentHolder.appendChild(content)
-    return this
   }
 
   public getContentHolder(): HTMLElement {
@@ -54,7 +53,7 @@ export class Wnd {
     return this.root
   }
 
-  public setPos(x: number, y: number): Wnd {
+  public setPos(x: number, y: number): void {
     const rootRect = this.wndMgr.getRootClientRect()
     const {width, height} = this.getWindowSize()
     x = Util.clamp(x, rootRect.left, rootRect.right - width)
@@ -64,15 +63,13 @@ export class Wnd {
       left: `${x}px`,
       top: `${y}px`,
     })
-    return this
   }
 
-  public setTitle(title: string): Wnd {
+  public setTitle(title: string): void {
     this.titleElem.innerText = title
-    return this
   }
 
-  public setClientSize(width: number, height: number): Wnd {
+  public setClientSize(width: number, height: number): void {
     const rect = this.root.getBoundingClientRect()
     const rootRect = this.wndMgr.getRootClientRect()
 
@@ -91,7 +88,6 @@ export class Wnd {
       styles['top'] = `${top}px`;
 
     DomUtil.setStyles(this.root, styles)
-    return this
   }
 
   public getWindowSize(): {width: number; height: number} {
@@ -113,7 +109,7 @@ export class Wnd {
       this.root.classList.remove('top')
   }
 
-  public addMenuBar(menu: Array<MenuItemInfo>): Wnd {
+  public addMenuBar(menu: Array<MenuItemInfo>): void {
     const [upper, lower] = WndUtil.createHorizontalSplitter(this.root, Wnd.MENUBAR_HEIGHT)
     this.clientMarginHeight += Wnd.MENUBAR_HEIGHT
     this.contentHolder.appendChild(upper)
@@ -221,8 +217,6 @@ export class Wnd {
     upper.appendChild(this.menuBar)
 
     this.contentHolder = lower
-
-    return this
   }
 
   public getRootNode(): HTMLElement {

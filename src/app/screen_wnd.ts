@@ -244,14 +244,13 @@ export class ScreenWnd extends Wnd {
     this.updateContentSize(width, height - Wnd.MENUBAR_HEIGHT)
   }
 
-  public setClientSize(width: number, height: number): Wnd {
+  public setClientSize(width: number, height: number): void {
     width = Math.round(width)
     height = Math.round(height)
     super.setClientSize(width, height)
     this.contentWidth = width
     this.contentHeight = height
     this.updateContentSize(width, height)
-    return this
   }
 
   public capture(): string {
@@ -317,10 +316,10 @@ export class ScreenWnd extends Wnd {
         wnd.close()
   }
 
-  protected setClientScale(scale: number): Wnd {
+  protected setClientScale(scale: number): void {
     const w = ((WIDTH - (this.overscan ? HEDGE * 2 : 0)) * scale) | 0
     const h = ((HEIGHT - (this.overscan ? VEDGE * 2 : 0)) * scale) | 0
-    return this.setClientSize(w, h)
+    this.setClientSize(w, h)
   }
 
   protected updateContentSize(width: number, height: number): void {
