@@ -119,8 +119,9 @@ export class RamWnd extends Wnd {
   private visibleEndAdr = 0
 
   public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
-    super(wndMgr, 420, 240, 'Ram')
+    super(wndMgr, 420, 254, 'Ram')
 
+    this.setUpMenuBar()
     const {root, contentRoot, cells} = this.createContent()
     this.setContent(root)
     this.contentRoot = contentRoot
@@ -276,6 +277,39 @@ export class RamWnd extends Wnd {
     root.appendChild(top)
     root.appendChild(contentRoot)
     return {root, contentRoot, cells}
+  }
+
+  protected setUpMenuBar(): void {
+    const menuItems = [
+      {
+        label: 'File',
+        submenu: [
+          {
+            label: 'Save',
+            click: () => this.save(),
+          },
+        ],
+      },
+    ]
+    this.addMenuBar(menuItems)
+  }
+
+  private async save(): Promise<void> {
+    const paused = this.nes.getCpu().isPaused()
+    if (!paused)
+      this.stream.triggerPause()
+    const data = this.memBuf1
+    try {
+      await DomUtil.downloadOrSaveToFile(data, 'ram.bin', 'RAM data', 'application/binary', '.bin')
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        console.error(e)
+        this.wndMgr.showSnackbar(`Failed: ${e.toString()}`)
+      }
+    } finally {
+      if (!paused)
+        this.stream.triggerRun()
+    }
   }
 }
 
