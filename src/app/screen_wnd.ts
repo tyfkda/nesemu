@@ -1,6 +1,6 @@
 import {WindowManager} from '../wnd/window_manager'
 import {Wnd} from '../wnd/wnd'
-import {MenuItemInfo, WndEvent} from '../wnd/types'
+import {MenuItemInfo, SubmenuItemInfo, WndEvent} from '../wnd/types'
 
 import {DomUtil} from '../util/dom_util'
 import {Nes} from '../nes/nes'
@@ -96,6 +96,7 @@ export class ScreenWnd extends Wnd {
   private timeScale = 1
   private fullscreenResizeFunc: () => void
   private repeatBtnFrame = false
+  private fileHandle: FileSystemFileHandle | null = null
 
   protected wndMap = new Array<Wnd | null>()
 
@@ -373,9 +374,18 @@ export class ScreenWnd extends Wnd {
             label: 'Save status',
             click: () => this.app.saveData(),
           },
+          (window.showSaveFilePicker == null ? null : {
+            label: window.showSaveFilePicker != null ? 'Save status to file' : 'Download status to file',
+            disabled: () => this.fileHandle == null,
+            click: () => this.app.saveDataTo(this.fileHandle!),
+          }),
           {
-            label: 'Download status to file',
-            click: () => this.app.saveDataAs(),
+            label: window.showSaveFilePicker != null ? 'Save status to file as...' : 'Download status to file',
+            click: async () => {
+              const fileHandle = await this.app.saveDataAs()
+              if (fileHandle != null)
+                this.fileHandle = fileHandle
+            },
           },
           {label: '----'},
           {
@@ -384,8 +394,10 @@ export class ScreenWnd extends Wnd {
             click: () => this.app.loadData(),
           },
           {
-            label: 'Restore status from file',
-            click: () => this.app.loadDataFromFile(),
+            label: window.showOpenFilePicker != null ? 'Load status from file' : 'Restore status from file',
+            click: async () => {
+              this.fileHandle = await this.app.loadDataFromFile()
+            },
           },
           {label: '----'},
           {
@@ -394,7 +406,7 @@ export class ScreenWnd extends Wnd {
               this.close()
             },
           },
-        ],
+        ].filter(x => x != null) as SubmenuItemInfo[],
       },
       {
         label: 'View',

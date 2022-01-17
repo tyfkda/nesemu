@@ -119,7 +119,7 @@ export class RamWnd extends Wnd {
   private visibleEndAdr = 0
 
   public constructor(wndMgr: WindowManager, private nes: Nes, private stream: AppEvent.Stream) {
-    super(wndMgr, 420, 236, 'Ram')
+    super(wndMgr, 420, 240, 'Ram')
 
     const {root, contentRoot, cells} = this.createContent()
     this.setContent(root)

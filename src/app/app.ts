@@ -109,16 +109,48 @@ export class App {
     return StorageUtil.putObject(this.title, saveData)
   }
 
-  public saveDataAs(): void {
-    const saveData = this.nes.save()
-    const blob = new Blob([JSON.stringify(saveData)], {type: 'application/json'})
-    const objectURL = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    document.body.appendChild(link)
-    link.href = objectURL
-    link.download = `${this.title}.sav`
-    link.click()
-    document.body.removeChild(link)
+  public async saveDataAs(): Promise<FileSystemFileHandle|null> {
+    const paused = this.nes.getCpu().isPaused()
+    if (!paused)
+      this.stream.triggerPause()
+    try {
+      const saveData = JSON.stringify(this.nes.save())
+      const filename = `${this.title}.sav`
+      const fileHandle = await DomUtil.downloadOrSaveToFile(saveData, filename, 'Game status', 'application/json', '.sav')
+      if (fileHandle != null)
+        this.wndMgr.showSnackbar(`Data saved: ${filename}`, {type: 'success'})
+      return fileHandle
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        console.error(e)
+        this.wndMgr.showSnackbar(`Failed: ${e.toString()}`)
+      }
+      return null
+    } finally {
+      if (!paused)
+        this.stream.triggerRun()
+    }
+  }
+
+  public async saveDataTo(fileHandle: FileSystemFileHandle): Promise<void> {
+    const paused = this.nes.getCpu().isPaused()
+    if (!paused)
+      this.stream.triggerPause()
+    try {
+      const saveData = JSON.stringify(this.nes.save())
+      const writable = await fileHandle.createWritable()
+      await writable.write(saveData)
+      await writable.close()
+      this.wndMgr.showSnackbar(`Data saved to: ${fileHandle.name}`, {type: 'success'})
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        console.error(e)
+        this.wndMgr.showSnackbar(`Failed: ${e.ToString()}`)
+      }
+    } finally {
+      if (!paused)
+        this.stream.triggerRun()
+    }
   }
 
   public hasSaveData(): boolean {
@@ -139,22 +171,29 @@ export class App {
     }
   }
 
-  public loadDataFromFile(): void {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.sav, application/json'
-    input.onchange = _event => {
-      if (!input.value)
-        return
-      const fileList = input.files
-      if (fileList) {
-        const file = fileList[0]
-        DomUtil.loadFile(file)
-          .then(binary => this.loadDataFromBinary(binary))
+  public async loadDataFromFile(): Promise<FileSystemFileHandle|null> {
+    const paused = this.nes.getCpu().isPaused()
+    if (!paused)
+      this.stream.triggerPause()
+    try {
+      const opened = await DomUtil.pickOpenFile('.sav', 'Game data', 'application/binary')
+      if (opened != null) {
+        const binary = await opened.file.arrayBuffer()
+        this.loadDataFromBinary(new Uint8Array(binary))
+        return opened.fileHandle || null
       }
-      input.value = ''
+    } catch (e) {
+      if (e.name !== 'AbortError') {
+        console.error(e)
+        this.wndMgr.showSnackbar(`Failed: ${e.ToString()}`)
+      }
+    } finally {
+      if (!paused)
+        this.stream.triggerRun()
+      else
+        this.render()
     }
-    input.click()
+    return null
   }
 
   public loadDataFromBinary(binary: Uint8Array): void {

@@ -73,12 +73,66 @@ export class DomUtil {
     return new Promise<void>(resolve => setTimeout(resolve, millisec))
   }
 
-  public static download(blob: Blob, filename: string): void {
-    const objectURL = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = objectURL
-    a.setAttribute('download', filename)
-    a.click()
+  public static async downloadOrSaveToFile(data: any, filename: string, description: string, mimeType: string, extension: string): Promise<FileSystemFileHandle|null> {
+    if (window.showSaveFilePicker != null) {
+      const accept = {}
+      accept[mimeType] = [extension]
+      const kFilePickerOption = {
+        suggestedName: filename,
+        types: [{
+          description,
+          accept,
+        }],
+      }
+      const fileHandle = await window.showSaveFilePicker(kFilePickerOption)
+      const writable = await fileHandle.createWritable()
+      await writable.write(data)
+      await writable.close()
+      return fileHandle
+    } else {
+      const blob = new Blob([data], {type: mimeType})
+      const objectURL = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = objectURL
+      a.setAttribute('download', filename)
+      a.click()
+      return null
+    }
+  }
+
+  public static async pickOpenFile(extension: string, description: string, mimeType: string): Promise<{file: File; fileHandle?: FileSystemFileHandle} | null> {
+    if (window.showOpenFilePicker != null || false) {
+      const accept = {}
+      accept[mimeType] = extension
+      const option = {
+        types: [{
+          description,
+          accept,
+        }],
+      }
+      const [fileHandle] = await window.showOpenFilePicker(option)
+      const file = await fileHandle.getFile()
+      return {file, fileHandle}
+    } else {
+      return new Promise((resolve, reject) => {
+        const input = document.createElement('input')
+        input.type = 'file'
+        input.accept = `${extension}, ${mimeType}`
+        input.onchange = async (_event) => {
+          if (!input.value)
+            return
+          const fileList = input.files
+          if (fileList) {
+            const file = fileList[0]
+            resolve({file})
+          } else {
+            reject(null)
+          }
+          input.value = ''
+        }
+        input.click()
+      })
+    }
   }
 
   // Register mouse drag event listener.
