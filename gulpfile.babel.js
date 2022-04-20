@@ -5,10 +5,10 @@ const browserSync = require('browser-sync').create()
 
 // TypeScript
 import clone from 'clone'
+import eslint from 'gulp-eslint'
 import webpack from 'webpack'
 import webpackStream from 'webpack-stream'
 import webpackConfig from './webpack.config.babel'
-import eslint from 'gulp-eslint'
 
 // HTML
 import ejs from 'gulp-ejs'
@@ -32,7 +32,7 @@ const ASSETS_DIR = `${DEST_DIR}/assets`
 const SRC_TS_DIR = `${ROOT_DIR}/src`
 const SRC_TS_FILES = `${SRC_TS_DIR}/**/*.ts`
 const SRC_HTML_DIR = `${ROOT_DIR}/src`
-const SRC_HTML_FILES = `${SRC_HTML_DIR}/*.html`  // */
+const SRC_HTML_FILES = `${SRC_HTML_DIR}/*.html`
 const SRC_SASS_FILES = `${ROOT_DIR}/src/**/*.scss`
 const SRC_TEST_DIR = `${ROOT_DIR}/test`
 const SRC_TEST_FILES = `${SRC_TEST_DIR}/**/*.spec.ts`
@@ -59,10 +59,6 @@ function checkLint(glob) {
     .pipe(eslint())
     .pipe(eslint.format())
     .pipe(eslint.failAfterError())
-}
-
-function buildWhenModified(glob, buildFunc) {
-  return gulp.watch(glob, buildFunc)
 }
 
 export function reload(done) {
@@ -125,10 +121,10 @@ export function lint() {
 }
 
 export function watchLint() {
-  const globs = [`${SRC_TS_DIR}/**/*.ts`,
+  const globs = [SRC_TS_FILES,
+                 SRC_TEST_FILES,
                  `!${SRC_TS_DIR}/lib.ts`]
-  return buildWhenModified(globs,
-                           () => checkLint(globs))
+  return gulp.watch(globs, lint)
 }
 
 export function copyRes() {
