@@ -75,7 +75,6 @@
     "ts-loader": "~9.2.6",
     "ts-node": "~10.4.0",
     "typescript": "~4.5.2",
-    "url-loader": "~4.1.1",
     "webpack": "~5.64.4",
     "webpack-stream": "~7.0.0"
   },

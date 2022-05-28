@@ -18,9 +18,9 @@ import * as Stats from 'stats-js'
 
 import aboutHtmlContent from '../res/about.html'
 
-import pluseImg from '../res/pulse.png'
-import triangleImg from '../res/triangle.png'
-import sawtoothImg from '../res/sawtooth.png'
+import * as pluseImg from '../res/pulse.png'
+import * as triangleImg from '../res/triangle.png'
+import * as sawtoothImg from '../res/sawtooth.png'
 
 export class FpsWnd extends Wnd {
   private subscription: Pubsub.Subscription

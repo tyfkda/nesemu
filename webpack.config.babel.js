@@ -12,14 +12,13 @@ module.exports = {
     sourceMapFilename: '[name].map',
   },
   resolve: {
-    extensions: ['.ts', '.js', '.png', '.svg', '.html'],
+    extensions: ['.ts', '.js', '.html'],
   },
   module: {
     rules: [
       {test: /\.ts$/, include: /src/, exclude: /node_modules/, use: {loader: 'ts-loader'}},
-      {test: /\.png$/, include: /src/, exclude: /node_modules/, use: {loader: 'url-loader', options: {limit: 8192}}},
-      {test: /\.svg$/, include: /src/, exclude: /node_modules/, type: 'asset/inline'},
       {test: /\.html$/, include: /src/, exclude: /node_modules/, use: {loader: 'html-loader', options: {minimize: true}}},
+      {test: /\.(png|svg)$/, include: /src/, exclude: /node_modules/, type: 'asset/inline'},
     ],
   },
   optimization: {
