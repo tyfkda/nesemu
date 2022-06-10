@@ -13,37 +13,32 @@ function getMapperNo(romData: Uint8Array): number {
   return ((romData[6] >> 4) & 0x0f) | (romData[7] & 0xf0)
 }
 
-function dumpMapper(fn: string): void {
+async function dumpMapper(fn: string): Promise<void> {
   switch (path.extname(fn).toLowerCase()) {
   case '.nes':
-    promisify(fs.readFile)(fn)
-      .then((buffer: Buffer) => {
-        console.log(`"${path.basename(fn)}"\tmapper=${getMapperNo(buffer)}`)
-      })
-    break
+    const buffer = await promisify(fs.readFile)(fn) as Buffer
+    console.log(`"${path.basename(fn)}"\tmapper=${getMapperNo(buffer)}`)
+    return
   case '.zip':
-    promisify(fs.readFile)(fn)
-      .then((buffer: Buffer) => {
-        const zip = new JSZip()
-        return zip.loadAsync(buffer)
-      })
-      .then((loadedZip: JSZip) => {
-        for (let fileName of Object.keys(loadedZip.files)) {
-          if (path.extname(fileName).toLowerCase() === '.nes') {
-            return loadedZip.files[fileName].async('uint8array')
-          }
+    {
+      const buffer = await promisify(fs.readFile)(fn)
+      const zip = new JSZip()
+      const loadedZip = await zip.loadAsync(buffer)
+      for (let fileName of Object.keys(loadedZip.files)) {
+        if (path.extname(fileName).toLowerCase() === '.nes') {
+          const unzipped = await loadedZip.files[fileName].async('uint8array')
+          console.log(`"${path.basename(fn)}"\tmapper=${getMapperNo(unzipped)}`)
+          return
         }
-        return Promise.reject(`${fn}: .nes not included`)
-      })
-      .then((unzipped: Uint8Array) => {
-        console.log(`"${path.basename(fn)}"\tmapper=${getMapperNo(unzipped)}`)
-      })
+      }
+    }
+    console.error(`${fn}: .nes not included`)
     break
   default:
     console.error(`${fn}: Unsupported extname`)
-    process.exit(1)
-    break;
+    break
   }
+  process.exit(1)
 }
 
 function main(): void {

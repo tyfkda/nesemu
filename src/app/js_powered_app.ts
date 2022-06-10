@@ -51,18 +51,15 @@ class JsNes extends Nes {
     return this.reload()
   }
 
-  public reload(): Promise<void> {
-    return DomUtil.loadFile(this.file)
-      .then(data => {
-        // const jsCode = String.fromCharCode.apply('', data)
-        const jsCode = new TextDecoder('utf-8').decode(data)
-        /* tslint:disable:no-eval */
-        this.jsCpu = eval(jsCode)
-        /* tslint:enable:no-eval */
-        this.ppu.setChrData(this.jsCpu.getChrRom())
-        this.jsCpu.init(this.bus, this.ppu)
-        return Promise.resolve()
-      })
+  public async reload(): Promise<void> {
+    const data = await DomUtil.loadFile(this.file)
+    // const jsCode = String.fromCharCode.apply('', data)
+    const jsCode = new TextDecoder('utf-8').decode(data)
+    /* tslint:disable:no-eval */
+    this.jsCpu = eval(jsCode)
+    /* tslint:enable:no-eval */
+    this.ppu.setChrData(this.jsCpu.getChrRom())
+    this.jsCpu.init(this.bus, this.ppu)
   }
 
   public reset(): void {
@@ -213,13 +210,11 @@ export class JsApp extends App {
     this.screenWnd.setPos(x, y)
   }
 
-  public setFile(file: File): void {
-    this.jsNes.setFile(file)
-      .then(() => {
-        const bus = this.nes.getBus()
-        this.audioManager = new AudioManager(bus.read8.bind(bus))
-        this.setupAudioManager()
-      })
+  public async setFile(file: File): Promise<void> {
+    await this.jsNes.setFile(file)
+    const bus = this.nes.getBus()
+    this.audioManager = new AudioManager(bus.read8.bind(bus))
+    this.setupAudioManager()
   }
 
   public reload(): void {
