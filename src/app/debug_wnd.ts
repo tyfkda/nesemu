@@ -301,7 +301,7 @@ export class RamWnd extends Wnd {
     const data = this.memBuf1
     try {
       await DomUtil.downloadOrSaveToFile(data, 'ram.bin', 'RAM data', 'application/binary', '.bin')
-    } catch (e) {
+    } catch (e: any) {
       if (e.name !== 'AbortError') {
         console.error(e)
         this.wndMgr.showSnackbar(`Failed: ${e.toString()}`)

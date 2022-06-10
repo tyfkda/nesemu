@@ -4,7 +4,8 @@ import {Addressing, Instruction, OpType, kInstTable} from '../src/nes/cpu/inst'
 import {kOpcode} from '../src/nes/cpu/disasm'
 import {Util} from '../src/util/util'
 
-import * as argv from 'argv'
+// import * as argv from 'argv'
+const argv = require('argv')  // eslint-disable-line @typescript-eslint/no-var-requires
 
 function loadPrgRom(romData: Uint8Array): Uint8Array {
   const start = 16, size = romData[4] * (16 * 1024)
@@ -349,7 +350,7 @@ function main(): void {
 
     if (options.config) {
       const data = fs.readFileSync(options.config)
-      const str = String.fromCharCode.apply('', data)
+      const str = String.fromCharCode.apply('', data as any)
       const json = eval(`(${str})`)
       if (json.stopPoints) {
         for (let adr of json.stopPoints) {
