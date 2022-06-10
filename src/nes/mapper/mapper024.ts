@@ -118,7 +118,7 @@ class Mapper024Base extends Mapper {
 
   private channels = new Array<VrcChannel>(kWaveTypes.length)
 
-  constructor(private options: MapperOptions, mapping: {[key: number]: number}) {
+  constructor(private options: MapperOptions, mapping: Record<number, number>) {
     super()
 
     const BANK_BIT = 13

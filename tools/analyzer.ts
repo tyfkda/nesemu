@@ -52,7 +52,7 @@ class Analyzer {
   private stopPoints = new Set<number>()
   private labels = new Map<number, any>()
   private blocks = new Array<Block>()
-  private labelNameTable: {[key: number]: string} = {}
+  private labelNameTable: Record<number, string> = {}
 
   constructor() {
   }
@@ -88,7 +88,7 @@ class Analyzer {
       this.addEntryPoint(this.read16(adr + i * 2))
   }
 
-  public setLabelNameTable(labelNameTable: {[key: number]: string}): void {
+  public setLabelNameTable(labelNameTable: Record<number, string>): void {
     this.labelNameTable = labelNameTable
   }
 

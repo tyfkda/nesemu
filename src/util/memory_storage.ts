@@ -1,5 +1,5 @@
 export class MemoryStorage extends Storage {
-  private storage: {[key: string]: string} = {}
+  private storage: Record<string, string> = {}
 
   constructor() {
     super()

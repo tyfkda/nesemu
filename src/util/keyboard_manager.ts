@@ -1,5 +1,5 @@
 export class KeyboardManager {
-  private pressingKeys: {[key: string]: boolean} = {}
+  private pressingKeys: Record<string, boolean> = {}
   private lastPressing: string | null = null
 
   public onKeyDown(event: KeyboardEvent): void {

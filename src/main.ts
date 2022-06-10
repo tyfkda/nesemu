@@ -162,7 +162,7 @@ class Main {
       })
     try {
       const results = await Promise.all(promises)
-      const typeMap: {[key: string]: Array<Result>} = {}
+      const typeMap: Record<string, Array<Result>> = {}
       results.forEach(result => {
         if (!typeMap[result.type])
           typeMap[result.type] = []

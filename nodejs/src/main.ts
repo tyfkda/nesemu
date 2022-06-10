@@ -22,7 +22,7 @@ const RETURN = 40
 const ESCAPE = 41
 const SPACE = 44
 
-const kScanCode2PadValue: {[key: number]: number} = {
+const kScanCode2PadValue: Record<number, number> = {
   [ARROW_RIGHT]: PadValue.R,
   [ARROW_LEFT]: PadValue.L,
   [ARROW_DOWN]: PadValue.D,

@@ -19,7 +19,7 @@ import {Mapper087} from './mapper087'
 import {Mapper075} from './mapper075'
 import {Mapper184} from './mapper184'
 
-export const kMapperTable: {[key: number]: (options: MapperOptions) => Mapper} =
+export const kMapperTable: Record<number, (options: MapperOptions) => Mapper> =
 {  // Mapper
   0: Mapper000.create,
   1: Mapper001.create,

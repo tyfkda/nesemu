@@ -75,7 +75,7 @@ export class Wnd {
 
     width += this.clientMarginWidth
     height += this.clientMarginHeight
-    const styles = {
+    const styles: Record<string, unknown> = {
       width: `${width}px`,
       height: `${height}px`,
     }
@@ -95,7 +95,7 @@ export class Wnd {
     const left = Util.clamp(rect.left, 0, Math.floor(rootRect.width - rect.width))
     const top = Util.clamp(rect.top, 0, Math.floor(rootRect.height - rect.height))
     if (left !== rect.left || top !== rect.top) {
-      const styles = {}
+      const styles: Record<string, unknown> = {}
       if (left !== rect.left)
         styles['left'] = `${left}px`;
       if (top !== rect.top)

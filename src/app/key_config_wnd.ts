@@ -223,7 +223,7 @@ export class GamepadWnd extends GamepadBaseWnd {
   }
 }
 
-const kKeyLabels: {[key: string]: string} = (() => {
+const kKeyLabels: Record<string, string> = (() => {
   const table: Record<string, string> = {
     ArrowUp: '&uarr;',
     ArrowDown: '&darr;',

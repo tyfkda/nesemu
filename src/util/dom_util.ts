@@ -75,7 +75,7 @@ export class DomUtil {
 
   public static async downloadOrSaveToFile(data: any, filename: string, description: string, mimeType: string, extension: string): Promise<FileSystemFileHandle|null> {
     if (window.showSaveFilePicker != null) {
-      const accept = {}
+      const accept: Record<string, any> = {}
       accept[mimeType] = [extension]
       const kFilePickerOption = {
         suggestedName: filename,
@@ -102,7 +102,7 @@ export class DomUtil {
 
   public static async pickOpenFile(extension: string, description: string, mimeType: string): Promise<{file: File; fileHandle?: FileSystemFileHandle} | null> {
     if (window.showOpenFilePicker != null || false) {
-      const accept = {}
+      const accept: Record<string, string> = {}
       accept[mimeType] = extension
       const option = {
         types: [{

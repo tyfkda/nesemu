@@ -88,7 +88,7 @@ export class GamepadManager {
   }
 
   private static saveSetting(): void {
-    const data: {[key: string]: {button?: number; axis?: number; direction?: number}} = {}
+    const data: Record<string, {button?: number; axis?: number; direction?: number}> = {}
     GamepadManager.padSettings.forEach((s, i) => {
       const key = kKeyTable[i]
       switch (s.type) {

@@ -21,7 +21,7 @@ class Mapper023Base extends Mapper {
   private irqLatch = 0
   private irqCounter = 0
 
-  constructor(private options: MapperOptions, mapping: {[key: number]: number}) {
+  constructor(private options: MapperOptions, mapping: Record<number, number>) {
     super()
 
     const BANK_BIT = 13

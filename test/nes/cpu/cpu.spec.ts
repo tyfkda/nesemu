@@ -3,7 +3,7 @@ import {IBus} from '../../../src/nes/cpu/ibus'
 import {Address, Byte} from '../../../src/nes/types'
 
 class MappedBus implements IBus {
-  constructor(private m: {[key: number]: Byte}) {
+  constructor(private m: Record<number, Byte>) {
   }
 
   public read8(adr: Address): Byte {
