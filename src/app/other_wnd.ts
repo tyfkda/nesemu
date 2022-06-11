@@ -752,7 +752,7 @@ export class SettingWnd extends Wnd {
         type: Type.CHECKBOX,
         message: 'Pause on menu',
         getValue: () => GlobalSetting.pauseOnMenu,
-        onchange(_event) {
+        onchange(_event: Event) {
           GlobalSetting.pauseOnMenu = !!(this as any).checked
           GlobalSetting.saveToStorage()
         },
@@ -761,7 +761,7 @@ export class SettingWnd extends Wnd {
         type: Type.CHECKBOX,
         message: 'Mute on inactive',
         getValue: () => GlobalSetting.muteOnInactive,
-        onchange(_event) {
+        onchange(_event: Event) {
           GlobalSetting.muteOnInactive = (this as any).checked
           GlobalSetting.saveToStorage()
         },
@@ -771,12 +771,12 @@ export class SettingWnd extends Wnd {
         message: 'Volume',
         max: 100,
         getValue: () => GlobalSetting.volume,
-        onchange(_event) {
+        onchange(_event: Event) {
           const volume = ((this as any).value) / 100
           AudioManager.setMasterVolume(volume)
           GlobalSetting.volume = volume
         },
-        onfinish(_event) {
+        onfinish(_event: Event) {
           GlobalSetting.saveToStorage()
         },
       },
