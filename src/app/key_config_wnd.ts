@@ -6,7 +6,8 @@ import {WindowManager} from '../wnd/window_manager'
 import {Wnd} from '../wnd/wnd'
 import {WndEvent} from '../wnd/types'
 
-import * as escape from 'escape-html'
+// import * as escape from 'escape-html'
+const escape = require('escape-html')  // eslint-disable-line @typescript-eslint/no-var-requires
 
 interface GamepadButtonOption {
   width?: number

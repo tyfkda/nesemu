@@ -14,7 +14,8 @@ import {kPaletColors} from '../nes/ppu/const'
 import {AppEvent} from './app_event'
 
 import * as Pubsub from '../util/pubsub'
-import * as Stats from 'stats-js'
+// import * as Stats from 'stats-js'
+const Stats = require('stats-js')  // eslint-disable-line @typescript-eslint/no-var-requires
 
 import aboutHtmlContent from '../res/about.html'
 
@@ -24,7 +25,7 @@ import * as sawtoothImg from '../res/sawtooth.png'
 
 export class FpsWnd extends Wnd {
   private subscription: Pubsub.Subscription
-  private stats: Stats
+  private stats: typeof Stats
 
   constructor(wndMgr: WindowManager, private stream: AppEvent.Stream) {
     super(wndMgr, 80, 48, 'Fps')

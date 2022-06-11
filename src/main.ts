@@ -212,7 +212,7 @@ class Main {
           app.loadDataFromBinary(file.binary)
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       this.wndMgr.showSnackbar(e.toString())
     }
   }

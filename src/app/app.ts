@@ -120,7 +120,7 @@ export class App {
       if (fileHandle != null)
         this.wndMgr.showSnackbar(`Data saved: ${filename}`, {type: 'success'})
       return fileHandle
-    } catch (e) {
+    } catch (e: any) {
       if (e.name !== 'AbortError') {
         console.error(e)
         this.wndMgr.showSnackbar(`Failed: ${e.toString()}`)
@@ -142,7 +142,7 @@ export class App {
       await writable.write(saveData)
       await writable.close()
       this.wndMgr.showSnackbar(`Data saved to: ${fileHandle.name}`, {type: 'success'})
-    } catch (e) {
+    } catch (e: any) {
       if (e.name !== 'AbortError') {
         console.error(e)
         this.wndMgr.showSnackbar(`Failed: ${e.ToString()}`)
@@ -182,7 +182,7 @@ export class App {
         this.loadDataFromBinary(new Uint8Array(binary))
         return opened.fileHandle || null
       }
-    } catch (e) {
+    } catch (e: any) {
       if (e.name !== 'AbortError') {
         console.error(e)
         this.wndMgr.showSnackbar(`Failed: ${e.ToString()}`)
