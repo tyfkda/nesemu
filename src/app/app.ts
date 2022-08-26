@@ -221,14 +221,6 @@ export class App {
     }
   }
 
-  public toggleAudioBlockiness(): void {
-    this.audioManager.toggleBlockiness()
-  }
-
-  public getAudioBlockiness(): boolean {
-    return this.audioManager.getBlockiness()
-  }
-
   public isTop(): boolean {
     return this.screenWnd.isTop()
   }

@@ -13,7 +13,6 @@ abstract class SoundChannel {
   public setDutyRatio(_dutyRatio: number): void { throw new Error('Invalid call') }
   public setNoisePeriod(_period: number, _mode: number): void { throw new Error('Invalid call') }
   public setDmcWrite(_reg: number, _value: number): void { throw new Error('Invalid call') }
-  public setBlockiness(_context: AudioContext, _destination: AudioNode, _blockiness: boolean): void {}
 }
 
 abstract class GainSoundChannel extends SoundChannel {
@@ -110,28 +109,9 @@ function createQuantizedTriangleWave(div: number, N: number): {an: Float32Array,
 class TriangleChannel extends OscillatorChannel {
   protected setupOscillator(oscillator: OscillatorNode, context: AudioContext,
                             destination: AudioNode): void {
-    this.setOscillatorBlockiness(context, destination, oscillator, false)
-  }
-
-  public setBlockiness(context: AudioContext, destination: AudioNode, blocky: boolean): void {
-    this.oscillator.disconnect()
-
-    const oscillator = this.oscillator = context.createOscillator()
-    this.setOscillatorBlockiness(context, destination, oscillator, blocky)
-    this.oscillator.frequency.setValueAtTime(this.frequency, context.currentTime)
-    this.oscillator.start()
-  }
-
-  private setOscillatorBlockiness(
-      context: AudioContext, destination: AudioNode, oscillator: OscillatorNode, blocky: boolean
-  ): void {
-    if (blocky) {
-      const {an, bn} = createQuantizedTriangleWave(16, 128)
-      const wave = context.createPeriodicWave(an, bn)
-      oscillator.setPeriodicWave(wave)
-    } else {
-      oscillator.type = 'triangle'
-    }
+    const {an, bn} = createQuantizedTriangleWave(16, 128)
+    const wave = context.createPeriodicWave(an, bn)
+    oscillator.setPeriodicWave(wave)
     oscillator.connect(this.gainNode)
     this.gainNode.connect(destination)
   }
@@ -512,7 +492,6 @@ export class AudioManager {
   private static masterVolume = 1.0
 
   private channels = new Array<SoundChannel>()
-  private blockiness = false
 
   public static setUp(audioContextClass: any): void {
     if (AudioManager.initialized)
@@ -597,18 +576,6 @@ export class AudioManager {
     }
     sc.start()
     this.channels.push(sc)
-  }
-
-  public toggleBlockiness(): void {
-    this.blockiness = !this.blockiness
-    if (AudioManager.context != null) {
-      for (const channel of this.channels)
-      channel.setBlockiness(AudioManager.context, AudioManager.masterGainNode, this.blockiness)
-    }
-  }
-
-  public getBlockiness(): boolean {
-    return this.blockiness
   }
 
   public setChannelEnable(channel: number, enable: boolean): void {

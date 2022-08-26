@@ -483,25 +483,6 @@ export class ScreenWnd extends Wnd {
         ],
       },
       {
-        label: 'Audio',
-        submenu: [
-          {
-            label: 'Quantized Triangle',
-            checked: () => this.app.getAudioBlockiness(),
-            click: () => {
-              this.app.toggleAudioBlockiness()
-            },
-          },
-          {label: '----'},
-          {
-            label: 'Keyboard',
-            click: () => {
-              this.createAudioWnd()
-            },
-          },
-        ],
-      },
-      {
         label: 'Debug',
         submenu: [
           {
@@ -526,6 +507,12 @@ export class ScreenWnd extends Wnd {
             label: 'FPS',
             click: () => {
               this.createFpsWnd()
+            },
+          },
+          {
+            label: 'Keyboard',
+            click: () => {
+              this.createAudioWnd()
             },
           },
           {label: '----'},
