@@ -514,7 +514,6 @@ export class AudioManager {
       AudioManager.masterGainNode.gain.setValueAtTime(
         AudioManager.masterVolume * GLOBAL_MASTER_VOLUME, context.currentTime)
       AudioManager.masterGainNode.connect(context.destination)
-      AudioManager.initialized = true
     }
   }
 
