@@ -381,7 +381,7 @@ export class Ppu {
 
   public render(pixels: Uint8Array | Uint8ClampedArray): void {
     const greyscale = (this.regs[PpuReg.MASK] & PpuMaskBit.GREYSCALE) !== 0
-    const colorMask = greyscale ? 0x20 : 0x3f
+    const colorMask = greyscale ? 0x30 : 0x3f
     this.renderOffscreen(this.offscreen, pixels, colorMask)
   }
 
