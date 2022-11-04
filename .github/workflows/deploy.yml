@@ -1,0 +1,41 @@
+name: Build and deploy gh-pages
+
+on:
+  push:
+    branches:
+      - main
+      - actions/**
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16.x
+    - name: Install NPM packages
+      run: npm ci
+    - name: Build release
+      run: npm run release
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v1
+      with:
+        path: release
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@main
