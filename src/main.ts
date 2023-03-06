@@ -1,5 +1,6 @@
 import {App, Option} from './app/app'
-import {AboutWnd, EqualizerWnd, GlobalPaletWnd, SettingWnd} from './app/other_wnd'
+import {AboutWnd, GlobalPaletWnd, SettingWnd} from './app/other_wnd'
+import {SpectrumWnd} from './app/spectrum_wnd'
 import {AudioManager} from './util/audio_manager'
 import {DomUtil} from './util/dom_util'
 import {JsApp} from './app/js_powered_app'
@@ -29,7 +30,7 @@ class Main {
   private keyConfigWnd: KeyConfigWnd | null = null
   private gamepadWnd: GamepadWnd | null = null
   private globalPaletWnd: GlobalPaletWnd | null = null
-  private equalizerWnd: EqualizerWnd | null = null
+  private spectrumWnd: SpectrumWnd | null = null
   private settingWnd: SettingWnd | null = null
   private aboutWnd: AboutWnd | null = null
 
@@ -84,8 +85,8 @@ class Main {
         disabled: !GamepadManager.isSupported(),
       },
       {
-        label: 'Equalizer',
-        click: () => this.openEqualizerWnd(),
+        label: 'Spectrum Analyzer',
+        click: () => this.openSpectrumWnd(),
       },
       {
         label: 'Setting',
@@ -308,13 +309,13 @@ class Main {
     }
   }
 
-  private openEqualizerWnd(): void {
-    if (this.equalizerWnd == null) {
-      this.equalizerWnd = new EqualizerWnd(this.wndMgr, () => {
-        this.equalizerWnd = null
+  private openSpectrumWnd(): void {
+    if (this.spectrumWnd == null) {
+      this.spectrumWnd = new SpectrumWnd(this.wndMgr, () => {
+        this.spectrumWnd = null
       })
     } else {
-      this.wndMgr.moveToTop(this.equalizerWnd)
+      this.wndMgr.moveToTop(this.spectrumWnd)
     }
   }
 

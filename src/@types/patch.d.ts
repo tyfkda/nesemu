@@ -31,3 +31,7 @@ interface WritableStream {
 interface FileSystemWritableFileStream extends WritableStream {
   write(content: any): Promise<undefined>
 }
+
+interface CanvasRenderingContext2D {
+  roundRect(x: number, y: number, width: number, height: number, radii: number): void
+}

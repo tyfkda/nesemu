@@ -483,6 +483,8 @@ function createSoundChannel(
   }
 }
 
+const DC_REMOVE_WORKER_PASS = 'assets/dc_remove_worker.js'
+
 export class AudioManager {
   private static initialized = false
   private static audioContextClass?: AudioContext
@@ -532,11 +534,23 @@ export class AudioManager {
       return null
     if (AudioManager.analyserNode == null) {
       AudioManager.analyserNode = context.createAnalyser()
-      AudioManager.masterGainNode.disconnect()
-      AudioManager.masterGainNode.connect(AudioManager.analyserNode)
-      AudioManager.analyserNode.connect(context.destination)
+      AudioManager.createDcRemoveFilter(context)
+          .then((node) => {
+            AudioManager.masterGainNode.connect(node)
+            node.connect(AudioManager.analyserNode!)
+          })
+          .catch(() => {
+            AudioManager.masterGainNode.connect(AudioManager.analyserNode!)
+          })
     }
     return AudioManager.analyserNode
+  }
+
+  private static async createDcRemoveFilter(context: AudioContext): Promise<AudioWorkletNode> {
+    if (typeof(AudioWorkletNode) === 'undefined')
+      return Promise.reject()
+    await context.audioWorklet.addModule(DC_REMOVE_WORKER_PASS)
+    return new AudioWorkletNode(context, 'dc_remove_worklet')
   }
 
   private static checkSetUpCalled(): void {

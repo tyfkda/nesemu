@@ -5,6 +5,7 @@ module.exports = {
   entry: {
     main: './src/main.ts',
     noise_channel_worker: './src/noise_channel_worker.ts',
+    dc_remove_worker: './src/dc_remove_worker.ts',
   },
   output: {
     path: path.resolve(__dirname, 'public/assets'),
