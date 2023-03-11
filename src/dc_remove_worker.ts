@@ -35,7 +35,7 @@ class DcRemoveProcessor extends AudioWorkletProcessor {
 
       let dc = this.dc[channel]
       const sum = input[0].reduce((acc, val) => acc + val, 0.0)
-      dc += (sum / input[0].length - dc) * (1.0 / 8)
+      dc += (sum / input[0].length - dc) * (1.0 / 32)
       this.dc[channel] = dc
 
       const outCh = output[channel]

@@ -8,32 +8,8 @@ import {DomUtil} from '../util/dom_util'
 const WIDTH = 360
 const HEIGHT = 120
 
-const FreqTable = [
-  6,
-  (31.5 + 63) / 2,
-  (63 + 94) / 2,
-  (94 + 126) / 2,
-  (126 + 170) / 2,
-  (170 + 230) / 2,
-  (230 + 310) / 2,
-  (310 + 420) / 2,
-  (420 + 563) / 2,
-  (563 + 760) / 2,
-  (760 + 1000) / 2,
-  (1000 + 1370) / 2,
-  (1370 + 1870) / 2,
-  (1870 + 2550) / 2,
-  (2550 + 3400) / 2,
-  (3400 + 4600) / 2,
-  (4600 + 6150) / 2,
-  (6150 + 8360) / 2,
-  (8360 + 11200) / 2,
-  (11200 + 15000) / 2,
-  20000,
-]
-
-const PEEK_WAIT0 = 30
-const PEEK_WAIT1 = 2
+const PEAK_WAIT0 = 30
+const PEAK_WAIT1 = 2
 
 // Colors
 const GREEN = 'rgb(0,224,64)'
@@ -41,22 +17,29 @@ const YELLOW = 'rgb(224,224,0)'
 const RED = 'rgb(224,0,0)'
 const GRAY = 'rgb(40,40,40)'
 
-function calcBin(f: number, bufferLength: number, sampleRate: number): number {
-  return (f * bufferLength * 2 / sampleRate) | 0
+const minHz = 100
+const maxHz = 10000
+const minHzVal = Math.log10(minHz)
+const maxHzVal = Math.log10(maxHz)
+
+const enum Mode {
+  LED,
+  DETAIL,
+  RAW,
 }
 
 export class SpectrumWnd extends Wnd {
   private analyserNode: AnalyserNode
   private dataArray: Uint8Array
-  private floatArray: Float32Array
 
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
-  private mode = 0
+  private mode = Mode.LED
 
   private freqBinIndices: Array<number>
-  private peekAmplitude: Array<number>
-  private peekWait: Array<number>
+  private peakAmplitude: Array<number>
+  private peakWait: Array<number>
+  private xBinTable: Int32Array
 
   constructor(wndMgr: WindowManager, private onClose: () => void) {
     super(wndMgr, WIDTH, HEIGHT, 'Spectrum Analyzer')
@@ -76,7 +59,7 @@ export class SpectrumWnd extends Wnd {
     this.context = DomUtil.getCanvasContext2d(this.canvas)
 
     this.canvas.addEventListener('click', () => {
-      this.mode = 1 - this.mode
+      this.mode = this.mode < Mode.RAW ? this.mode + 1 : Mode.LED
     })
 
     if (!this.setUp()) {
@@ -119,60 +102,69 @@ export class SpectrumWnd extends Wnd {
     this.analyserNode = analyserNode
     const sampleRate = analyserNode.context.sampleRate
 
-    this.analyserNode.fftSize = 2048  //256
+    this.analyserNode.fftSize = 2048
     this.analyserNode.maxDecibels = -30;
     this.analyserNode.minDecibels = -70;
+    this.analyserNode.smoothingTimeConstant = 0.0
     const bufferLength = this.analyserNode.frequencyBinCount
-    this.floatArray = new Float32Array(bufferLength)
-    this.dataArray = new Uint8Array(Math.min(this.analyserNode.fftSize,
-                                             ((1.0 / 300) * sampleRate) | 0))
+    this.dataArray = new Uint8Array(bufferLength)
 
-    this.freqBinIndices = FreqTable.map((f) => calcBin(f, bufferLength, sampleRate))
-    this.peekAmplitude = [...Array(FreqTable.length - 1)].map(_ => 0)
-    this.peekWait = [...Array(FreqTable.length - 1)].map(_ => 0)
+    const calcBin = (e: number) => {
+      const freq = 10 ** e
+      return (freq * bufferLength / (sampleRate * 0.5)) | 0
+    }
+
+    const DIV = 20
+    this.freqBinIndices = [...Array(DIV + 1)].map((_, i) =>
+        calcBin(i / DIV * (maxHzVal - minHzVal) + minHzVal))
+    this.peakAmplitude = [...Array(WIDTH)].map(_ => 0)
+    this.peakWait = [...Array(WIDTH)].map(_ => 0)
+    this.xBinTable = new Int32Array([...Array(WIDTH + 1)].map((_, i) =>
+        calcBin(i / WIDTH * (maxHzVal - minHzVal) + minHzVal)))
 
     return true
   }
 
   private render(): void {
+    this.context.fillStyle = 'rgb(0, 0, 0)'
+    this.context.fillRect(0, 0, WIDTH, HEIGHT)
+
     if (this.dataArray == null)
       return
 
     switch (this.mode) {
-    case 0:
-      this.renderFrequency()
+    case Mode.LED:
+      this.renderLed()
       break
-    case 1:
+    case Mode.DETAIL:
+      this.renderDetail()
+      break
+    case Mode.RAW:
       this.renderTimeDomain()
       break
     }
   }
 
-  private renderFrequency(): void {
+  private renderLed(): void {
     const canvasCtx = this.context
 
-    const dataArray = this.floatArray
-    this.analyserNode.getFloatFrequencyData(dataArray)
-
-    canvasCtx.fillStyle = 'rgb(0, 0, 0)'
-    canvasCtx.fillRect(0, 0, WIDTH, HEIGHT)
+    const dataArray = this.dataArray
+    this.analyserNode.getByteFrequencyData(dataArray)
 
     const n = this.freqBinIndices.length - 1
     const barWidth = (WIDTH / n) | 0
-    const minDecibels = this.analyserNode.minDecibels
     const YDIV = 20
     const H = HEIGHT / YDIV
-    const scale = YDIV / (this.analyserNode.maxDecibels - minDecibels)
+    const scale = YDIV / 255
 
-    let bin = this.freqBinIndices[0]
     for (let i = 0; i < n; ++i) {
+      let bin = this.freqBinIndices[i]
+      let max = dataArray[bin]
       const nextBin = this.freqBinIndices[i + 1]
-      let max = minDecibels
-      for (let j = bin; j < nextBin; ++j) {
-        max = Math.max(max, dataArray[j])
-      }
-      bin = nextBin
-      const h = Math.min((max - minDecibels) * scale, YDIV) | 0
+      while (++bin < nextBin)
+        max = Math.max(max, dataArray[bin])
+
+      const h = Math.min(max * scale, YDIV) | 0
       const x = i * WIDTH / n
       for (let j = 0; j < YDIV; ++j) {
         canvasCtx.fillStyle = j >= h ? GRAY : j < YDIV - 4 ? GREEN : j < YDIV - 1 ? YELLOW : RED
@@ -182,10 +174,12 @@ export class SpectrumWnd extends Wnd {
         canvasCtx.fill()
       }
 
-      const h2 = this.peekAmplitude[i]
+      let h2 = this.peakAmplitude[i]
+      if (h2 > YDIV)
+        h2 = 0
       if (h >= h2) {
-        this.peekAmplitude[i] = h
-        this.peekWait[i] = PEEK_WAIT0
+        this.peakAmplitude[i] = h
+        this.peakWait[i] = PEAK_WAIT0
       } else if (h2 > 0) {
         const hh = h2 - 1
         if (hh >= h) {
@@ -196,21 +190,56 @@ export class SpectrumWnd extends Wnd {
           canvasCtx.fill()
         }
 
-        if (--this.peekWait[i] <= 0) {
-          this.peekAmplitude[i] = h2 - 1
-          this.peekWait[i] = PEEK_WAIT1
+        if (--this.peakWait[i] <= 0) {
+          this.peakAmplitude[i] = h2 - 1
+          this.peakWait[i] = PEAK_WAIT1
         }
       }
     }
   }
 
-  private renderTimeDomain(): void {
-    const dataArray = this.dataArray
-    const bufferLength = dataArray.length
-    this.analyserNode.getByteTimeDomainData(dataArray)
+  private renderDetail(): void {
+    const canvasCtx = this.context
 
-    this.context.fillStyle = 'rgb(0, 0, 0)'
-    this.context.fillRect(0, 0, WIDTH, HEIGHT)
+    const dataArray = this.dataArray
+    this.analyserNode.getByteFrequencyData(dataArray)
+
+    const scale = HEIGHT / 255
+    const gravity = HEIGHT / (32 * 32)
+
+    for (let i = 0; i < WIDTH; ++i) {
+      // Bar.
+      let bin = this.xBinTable[i]
+      let v = dataArray[bin]
+      for (const nextBin = this.xBinTable[i + 1]; ++bin < nextBin; )
+        v = Math.max(v, dataArray[bin])
+
+      const h = (v * scale) | 0
+      const x = i
+      canvasCtx.fillStyle = `rgb(${v>>2},${v},${160-(v>>1)})`
+      canvasCtx.fillRect(x, HEIGHT - h, 1, h)
+
+      // Peak.
+      const py = this.peakAmplitude[i]
+      if (h >= py) {
+        this.peakAmplitude[i] = h
+        this.peakWait[i] = 0
+      } else if (py > 0) {
+        this.peakWait[i] -= gravity
+        this.peakAmplitude[i] += this.peakWait[i]
+
+        const v = (py / scale) | 0
+        canvasCtx.fillStyle = `rgb(0,${(v>>2)+192},${v>>1})`
+        canvasCtx.fillRect(x, HEIGHT - py, 1, 1)
+      }
+    }
+  }
+
+  private renderTimeDomain(): void {
+    const sampleRate = this.analyserNode.context.sampleRate
+    const dataArray = this.dataArray
+    const bufferLength = Math.min(dataArray.length, (sampleRate * (1.0 / 300)) | 0)
+    this.analyserNode.getByteTimeDomainData(dataArray)
 
     const canvasCtx = this.context
 
