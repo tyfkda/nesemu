@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path'
 import {promisify} from 'util'
-import * as JSZip from 'jszip'
+import JSZip from 'jszip'
 
 function getMapperNo(romData: Uint8Array): number {
   const NES = 'NES'

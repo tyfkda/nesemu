@@ -18,9 +18,9 @@ const Stats = require('stats-js')  // eslint-disable-line @typescript-eslint/no-
 
 import aboutHtmlContent from '../res/about.html'
 
-import * as pluseImg from '../res/pulse.png'
-import * as triangleImg from '../res/triangle.png'
-import * as sawtoothImg from '../res/sawtooth.png'
+import pluseImg from '../res/pulse.png'
+import triangleImg from '../res/triangle.png'
+import sawtoothImg from '../res/sawtooth.png'
 
 export class FpsWnd extends Wnd {
   private subscription: Pubsub.Subscription

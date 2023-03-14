@@ -12,10 +12,10 @@ import {StorageUtil} from './util/storage_util'
 import {Util} from './util/util'
 import {WindowManager} from './wnd/window_manager'
 import './util/polyfill'
-import * as JSZip from 'jszip'
+import JSZip from 'jszip'
 
-import * as audioOnImg from './res/audio_on.png'
-import * as audioOffImg from './res/audio_off.png'
+import audioOnImg from './res/audio_on.png'
+import audioOffImg from './res/audio_off.png'
 
 // Request Animation Frame
 window.requestAnimationFrame =

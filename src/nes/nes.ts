@@ -12,7 +12,7 @@ import {CPU_HZ, VBlank} from './const'
 import {Mapper, PrgBankController} from './mapper/mapper'
 import {kMapperTable} from './mapper/mapper_table'
 
-import * as md5 from 'md5'
+import md5 from 'md5'
 
 const RAM_SIZE = 0x0800
 
