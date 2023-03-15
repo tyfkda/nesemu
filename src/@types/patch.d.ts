@@ -14,14 +14,13 @@ interface Window {
 }
 
 interface FileSystemHandle {
-  readonly kind: string
+  readonly kind: 'file' | 'directory'
   readonly name: string
 }
 
 interface FileSystemFileHandle extends FileSystemHandle {
   getFile(): Promise<File>
   createWritable(): Promise<FileSystemWritableFileStream>
-  name: string
 }
 
 interface WritableStream {

@@ -19,4 +19,12 @@ declare function registerProcessor(
   ) => AudioWorkletProcessor) & {
     parameterDescriptors?: AudioParamDescriptor[]
   }
-)
+): undefined
+
+interface AudioParamDescriptor {
+  name: string
+  automationRate: 'a-rate' | 'k-rate'
+  minValue: number
+  maxValue: number
+  defaultValue: number
+}
