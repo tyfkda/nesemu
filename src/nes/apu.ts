@@ -224,7 +224,7 @@ export interface IPulseChannel {
 }
 
 export interface INoiseChannel {
-  getNoisePeriod(): [number, number]
+  getNoisePeriod(): ReadonlyArray<number>
 }
 
 export interface IDeltaModulationChannel {
@@ -403,6 +403,7 @@ class TriangleChannel extends Channel {
 class NoiseChannel extends Channel implements INoiseChannel {
   private lengthCounter = 0
   private envelope = new Envelope()
+  private noisePeriod = [0, 0]
 
   public reset(): void {
     super.reset()
@@ -416,6 +417,13 @@ class NoiseChannel extends Channel implements INoiseChannel {
     case Reg.STATUS:
       this.stopped = false
       this.envelope.write(value)
+      break
+    case Reg.TIMER_L:
+      {
+        const val = this.regs[Reg.TIMER_L]
+        this.noisePeriod[0] = kNoiseFrequencies[val & 15]
+        this.noisePeriod[1] = (val >> 7) & 1
+      }
       break
     case Reg.TIMER_H:  // Set length.
       this.lengthCounter = kLengthTable[value >> 3]
@@ -437,11 +445,8 @@ class NoiseChannel extends Channel implements INoiseChannel {
     throw new Error('Invalid call')
   }
 
-  public getNoisePeriod(): [number, number] {
-    const reg = this.regs[Reg.TIMER_L]
-    const period = kNoiseFrequencies[reg]
-    const mode = (reg >> 7) & 1
-    return [period, mode]
+  public getNoisePeriod(): ReadonlyArray<number> {
+    return this.noisePeriod
   }
 
   public update(): void {
