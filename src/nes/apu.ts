@@ -468,7 +468,7 @@ class NoiseChannel extends Channel implements INoiseChannel {
         this.stopped = true
       }
     } else {
-      l -= 1
+      l -= 2
       if (l < 0)
         l = 0
     }
