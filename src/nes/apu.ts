@@ -126,12 +126,12 @@ export class GamePad {
 
 class Envelope {
   private divider = 0
-  private counter = 0
+  private decayLevel = 0
   private reset = false
   private reg: Byte = 0
 
   public clear(): void {
-    this.divider = this.counter = 0
+    this.divider = this.decayLevel = 0
   }
 
   public resetClock(): void {
@@ -147,40 +147,24 @@ class Envelope {
   }
 
   public getVolume(): number {
-    const v = this.reg
-    if ((v & CONSTANT_VOLUME) !== 0)
-      return (v & 15) / 15
-    return this.counter / 15
+    const v = (this.reg & CONSTANT_VOLUME) !== 0 ? (this.reg & 15) : this.decayLevel
+    return v * (1.0 / 15)
   }
 
   public update(): void {
-    if ((this.reg & CONSTANT_VOLUME) !== 0)
-      return
-
-    if (this.reset) {
-      this.reset = false
-      this.counter = 0x0f
-      return
-    }
-
-    const DEC = 4
-    this.divider -= DEC
-    if (this.divider < 0) {
-      const add = (this.reg & 0x0f) + 1
-      do {
-        this.divider += add
-        if (this.counter > 0) {
-          --this.counter
-        } else {
-          if ((this.reg & ENVELOPE_LOOP) !== 0) {
-            this.counter = 0x0f
-          } else {
-            this.counter = 0
-            this.divider = 0
-            break
-          }
-        }
-      } while (this.divider < 0)
+    for (let i = 0; i < 4; ++i) {
+      if (this.reset) {
+        this.reset = false
+        this.decayLevel = 0x0f
+      } else if (this.divider > 0) {
+        --this.divider
+        continue
+      } else if (this.decayLevel > 0) {
+        --this.decayLevel
+      } else if ((this.reg & ENVELOPE_LOOP) !== 0) {
+        this.decayLevel = 0x0f
+      }
+      this.divider = this.reg & 0x0f
     }
   }
 }
