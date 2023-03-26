@@ -360,28 +360,34 @@ class TriangleChannel extends Channel {
     if (this.stopped)
       return
 
+    this.updateLinear()
     this.updateLength()
   }
 
-  private updateLength(): void {
-    if (this.linearReload) {
-      this.linearCounter = this.regs[Reg.STATUS] & 0x7f
-    } else {
-      let l = this.linearCounter - 4
-      if (l <= 0) {
-        l = 0
+  private updateLinear(): void {
+    for (let i = 0; i < 4; ++i) {
+      if (this.linearReload) {
+        this.linearCounter = this.regs[Reg.STATUS] & 0x7f
+      } else if (this.linearCounter > 0) {
+        --this.linearCounter
+      } else {
         this.stopped = true
       }
-      this.linearCounter = l
-    }
 
-    if ((this.regs[Reg.STATUS] & LENGTH_COUNTER_HALT_TRI) === 0) {
-      this.linearReload = false
-      if (this.lengthCounter < 2)
+      if ((this.regs[Reg.STATUS] & LENGTH_COUNTER_HALT_TRI) === 0)
+        this.linearReload = false
+    }
+  }
+
+  private updateLength(): void {
+    if (this.lengthCounter >= 2) {
+      this.lengthCounter -= 2
+    } else {
+      this.lengthCounter = 0
+      if ((this.regs[Reg.STATUS] & LENGTH_COUNTER_HALT_TRI) === 0) {
         this.stopped = true
+      }
     }
-
-    this.lengthCounter = Math.max(this.lengthCounter - 2, 0)
   }
 }
 
