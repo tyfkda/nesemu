@@ -13,7 +13,6 @@ const kMirrorTable = [
 
 export class Mapper001 extends Mapper {
   private maxPrg = 0
-  private ram = new Uint8Array(0x2000)
   private register = 0
   private counter = 0
   private prgBankMode = 3
@@ -27,6 +26,8 @@ export class Mapper001 extends Mapper {
 
   constructor(private options: MapperOptions) {
     super()
+
+    this.sram = new Uint8Array(0x2000)
 
     const BANK_BIT = 14  // 16KB
     this.maxPrg = (options.prgSize >> BANK_BIT) - 1
@@ -84,17 +85,17 @@ export class Mapper001 extends Mapper {
     })
 
     // PRG RAM
-    this.ram.fill(0xbf)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.ram[adr & 0x1fff])
+    this.sram.fill(0xbf)
+    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.ram[adr & 0x1fff] = value })
+                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
 
     this.setPrgBank(0, 0xff)
   }
 
   public save(): object {
     return {
-      ram: Util.convertUint8ArrayToBase64String(this.ram),
+      ram: Util.convertUint8ArrayToBase64String(this.sram),
       register: this.register,
       counter: this.counter,
       prgBankMode: this.prgBankMode,
@@ -105,7 +106,7 @@ export class Mapper001 extends Mapper {
   }
 
   public load(saveData: any): void {
-    this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    this.sram = Util.convertBase64StringToUint8Array(saveData.ram)
     this.register = saveData.register
     this.counter = saveData.counter
     this.prgBankMode = saveData.prgBankMode

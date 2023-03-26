@@ -13,7 +13,6 @@ const IRQ_MODE = 1 << 2
 const kMirrorTable = [MirrorMode.VERT, MirrorMode.HORZ, MirrorMode.SINGLE0, MirrorMode.SINGLE1]
 
 class Mapper023Base extends Mapper {
-  private ram = new Uint8Array(0x2000)
   private prgBankMode = 0
   private prgBank = new Array<number>(4)
   private chrBank = new Array<number>(8)
@@ -23,6 +22,8 @@ class Mapper023Base extends Mapper {
 
   constructor(private options: MapperOptions, mapping: Record<number, number>) {
     super()
+
+    this.sram = new Uint8Array(0x2000)
 
     const BANK_BIT = 13
     const prgCount = options.prgSize >> BANK_BIT
@@ -121,10 +122,10 @@ class Mapper023Base extends Mapper {
     })
 
     // PRG RAM
-    this.ram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.ram[adr & 0x1fff])
+    this.sram.fill(0xff)
+    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.ram[adr & 0x1fff] = value })
+                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
   }
 
   public reset(): void {
@@ -134,7 +135,7 @@ class Mapper023Base extends Mapper {
 
   public save(): object {
     return {
-      ram: Util.convertUint8ArrayToBase64String(this.ram),
+      ram: Util.convertUint8ArrayToBase64String(this.sram),
       prgBankMode: this.prgBankMode,
       prgBank: this.prgBank,
       chrBank: this.chrBank,
@@ -145,7 +146,7 @@ class Mapper023Base extends Mapper {
   }
 
   public load(saveData: any): void {
-    this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    this.sram = Util.convertBase64StringToUint8Array(saveData.ram)
     this.prgBankMode = saveData.prgBankMode
     // this.prgBank = saveData.prgBank
     // this.chrBank = saveData.chrBank

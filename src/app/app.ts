@@ -15,6 +15,10 @@ import * as Pubsub from '../util/pubsub'
 
 const MAX_ELAPSED_TIME = 1000 / 15
 
+function sramKey(title: string): string {
+  return `sram/${title}`
+}
+
 export class Option {
   public title?: string
   public centerX?: number
@@ -64,17 +68,19 @@ export class App {
     this.screenWnd.setPos(x, y)
   }
 
-  public loadRom(romData: Uint8Array): boolean | string {
+  public loadRom(romData: Uint8Array): string|null {
     const result = this.nes.setRomData(romData)
-    if (result !== true)
+    if (result != null)
       return result
+
+    this.loadSram()
 
     this.setupAudioManager()
 
     this.nes.reset()
     this.screenWnd.getContentHolder().focus()
 
-    return true
+    return null
   }
 
   public bootDiskBios(biosData: Uint8Array): boolean {
@@ -225,10 +231,24 @@ export class App {
     return this.screenWnd.isTop()
   }
 
-  protected destroy(): void {
+  public destroy(): void {
+    this.saveSram()
     this.cleanUp()
     if (this.option.onClosed)
       this.option.onClosed(this)
+  }
+
+  protected loadSram(): void {
+    const sram = StorageUtil.getObject(sramKey(this.title), '')
+    if (sram !== '')
+      this.nes.loadSram(sram)
+  }
+
+  protected saveSram(): void {
+    const sram = this.nes.saveSram()
+    if (sram == null)
+      return
+    StorageUtil.putObject(sramKey(this.title), sram)
   }
 
   protected cleanUp(): void {

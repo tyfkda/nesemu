@@ -50,6 +50,11 @@ class Main {
     window.addEventListener('resize', _ => this.wndMgr.onResizeWindow())
   }
 
+  public shutDown(): void {
+    for (const app of this.apps)
+      app.destroy()
+  }
+
   private setUpStartMenu(): void {
     const submenuItems = [
       {
@@ -239,7 +244,7 @@ class Main {
     }
     const app = new App(this.wndMgr, option)
     const result = app.loadRom(romData)
-    if (result !== true) {
+    if (result != null) {
       this.wndMgr.showSnackbar(`${name}: ${result}`)
       app.close()
       return
@@ -396,6 +401,8 @@ class Main {
   }
 }
 
+let main: Main
+
 window.addEventListener('load', () => {
   StorageUtil.setKeyPrefix('nesemu:')
   PadKeyHandler.setUp()
@@ -403,5 +410,7 @@ window.addEventListener('load', () => {
 
   const root = document.getElementById('nesroot')
   if (root != null)
-    new Main(root)
+    main = new Main(root)
 })
+
+window.addEventListener('beforeunload', () => main?.shutDown())

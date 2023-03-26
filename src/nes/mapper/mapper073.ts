@@ -6,7 +6,6 @@ import {Mapper, MapperOptions} from './mapper'
 import {Util} from '../../util/util'
 
 export class Mapper073 extends Mapper {
-  private ram = new Uint8Array(0x2000)
   private prgBank = 0
   private irqEnable: boolean
   private irqValue: number
@@ -18,6 +17,8 @@ export class Mapper073 extends Mapper {
 
   constructor(private options: MapperOptions) {
     super()
+
+    this.sram = new Uint8Array(0x2000)
 
     this.irqEnable = false
     this.irqValue = this.irqCounter = -1
@@ -59,10 +60,10 @@ export class Mapper073 extends Mapper {
     })
 
     // PRG RAM
-    this.ram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.ram[adr & 0x1fff])
+    this.sram.fill(0xff)
+    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.ram[adr & 0x1fff] = value })
+                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
   }
 
   public reset(): void {
@@ -72,7 +73,7 @@ export class Mapper073 extends Mapper {
 
   public save(): object {
     return {
-      ram: Util.convertUint8ArrayToBase64String(this.ram),
+      ram: Util.convertUint8ArrayToBase64String(this.sram),
       prgBank: this.prgBank,
       irqEnable: this.irqEnable,
       irqValue: this.irqValue,
@@ -81,7 +82,7 @@ export class Mapper073 extends Mapper {
   }
 
   public load(saveData: any): void {
-    this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    this.sram = Util.convertBase64StringToUint8Array(saveData.ram)
     // this.prgBank = saveData.prgBank
     this.irqEnable = saveData.irqEnable
     this.irqValue = saveData.irqValue

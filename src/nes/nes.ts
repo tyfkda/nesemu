@@ -33,6 +33,10 @@ function getMapperNo(romData: Uint8Array): number {
   return ((romData[6] >> 4) & 0x0f) | (romData[7] & 0xf0)
 }
 
+function isBatteryOn(romData: Uint8Array): boolean {
+  return (romData[6] & 2) !== 0
+}
+
 function loadPrgRom(romData: Uint8Array): Uint8Array {
   const start = 16, size = romData[4] * (16 * 1024)
   return romData.slice(start, start + size)
@@ -59,6 +63,8 @@ export class Nes implements PrgBankController {
   private apuChannelCount = 0
   private channelWaveTypes: WaveType[]
   private gamePads = [new GamePad(), new GamePad()]
+
+  private romData: Uint8Array
 
   public static create(): Nes {
     return new Nes()
@@ -92,12 +98,14 @@ export class Nes implements PrgBankController {
     this.breakPointCallback = callback
   }
 
-  public setRomData(romData: Uint8Array): boolean | string {
+  public setRomData(romData: Uint8Array): string|null {
     if (!isRomValid(romData))
       return 'Invalid format'
     const mapperNo = getMapperNo(romData)
     if (!(mapperNo in kMapperTable))
       return `Mapper ${mapperNo} not supported`
+
+    this.romData = romData
 
     this.prgRom = loadPrgRom(romData)
     this.ppu.setChrData(loadChrRom(romData))
@@ -114,7 +122,7 @@ export class Nes implements PrgBankController {
       channels = channels.concat(extras)
     this.channelWaveTypes = channels
 
-    return true
+    return null
   }
 
   public setMapper(mapper: Mapper): void {
@@ -137,6 +145,15 @@ export class Nes implements PrgBankController {
     this.apu.load(saveData.apu)
     this.mapper.load(saveData.mapper)
     this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+  }
+
+  public saveSram(): object|null {
+    return this.romData != null && isBatteryOn(this.romData) ? this.mapper.saveSram() : null
+  }
+
+  public loadSram(saveData: any): void {
+    if (this.romData != null && isBatteryOn(this.romData))
+      this.mapper.loadSram(saveData)
   }
 
   public reset(): void {

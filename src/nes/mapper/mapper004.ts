@@ -7,7 +7,6 @@ import {Util} from '../../util/util'
 
 export class Mapper004 extends Mapper {
   protected regs = new Uint8Array(8)
-  protected ram = new Uint8Array(0x2000)  // PRG RAM
   protected maxPrg = 0
   protected bankSelect = 0
   protected irqHlineEnable = false
@@ -22,15 +21,17 @@ export class Mapper004 extends Mapper {
   constructor(protected options: MapperOptions) {
     super()
 
+    this.sram = new Uint8Array(0x2000)
+
     const BANK_BIT = 13  // 0x2000
     this.maxPrg = (options.prgSize >> BANK_BIT) - 1
 
     this.options.prgBankCtrl.setPrgBank(3, this.maxPrg)
 
-    this.ram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.ram[adr & 0x1fff])
+    this.sram.fill(0xff)
+    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.ram[adr & 0x1fff] = value })
+                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
 
     // Select
     this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
@@ -104,7 +105,7 @@ export class Mapper004 extends Mapper {
   public save(): object {
     return {
       regs: Util.convertUint8ArrayToBase64String(this.regs),
-      ram: Util.convertUint8ArrayToBase64String(this.ram),
+      ram: Util.convertUint8ArrayToBase64String(this.sram),
       bankSelect: this.bankSelect,
       irqHlineEnable: this.irqHlineEnable,
       irqHlineValue: this.irqHlineValue,
@@ -115,7 +116,7 @@ export class Mapper004 extends Mapper {
 
   public load(saveData: any): void {
     this.regs = Util.convertBase64StringToUint8Array(saveData.regs)
-    this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    this.sram = Util.convertBase64StringToUint8Array(saveData.ram)
     this.bankSelect = saveData.bankSelect
     this.irqHlineEnable = saveData.irqHlineEnable
     this.irqHlineValue = saveData.irqHlineValue

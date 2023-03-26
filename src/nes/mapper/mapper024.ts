@@ -106,7 +106,6 @@ class SawToothChannel extends VrcChannel {
 }
 
 class Mapper024Base extends Mapper {
-  private ram = new Uint8Array(0x2000)
   private chrRegs = new Uint8Array(8)
   private prgCount = 0
   private prgBank = 0
@@ -120,6 +119,8 @@ class Mapper024Base extends Mapper {
 
   constructor(private options: MapperOptions, mapping: Record<number, number>) {
     super()
+
+    this.sram = new Uint8Array(0x2000)
 
     const BANK_BIT = 13
     this.prgCount = options.prgSize >> BANK_BIT
@@ -201,10 +202,10 @@ class Mapper024Base extends Mapper {
     })
 
     // PRG RAM
-    this.ram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.ram[adr & 0x1fff])
+    this.sram.fill(0xff)
+    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.ram[adr & 0x1fff] = value })
+                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
 
     this.setupAudio()
   }
@@ -216,7 +217,7 @@ class Mapper024Base extends Mapper {
 
   public save(): object {
     return {
-      ram: Util.convertUint8ArrayToBase64String(this.ram),
+      ram: Util.convertUint8ArrayToBase64String(this.sram),
       chrRegs: Util.convertUint8ArrayToBase64String(this.chrRegs),
       prgCount: this.prgCount,
       prgBank: this.prgBank,
@@ -229,7 +230,7 @@ class Mapper024Base extends Mapper {
   }
 
   public load(saveData: any): void {
-    this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    this.sram = Util.convertBase64StringToUint8Array(saveData.ram)
     this.chrRegs = Util.convertBase64StringToUint8Array(saveData.chrRegs)
     this.prgCount = saveData.prgCount
     // this.prgBank = saveData.prgBank

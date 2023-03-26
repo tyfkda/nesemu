@@ -13,7 +13,6 @@ const kChrBankTable: Array<Array<number>> = [
 ]
 
 export class Mapper005 extends Mapper {
-  private ram = new Uint8Array(0x2000)  // PRG RAM
   private exram = new Uint8Array(0x0400)  // Expansion RAM
   private maxPrg = 0
   private prgMode = 3  // 0=One 32KB, 1=Two 16KB, 2=One 16KB + two 8KB, 3=Four 8KB
@@ -35,13 +34,15 @@ export class Mapper005 extends Mapper {
   constructor(private options: MapperOptions) {
     super()
 
+    this.sram = new Uint8Array(0x2000)
+
     const BANK_BIT = 13  // 0x2000
     this.maxPrg = (this.options.prgSize >> BANK_BIT) - 1
 
-    this.ram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.ram[adr & 0x1fff])
+    this.sram.fill(0xff)
+    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.sram[adr & 0x1fff])
     this.options.bus.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.ram[adr & 0x1fff] = value })
+                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
 
     // Select
     this.options.bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
@@ -177,7 +178,7 @@ export class Mapper005 extends Mapper {
 
   public save(): object {
     return {
-      ram: Util.convertUint8ArrayToBase64String(this.ram),
+      ram: Util.convertUint8ArrayToBase64String(this.sram),
       irqHlineEnable: this.irqHlineEnable,
       irqHlineCompare: this.irqHlineCompare,
       irqHlineCounter: this.irqHlineCounter,
@@ -185,7 +186,7 @@ export class Mapper005 extends Mapper {
   }
 
   public load(saveData: any): void {
-    this.ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    this.sram = Util.convertBase64StringToUint8Array(saveData.ram)
     this.irqHlineEnable = saveData.irqHlineEnable
     this.irqHlineCompare = saveData.irqHlineCompare
     this.irqHlineCounter = saveData.irqHlineCounter

@@ -3,6 +3,7 @@ import {Channel, WaveType} from '../apu'
 import {Cpu} from '../cpu/cpu'
 import {Ppu} from '../ppu/ppu'
 import {Address, Byte} from '../types'
+import {Util} from '../../util/util'
 
 export interface PrgBankController {
   setPrgBank(bank: number, page: number): void
@@ -20,6 +21,8 @@ export interface MapperOptions {
 }
 
 export class Mapper {
+  protected sram: Uint8Array
+
   public reset(): void {}
 
   public onHblank(_hcount: number): void {}
@@ -29,6 +32,17 @@ export class Mapper {
   }
 
   public load(_saveData: any): void {}
+
+  public saveSram(): object|null {
+    if (this.sram == null)
+      return null
+    return { sram: Util.convertUint8ArrayToBase64String(this.sram) }
+  }
+
+  public loadSram(saveData: any): void {
+    const sram = Util.convertBase64StringToUint8Array(saveData.sram)
+    this.sram = sram
+  }
 
   public getExtraChannelWaveTypes(): WaveType[]|null {
     return null
