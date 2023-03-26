@@ -379,10 +379,6 @@ class SpDmcChannel extends SoundChannel {
     this.enabled = enable
     if (!enable)
       this.volume = 0
-
-    if (this.node == null && this.enabled) {
-      this.node = this.createNode(this.context, this.destination)
-    }
   }
 
   public setVolume(volume: number): void {
@@ -390,6 +386,10 @@ class SpDmcChannel extends SoundChannel {
   }
 
   public setDmcWrite(reg: number, value: number): void {
+    if (this.node == null && this.enabled) {
+      this.node = this.createNode(this.context, this.destination)
+    }
+
     if (reg >= 4) {
       switch (reg) {
       case 0xff:

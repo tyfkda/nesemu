@@ -40,7 +40,7 @@ abstract class VrcChannel extends Channel {
 
 class VrcPulseChannel extends VrcChannel implements IPulseChannel {
   public getVolume(): number {
-    if (this.halt || (this.regs[2] & CH_ENABLE) === 0)
+    if (this.halt || !this.enabled)
       return 0
     return (this.regs[0] & 15) / (15 * 2)
   }
@@ -75,7 +75,7 @@ class SawToothChannel extends VrcChannel {
   }
 
   public update(): void {
-    if ((this.regs[2] & CH_ENABLE) !== 0) {
+    if (this.enabled) {
       this.acc += this.regs[0] & 0x3f
       if (this.acc >= 256) {
         this.acc -= 256
@@ -93,7 +93,7 @@ class SawToothChannel extends VrcChannel {
   }
 
   public getVolume(): number {
-    if (this.halt || (this.regs[2] & CH_ENABLE) === 0)
+    if (this.halt || !this.enabled)
       return 0
     // TODO: Use distorted wave.
     return Math.min((this.regs[0] & 0x3f) * (6 / 255), 1)
@@ -283,8 +283,11 @@ class Mapper024Base extends Mapper {
       this.options.ppu.setChrBankOffset(i, this.chrRegs[table[i]])
   }
 
-  private writeSound(channel: number, reg: number, value: number) {
-    this.channels[channel].write(reg, value)
+  private writeSound(ch: number, reg: number, value: number) {
+    const channel = this.channels[ch]
+    if (reg === 2)
+      channel.setEnable((value & CH_ENABLE) !== 0)
+    channel.write(reg, value)
   }
 
   private setupAudio(): void {

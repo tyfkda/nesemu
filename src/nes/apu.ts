@@ -189,11 +189,12 @@ class Envelope {
 // Sound channel
 export abstract class Channel {
   protected regs = new Uint8Array(4)
-  protected enabled = true
+  protected enabled = false
   protected stopped = true
 
   public reset(): void {
     this.regs.fill(0)
+    this.enabled = false
     this.stopped = true
   }
 
