@@ -163,7 +163,7 @@ export class Mapper020 extends Mapper {
   public setImage(image: Uint8Array): boolean {
     if (image[0] === 0x46 && image[1] === 0x44 && image[2] === 0x53 && image[3] === 0x1a) {
       // Skip FDS header.
-      image = image.slice(16)
+      image = new Uint8Array(image.buffer, 16)
     }
     this.diskSideImages = loadFdsImage(image)
     this.image = this.diskSideImages[0]

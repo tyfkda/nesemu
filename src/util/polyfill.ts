@@ -23,16 +23,3 @@ if (!('fill' in Uint8Array.prototype)) {
   }
   /* tslint:enable:no-invalid-this */
 }
-
-if (!Uint8Array.prototype.slice) {
-  /* tslint:disable:no-invalid-this */
-  Uint8Array.prototype.slice = function(start: number, end: number) {
-    if (end === undefined)
-      end = this.length
-    const sliced = new Uint8Array(end - start)
-    for (let i = 0; i < sliced.length; ++i)
-      sliced[i] = this[i + start]
-    return sliced
-  }
-  /* tslint:enable:no-invalid-this */
-}

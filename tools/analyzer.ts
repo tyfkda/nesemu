@@ -9,8 +9,7 @@ const argv = require('argv')  // eslint-disable-line @typescript-eslint/no-var-r
 
 function loadPrgRom(romData: Uint8Array): Uint8Array {
   const start = 16, size = romData[4] * (16 * 1024)
-  const prg = romData.slice(start, start + size)
-  return new Uint8Array(prg)
+  return new Uint8Array(romData.buffer, start, size)
 }
 
 function insert<T>(array: Array<T>, value: any, fn: (elem: any, value: any) => boolean): void {

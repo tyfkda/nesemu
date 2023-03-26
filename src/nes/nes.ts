@@ -39,12 +39,12 @@ function isBatteryOn(romData: Uint8Array): boolean {
 
 function loadPrgRom(romData: Uint8Array): Uint8Array {
   const start = 16, size = romData[4] * (16 * 1024)
-  return romData.slice(start, start + size)
+  return new Uint8Array(romData.buffer, start, size)
 }
 
 function loadChrRom(romData: Uint8Array): Uint8Array {
   const start = 16 + romData[4] * (16 * 1024), size = romData[5] * (8 * 1024)
-  return romData.slice(start, start + size)
+  return new Uint8Array(romData.buffer, start, size)
 }
 
 export class Nes implements PrgBankController {
