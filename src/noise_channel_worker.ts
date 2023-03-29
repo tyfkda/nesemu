@@ -1,6 +1,6 @@
 declare const sampleRate: number
 
-import {NoiseSampler} from './util/apu_util'
+import {NoiseSampler} from './util/audio/noise_sampler'
 
 class NoiseChannelProcessor extends AudioWorkletProcessor {
   private sampler: NoiseSampler

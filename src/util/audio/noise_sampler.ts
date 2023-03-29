@@ -1,4 +1,4 @@
-//import {CPU_HZ} from '../nes/const'
+//import {CPU_HZ} from '../../nes/const'
 //const APU_NOISE_HZ = (CPU_HZ / 2) | 0
 const APU_NOISE_HZ = 894887
 
