@@ -141,11 +141,7 @@ export class PulseChannel extends OscillatorChannel {
   }
 
   public setVolume(volume: number): void {
-    if (volume === this.volume)
-      return
-    this.volume = volume
-
-    this.gainNode.gain.setValueAtTime(volume * this.negate, this.gainNode.context.currentTime)
+    super.setVolume(volume * this.negate)
   }
 
   public setFrequency(frequency: number): void {
