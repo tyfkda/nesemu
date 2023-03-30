@@ -6,9 +6,6 @@ export abstract class SoundChannel {
   public abstract start(): void
 
   public setFrequency(_frequency: number): void { throw new Error('Invalid call') }
-  public setDutyRatio(_dutyRatio: number): void { throw new Error('Invalid call') }
-  public setNoisePeriod(_period: number, _mode: number): void { throw new Error('Invalid call') }
-  public setDmcWrite(_reg: number, _value: number): void { throw new Error('Invalid call') }
 }
 
 // Volume controllable.

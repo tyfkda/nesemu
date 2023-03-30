@@ -1,7 +1,7 @@
 import {WaveType} from '../nes/apu'
 import {SoundChannel, PulseChannel, TriangleChannel, SawtoothChannel} from './audio/sound_channel'
-import {createNoiseChannel} from './audio/noise_channel'
-import {createDmcChannel} from './audio/delta_modulation_channel'
+import {createNoiseChannel, INoiseChannel} from './audio/noise_channel'
+import {createDmcChannel, IDmcChannel} from './audio/delta_modulation_channel'
 
 const GLOBAL_MASTER_VOLUME = 0.5
 
@@ -155,23 +155,24 @@ export class AudioManager {
   public setChannelDutyRatio(channel: number, dutyRatio: number): void {
     if (AudioManager.context == null)
       return
-    this.channels[channel].setDutyRatio(dutyRatio)
+    (this.channels[channel] as PulseChannel).setDutyRatio(dutyRatio)
   }
 
   public setChannelPeriod(channel: number, period: number, mode: number): void {
     if (AudioManager.context == null)
       return
-    this.channels[channel].setNoisePeriod(period, mode)
+    (this.channels[channel] as INoiseChannel).setNoisePeriod(period, mode)
   }
 
   public setChannelDmcWrite(channel: number, buf: ReadonlyArray<number>): void {
     if (AudioManager.context == null)
       return
+    const dmc = this.channels[channel] as IDmcChannel
     for (let i = 0; i < buf.length; ++i) {
       const d = buf[i]
       const r = d >> 8
       const v = d & 0xff
-      this.channels[channel].setDmcWrite(r, v)
+      dmc.setDmcWrite(r, v)
     }
   }
 
