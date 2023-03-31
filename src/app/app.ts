@@ -1,4 +1,4 @@
-import {Nes} from '../nes/nes'
+import {Nes, NesEvent} from '../nes/nes'
 import {Cartridge} from '../nes/cartridge'
 
 import {AppEvent} from './app_event'
@@ -35,6 +35,9 @@ export class App {
   protected stream = new AppEvent.Stream()
   protected subscription: Pubsub.Subscription
 
+  protected prgBanks = new Int32Array([0, 1, -2, -1])
+  protected prgBanksLast = new Int32Array([0, 1, -2, -1])
+
   protected title: string
   protected screenWnd: ScreenWnd
 
@@ -50,7 +53,21 @@ export class App {
 
     this.nes = new Nes()
     window.app = this  // Put app into global.
-    this.nes.setVblankCallback(leftV => this.onVblank(leftV))
+    this.nes.setEventCallback((event: NesEvent, param?: any) => {
+      switch (event) {
+      case NesEvent.VBlank:
+        this.onVblank(param as number)
+        break
+      case NesEvent.PrgBankChange:
+        {
+          const value: number = param
+          const bank = (value >> 8) & 3
+          const page = value & 0xff
+          this.prgBanks[bank] = page
+        }
+        break
+      }
+    })
     this.nes.setBreakPointCallback(() => this.onBreakPoint())
 
     this.subscription = this.stream
@@ -309,6 +326,12 @@ export class App {
     if (leftV < 1)
       this.render()
     this.updateAudio()
+
+    {  // Swap
+      const tmp = this.prgBanks
+      this.prgBanks = this.prgBanksLast
+      this.prgBanksLast = tmp
+    }
   }
 
   protected onBreakPoint(): void {
@@ -333,10 +356,20 @@ export class App {
     this.stream.triggerRender()
   }
 
+  protected sendPrgBankChanges(): void {
+    for (let bank = 0; bank < 4; ++bank) {
+      const page = this.prgBanks[bank]
+      if (page !== this.prgBanksLast[bank])
+        this.audioManager.onPrgBankChange(bank, page)
+    }
+  }
+
   protected updateAudio(): void {
     const audioManager = this.audioManager
     if (audioManager == null)
       return
+
+    this.sendPrgBankChanges()
 
     const waveTypes = this.nes.getChannelWaveTypes()
     for (let ch = 0; ch < waveTypes.length; ++ch) {

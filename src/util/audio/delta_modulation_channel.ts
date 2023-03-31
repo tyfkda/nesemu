@@ -25,6 +25,7 @@ function gcd(m: number, n: number): number {
 export abstract class IDmcChannel extends SoundChannel {
   public abstract setTriggerFunc(triggerDma: (adr: number) => number): void
   public abstract setDmcWrite(reg: number, value: number): void
+  public abstract changePrgBank(bank: number, page: number): void
 }
 
 class SpDmcChannel extends IDmcChannel {
@@ -36,6 +37,8 @@ class SpDmcChannel extends IDmcChannel {
   private rateTable: Float32Array
   private rate = 0
   protected triggerDma: (adr: number) => number
+
+  private prgBanks = new Int32Array([0, 1, -2, -1])
 
   private dmaAddress = 0xc000
   private dmaLengthCounter = 1
@@ -82,6 +85,10 @@ class SpDmcChannel extends IDmcChannel {
 
   public setVolume(volume: number): void {
     this.volume = volume
+  }
+
+  public changePrgBank(bank: number, page: number): void {
+    this.prgBanks[bank] = page
   }
 
   public setDmcWrite(reg: number, value: number): void {

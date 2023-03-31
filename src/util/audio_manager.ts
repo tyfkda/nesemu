@@ -16,6 +16,7 @@ export class AudioManager {
   private static masterVolume = 1.0
 
   private channels = new Array<SoundChannel>()
+  private dmcChannelIndex = -1
 
   public static setUp(audioContextClass: any): void {
     if (AudioManager.initialized)
@@ -121,6 +122,8 @@ export class AudioManager {
       break
     case WaveType.DMC:
       {
+        this.dmcChannelIndex = this.channels.length
+
         const dmc = createDmcChannel(context, destination)
         dmc.setTriggerFunc(this.triggerDma)
         sc = dmc
@@ -180,5 +183,12 @@ export class AudioManager {
     const n = this.channels.length
     for (let ch = 0; ch < n; ++ch)
       this.setChannelVolume(ch, 0)
+  }
+
+  public onPrgBankChange(bank: number, page: number) {
+    if (this.dmcChannelIndex < 0)
+      return
+    const dmc = this.channels[this.dmcChannelIndex] as IDmcChannel
+    dmc.changePrgBank(bank, page)
   }
 }

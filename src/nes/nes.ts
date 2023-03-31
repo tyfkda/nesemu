@@ -22,6 +22,11 @@ function getHblankCount(cpuCycle: number): number {
   return (cpuCycle * (3 / 341)) | 0
 }
 
+export const enum NesEvent {
+  VBlank,
+  PrgBankChange,
+}
+
 export class Nes implements PrgBankController {
   protected ram = new Uint8Array(RAM_SIZE)
   protected bus: Bus
@@ -34,7 +39,7 @@ export class Nes implements PrgBankController {
 
   protected mapper: Mapper
   private prgRom = new Uint8Array(0)
-  private vblankCallback: (leftV: number) => void
+  private eventCallback: (event: NesEvent, param?: any) => void
   private breakPointCallback: () => void
   private prgBank: number[] = []
   private apuChannelCount = 0
@@ -50,7 +55,7 @@ export class Nes implements PrgBankController {
     this.cpu = new Cpu(this.bus)
     this.ppu = new Ppu(this.cpu.nmi.bind(this.cpu))
     this.apu = new Apu(this.gamePads, () => this.cpu.requestIrq(IrqType.APU))
-    this.vblankCallback = _leftV => {}
+    this.eventCallback = (_e, _p) => {}
     this.breakPointCallback = () => {}
 
     const mapperNo = 0
@@ -65,8 +70,8 @@ export class Nes implements PrgBankController {
   public getPpu(): Ppu { return this.ppu }
   public getCycleCount(): number { return this.cycleCount }
 
-  public setVblankCallback(callback: (leftV: number) => void): void {
-    this.vblankCallback = callback
+  public setEventCallback(callback: (event: NesEvent, param?: any) => void): void {
+    this.eventCallback = callback
   }
 
   public setBreakPointCallback(callback: () => void): void {
@@ -173,6 +178,7 @@ export class Nes implements PrgBankController {
 
   public setPrgBank(bank: number, page: number): void {
     this.prgBank[bank] = page << 13
+    this.eventCallback(NesEvent.PrgBankChange, (bank << 8) | page)
   }
 
   public createMapper(mapperNo: number, prgSize: number, romHash?: string): Mapper {
@@ -259,7 +265,7 @@ export class Nes implements PrgBankController {
       this.apu.onHblank(hcount)
 
       if (hcount === VBlank.START)
-        this.vblankCallback((leftCycles / VCYCLE) | 0)
+        this.eventCallback(NesEvent.VBlank, (leftCycles / VCYCLE) | 0)
 
       this.mapper.onHblank(hcount)
     }
