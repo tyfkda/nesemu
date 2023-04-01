@@ -1,5 +1,6 @@
 import {SoundChannel} from './sound_channel'
 import {Reg, DMC_LOOP_ENABLE, DMC_IRQ_ENABLE} from '../../nes/apu'
+import {Cartridge} from '../../nes/cartridge'
 
 // ScriptProcessor DMC channel
 const SP_DMC_BUFFER_SIZE = 512
@@ -23,7 +24,7 @@ function gcd(m: number, n: number): number {
 }
 
 export abstract class IDmcChannel extends SoundChannel {
-  public abstract setTriggerFunc(triggerDma: (adr: number) => number): void
+  public abstract setCartridge(cartridge: Cartridge): void
   public abstract setDmcWrite(reg: number, value: number): void
   public abstract changePrgBank(bank: number, page: number): void
 }
@@ -36,8 +37,8 @@ class SpDmcChannel extends IDmcChannel {
   private sampleStep = 0
   private rateTable: Float32Array
   private rate = 0
-  protected triggerDma: (adr: number) => number
 
+  private prgRom: Uint8Array
   private prgBanks = new Int32Array([0, 1, -2, -1])
 
   private dmaAddress = 0xc000
@@ -63,8 +64,8 @@ class SpDmcChannel extends IDmcChannel {
     this.rate = this.rateTable[0]
   }
 
-  public  setTriggerFunc(triggerDma: (adr: number) => number): void {
-    this.triggerDma = triggerDma
+  public setCartridge(cartridge: Cartridge): void {
+    this.prgRom = cartridge.prgRom
   }
 
   public destroy(): void {
@@ -204,6 +205,14 @@ class SpDmcChannel extends IDmcChannel {
         // this.cpu.do_irq(CPU::IRQ_DMC, this.cpu.current_clock)
       }
     }
+  }
+
+  private triggerDma(adr: number): number {
+    const prgMask = (this.prgRom.length - 1) | 0
+    const bank = (adr - 0x8000) >> 13
+    const offset = (adr & ((1 << 13) - 1)) | 0
+    const a = ((this.prgBanks[bank] << 13) + offset) & prgMask
+    return this.prgRom[a]
   }
 }
 

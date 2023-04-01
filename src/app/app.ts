@@ -30,6 +30,7 @@ export class Option {
 export class App {
   protected destroying = false
   protected isPaused = false
+  protected cartridge: Cartridge
   protected nes: Nes
   protected audioManager: AudioManager
   protected stream = new AppEvent.Stream()
@@ -94,6 +95,7 @@ export class App {
     if (!Nes.isMapperSupported(cartridge.mapperNo))
       return `Mapper ${cartridge.mapperNo} not supported`
 
+    this.cartridge = cartridge
     this.nes.setCartridge(cartridge)
 
     this.loadSram()
@@ -238,11 +240,11 @@ export class App {
 
   public setupAudioManager(): void {
     if (this.audioManager == null) {
-      const bus = this.nes.getBus()
-      this.audioManager = new AudioManager(bus.read8.bind(bus))
+      this.audioManager = new AudioManager()
     } else {
       this.audioManager.releaseAllChannels()
     }
+    this.audioManager.setCartridge(this.cartridge)
 
     const waveTypes = this.nes.getChannelWaveTypes()
     for (const type of waveTypes) {
