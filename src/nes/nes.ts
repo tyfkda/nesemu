@@ -2,8 +2,8 @@
 
 import {Apu, Channel, GamePad, WaveType} from './apu'
 import {Bus} from './bus'
+import {Cartridge} from './cartridge'
 import {Cpu, IrqType} from './cpu/cpu'
-import {MirrorMode} from './ppu/types'
 import {Ppu} from './ppu/ppu'
 import {Address, Byte} from './types'
 import {Util} from '../util/util'
@@ -11,8 +11,6 @@ import {CPU_HZ, VBlank} from './const'
 
 import {Mapper, PrgBankController} from './mapper/mapper'
 import {kMapperTable} from './mapper/mapper_table'
-
-import md5 from 'md5'
 
 const RAM_SIZE = 0x0800
 
@@ -24,29 +22,6 @@ function getHblankCount(cpuCycle: number): number {
   return (cpuCycle * (3 / 341)) | 0
 }
 
-function isRomValid(romData: Uint8Array): boolean {
-  // Check header.
-  return romData[0] === 0x4e && romData[1] === 0x45 && romData[2] === 0x53 && romData[3] === 0x1a
-}
-
-function getMapperNo(romData: Uint8Array): number {
-  return ((romData[6] >> 4) & 0x0f) | (romData[7] & 0xf0)
-}
-
-function isBatteryOn(romData: Uint8Array): boolean {
-  return (romData[6] & 2) !== 0
-}
-
-function loadPrgRom(romData: Uint8Array): Uint8Array {
-  const start = 16, size = romData[4] * (16 * 1024)
-  return new Uint8Array(romData.buffer, start, size)
-}
-
-function loadChrRom(romData: Uint8Array): Uint8Array {
-  const start = 16 + romData[4] * (16 * 1024), size = romData[5] * (8 * 1024)
-  return new Uint8Array(romData.buffer, start, size)
-}
-
 export class Nes implements PrgBankController {
   protected ram = new Uint8Array(RAM_SIZE)
   protected bus: Bus
@@ -54,6 +29,8 @@ export class Nes implements PrgBankController {
   protected ppu: Ppu
   protected apu: Apu
   protected cycleCount = 0
+
+  private cartridge: Cartridge
 
   protected mapper: Mapper
   private prgRom = new Uint8Array(0)
@@ -64,10 +41,8 @@ export class Nes implements PrgBankController {
   private channelWaveTypes: WaveType[]
   private gamePads = [new GamePad(), new GamePad()]
 
-  private romData: Uint8Array
-
-  public static create(): Nes {
-    return new Nes()
+  public static isMapperSupported(mapperNo: number): boolean {
+    return mapperNo in kMapperTable
   }
 
   constructor() {
@@ -98,31 +73,23 @@ export class Nes implements PrgBankController {
     this.breakPointCallback = callback
   }
 
-  public setRomData(romData: Uint8Array): string|null {
-    if (!isRomValid(romData))
-      return 'Invalid format'
-    const mapperNo = getMapperNo(romData)
-    if (!(mapperNo in kMapperTable))
-      return `Mapper ${mapperNo} not supported`
+  public setCartridge(cartridge: Cartridge): void {
+    this.cartridge = cartridge
 
-    this.romData = romData
-
-    this.prgRom = loadPrgRom(romData)
-    this.ppu.setChrData(loadChrRom(romData))
-    this.ppu.setMirrorMode((romData[6] & 1) === 0 ? MirrorMode.HORZ : MirrorMode.VERT)
+    this.prgRom = cartridge.prgRom
+    this.ppu.setChrData(cartridge.chrRom)
+    this.ppu.setMirrorMode(cartridge.mirrorMode)
     this.cpu.deleteAllBreakPoints()
 
     this.setMemoryMap()
-    const romHash = md5(romData)
-    this.mapper = this.createMapper(mapperNo, this.prgRom.length, romHash)
+    const romHash = cartridge.calcHashValue()
+    this.mapper = this.createMapper(cartridge.mapperNo, this.prgRom.length, romHash)
 
     let channels = this.apu.getWaveTypes()
     const extras = this.mapper.getExtraChannelWaveTypes()
     if (extras != null)
       channels = channels.concat(extras)
     this.channelWaveTypes = channels
-
-    return null
   }
 
   public setMapper(mapper: Mapper): void {
@@ -148,11 +115,11 @@ export class Nes implements PrgBankController {
   }
 
   public saveSram(): object|null {
-    return this.romData != null && isBatteryOn(this.romData) ? this.mapper.saveSram() : null
+    return this.cartridge?.isBatteryOn ? this.mapper.saveSram() : null
   }
 
   public loadSram(saveData: any): void {
-    if (this.romData != null && isBatteryOn(this.romData))
+    if (this.cartridge?.isBatteryOn)
       this.mapper.loadSram(saveData)
   }
 

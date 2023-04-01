@@ -1,4 +1,5 @@
 import {Nes} from '../nes/nes'
+import {Cartridge} from '../nes/cartridge'
 
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
@@ -47,7 +48,7 @@ export class App {
     if (noDefault)
       return
 
-    this.nes = Nes.create()
+    this.nes = new Nes()
     window.app = this  // Put app into global.
     this.nes.setVblankCallback(leftV => this.onVblank(leftV))
     this.nes.setBreakPointCallback(() => this.onBreakPoint())
@@ -69,9 +70,14 @@ export class App {
   }
 
   public loadRom(romData: Uint8Array): string|null {
-    const result = this.nes.setRomData(romData)
-    if (result != null)
-      return result
+    if (!Cartridge.isRomValid(romData))
+      return 'Invalid format'
+
+    const cartridge = new Cartridge(romData)
+    if (!Nes.isMapperSupported(cartridge.mapperNo))
+      return `Mapper ${cartridge.mapperNo} not supported`
+
+    this.nes.setCartridge(cartridge)
 
     this.loadSram()
 
