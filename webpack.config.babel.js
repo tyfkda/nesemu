@@ -34,5 +34,6 @@ module.exports = {
         },
       },
     },
+    usedExports: true,
   },
 }

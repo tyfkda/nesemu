@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "commonjs",
+    "module": "es6",
     "target": "es2019",
     "lib": ["es2019", "dom", "dom.iterable"],
     "incremental": true,
@@ -44,5 +44,10 @@
   ],
   "compileOnSave": false,
   "buildOnSave": false,
-  "atom": { "rewriteTsconfig": false }
+  "atom": { "rewriteTsconfig": false },
+  "ts-node": {
+    "compilerOptions": {
+      "module": "CommonJS"
+    }
+  }
 }

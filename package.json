@@ -2,7 +2,7 @@
   "name": "nesemu",
   "version": "0.9.0",
   "description": "NES Emulator",
-  "main": "index.js",
+  "main": "./src/main.ts",
   "scripts": {
     "start": "npm run default",
     "default": "gulp",
@@ -42,6 +42,13 @@
       "node"
     ]
   },
+  "sideEffects": [
+    "./src/main.ts",
+    "./src/dc_remove_worker.ts",
+    "./src/dmc_channel_worker.ts",
+    "./src/noise_channel_worker.ts",
+    "./src/util/polyfill.ts"
+  ],
   "devDependencies": {
     "@babel/core": "~7.16.0",
     "@babel/preset-env": "~7.16.4",
