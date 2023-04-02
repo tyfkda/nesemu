@@ -212,8 +212,7 @@ export class JsApp extends App {
 
   public async setFile(file: File): Promise<void> {
     await this.jsNes.setFile(file)
-    const bus = this.nes.getBus()
-    this.audioManager = new AudioManager(bus.read8.bind(bus))
+    this.audioManager = new AudioManager()
     this.setupAudioManager()
   }
 

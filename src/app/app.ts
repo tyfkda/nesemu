@@ -1,4 +1,5 @@
-import {Nes} from '../nes/nes'
+import {Nes, NesEvent} from '../nes/nes'
+import {Cartridge} from '../nes/cartridge'
 
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
@@ -29,10 +30,14 @@ export class Option {
 export class App {
   protected destroying = false
   protected isPaused = false
+  protected cartridge: Cartridge
   protected nes: Nes
   protected audioManager: AudioManager
   protected stream = new AppEvent.Stream()
   protected subscription: Pubsub.Subscription
+
+  protected prgBanks = new Int32Array([0, 1, -2, -1])
+  protected prgBanksLast = new Int32Array([0, 1, -2, -1])
 
   protected title: string
   protected screenWnd: ScreenWnd
@@ -47,9 +52,23 @@ export class App {
     if (noDefault)
       return
 
-    this.nes = Nes.create()
+    this.nes = new Nes()
     window.app = this  // Put app into global.
-    this.nes.setVblankCallback(leftV => this.onVblank(leftV))
+    this.nes.setEventCallback((event: NesEvent, param?: any) => {
+      switch (event) {
+      case NesEvent.VBlank:
+        this.onVblank(param as number)
+        break
+      case NesEvent.PrgBankChange:
+        {
+          const value: number = param
+          const bank = (value >> 8) & 3
+          const page = value & 0xff
+          this.prgBanks[bank] = page
+        }
+        break
+      }
+    })
     this.nes.setBreakPointCallback(() => this.onBreakPoint())
 
     this.subscription = this.stream
@@ -69,9 +88,15 @@ export class App {
   }
 
   public loadRom(romData: Uint8Array): string|null {
-    const result = this.nes.setRomData(romData)
-    if (result != null)
-      return result
+    if (!Cartridge.isRomValid(romData))
+      return 'Invalid format'
+
+    const cartridge = new Cartridge(romData)
+    if (!Nes.isMapperSupported(cartridge.mapperNo))
+      return `Mapper ${cartridge.mapperNo} not supported`
+
+    this.cartridge = cartridge
+    this.nes.setCartridge(cartridge)
 
     this.loadSram()
 
@@ -215,11 +240,11 @@ export class App {
 
   public setupAudioManager(): void {
     if (this.audioManager == null) {
-      const bus = this.nes.getBus()
-      this.audioManager = new AudioManager(bus.read8.bind(bus))
+      this.audioManager = new AudioManager()
     } else {
       this.audioManager.releaseAllChannels()
     }
+    this.audioManager.setCartridge(this.cartridge)
 
     const waveTypes = this.nes.getChannelWaveTypes()
     for (const type of waveTypes) {
@@ -303,6 +328,12 @@ export class App {
     if (leftV < 1)
       this.render()
     this.updateAudio()
+
+    {  // Swap
+      const tmp = this.prgBanks
+      this.prgBanks = this.prgBanksLast
+      this.prgBanksLast = tmp
+    }
   }
 
   protected onBreakPoint(): void {
@@ -327,10 +358,20 @@ export class App {
     this.stream.triggerRender()
   }
 
+  protected sendPrgBankChanges(): void {
+    for (let bank = 0; bank < 4; ++bank) {
+      const page = this.prgBanks[bank]
+      if (page !== this.prgBanksLast[bank])
+        this.audioManager.onPrgBankChange(bank, page)
+    }
+  }
+
   protected updateAudio(): void {
     const audioManager = this.audioManager
     if (audioManager == null)
       return
+
+    this.sendPrgBankChanges()
 
     const waveTypes = this.nes.getChannelWaveTypes()
     for (let ch = 0; ch < waveTypes.length; ++ch) {

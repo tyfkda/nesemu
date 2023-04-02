@@ -2,6 +2,7 @@ import {WaveType} from '../nes/apu'
 import {SoundChannel, PulseChannel, TriangleChannel, SawtoothChannel} from './audio/sound_channel'
 import {createNoiseChannel, INoiseChannel} from './audio/noise_channel'
 import {createDmcChannel, IDmcChannel} from './audio/delta_modulation_channel'
+import {Cartridge} from '../nes/cartridge'
 
 const GLOBAL_MASTER_VOLUME = 0.5
 
@@ -16,6 +17,8 @@ export class AudioManager {
   private static masterVolume = 1.0
 
   private channels = new Array<SoundChannel>()
+  private dmcChannelIndex = -1
+  private cartridge: Cartridge
 
   public static setUp(audioContextClass: any): void {
     if (AudioManager.initialized)
@@ -81,7 +84,7 @@ export class AudioManager {
     }
   }
 
-  constructor(private triggerDma: (adr: number) => number) {
+  constructor() {
     AudioManager.checkSetUpCalled()
   }
 
@@ -96,6 +99,10 @@ export class AudioManager {
       }
       this.channels.length = 0
     }
+  }
+
+  public setCartridge(cartridge: Cartridge): void {
+    this.cartridge = cartridge
   }
 
   public addChannel(type: WaveType): void {
@@ -121,9 +128,13 @@ export class AudioManager {
       break
     case WaveType.DMC:
       {
+        this.dmcChannelIndex = this.channels.length
+
         const dmc = createDmcChannel(context, destination)
-        dmc.setTriggerFunc(this.triggerDma)
         sc = dmc
+
+        if (this.cartridge != null)
+          dmc.setCartridge(this.cartridge)
       }
       break
     }
@@ -180,5 +191,12 @@ export class AudioManager {
     const n = this.channels.length
     for (let ch = 0; ch < n; ++ch)
       this.setChannelVolume(ch, 0)
+  }
+
+  public onPrgBankChange(bank: number, page: number) {
+    if (this.dmcChannelIndex < 0)
+      return
+    const dmc = this.channels[this.dmcChannelIndex] as IDmcChannel
+    dmc.changePrgBank(bank, page)
   }
 }

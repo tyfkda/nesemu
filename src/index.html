@@ -6,6 +6,9 @@
     <title>NES Emulator</title>
     <link rel="stylesheet" href="assets/default.css">
     <link rel="canonical" href="https://tyfkda.github.io/nesemu/">
+    <link rel="prefetch" href="assets/noise_channel_worker.js" as="worker"></link>
+    <link rel="prefetch" href="assets/dmc_channel_worker.js" as="worker"></link>
+    <link rel="prefetch" href="assets/dc_remove_worker.js" as="worker"></link>
   </head>
 
   <body style="overflow:hidden">
@@ -22,7 +25,7 @@
       </div>
     </div>
 
-    <script src="assets/lib.js" type="text/javascript"></script>
-    <script src="assets/main.js" type="text/javascript"></script>
+    <script src="assets/lib.js" type="text/javascript" defer></script>
+    <script src="assets/main.js" type="text/javascript" defer></script>
   </body>
 </html>
