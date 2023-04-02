@@ -1,16 +1,17 @@
-import * as fs from 'fs';
+import * as fs from 'fs'
 import * as path from 'path'
 import {promisify} from 'util'
 import JSZip from 'jszip'
 
+import {Cartridge} from '../src/nes/cartridge'
+
 function getMapperNo(romData: Uint8Array): number {
-  const NES = 'NES'
-  if (romData[0] !== NES.charCodeAt(0) || romData[1] !== NES.charCodeAt(1) ||
-      romData[2] !== NES.charCodeAt(2) || romData[3] !== 0x1a) {
+  if (!Cartridge.isRomValid(romData)) {
     console.error('Invalid format')
     process.exit(1)
   }
-  return ((romData[6] >> 4) & 0x0f) | (romData[7] & 0xf0)
+  const cartridge = new Cartridge(romData)
+  return cartridge.mapperNo
 }
 
 async function dumpMapper(fn: string): Promise<void> {
