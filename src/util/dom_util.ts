@@ -137,7 +137,7 @@ export class DomUtil {
 
   // Register mouse drag event listener.
   public static setMouseDragListener(mouseMove: any, mouseUp?: any, useCapture?: boolean): void {
-    let mouseLeave: ((event: MouseEvent) => void) | null = null
+    let mouseLeave: ((event: MouseEvent) => boolean) | null = null
     let mouseLeaveTarget: HTMLElement | null = null
     if (typeof mouseMove === 'object') {
       const option = mouseMove
@@ -154,7 +154,7 @@ export class DomUtil {
       document.removeEventListener('mouseup', mouseUpDelegate, useCapture)
       document.removeEventListener('touchmove', mouseMove, useCapture)
       document.removeEventListener('touchend', mouseUpDelegate, useCapture)
-        if (mouseLeaveDelegate != null && mouseLeaveTarget) {
+      if (mouseLeaveDelegate != null && mouseLeaveTarget) {
         mouseLeaveTarget.removeEventListener('mouseleave', mouseLeaveDelegate, useCapture)
       }
     }

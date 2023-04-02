@@ -41,10 +41,10 @@ export class DeltaModulationSampler {
   private timer = 0
 
   public constructor(sampleRate: number) {
-    const APU_NOISE_HZ = 894887 * 2
-    const g = gcd(APU_NOISE_HZ, sampleRate)
+    const APU_DMC_HZ = 894887 * 2
+    const g = gcd(APU_DMC_HZ, sampleRate)
     const multiplier = Math.min(sampleRate / g, 0x7fff) | 0
-    this.sampleStep = (APU_NOISE_HZ * multiplier / sampleRate) | 0
+    this.sampleStep = (APU_DMC_HZ * multiplier / sampleRate) | 0
 
     this.rateTable = new Float32Array(kDmcRateTable.map(x => x * multiplier))
     this.rate = this.rateTable[0]
@@ -131,7 +131,7 @@ export class DeltaModulationSampler {
     if (this.outActive) {
       const n = this.outDac + ((this.outBuffer & 1) << 2) - 2  // +2 or -2
       this.outBuffer >>= 1
-      if (0 <= n && n <= 0x7f && n != this.outDac) {
+      if (0 <= n && n <= 0x7f && n !== this.outDac) {
         this.outDac = n
         return true
       }

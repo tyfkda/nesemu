@@ -21,7 +21,7 @@ class DcRemoveProcessor extends AudioWorkletProcessor {
     const output = outputs[0]
     const numberOfChannels = output.length
     const input = inputs[0]
-    if (this.dc.length != numberOfChannels) {
+    if (this.dc.length !== numberOfChannels) {
       this.dc = new Float32Array(numberOfChannels)
       this.dc.fill(0)
     }
