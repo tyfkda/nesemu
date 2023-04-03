@@ -387,7 +387,7 @@ export class GlobalPaletWnd extends Wnd {
   }
 }
 
-const kToneTable = [0, 0.5, 1, 2, 2.5, 3, 3.5, 4, 5, 5.5, 6, 6.5]  // A A# B | C C# D D# E F F# G G#
+const kToneTable: number[] = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12]  // F F# G G# A A# B C C# D D# E
 
 const kWaveTypeImages: string[] = [
   pluseImg,
@@ -397,19 +397,25 @@ const kWaveTypeImages: string[] = [
   sawtoothImg,
 ]
 
+const WHITE_NOTE = 7  // A, B, C, D, E, F, G
+const ALL_NOTE = 12
+const KEY_FLASH_COLOR = '#0ef'
+
 export class AudioWnd extends Wnd {
   private static W = 8
   private static H = 32
-  private static OCTAVE = 5
+  private static OCTAVE = 6
 
-  private static kBaseToneFreq = 440 / Math.pow(2, 3)  // 440Hz - 3 octave
-  private static kBaseTone = 12 * Math.log(AudioWnd.kBaseToneFreq) / Math.log(2)
+  private static kBaseToneFreq = 43.65  // F1
+  private static kBaseTone = ALL_NOTE * Math.log(AudioWnd.kBaseToneFreq) / Math.log(2)
 
   private nes: Nes
   private stream: AppEvent.Stream
   private subscription: Pubsub.Subscription
   private channelIndices: Array<number>
   private dots: Array<HTMLElement>
+  private keys: Array<Array<HTMLElement>>
+  private lastKeyIndices: Int32Array
 
   public constructor(wndMgr: WindowManager, nes: Nes, stream: AppEvent.Stream) {
     const waveTypes = nes.getChannelWaveTypes()
@@ -422,9 +428,13 @@ export class AudioWnd extends Wnd {
     this.stream = stream
     this.channelIndices = channelIndices
 
-    const {root, dots} = this.createDom(channelCount, waveTypes)
+    const {root, dots, keys} = this.createDom(channelCount, waveTypes)
     this.setContent(root)
     this.dots = dots
+    this.keys = keys
+
+    this.lastKeyIndices = new Int32Array(channelCount)
+    this.lastKeyIndices.fill(-1)
 
     this.subscription = this.stream
       .subscribe(type => {
@@ -446,45 +456,64 @@ export class AudioWnd extends Wnd {
   }
 
   private render(): void {
-    const width = (AudioWnd.W * AudioWnd.OCTAVE * 7) | 0
     const h = AudioWnd.H
-    const logScale = 12 / Math.log(2)
-    const xScale = width / (AudioWnd.OCTAVE * 7)
+    const logScale = ALL_NOTE / Math.log(2)
+    const xScale = AudioWnd.W
     const yWhite = (h * 3 / 4) | 0
     const yBlack = (h * 1 / 4) | 0
-    const DOT_W = 7
+    const DOT_W = 12
     for (let ich = 0; ich < this.channelIndices.length; ++ich) {
-      const ch = this.channelIndices[ich]
-      const channel = this.nes.getSoundChannel(ch)
+      const channel = this.nes.getSoundChannel(this.channelIndices[ich])
       const dot = this.dots[ich]
-      const vol = channel.getVolume()
+      const vol = channel.isEnabled() ? channel.getVolume() : 0
       const freq = channel.getFrequency()
       const toneIndex = Math.log(freq) * logScale - AudioWnd.kBaseTone + 0.5
-      if ((toneIndex >= -1 && toneIndex <= AudioWnd.OCTAVE * 12) || vol <= 0) {
-        const offset = kToneTable[(toneIndex | 0) % 12]
-        const x = (offset + ((toneIndex / 12) | 0) * 7 + (toneIndex % 1)) * xScale
-        const y = (offset | 0) === offset ? yWhite : yBlack
+      let keyIndex = -1
+      if ((toneIndex >= 0 && toneIndex <= AudioWnd.OCTAVE * ALL_NOTE) && vol > 0) {
+        const offset = kToneTable[(toneIndex | 0) % ALL_NOTE] | 0
+        const x = Math.round(((offset * 0.5) + (Math.floor(toneIndex / ALL_NOTE) | 0) * WHITE_NOTE + (toneIndex % 1)) * xScale) | 0
+        const y = (offset & 1) === 0 ? yWhite : yBlack
+        const v = Math.pow(vol, 1 / 3)
+        const w = Math.round(DOT_W * v) | 0
+        const r = (w * 0.5) | 0
         DomUtil.setStyles(dot, {
-          left: `${x - DOT_W / 2}px`,
-          top: `${y - DOT_W / 2}px`,
-          opacity: `${Math.pow(vol, 1 / 4)}`,
+          left: `${x - r}px`,
+          top: `${y - r}px`,
+          visibility: 'visible',
+          width: `${w}px`,
+          height: `${w}px`,
+          borderRadius: `${w}px`,
         })
+
+        keyIndex = Math.floor(toneIndex) | 0
       } else {
         DomUtil.setStyles(dot, {
-          opacity: '0',
+          visibility: 'hidden',
         })
+      }
+
+      const lastKeyIndex = this.lastKeyIndices[ich]
+      if (keyIndex !== lastKeyIndex) {
+        if (lastKeyIndex >= 0) {
+          const key = this.keys[ich][lastKeyIndex]
+          key.style.removeProperty('background-color')
+        }
+        if (keyIndex >= 0) {
+          const key = this.keys[ich][keyIndex]
+          key.style.setProperty('background-color', KEY_FLASH_COLOR)
+        }
+        this.lastKeyIndices[ich] = keyIndex
       }
     }
   }
 
   private createDom(channelCount: number, waveTypes: WaveType[]):
-      {root: HTMLElement; dots: HTMLElement[]}
+      {root: HTMLElement; dots: Array<HTMLElement>, keys: Array<Array<HTMLElement>>}
   {
     const W = AudioWnd.W, H = AudioWnd.H
     const root = document.createElement('div')
-    const width = W * AudioWnd.OCTAVE * 7
+    const width = W * AudioWnd.OCTAVE * WHITE_NOTE
     const height = H * channelCount
-    root.className = 'clearfix'
     DomUtil.setStyles(root, {
       width: `${width}px`,
       height: `${height}px`,
@@ -492,10 +521,8 @@ export class AudioWnd extends Wnd {
       overflow: 'hidden',
     })
 
-    const kBlackKeys = [0, 2, 3, 5, 6]
-
-    const DOT_W = 7
     const dots = new Array<HTMLElement>(channelCount)
+    const keys = new Array<Array<HTMLElement>>(channelCount)
 
     for (let ch = 0; ch < channelCount; ++ch) {
       const line = document.createElement('div')
@@ -505,30 +532,40 @@ export class AudioWnd extends Wnd {
       })
       root.appendChild(line)
 
-      for (let note = 0; note < AudioWnd.OCTAVE * 7; ++note) {
-        const whiteKey = document.createElement('div')
-        whiteKey.className = 'white-key'
-        DomUtil.setStyles(whiteKey, {
-          left: `${note * W}px`,
-          width: `${W - 1}px`,
-        })
-        line.appendChild(whiteKey)
-      }
-
-      for (let octave = -1; octave < AudioWnd.OCTAVE; ++octave) {
-        const start = octave >= 0 ? 0 : kBlackKeys.length - 1
-        for (let i = start; i < kBlackKeys.length; ++i) {
-          const note = octave * 7 + kBlackKeys[i]
-          const blackKey = document.createElement('div')
-          blackKey.className = 'black-key'
-          DomUtil.setStyles(blackKey, {
-            left: `${note * W + W / 2 + 1}px`,
-            width: `${W - 2}px`,
-            height: `${H / 2}px`,
-          })
-          line.appendChild(blackKey)
+      const whiteKeys = new Array<HTMLElement>()
+      const blackKeys = new Array<HTMLElement>()
+      const chKeys = new Array<HTMLElement>()
+      for (let octave = 0; octave < AudioWnd.OCTAVE; ++octave) {
+        for (let i = 0; i < kToneTable.length; ++i) {
+          const offset = kToneTable[i] | 0
+          const note = octave * WHITE_NOTE + (offset >> 1)
+          let key: HTMLElement
+          if ((offset & 1) === 0) {
+            key = document.createElement('div')
+            key.className = 'white-key'
+            DomUtil.setStyles(key, {
+              left: `${note * W}px`,
+              width: `${W - 1}px`,
+            })
+            whiteKeys.push(key)
+          } else {
+            key = document.createElement('div')
+            key.className = 'black-key'
+            DomUtil.setStyles(key, {
+              left: `${note * W + W / 2 + 1}px`,
+              width: `${W - 2}px`,
+              height: `${H / 2}px`,
+            })
+            blackKeys.push(key)
+          }
+          chKeys.push(key)
         }
       }
+
+      for (const whiteKey of whiteKeys)
+        line.appendChild(whiteKey)
+      for (const blackKey of blackKeys)
+        line.appendChild(blackKey)
 
       const icon = document.createElement('img')
       DomUtil.setStyles(icon, {
@@ -544,15 +581,14 @@ export class AudioWnd extends Wnd {
       const dot = document.createElement('div')
       dot.className = 'note'
       DomUtil.setStyles(dot, {
-        width: `${DOT_W}px`,
-        height: `${DOT_W}px`,
-        borderRadius: `${DOT_W}px`,
+        visibility: 'hidden',
       })
       line.appendChild(dot)
       dots[ch] = dot
+      keys[ch] = chKeys
     }
 
-    return {root, dots}
+    return {root, dots, keys}
   }
 }
 
