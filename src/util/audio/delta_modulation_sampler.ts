@@ -20,6 +20,14 @@ export const kDmcRateTable = [
   428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54
 ]
 
+type Sound = {
+  adr: number;
+  len: number;
+  rate: number;
+  bank: number;
+  value?: number;
+}
+
 export class DeltaModulationSampler {
   private regs = new Uint8Array(4)
   private volume = 0
@@ -39,6 +47,18 @@ export class DeltaModulationSampler {
   private outDac = 0
   private outBuffer = 0
   private timer = 0
+
+private sounds: Sound[] = []
+private addSound(sound: Sound) {
+  for (let i = 0; i < this.sounds.length; ++i) {
+    const s = this.sounds[i]
+    if (s.adr === sound.adr && s.len === sound.len && s.rate === sound.rate &&
+        s.bank === sound.bank)
+      return
+  }
+  console.log(this.sounds.length, sound)
+  this.sounds.push(sound)
+}
 
   public constructor(sampleRate: number) {
     const APU_DMC_HZ = 894887 * 2
@@ -76,6 +96,13 @@ export class DeltaModulationSampler {
         } else if (this.dmaLengthCounter <= 0) {
           this.dmaLengthCounter = (this.regs[Reg.SAMPLE_LENGTH] << 4) + 1
           this.dmaAddress = 0xc000 + (this.regs[Reg.SAMPLE_ADDRESS] << 6)
+const sound = {
+  adr: this.regs[Reg.SAMPLE_ADDRESS],
+  len: this.regs[Reg.SAMPLE_LENGTH],
+  rate: this.regs[Reg.STATUS] & 0x0f,
+  bank: this.regs[Reg.SAMPLE_ADDRESS] < 128 ? this.prgBanks[2] : this.prgBanks[3],
+}
+this.addSound(sound)
           if (!this.dmaBuffered)
             this.doDma()
         }
