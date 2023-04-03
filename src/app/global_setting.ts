@@ -14,6 +14,7 @@ type SettingData = {
   maximize: boolean
   clientWidth: number
   clientHeight: number
+  emulationSpeed: number
 }
 
 function modified(s1: SettingData, s2: SettingData): boolean {
@@ -25,7 +26,8 @@ function modified(s1: SettingData, s2: SettingData): boolean {
     s1.spriteFlicker !== s2.spriteFlicker ||
     s1.maximize !== s2.maximize ||
     s1.clientWidth !== s2.clientWidth ||
-    s1.clientHeight !== s2.clientHeight
+    s1.clientHeight !== s2.clientHeight ||
+    s1.emulationSpeed !== s2.emulationSpeed
 }
 
 export const GlobalSetting = {
@@ -38,6 +40,7 @@ export const GlobalSetting = {
   maximize: false,
   clientWidth: (256 - 4 * 2) * 2,
   clientHeight: (240 - 8 * 2) * 2,
+  emulationSpeed: 1.0,
 
   savedSetting: {} as SettingData,
 
@@ -62,6 +65,7 @@ export const GlobalSetting = {
       this.maximize = setting.maximize != null ? setting.maximize : false
       this.clientWidth = setting.clientWidth != null ? setting.clientWidth : this.clientWidth
       this.clientHeight = setting.clientHeight != null ? setting.clientHeight : this.clientHeight
+      this.emulationSpeed = setting.emulationSpeed != null ? setting.emulationSpeed : this.emulationSpeed
 
       this.savedSetting = setting
     } else {
@@ -85,6 +89,7 @@ export const GlobalSetting = {
       maximize: this.maximize,
       clientWidth: this.clientWidth,
       clientHeight: this.clientHeight,
+      emulationSpeed: this.emulationSpeed,
     }
   },
 }

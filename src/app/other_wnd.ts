@@ -11,6 +11,7 @@ import {PpuDebug} from './ppu_debug'
 import {kPaletColors} from '../nes/ppu/const'
 
 import {AppEvent} from './app_event'
+import {Util} from '../util/util'
 
 import * as Pubsub from '../util/pubsub'
 // import * as Stats from 'stats-js'
@@ -693,7 +694,7 @@ export class SettingWnd extends Wnd {
         type: Type.RANGE,
         message: 'Volume',
         max: 100,
-        getValue: () => GlobalSetting.volume,
+        getValue: () => Math.round(GlobalSetting.volume * 100).toString(),
         onchange(_event: Event) {
           const volume = ((this as any).value) / 100
           AudioManager.setMasterVolume(volume)
@@ -702,39 +703,75 @@ export class SettingWnd extends Wnd {
         onfinish(_event: Event) {
         },
       },
+      {
+        type: Type.RANGE,
+        message: () => {
+          const speed = Math.round(GlobalSetting.emulationSpeed * 100) | 0
+          const frac = `${speed % 100}`.padStart(2, '0')
+          return `Speed ${(speed / 100) | 0}.${frac}`
+        },
+        max: 6,
+        getValue: () => {
+          const speed = GlobalSetting.emulationSpeed
+          const index = Util.clamp(Math.round((speed - 0.5) / 0.25), 0, 6)
+          return index.toString()
+        },
+        onchange(_event: Event) {
+          const speedIndex = parseInt((this as any).value)
+          GlobalSetting.emulationSpeed = speedIndex * 0.25 + 0.5
+        },
+      },
     ]
+
+    function getMessage(message: string | (() => string)): string {
+      if (typeof(message) === 'string')
+        return message
+      else
+        return message()
+    }
+
     for (const elem of table) {
       const row = document.createElement('div')
       switch (elem.type) {
       case Type.CHECKBOX:
         {
+          const message = getMessage(elem.message)
           const input = document.createElement('input')
           input.type = 'checkbox'
-          input.id = elem.message
+          input.id = message
           input.checked = elem.getValue() as boolean
           input.onchange = elem.onchange!
           row.appendChild(input)
 
           const label = document.createElement('label')
-          label.setAttribute('for', elem.message)
-          const text = document.createTextNode(elem.message)
+          label.setAttribute('for', message)
+          const text = document.createTextNode(message)
           label.appendChild(text)
           row.appendChild(label)
         }
         break
       case Type.RANGE:
         {
-          const text = document.createTextNode(elem.message)
+          const message = getMessage(elem.message)
+          const text = document.createTextNode(message)
           row.appendChild(text)
 
           const input = document.createElement('input')
           input.type = 'range'
-          input.oninput = elem.onchange!
+          if (typeof(elem.message) === 'string') {
+            input.oninput = elem.onchange!
+          } else {
+            input.oninput = function(ev) {
+              if (elem.onchange != null)
+                elem.onchange.call(this, ev)
+              text.textContent = getMessage(elem.message)
+            }
+          }
           input.onmouseup = elem.onfinish!
           input.ontouchend = elem.onfinish!
           if (elem.max)
             input.max = elem.max.toString()
-          input.value = ((elem.getValue() as number) * 100).toString()
+          input.value = elem.getValue() as string
           row.appendChild(input)
         }
         break

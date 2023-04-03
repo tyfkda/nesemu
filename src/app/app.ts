@@ -370,7 +370,7 @@ export class App {
       this.nes.setPadStatus(i, pad)
     }
 
-    const et = Math.min(elapsedTime, MAX_ELAPSED_TIME) * this.screenWnd.getTimeScale()
+    const et = Math.min(elapsedTime, MAX_ELAPSED_TIME) * GlobalSetting.emulationSpeed * this.screenWnd.getTimeScale()
 
     this.nes.runMilliseconds(et)
   }
