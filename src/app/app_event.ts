@@ -15,6 +15,8 @@ export namespace AppEvent {
     PAUSE_APP,
     RESUME_APP,
     CLOSE_WND,
+    ENABLE_AUDIO_CHANNEL,
+    DISABLE_AUDIO_CHANNEL,
   }
 
   export class Stream extends Pubsub.Subject<Type> {
@@ -54,6 +56,9 @@ export namespace AppEvent {
     }
     public triggerCloseWnd(wnd: Wnd): void {
       this.next(Type.CLOSE_WND, wnd)
+    }
+    public triggerEnableAudioChannel(ch: number, enable: boolean): void {
+      this.next(enable ? Type.ENABLE_AUDIO_CHANNEL : Type.DISABLE_AUDIO_CHANNEL, ch)
     }
   }
 }

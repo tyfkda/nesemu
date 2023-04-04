@@ -530,7 +530,6 @@ export class AudioWnd extends Wnd {
       DomUtil.setStyles(line, {
         height: `${H - 1}px`,
       })
-      root.appendChild(line)
 
       const whiteKeys = new Array<HTMLElement>()
       const blackKeys = new Array<HTMLElement>()
@@ -586,6 +585,26 @@ export class AudioWnd extends Wnd {
       line.appendChild(dot)
       dots[ch] = dot
       keys[ch] = chKeys
+
+      const mask = document.createElement('div')
+      DomUtil.setStyles(mask, {
+        position: 'absolute',
+        display: 'none',
+        width: '100%',
+        height: '100%',
+        top: '0',
+        left: '0',
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        pointerEvents: 'none',
+      })
+      line.appendChild(mask)
+      line.addEventListener('click', (_ev) => {
+        const channelActive = mask.style.display !== 'none'
+        mask.style.display = channelActive ? 'none' : 'inherit'
+        this.stream.triggerEnableAudioChannel(this.channelIndices[ch], channelActive)
+      })
+
+      root.appendChild(line)
     }
 
     return {root, dots, keys}

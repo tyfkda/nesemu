@@ -33,6 +33,7 @@ export class App {
   protected cartridge: Cartridge
   protected nes: Nes
   protected audioManager: AudioManager
+  protected channelVolumes: Float32Array
   protected stream = new AppEvent.Stream()
   protected subscription: Pubsub.Subscription
 
@@ -250,6 +251,11 @@ export class App {
     for (const type of waveTypes) {
       this.audioManager.addChannel(type)
     }
+
+    if (this.channelVolumes == null || this.channelVolumes.length !== waveTypes.length) {
+      this.channelVolumes = new Float32Array(waveTypes.length)
+      this.channelVolumes.fill(1)
+    }
   }
 
   public isTop(): boolean {
@@ -319,6 +325,14 @@ export class App {
           this.destroy()
       }
       break
+    case AppEvent.Type.ENABLE_AUDIO_CHANNEL:
+    case AppEvent.Type.DISABLE_AUDIO_CHANNEL:
+      {
+        const ch = param as number
+        const enable = type === AppEvent.Type.ENABLE_AUDIO_CHANNEL
+        this.channelVolumes[ch] = enable ? 1.0 : 0.0
+      }
+      break
     default:
       break
     }
@@ -381,7 +395,7 @@ export class App {
       if (!enabled)
         continue
 
-      const volume = channel.getVolume()
+      const volume = channel.getVolume() * this.channelVolumes[ch]
       audioManager.setChannelVolume(ch, volume)
       if (volume > 0) {
         switch (waveTypes[ch]) {
