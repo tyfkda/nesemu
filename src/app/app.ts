@@ -6,6 +6,7 @@ import {AudioManager} from '../util/audio_manager'
 import {IDeltaModulationChannel, INoiseChannel, IPulseChannel, WaveType} from '../nes/apu'
 import {DomUtil} from '../util/dom_util'
 import {Fds} from '../nes/fds/fds'
+import {GlobalSetting} from './global_setting'
 import {ScreenWnd} from './screen_wnd'
 import {StorageUtil} from '../util/storage_util'
 import {Util} from '../util/util'
@@ -86,6 +87,12 @@ export class App {
     const y = Util.clamp((option.centerY || 0) - size.height / 2,
                          0, window.innerHeight - size.height - 1)
     this.screenWnd.setPos(x, y)
+
+    if (GlobalSetting.maximize) {
+      this.screenWnd.maximize()
+    } else if (GlobalSetting.clientWidth > 256 && GlobalSetting.clientHeight > 240) {
+      this.screenWnd.setClientSize(GlobalSetting.clientWidth, GlobalSetting.clientHeight)
+    }
   }
 
   public loadRom(romData: Uint8Array): string|null {

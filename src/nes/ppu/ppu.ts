@@ -122,7 +122,7 @@ function clearBg(hline0: number, hline1: number, x: number,
 }
 
 export class Ppu {
-  public suppressSpriteFlicker = true
+  public spriteFlicker = false
 
   private chrData = new Uint8Array(0)
   private regs = new Uint8Array(REGISTER_COUNT)
@@ -590,7 +590,7 @@ export class Ppu {
           pixels[index2 + 2] =  c        & 0xff
         }
 
-        if (++n >= MAX_SPRITE_ON_SCANLINE && !this.suppressSpriteFlicker) {
+        if (++n >= MAX_SPRITE_ON_SCANLINE && this.spriteFlicker) {
           this.regs[PpuReg.STATUS] |= PpuStatusBit.SPRITE_OVERFLOW
           break
         }

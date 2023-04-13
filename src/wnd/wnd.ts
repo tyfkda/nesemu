@@ -69,12 +69,10 @@ export class Wnd {
     this.titleElem.innerText = title
   }
 
-  public setClientSize(width: number, height: number): void {
+  public setWindowSize(width: number, height: number): void {
     const rect = this.root.getBoundingClientRect()
     const rootRect = this.wndMgr.getRootClientRect()
 
-    width += this.clientMarginWidth
-    height += this.clientMarginHeight
     const styles: Record<string, unknown> = {
       width: `${width}px`,
       height: `${height}px`,
@@ -88,6 +86,19 @@ export class Wnd {
       styles['top'] = `${top}px`;
 
     DomUtil.setStyles(this.root, styles)
+  }
+
+  public setClientSize(width: number, height: number): void {
+    this.setWindowSize(width + this.clientMarginWidth,
+                       height + this.clientMarginHeight)
+  }
+
+  public getClientSize(): {width: number, height: number} {
+    const rect = this.root.getBoundingClientRect()
+    return {
+      width: rect.width - this.clientMarginWidth,
+      height: rect.height - this.clientMarginHeight,
+    }
   }
 
   public clampPos(rootRect: DOMRect): void {

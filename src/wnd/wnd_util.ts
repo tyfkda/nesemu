@@ -244,7 +244,7 @@ export class WndUtil {
             onEvent(WndEvent.RESIZE_MOVE, size)
           },
           up: (_event2: MouseEvent) => {
-            onEvent(WndEvent.RESIZE_END)
+            onEvent(WndEvent.RESIZE_END, size)
           },
         })
 

@@ -10,6 +10,7 @@ import {Scaler, NearestNeighborScaler, ScanlineScaler, EpxScaler} from '../util/
 import {App} from './app'
 import {AppEvent} from './app_event'
 import {GlobalSetting} from './global_setting'
+import {ScalerType} from './def'
 import {PadBit, PadValue} from '../nes/apu'
 import {PadKeyHandler} from '../util/pad_key_handler'
 import {GamepadManager} from '../util/gamepad_manager'
@@ -43,11 +44,7 @@ const enum WndType {
   FDS_CTRL,
 }
 
-const enum ScalerType {
-  NEAREST,
-  SCANLINE,
-  EPX,
-}
+type Size = {width: number, height: number}
 
 function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   const img = document.createElement('img')
@@ -63,12 +60,19 @@ function takeScreenshot(wndMgr: WindowManager, screenWnd: ScreenWnd): Wnd {
   return imgWnd
 }
 
-function fitAspectRatio(width: number, height: number, ratio: number): [number, number] {
+function fitAspectRatio(width: number, height: number, ratio: number): Size {
   if (width / height >= ratio)
-    width = height * ratio
+    width = Math.round(height * ratio) | 0
   else
-    height = width / ratio
-  return [width, height]
+    height = Math.round(width / ratio) | 0
+  return {width, height}
+}
+
+function contentSize(overscan: boolean): Size {
+  return {
+    width: Math.round(WIDTH - (overscan ? HEDGE * 2 : 0)),
+    height: Math.round(HEIGHT - (overscan ? VEDGE * 2 : 0)),
+  }
 }
 
 function maxSize(wndMgr: WindowManager, overscan: boolean): {rootRect: DOMRect, width: number, height: number} {
@@ -76,9 +80,8 @@ function maxSize(wndMgr: WindowManager, overscan: boolean): {rootRect: DOMRect, 
   const maxWidth = rootRect.width - 2  // -2 for border size
   const maxHeight = rootRect.height - Wnd.TITLEBAR_HEIGHT - Wnd.MENUBAR_HEIGHT - 2
 
-  const w = Math.round(WIDTH - (overscan ? HEDGE * 2 : 0))
-  const h = Math.round(HEIGHT - (overscan ? VEDGE * 2 : 0))
-  const [width, height] = fitAspectRatio(maxWidth, maxHeight, w / h)
+  const {width: w, height: h} = contentSize(overscan)
+  const {width, height} = fitAspectRatio(maxWidth, maxHeight, w / h)
   return {rootRect, width, height}
 }
 
@@ -91,7 +94,7 @@ export class ScreenWnd extends Wnd {
   private contentWidth = 0  // Content size, except fullscreen
   private contentHeight = 0
   private menuItems: Array<MenuItemInfo>
-  private scalerType = ScalerType.NEAREST
+  private scalerType: ScalerType = ScalerType.NEAREST
   private padKeyHandler = new PadKeyHandler()
   private timeScale = 1
   private fullscreenResizeFunc: () => void
@@ -122,7 +125,7 @@ export class ScreenWnd extends Wnd {
     this.canvasHolder.style.transitionDuration = TRANSITION_DURATION
     this.fullscreenBase.appendChild(this.canvasHolder)
 
-    this.setScaler(ScalerType.NEAREST)
+    this.setScaler(GlobalSetting.scaler)
     this.addResizeBox()
 
     this.subscription = this.stream
@@ -145,13 +148,21 @@ export class ScreenWnd extends Wnd {
         }
       })
 
-    this.contentWidth = (WIDTH - HEDGE * 2) * 2
-    this.contentHeight = (HEIGHT - VEDGE * 2) * 2
-    this.updateContentSize(this.contentWidth, this.contentHeight)
+    {
+      this.overscan = GlobalSetting.overscan
+      let {width, height} = contentSize(this.overscan)
+      width *= 2
+      height *= 2
+      this.setClientSize(width, height)
+
+      this.contentWidth = width
+      this.contentHeight = height
+      this.updateContentSize(this.contentWidth, this.contentHeight)
+    }
 
     {
       const {width, height} = maxSize(this.wndMgr, this.overscan)
-      if (width < (WIDTH - HEDGE * 2) * 2) {
+      if (width < this.contentWidth) {
         this.setClientSize(width, height)
       }
     }
@@ -172,6 +183,8 @@ export class ScreenWnd extends Wnd {
       })
       this.updateContentSize(width, height)
     }
+
+    this.nes.getPpu().spriteFlicker = GlobalSetting.spriteFlicker
 
     wndMgr.add(this)
 
@@ -205,6 +218,7 @@ export class ScreenWnd extends Wnd {
         this.stream.triggerPauseApp()
       break
     case WndEvent.RESIZE_END:
+      this.saveClientSize(this.getClientSize())
       this.canvasHolder.style.transitionDuration = TRANSITION_DURATION
       if (GlobalSetting.pauseOnMenu)
         this.stream.triggerResumeApp()
@@ -318,24 +332,27 @@ export class ScreenWnd extends Wnd {
         wnd.close()
   }
 
-  protected setClientScale(scale: number): void {
-    const w = ((WIDTH - (this.overscan ? HEDGE * 2 : 0)) * scale) | 0
-    const h = ((HEIGHT - (this.overscan ? VEDGE * 2 : 0)) * scale) | 0
-    this.setClientSize(w, h)
+  protected setClientScale(scale: number): Size {
+    let {width, height} = contentSize(this.overscan)
+    width = (width * scale) | 0
+    height = (height * scale) | 0
+    this.setClientSize(width, height)
+    return {width, height}
   }
 
   protected updateContentSize(width: number, height: number): void {
     if (!this.fullscreenBase)
       return
 
-    const w = !this.overscan ? width : (width * (WIDTH / (WIDTH - HEDGE * 2))) | 0
-    const h = !this.overscan ? height : (height * (HEIGHT / (HEIGHT - VEDGE * 2))) | 0
-    const left = !this.overscan ? 0 : -(w * HEDGE / WIDTH) | 0
-    const top = !this.overscan ? 0 : -(h * VEDGE / HEIGHT) | 0
+    const {width: w, height: h} = contentSize(this.overscan)
+    const cw = (width * (WIDTH / w)) | 0
+    const ch = (height * (HEIGHT / h)) | 0
+    const left = !this.overscan ? 0 : -(cw * HEDGE / WIDTH) | 0
+    const top = !this.overscan ? 0 : -(ch * VEDGE / HEIGHT) | 0
     DomUtil.setStyles(this.canvasHolder, {
       position: 'absolute',
-      width: `${w}px`,
-      height: `${h}px`,
+      width: `${cw}px`,
+      height: `${ch}px`,
       top: `${top}px`,
       left: `${left}px`,
     })
@@ -415,21 +432,24 @@ export class ScreenWnd extends Wnd {
             label: '1x1',
             checked: () => this.isAspectRatio(1),
             click: () => {
-              this.setClientScale(1)
+              const size = this.setClientScale(1)
+              this.saveClientSize(size)
             },
           },
           {
             label: '2x2',
             checked: () => this.isAspectRatio(2),
             click: () => {
-              this.setClientScale(2)
+              const size = this.setClientScale(2)
+              this.saveClientSize(size)
             },
           },
           {
             label: 'Adjust aspect ratio',
             disabled: () => this.isAspectRatio(0),
             click: () => {
-              this.adjustAspectRatio()
+              const size = this.adjustAspectRatio()
+              this.saveClientSize(size)
             },
           },
           {label: '----'},
@@ -445,13 +465,15 @@ export class ScreenWnd extends Wnd {
             checked: () => this.overscan,
             click: () => {
               this.toggleOverscan()
+              GlobalSetting.overscan = this.overscan
             },
           },
           {
             label: 'Sprite flicker',
-            checked: () => !this.nes.getPpu().suppressSpriteFlicker,
+            checked: () => this.nes.getPpu().spriteFlicker,
             click: () => {
               this.toggleSpriteFlicker()
+              GlobalSetting.spriteFlicker = this.nes.getPpu().spriteFlicker
             },
           },
         ],
@@ -463,21 +485,21 @@ export class ScreenWnd extends Wnd {
             label: 'Nearest',
             checked: () => this.scalerType === ScalerType.NEAREST,
             click: () => {
-              this.setScaler(ScalerType.NEAREST)
+              this.updateScaler(ScalerType.NEAREST)
             },
           },
           {
             label: 'Scanline',
             checked: () => this.scalerType === ScalerType.SCANLINE,
             click: () => {
-              this.setScaler(ScalerType.SCANLINE)
+              this.updateScaler(ScalerType.SCANLINE)
             },
           },
           {
             label: 'Epx',
             checked: () => this.scalerType === ScalerType.EPX,
             click: () => {
-              this.setScaler(ScalerType.EPX)
+              this.updateScaler(ScalerType.EPX)
             },
           },
         ],
@@ -546,12 +568,13 @@ export class ScreenWnd extends Wnd {
     this.addMenuBar(this.menuItems)
   }
 
-  protected maximize(): void {
+  public maximize(): void {
     const {rootRect, width, height} = maxSize(this.wndMgr, this.overscan)
     const x = (rootRect.width - (width + 2)) / 2
     const y = (rootRect.height - (height + Wnd.TITLEBAR_HEIGHT + Wnd.MENUBAR_HEIGHT + 2)) / 2
     this.setClientSize(width, height)
     this.setPos(Math.round(x), Math.round(y))
+    GlobalSetting.maximize = true
   }
 
   protected createSubWnd(wndType: WndType, generate: () => Wnd): boolean {
@@ -656,20 +679,25 @@ export class ScreenWnd extends Wnd {
 
   private isAspectRatio(scale: number): boolean {
     const rect = this.contentHolder.getBoundingClientRect()
-    const w = WIDTH - (this.overscan ? HEDGE * 2 : 0)
-    const h = HEIGHT - (this.overscan ? VEDGE * 2 : 0)
+    const {width, height} = contentSize(this.overscan)
 
     if (scale > 0)
-      return Math.abs(rect.width - w * scale) < 0.5 && Math.abs(rect.height - h * scale) < 0.5
-    return Math.abs(rect.width / rect.height - w / h) < 0.005
+      return Math.abs(rect.width - width * scale) < 0.5 && Math.abs(rect.height - height * scale) < 0.5
+    return Math.abs(rect.width / rect.height - width / height) < 0.005
   }
 
-  private adjustAspectRatio(): void {
+  private adjustAspectRatio(): Size {
     const rect = this.contentHolder.getBoundingClientRect()
-    const w = WIDTH - (this.overscan ? HEDGE * 2 : 0)
-    const h = HEIGHT - (this.overscan ? VEDGE * 2 : 0)
-    const [width, height] = fitAspectRatio(rect.width, rect.height, w / h)
+    const {width: w, height: h} = contentSize(this.overscan)
+    const {width, height} = fitAspectRatio(rect.width, rect.height, w / h)
     this.setClientSize(width, height)
+    return {width, height}
+  }
+
+  private saveClientSize(size: Size): void {
+    GlobalSetting.clientWidth = size.width
+    GlobalSetting.clientHeight = size.height
+    GlobalSetting.maximize = false
   }
 
   private toggleOverscan(): void {
@@ -679,15 +707,21 @@ export class ScreenWnd extends Wnd {
 
   private toggleSpriteFlicker(): void {
     const ppu = this.nes.getPpu()
-    ppu.suppressSpriteFlicker = !ppu.suppressSpriteFlicker
+    ppu.spriteFlicker = !ppu.spriteFlicker
+  }
+
+  private updateScaler(type: ScalerType): void {
+    if (this.scalerType === type)
+      return
+    GlobalSetting.scaler = type
+    this.setScaler(type)
+    this.render()
   }
 
   private setScaler(type: ScalerType): void {
-    const initial = this.scaler == null
-    if (this.scalerType === type && !initial)
-      return
     this.scalerType = type
     switch (type) {
+    default:
     case ScalerType.NEAREST:
       this.scaler = new NearestNeighborScaler()
       break
@@ -700,8 +734,5 @@ export class ScreenWnd extends Wnd {
     }
     DomUtil.removeAllChildren(this.canvasHolder)
     this.canvasHolder.appendChild(this.scaler.getCanvas())
-
-    if (!initial)
-      this.render()
   }
 }
