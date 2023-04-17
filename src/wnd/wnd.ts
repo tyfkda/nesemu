@@ -1,7 +1,7 @@
 import {DomUtil} from '../util/dom_util'
 import {WindowManager} from './window_manager'
 import {Util} from '../util/util'
-import {WndUtil} from './wnd_util'
+import {WndUtil, ResizeOption} from './wnd_util'
 import {MenuItemInfo, WndEvent, Z_MENUBAR} from './types'
 
 const WIN_BORDER = 1
@@ -244,7 +244,7 @@ export class Wnd {
     // this.root = null
   }
 
-  public addResizeBox(): void {
+  public addResizeBox(opt?: ResizeOption): void {
     this.root.classList.add('resizable')
 
     this.addTitleButton(this.titleBtnHolder, 'maximize', () => {
@@ -266,7 +266,7 @@ export class Wnd {
           break
         }
         this.onEvent(event, param)
-      })
+      }, opt)
   }
 
   protected maximize(): void {

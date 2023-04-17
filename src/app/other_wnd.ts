@@ -83,6 +83,12 @@ export class PaletWnd extends Wnd {
     this.groups = groups
     this.selected.fill(0)
 
+    this.addResizeBox({
+      minWidth: PaletWnd.UNIT * PaletWnd.W,
+      minHeight: PaletWnd.UNIT * PaletWnd.H,
+      cornerOnly: true,
+    })
+
     this.subscription = this.stream
       .subscribe(type => {
         switch (type) {
@@ -138,47 +144,43 @@ export class PaletWnd extends Wnd {
   }
 
   private createDom(): {root: HTMLElement; boxes: HTMLElement[]; groups: HTMLElement[]} {
-    const UNIT = PaletWnd.UNIT, W = PaletWnd.W, H = PaletWnd.H
+    const W = PaletWnd.W, H = PaletWnd.H
     const root = document.createElement('div')
-    root.className = 'clearfix'
+    root.className = 'full-size'
     DomUtil.setStyles(root, {
-      width: `${UNIT * W}px`,
-      height: `${UNIT * H}px`,
+      display: 'flex',
+      flexFlow: 'column',
     })
 
     const boxes = new Array<HTMLElement>(W * H)
     const groups = new Array<HTMLElement>((W / 4) * H)
     for (let i = 0; i < H; ++i) {
       const line = document.createElement('div')
-      line.className = 'pull-left clearfix'
       DomUtil.setStyles(line, {
-        width: `${UNIT * W}px`,
-        height: `${UNIT}px`,
+        width: '100%',
         backgroundColor: 'black',
+        flex: '1',
+        display: 'flex',
       })
       root.appendChild(line)
 
       for (let j = 0; j < W / 4; ++j) {
         const group = document.createElement('div')
-        group.className = 'pull-left clearfix'
         DomUtil.setStyles(group, {
-          width: `${UNIT * 4}px`,
-          height: `${UNIT}px`,
           cursor: 'pointer',
+          flex: '1',
+          display: 'flex',
         })
         groups[j + i * (W / 4)] = group
         line.appendChild(group)
-        group.addEventListener('click', _event => {
-          this.select(i, j)
-        })
+        group.addEventListener('click', _event => this.select(i, j))
 
         for (let k = 0; k < 4; ++k) {
           const box = document.createElement('div')
-          box.className = 'pull-left'
           DomUtil.setStyles(box, {
-            width: `${UNIT - 1}px`,
-            height: `${UNIT - 1}px`,
             marginRight: '1px',
+            marginBottom: '1px',
+            flex: 1,
           })
           boxes[(j * 4 + k) + i * W] = box
           group.appendChild(box)
@@ -215,11 +217,7 @@ export class NameTableWnd extends Wnd {
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
-    DomUtil.setStyles(canvas, {
-      width: `${width}px`,
-      height: `${height}px`,
-    })
-    canvas.className = 'pixelated'
+    canvas.className = 'pixelated full-size fit-fill'
     DomUtil.clearCanvas(canvas)
 
     this.setContent(canvas)
@@ -227,6 +225,8 @@ export class NameTableWnd extends Wnd {
 
     this.context = DomUtil.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
+
+    this.addResizeBox()
 
     this.subscription = this.stream
       .subscribe(type => {
@@ -268,11 +268,7 @@ export class PatternTableWnd extends Wnd {
     const canvas = document.createElement('canvas')
     canvas.width = 256
     canvas.height = 128
-    DomUtil.setStyles(canvas, {
-      width: '256px',
-      height: '128px',
-    })
-    canvas.className = 'pixelated'
+    canvas.className = 'pixelated full-size fit-fill'
     DomUtil.clearCanvas(canvas)
     return canvas
   }
@@ -287,6 +283,11 @@ export class PatternTableWnd extends Wnd {
 
     this.context = DomUtil.getCanvasContext2d(this.canvas)
     this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
+
+    this.addResizeBox({
+      minWidth: 256 / 2,
+      minHeight: 128 / 2,
+    })
 
     this.subscription = this.stream
       .subscribe(type => {
@@ -342,6 +343,11 @@ export class GlobalPaletWnd extends Wnd {
       this.boxes[i].style.backgroundColor = `rgb(${r},${g},${b})`
     }
 
+    this.addResizeBox({
+      minWidth: GlobalPaletWnd.UNIT * GlobalPaletWnd.W,
+      minHeight: GlobalPaletWnd.UNIT * GlobalPaletWnd.H,
+    })
+
     wndMgr.add(this)
   }
 
@@ -352,12 +358,14 @@ export class GlobalPaletWnd extends Wnd {
   }
 
   private createDom(): {root: HTMLElement; boxes: HTMLElement[]} {
-    const UNIT = GlobalPaletWnd.UNIT, W = GlobalPaletWnd.W, H = GlobalPaletWnd.H
+    const W = GlobalPaletWnd.W, H = GlobalPaletWnd.H
     const root = document.createElement('div')
     root.className = 'clearfix'
     DomUtil.setStyles(root, {
-      width: `${UNIT * W}px`,
-      height: `${UNIT * H}px`,
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      flexFlow: 'column',
     })
 
     const boxes = new Array<HTMLElement>(W * H)
@@ -365,9 +373,10 @@ export class GlobalPaletWnd extends Wnd {
       const line = document.createElement('div')
       line.className = 'pull-left clearfix'
       DomUtil.setStyles(line, {
-        width: `${UNIT * W}px`,
-        height: `${UNIT}px`,
+        width: '100%',
         backgroundColor: 'black',
+        flex: '1',
+        display: 'flex',
       })
       root.appendChild(line)
 
@@ -375,9 +384,9 @@ export class GlobalPaletWnd extends Wnd {
         const box = document.createElement('div')
         box.className = 'pull-left'
         DomUtil.setStyles(box, {
-          width: `${UNIT - 1}px`,
-          height: `${UNIT - 1}px`,
           marginRight: '1px',
+          marginBottom: '1px',
+          flex: '1',
         })
         boxes[j + i * W] = box
         line.appendChild(box)

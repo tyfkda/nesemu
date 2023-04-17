@@ -26,6 +26,10 @@ body {
   height: 100%;
 }
 
+.fit-fill {
+  object-fit: fill;
+}
+
 .fixed-font {
   font-family: Consolas, "Liberation Mono", Menlo, Courier, monospace;
 }
@@ -293,7 +297,7 @@ hr {
     }
   }
 }
-$RESIZABLE_RADIUS: 8px;
+$RESIZABLE_RADIUS: 4px;
 .wnd.resizable {
   border-radius: $RESIZABLE_RADIUS;
   .title-bar {

@@ -3,6 +3,12 @@ import {Util} from '../util/util'
 import {SubmenuItemInfo, WndEvent, Z_MENU_SUBITEM} from './types'
 import {Wnd} from './wnd'
 
+export type ResizeOption = {
+  minWidth?: number;
+  minHeight?: number;
+  cornerOnly?: boolean;
+}
+
 export class WndUtil {
   public static getOffsetRect(
     parent: HTMLElement, target: HTMLElement,
@@ -106,9 +112,10 @@ export class WndUtil {
   public static makeResizable(
     element: HTMLElement, getClientRect: () => DOMRect,
     onEvent: (event: WndEvent, param?: any) => void,
+    opt?: ResizeOption,
   ): void {
-    const MIN_WIDTH = 80
-    const MIN_HEIGHT = 60 + Wnd.TITLEBAR_HEIGHT
+    const MIN_WIDTH = opt?.minWidth || 80
+    const MIN_HEIGHT = (opt?.minHeight || 60) + Wnd.TITLEBAR_HEIGHT
     const W = 8
 
     type StyleParams = {left?: string, right?: string, top?: string, bottom?: string, cursor?: string}
@@ -160,6 +167,9 @@ export class WndUtil {
     ]
 
     table.forEach(param => {
+      if (opt?.cornerOnly && (param.horz === 'center' || param.vert === 'center'))
+        return
+
       const resizeBox = document.createElement('div')
       resizeBox.className = 'resize-box'
       ;(Object.keys(param.styleParams) as (keyof StyleParams)[]).forEach(key => {
