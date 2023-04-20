@@ -679,7 +679,6 @@ export class SettingWnd extends Wnd {
         getValue: () => GlobalSetting.pauseOnMenu,
         onchange(_event: Event) {
           GlobalSetting.pauseOnMenu = !!(this as any).checked
-          GlobalSetting.saveToStorage()
         },
       },
       {
@@ -688,7 +687,6 @@ export class SettingWnd extends Wnd {
         getValue: () => GlobalSetting.muteOnInactive,
         onchange(_event: Event) {
           GlobalSetting.muteOnInactive = (this as any).checked
-          GlobalSetting.saveToStorage()
         },
       },
       {
@@ -702,7 +700,6 @@ export class SettingWnd extends Wnd {
           GlobalSetting.volume = volume
         },
         onfinish(_event: Event) {
-          GlobalSetting.saveToStorage()
         },
       },
     ]

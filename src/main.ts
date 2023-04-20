@@ -41,7 +41,7 @@ class Main {
   constructor(private root: HTMLElement) {
     this.wndMgr = new WindowManager(root)
 
-    GlobalSetting.loadFromStorage()
+    GlobalSetting.setUp()
     this.setUpAudio()
     this.setUpStartMenu()
     this.setUpFileDrop()
@@ -53,6 +53,7 @@ class Main {
   public shutDown(): void {
     for (const app of this.apps)
       app.destroy()
+    GlobalSetting.destroy()
   }
 
   private setUpStartMenu(): void {
