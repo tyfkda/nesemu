@@ -2,6 +2,8 @@
 *.nes
 *.zip
 
+/tools/nes-test-roms
+
 /gh-pages/
 
 # Node
