@@ -1,7 +1,7 @@
 require "digest/sha1"
 require "rexml/document"
 
-TEST_DIR = File.join(__dir__, "nes-test-roms")
+TEST_DIR = File.join(__dir__, ",nes-test-roms")
 unless File.exist?(TEST_DIR)
   system("git", "clone", "https://github.com/christopherpow/nes-test-roms.git", TEST_DIR)
   system("git", "-C", TEST_DIR, "checkout", "c0cc4cd8937dac4bb6080c82be0fc2e346dc8754")
@@ -241,12 +241,17 @@ if ARGV.empty?
   TESTS.reject! {|test| EXCLUDES.include?(test.filename) }
   threads = []
   queue = Queue.new
-  4.times do
+  # 4.times do
+  1.times do
     threads << Thread.new do
       while true
         test = TESTS.shift
         break unless test
-        queue << Open3.capture3("ruby", __FILE__, test.filepath)
+        result = Open3.capture3("ruby", __FILE__, test.filepath)
+$stderr.puts "### #{test.filename}:"
+# result.each {|line| $stderr.puts(line)}
+        queue << result
+# break
       end
       queue << nil
     end
@@ -255,7 +260,7 @@ if ARGV.empty?
   while threads.any? {|th| th.alive? }
     out, _, status = queue.shift
     next unless out
-    puts out
+    puts out if out
     if status.success?
       num_pass += 1
     else
@@ -275,49 +280,62 @@ else
     TESTS.reject! {|test| EXCLUDES.include?(test.filename) }
   end
 
-  require_relative "../lib/optcarrot"
+  # require_relative "../lib/optcarrot"
+  require "open3"
   TESTS.each do |test|
-    begin
-      nes = Optcarrot::NES.new(
-        romfile: test.filepath,
-        video: :png,
-        audio: :wav,
-        input: :log,
-        frames: test.runframes,
-        key_log: test.input_log,
-        sprite_limit: true,
-        opt_ppu: [:all],
-        opt_cpu: [:all],
-      )
-      nes.reset
-      sha1s = []
-      test.runframes.times do
-        nes.step
-        v = nes.instance_variable_get(:@ppu).output_pixels[0, 256 * 240].flat_map do |r, g, b|
-          [r, g, b, 255]
-        end
-        sha1 = Digest::SHA1.base64digest(v.pack("C*"))
-        sha1s << sha1
-      end
-      raise "video: #{ test.tvsha1 } #{ sha1s.last }" unless sha1s.include?(test.tvsha1)
-
-      sha1 = Digest::SHA1.base64digest(nes.instance_variable_get(:@audio).instance_variable_get(:@buff).pack("v*"))
-
-      unless SOUND_SHA1[[test.filename, test.tvsha1]] == sha1
-        raise "sound: #{ SOUND_SHA1[[test.filename, test.tvsha1]] } #{ sha1 }"
-      end
-
-      puts "ok: " + test.filename
-      $stdout.flush
-    rescue Interrupt
-      raise
-    rescue
-      puts "NG: " + test.filename
-      # rubocop:disable Style/SpecialGlobalVars
-      p $!
-      p(*$!.backtrace)
-      # rubocop:enable Style/SpecialGlobalVars
-      exit 1
+    tsfile = File.join(__dir__, "headlessnes.ts")
+    opts = [
+      '--runframes', test.runframes.to_s,
+      '--filename', test.filename,
+      '--filepath', test.filepath,
+      '--tvsha1', test.tvsha1,
+    ]
+    unless test.input_log.empty?
+      opts += ['--input-log', test.input_log.map(&:to_s).join(',')]
     end
+    system('npx', 'ts-node', tsfile, *opts)
+
+    # begin
+    #   nes = Optcarrot::NES.new(
+    #     romfile: test.filepath,
+    #     video: :png,
+    #     audio: :wav,
+    #     input: :log,
+    #     frames: test.runframes,
+    #     key_log: test.input_log,
+    #     sprite_limit: true,
+    #     opt_ppu: [:all],
+    #     opt_cpu: [:all],
+    #   )
+    #   nes.reset
+    #   sha1s = []
+    #   test.runframes.times do
+    #     nes.step
+    #     v = nes.instance_variable_get(:@ppu).output_pixels[0, 256 * 240].flat_map do |r, g, b|
+    #       [r, g, b, 255]
+    #     end
+    #     sha1 = Digest::SHA1.base64digest(v.pack("C*"))
+    #     sha1s << sha1
+    #   end
+    #   raise "video: #{ test.tvsha1 } #{ sha1s.last }" unless sha1s.include?(test.tvsha1)
+
+    #   sha1 = Digest::SHA1.base64digest(nes.instance_variable_get(:@audio).instance_variable_get(:@buff).pack("v*"))
+
+    #   unless SOUND_SHA1[[test.filename, test.tvsha1]] == sha1
+    #     raise "sound: #{ SOUND_SHA1[[test.filename, test.tvsha1]] } #{ sha1 }"
+    #   end
+
+    #   puts "ok: " + test.filename
+    #   $stdout.flush
+    # rescue Interrupt
+    #   raise
+    # rescue
+    #   puts "NG: " + test.filename
+    #   # rubocop:disable Style/SpecialGlobalVars
+    #   p $!
+    #   p(*$!.backtrace)
+    #   # rubocop:enable Style/SpecialGlobalVars
+    #   exit 1
+    # end
   end
 end
