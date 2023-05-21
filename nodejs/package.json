@@ -22,7 +22,7 @@
     "webpack-cli": "~5.1.4"
   },
   "dependencies": {
-    "@kmamal/sdl": "~0.10.7",
+    "@kmamal/sdl": "file:../../kmamal-sdl",
     "commander": "~12.1.0",
     "fflate": "~0.8.2",
     "pngjs": "~7.0.0"
