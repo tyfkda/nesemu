@@ -1,4 +1,4 @@
-const sdl = __non_webpack_require__('@kmamal/sdl')
+import sdl from '@kmamal/sdl'
 
 class AudioParam {
   public value = 0
