@@ -27,6 +27,11 @@ export const enum NesEvent {
   PrgBankChange,
 }
 
+export interface NesOption {
+  nmiFn?: () => void
+  apuIrqFn?: () => void
+}
+
 export class Nes {
   protected ram = new Uint8Array(RAM_SIZE)
   protected bus: Bus
@@ -52,11 +57,11 @@ export class Nes {
     return mapperNo in kMapperTable
   }
 
-  constructor() {
+  constructor(opt?: NesOption) {
     this.bus = new Bus()
     this.cpu = new Cpu(this.bus)
-    this.ppu = new Ppu(this.cpu.nmi.bind(this.cpu))
-    this.apu = new Apu(this.gamePads, () => this.cpu.requestIrq(IrqType.APU))
+    this.ppu = new Ppu(opt?.nmiFn || this.cpu.nmi.bind(this.cpu))
+    this.apu = new Apu(this.gamePads, opt?.apuIrqFn || (() => this.cpu.requestIrq(IrqType.APU)))
     this.eventCallback = (_e, _p) => {}
     this.breakPointCallback = () => {}
 

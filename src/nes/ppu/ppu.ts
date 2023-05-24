@@ -346,13 +346,13 @@ export class Ppu {
     // TODO: Block CPU.
   }
 
-  public setVBlank(): void {
+  protected setVBlank(): void {
     this.regs[PpuReg.STATUS] = this.regs[PpuReg.STATUS] | PpuStatusBit.VBLANK
     this.hevents.swap()
     this.hstatusMgr.swap()
   }
 
-  public clearVBlank(): void {
+  protected clearVBlank(): void {
     this.regs[PpuReg.STATUS] &= ~(PpuStatusBit.VBLANK | PpuStatusBit.SPRITE0HIT |
                                   PpuStatusBit.SPRITE_OVERFLOW)
 

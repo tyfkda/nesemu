@@ -4,62 +4,83 @@
 import {App, Option} from './app'
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
-import {Bus} from '../nes/bus'
 import {DomUtil} from '../util/dom_util'
 import {Nes} from '../nes/nes'
-import {Ppu} from '../nes/ppu/ppu'
-import {ScreenWnd} from './screen_wnd'
-import {Util} from '../util/util'
 import {WindowManager} from '../wnd/window_manager'
 import {VBlank} from '../nes/const'
-
-const WIDTH = 256
-const HEIGHT = 240
+import {Address, Byte} from '../nes/types'
 
 const MAX_FRAME_COUNT = 4
 
-interface JsCpu {
-  init(bus: Bus, ppu: Ppu): void
-  getChrRom(): Uint8Array
-  reset(): void
-  update(): void
-  step(): void
-  pause(value: boolean): void
-  isPaused(): boolean
-  getRegs(): number[]
+interface Accessor {
+  getRam(): Uint8Array  // Size=0x0800
+  read8(adr: Address): Byte
+  write8(adr: Address, value: Byte): void
+  setReadMemory(start: Address, end: Address, reader: Function): void
+  setWriteMemory(start: Address, end: Address, writer: Function): void
+  waitHline(hcount: number): void
 }
 
-class JsNes extends Nes {
+interface JsCpu {
+  getMapperNo(): number
+  init(accessor: Accessor): void
+  getChrRom(): Uint8Array | Promise<Uint8Array>
+  reset(): void
+  update(): void
+}
+
+export class JsNes extends Nes {
   public jsCpu: JsCpu
   private file: File
+  private hcount = 0
 
   public constructor() {
-    super()
+    super({
+      nmiFn: () => {},  // Dummy NMI
+      apuIrqFn: () => {},  // Dummy APU IRQ
+    })
     this.reset()
   }
 
-  public setFile(file: File): Promise<void> {
+  public async setFile(file: File): Promise<void> {
     if (file == null)
       return Promise.reject('null')
     this.file = file
 
-    // TODO: Detect mapper.
     this.setMemoryMap()
-    const mapperNo = 0
-    this.mapper = this.createMapper(mapperNo, null)
 
     return this.reload()
   }
 
   public async reload(): Promise<void> {
     const data = await DomUtil.loadFile(this.file)
-    // const jsCode = String.fromCharCode.apply('', data)
     const jsCode = new TextDecoder('utf-8').decode(data)
-    /* tslint:disable:no-eval */
-    this.jsCpu = eval(jsCode)
-    /* tslint:enable:no-eval */
-    this.ppu.setChrData(this.jsCpu.getChrRom())
-    this.jsCpu.init(this.bus, this.ppu)
+    const jsCodeFn = `'use strict'; return (() => { ${jsCode} })()`
+    this.jsCpu = Function('window', 'alert', jsCodeFn)()
+    let chrRom = this.jsCpu.getChrRom()
+    if (chrRom != null && (chrRom as any).then != null)
+      chrRom = await chrRom
+    this.ppu.setChrData(chrRom as Uint8Array)
+
+    const mapperNo = this.jsCpu.getMapperNo != null ? this.jsCpu.getMapperNo() : 0
+    if (!Nes.isMapperSupported(mapperNo))
+      return Promise.reject(`Mapper ${mapperNo} not supported`)
+    this.mapper = this.createMapper(mapperNo, null)
+
+    this.jsCpu.init({
+      getRam: () => this.ram,
+      read8: this.bus.read8.bind(this.bus),
+      write8: this.bus.write8.bind(this.bus),
+      setReadMemory: this.bus.setReadMemory.bind(this.bus),
+      setWriteMemory: this.bus.setWriteMemory.bind(this.bus),
+      waitHline: this.waitHline.bind(this),
+    })
+  }
+
+  public setHcount(hcount: number) {
+    this.hcount = hcount
+    this.ppu.setHcount(hcount)
+    this.apu.onHblank(hcount)
   }
 
   public reset(): void {
@@ -71,143 +92,32 @@ class JsNes extends Nes {
   }
 
   public update(): void {
+    this.hcount = VBlank.END
     if (this.jsCpu != null)
       this.jsCpu.update()
   }
 
-  public step(_leftCycles?: number): number {
-    this.jsCpu.step()
-    return 1  // Dummy
-  }
-}
+  private waitHline(hcount: number) {
+    if (hcount > VBlank.START || (this.hcount <= VBlank.START && hcount >= this.hcount))
+      return
 
-class JsScreenWnd extends ScreenWnd {
-  private canvas: HTMLCanvasElement
-  private context: CanvasRenderingContext2D
-  private imageData: ImageData
-
-  private static createCanvas(width: number, height: number): HTMLCanvasElement {
-    const canvas = document.createElement('canvas') as HTMLCanvasElement
-    canvas.width = width
-    canvas.height = height
-    canvas.className = 'full-size'
-    DomUtil.setStyles(canvas, {
-      display: 'block',
-    })
-    DomUtil.clearCanvas(canvas)
-    return canvas
-  }
-
-  public constructor(wndMgr: WindowManager, private jsApp: JsApp, private jsNes: JsNes,
-                     stream: AppEvent.Stream)
-  {
-    super(wndMgr, jsApp, jsNes, stream)
-
-    this.canvas = JsScreenWnd.createCanvas(WIDTH, HEIGHT)
-    this.context = DomUtil.getCanvasContext2d(this.canvas)
-    this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
-    this.canvas.className = 'pixelated full-size'
-
-    this.setContent(this.canvas)
-  }
-
-  public render(): void {
-    this.jsNes.render(this.imageData.data)
-    this.context.putImageData(this.imageData, 0, 0)
-  }
-
-  protected setUpMenuBar(): void {
-    this.addMenuBar([
-      {
-        label: 'File',
-        submenu: [
-          {
-            label: 'Pause',
-            click: () => {
-              if (this.jsNes.jsCpu.isPaused())
-                this.stream.triggerRun()
-              else
-                this.stream.triggerPause()
-            },
-          },
-          {
-            label: 'Reset',
-            click: () => {
-              this.stream.triggerReset()
-//              this.stream.triggerRun()
-            },
-          },
-          {
-            label: 'Reload',
-            click: () => {
-              this.jsApp.reload()
-            },
-          },
-          {
-            label: 'Quit',
-            click: () => {
-              this.close()
-            },
-          },
-        ],
-      },
-      {
-        label: 'Debug',
-        submenu: [
-          {
-            label: 'Palette',
-            click: () => {
-              this.createPaletWnd()
-            },
-          },
-          {
-            label: 'NameTable',
-            click: () => {
-              this.createNameTableWnd()
-            },
-          },
-          {
-            label: 'PatternTable',
-            click: () => {
-              this.createPatternTableWnd()
-            },
-          },
-          {
-            label: 'Control',
-            click: () => {
-              this.createControlWnd()
-            },
-          },
-        ],
-      },
-    ])
+    if (this.hcount >= VBlank.END) {
+      while (this.hcount < VBlank.VRETURN) {
+        this.setHcount(this.hcount + 1)
+      }
+      this.hcount = -1
+    }
+    while (this.hcount < hcount) {
+      this.setHcount(this.hcount + 1)
+    }
   }
 }
 
 export class JsApp extends App {
-  private jsNes: JsNes
-  private jsScreenWnd: JsScreenWnd
   private leftTime = 0
 
-  constructor(wndMgr: WindowManager, option: Option) {
-    super(wndMgr, option, true)
-    this.jsNes = new JsNes()
-    this.jsScreenWnd = new JsScreenWnd(this.wndMgr, this, this.jsNes, this.stream)
-    if (option.title)
-      this.jsScreenWnd.setTitle(option.title as string)
-
-    this.subscription = this.stream
-      .subscribe(this.handleAppEvent.bind(this))
-
-    this.nes = this.jsNes
-    this.screenWnd = this.jsScreenWnd
-
-    const size = this.screenWnd.getWindowSize()
-    const x = Util.clamp((option.centerX || 0) - size.width / 2,
-                         0, window.innerWidth - size.width - 1)
-    const y = Util.clamp((option.centerY || 0) - size.height / 2,
-                         0, window.innerHeight - size.height - 1)
-    this.screenWnd.setPos(x, y)
+  constructor(wndMgr: WindowManager, option: Option, private jsNes: JsNes) {
+    super(wndMgr, option, jsNes, true)
   }
 
   public async setFile(file: File): Promise<void> {
@@ -216,21 +126,8 @@ export class JsApp extends App {
     this.setupAudioManager()
   }
 
-  public reload(): void {
-    this.jsNes.reload()
-  }
-
   protected handleAppEvent(type: AppEvent.Type, param?: any): void {
     switch (type) {
-    case AppEvent.Type.RUN:
-      this.jsNes.jsCpu.pause(false)
-      break
-    case AppEvent.Type.PAUSE:
-      this.jsNes.jsCpu.pause(true)
-      break
-    case AppEvent.Type.STEP:
-      this.jsNes.step()
-      break
     case AppEvent.Type.RESET:
       this.jsNes.reset()
       break
@@ -257,16 +154,15 @@ export class JsApp extends App {
     frameCount *= this.screenWnd.getTimeScale()
 
     if (frameCount > 0) {
-      const ppu = this.jsNes.getPpu()
       for (let i = 0; i < frameCount; ++i) {
         this.jsNes.update()
         this.updateAudio()
-        // ppu.setHcount(VBlank.START)
-        // ppu.setHcount(VBlank.NMI)
-        ppu.setVBlank()
-        ppu.setHcount(VBlank.END)
+
+        for (let i = VBlank.START; i <= VBlank.END; ++i) {
+          this.jsNes.setHcount(i)
+        }
       }
-      this.jsScreenWnd.render()
+      this.screenWnd.render()
 
       this.stream.triggerRender()
     }

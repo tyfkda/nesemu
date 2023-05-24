@@ -33,7 +33,6 @@ export class App {
   protected destroying = false
   protected isPaused = false
   protected cartridge: ICartridge
-  protected nes: Nes
   protected audioManager: AudioManager
   protected channelVolumes: Float32Array
   protected stream = new AppEvent.Stream()
@@ -47,15 +46,29 @@ export class App {
 
   protected fds?: Fds
 
-  public static create(wndMgr: WindowManager, option: Option): App {
-    return new App(wndMgr, option)
+  public static create(wndMgr: WindowManager, option: Option, nes: Nes): App {
+    return new App(wndMgr, option, nes)
   }
 
-  constructor(protected wndMgr: WindowManager, protected option: Option, noDefault?: boolean) {
+  constructor(protected wndMgr: WindowManager, protected option: Option, protected nes: Nes, noDefault?: boolean) {
+    const screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
+    this.screenWnd = screenWnd
+    this.title = option.title || 'NES'
+    this.screenWnd.setTitle(this.title)
+
+    this.subscription = this.stream
+      .subscribe(this.handleAppEvent.bind(this))
+
+    const size = this.screenWnd.getWindowSize()
+    const x = Util.clamp((option.centerX || 0) - size.width / 2,
+                         0, window.innerWidth - size.width - 1)
+    const y = Util.clamp((option.centerY || 0) - size.height / 2,
+                         0, window.innerHeight - size.height - 1)
+    this.screenWnd.setPos(x, y)
+
     if (noDefault)
       return
 
-    this.nes = new Nes()
     window.app = this  // Put app into global.
     this.nes.setEventCallback((event: NesEvent, param?: any) => {
       switch (event) {
@@ -73,21 +86,6 @@ export class App {
       }
     })
     this.nes.setBreakPointCallback(() => this.onBreakPoint())
-
-    this.subscription = this.stream
-      .subscribe(this.handleAppEvent.bind(this))
-
-    const screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
-    this.screenWnd = screenWnd
-    this.title = option.title || 'NES'
-    this.screenWnd.setTitle(this.title)
-
-    const size = this.screenWnd.getWindowSize()
-    const x = Util.clamp((option.centerX || 0) - size.width / 2,
-                         0, window.innerWidth - size.width - 1)
-    const y = Util.clamp((option.centerY || 0) - size.height / 2,
-                         0, window.innerHeight - size.height - 1)
-    this.screenWnd.setPos(x, y)
 
     if (GlobalSetting.maximize) {
       this.screenWnd.maximize()

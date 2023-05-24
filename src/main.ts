@@ -3,7 +3,7 @@ import {AboutWnd, GlobalPaletWnd, SettingWnd} from './app/other_wnd'
 import {SpectrumWnd} from './app/spectrum_wnd'
 import {AudioManager} from './util/audio_manager'
 import {DomUtil} from './util/dom_util'
-import {JsApp} from './app/js_powered_app'
+import {JsApp, JsNes} from './app/js_powered_app'
 import {PadKeyHandler} from './util/pad_key_handler'
 import {GamepadManager} from './util/gamepad_manager'
 import {GlobalSetting} from './app/global_setting'
@@ -11,6 +11,7 @@ import {KeyConfigWnd, GamepadWnd} from './app/key_config_wnd'
 import {StorageUtil} from './util/storage_util'
 import {Util} from './util/util'
 import {WindowManager} from './wnd/window_manager'
+import {Nes} from './nes/nes'
 import './util/polyfill'
 import JSZip from 'jszip'
 
@@ -137,12 +138,13 @@ class Main {
           return true
 
         // Create .js app
+        const jsNes = new JsNes()
         const jsApp = new JsApp(this.wndMgr, {
           title: file.name,
           centerX: x,
           centerY: y,
           onClosed: app => this.removeApp(app),
-        })
+        }, jsNes)
         jsApp.setFile(file)
         this.apps.push(jsApp)
         return false
@@ -243,7 +245,8 @@ class Main {
         this.removeApp(app2)
       },
     }
-    const app = new App(this.wndMgr, option)
+    const nes = new Nes();
+    const app = new App(this.wndMgr, option, nes)
     const result = app.loadRom(romData)
     if (result != null) {
       this.wndMgr.showSnackbar(`${name}: ${result}`)
@@ -267,7 +270,8 @@ class Main {
       },
     }
 
-    const app = App.create(this.wndMgr, option)
+    const nes = new Nes()
+    const app = App.create(this.wndMgr, option, nes)
     app.bootDiskBios(biosData)
     if (diskImage != null)
       app.setDiskImage(diskImage)
