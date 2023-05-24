@@ -1,29 +1,17 @@
-import * as fs from 'fs'
-import * as path from 'path'
-import * as tty from 'tty'
-import {promisify} from 'util'
+import fs from 'node:fs/promises'
+import * as fsNonPromise from 'fs'
+import path from 'path'
+import tty from 'tty'
 import JSZip from 'jszip'
-import * as wav from 'node-wav'
+import wav from 'node-wav'
 
 import {Cartridge} from '../src/nes/cartridge'
 import {DeltaModulationSampler, kDmcRateTable} from '../src/util/audio/delta_modulation_sampler'
 import {Reg} from '../src/nes/apu'
 
-const readAll: ((fd: number) => string) = (() => {
-  const decoder = new TextDecoder()
-  var BUFFER_SIZE = 4096
-  var buffer = new Uint8Array(BUFFER_SIZE)
-  return (fd: number) => {
-    let all = []
-    for (;;) {
-      const n = fs.readSync(fd, buffer)
-      if (n <= 0)
-        break
-      all.push(buffer.slice(0, n))
-    }
-    return all.map(u8a => decoder.decode(u8a)).join('')
-  }
-})()
+function readAll(fd: number): string {
+  return fsNonPromise.readFileSync(fd, 'utf-8')
+}
 
 // Labeled-Comma separated Value: adr:13,len:48,rate:15,bank2:14
 function parseLcsv(lcsv: string, types?: Record<string, string>): Array<object> {
@@ -102,7 +90,7 @@ async function dmc2wav(romData: Uint8Array, opts: Array<DmcParam>, sampleRate: n
 
     const f32array = sampleDmc(romData, opt, sampleRate)
     const encoded = wav.encode([f32array], {sampleRate})
-    fs.writeFileSync(dstFileName, new Uint8Array(encoded))
+    await fs.writeFile(dstFileName, new Uint8Array(encoded))
     ++count
   }
 }
@@ -110,11 +98,11 @@ async function dmc2wav(romData: Uint8Array, opts: Array<DmcParam>, sampleRate: n
 async function loadNesRomData(romFileName: string): Promise<Uint8Array> {
   switch (path.extname(romFileName).toLowerCase()) {
   case '.nes':
-    const buffer = await promisify(fs.readFile)(romFileName) as Buffer
+    const buffer = await fs.readFile(romFileName) as Buffer
     return new Uint8Array(buffer)
   case '.zip':
     {
-      const buffer = await promisify(fs.readFile)(romFileName)
+      const buffer = await fs.readFile(romFileName)
       const zip = new JSZip()
       const loadedZip = await zip.loadAsync(buffer)
       for (let fileName of Object.keys(loadedZip.files)) {

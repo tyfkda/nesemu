@@ -1,11 +1,8 @@
-import * as fs from 'fs'
+import fs from 'node:fs/promises'
 
 import {Addressing, Instruction, OpType, kInstTable} from '../src/nes/cpu/inst'
 import {kOpcode} from '../src/nes/cpu/disasm'
 import {Util} from '../src/util/util'
-
-// import * as argv from 'argv'
-const argv = require('argv')  // eslint-disable-line @typescript-eslint/no-var-requires
 
 function loadPrgRom(romData: Uint8Array): Uint8Array {
   const start = 16, size = romData[4] * (16 * 1024)
@@ -324,7 +321,10 @@ class Analyzer {
   }
 }
 
-function main(): void {
+async function main(): Promise<void> {
+  // import * as argv from 'argv'
+  const argv = require('argv')  // eslint-disable-line @typescript-eslint/no-var-requires
+
   argv.option({
     name: 'config',
     short: 'c',
@@ -337,38 +337,32 @@ function main(): void {
     process.exit(1)
   }
 
-  fs.readFile(targets[0], (err, data) => {
-    if (err) {
-      console.error(err)
-      process.exit(1)
-    }
+  const data = await fs.readFile(targets[0])
+  const analyzer = new Analyzer()
+  analyzer.loadProgram(loadPrgRom(data), 0x8000)
+  analyzer.addJumpTable(0xfffa, 3)
 
-    const analyzer = new Analyzer()
-    analyzer.loadProgram(loadPrgRom(data), 0x8000)
-    analyzer.addJumpTable(0xfffa, 3)
-
-    if (options.config) {
-      const data = fs.readFileSync(options.config)
-      const str = String.fromCharCode.apply('', data as any)
-      const json = eval(`(${str})`)
-      if (json.stopPoints) {
-        for (let adr of json.stopPoints) {
-          analyzer.addStopPoint(adr)
-        }
-      }
-      if (json.jumpTable) {
-        for (let jt of json.jumpTable) {
-          analyzer.addJumpTable(jt.address, jt.count)
-        }
-      }
-      if (json.labels) {
-        analyzer.setLabelNameTable(json.labels)
+  if (options.config) {
+    const data = await fs.readFile(options.config)
+    const str = String.fromCharCode.apply('', data as any)
+    const json = eval(`(${str})`)
+    if (json.stopPoints) {
+      for (let adr of json.stopPoints) {
+        analyzer.addStopPoint(adr)
       }
     }
+    if (json.jumpTable) {
+      for (let jt of json.jumpTable) {
+        analyzer.addJumpTable(jt.address, jt.count)
+      }
+    }
+    if (json.labels) {
+      analyzer.setLabelNameTable(json.labels)
+    }
+  }
 
-    analyzer.analyze()
-    analyzer.output()
-  })
+  analyzer.analyze()
+  analyzer.output()
 }
 
 main()

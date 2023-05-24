@@ -1,25 +1,21 @@
 // 6502 assembler to JavaScript converter.
 
-import * as readline from 'readline'
+import readline from 'readline'
 
-function readAllLine(input: NodeJS.ReadStream, lineCb: (_: string) => void, endCb: () => void): void {
+async function readAllLine(input: NodeJS.ReadStream, lineCb: (_: string) => void): Promise<void> {
   const reader = readline.createInterface({
     input,
   })
-  reader.on('line', (line) => {
+
+  for await  (const line of reader)
     lineCb(line)
-  })
-  reader.on('close', () => {
-    if (endCb)
-      endCb()
-  })
 }
 
 function formatNumLiteral(literal: string): string|null {
   let p = literal
 
   function parseAtom(): string|null {
-    p = p.trimLeft()
+    p = p.trimStart()
     if (p[0] === '<') {
       p = p.substring(1)
       return `LO(${parseAtom()})`
@@ -290,7 +286,7 @@ class ByteData {
   constructor(public label: Label, directives: Directive[]) {
     this.label = label
 
-    // データ生成
+    // Generate data.
     const data = new Array<string>()
     for (let d of directives) {
       for (let e of d.operand.split(',')) {
@@ -406,8 +402,8 @@ class Converter {
           break
       }
       if (j === i + 1) {
-        // データが続いていない：
-        // 複数のラベルが並んだ後にデータが来ているかチェック
+        // Data ended:
+        // Check whether data comes after multiple labels.
         for (j = i; ++j < this.lines.length;) {
           if (!(this.lines[j] instanceof Label))
             break
@@ -498,7 +494,7 @@ function step(pc) {
             s = null
         }
         if (s) {
-          console.log(s.trimRight())
+          console.log(s.trimEnd())
         } else {
         }
       }
@@ -507,9 +503,9 @@ function step(pc) {
   }
 }
 
-{
+async function main() {
   const lines = new Array<Line>()
-  readAllLine(process.stdin, (line: string) => {
+  await readAllLine(process.stdin, (line: string) => {
     let item = parseLine(line)
     if (item != null) {
       if (Array.isArray(item))
@@ -519,14 +515,16 @@ function step(pc) {
     } else {
       console.error(`Unknown line: ${line}`)
     }
-  }, () => {
-    const converter = new Converter(lines)
-    converter.listupRomData()
-    // Buid labels
-    converter.buildLabels()
-    converter.outputLabels()
-    converter.outputDefinitions()
-    converter.outputRomData()
-    converter.outputProgram()
   })
+
+  const converter = new Converter(lines)
+  converter.listupRomData()
+  // Buid labels
+  converter.buildLabels()
+  converter.outputLabels()
+  converter.outputDefinitions()
+  converter.outputRomData()
+  converter.outputProgram()
 }
+
+main()

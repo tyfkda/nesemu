@@ -1,6 +1,5 @@
-import * as fs from 'fs'
-import * as path from 'path'
-import {promisify} from 'util'
+import fs from 'node:fs/promises'
+import path from 'path'
 import JSZip from 'jszip'
 
 import {Cartridge} from '../src/nes/cartridge'
@@ -17,12 +16,12 @@ function getMapperNo(romData: Uint8Array): number {
 async function dumpMapper(fn: string): Promise<void> {
   switch (path.extname(fn).toLowerCase()) {
   case '.nes':
-    const buffer = await promisify(fs.readFile)(fn) as Buffer
+    const buffer = await fs.readFile(fn) as Buffer
     console.log(`"${path.basename(fn)}"\tmapper=${getMapperNo(buffer)}`)
     return
   case '.zip':
     {
-      const buffer = await promisify(fs.readFile)(fn)
+      const buffer = await fs.readFile(fn)
       const zip = new JSZip()
       const loadedZip = await zip.loadAsync(buffer)
       for (let fileName of Object.keys(loadedZip.files)) {
@@ -42,16 +41,14 @@ async function dumpMapper(fn: string): Promise<void> {
   process.exit(1)
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const argv = process.argv
   if (argv.length < 3) {
     console.error('Please specify .nes or .zip file(s).')
     process.exit(1)
   }
 
-  for (let i = 2; i < argv.length; ++i) {
-    dumpMapper(argv[i])
-  }
+  await Promise.all(argv.slice(2).map(arg => dumpMapper(arg)))
 }
 
 main()
