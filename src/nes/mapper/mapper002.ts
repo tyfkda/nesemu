@@ -20,6 +20,15 @@ class Mapper002Base extends Mapper {
       const bank = (value >> prgBankShift) << 1
       this.setBank(bank)
     })
+
+    const ramSize = options.cartridge!.ramSize()
+    if (ramSize > 0) {
+      this.sram = new Uint8Array(ramSize)  // TODO: SRAM or not.
+      this.sram.fill(0xbf)
+      this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
+      this.options.setWriteMemory(0x6000, 0x7fff,
+                                  (adr, value) => { this.sram[adr & 0x1fff] = value })
+    }
   }
 
   public save(): object {

@@ -2,6 +2,10 @@ import {MirrorMode} from './ppu/types'
 
 import md5 from 'md5'
 
+function isFormatNes20(romData: Uint8Array): boolean {
+  return (romData[7] & 0x0c) === 0x08
+}
+
 function getMapperNo(romData: Uint8Array): number {
   return ((romData[6] >> 4) & 0x0f) | (romData[7] & 0xf0)
 }
@@ -48,5 +52,13 @@ export class Cartridge {
 
   public calcHashValue(): string {
     return md5(this.romData)
+  }
+
+  public ramSize(): number {
+    if (isFormatNes20(this.romData)) {
+      const pp = this.romData[10]
+      return 64 << ((pp & 0x0f) + ((pp >> 4) & 0x0f))
+    }
+    return 0
   }
 }
