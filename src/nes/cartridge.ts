@@ -13,6 +13,12 @@ function loadPrgRom(romData: Uint8Array): Uint8Array {
 
 function loadChrRom(romData: Uint8Array): Uint8Array {
   const start = 16 + romData[4] * (16 * 1024), size = romData[5] * (8 * 1024)
+  if (romData.byteLength < start + size) {
+    console.error(`Illegal romData length, byteLength=${romData.byteLength}, chrRomEnd=${start + size}, size=${size}`)
+    const chrRom = new Uint8Array(romData.buffer, start, romData.byteLength - start)
+    // TODO: Need resize?
+    return chrRom
+  }
   return new Uint8Array(romData.buffer, start, size)
 }
 
