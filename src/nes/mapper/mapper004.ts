@@ -90,6 +90,8 @@ export class Mapper004 extends Mapper {
     case 'e791b12fc3419a2e2f8a5ed64b210d72':  // Dragon Spirit
     case '44c206c61ff37406815f21b922e105c7':  // Family Pinball
     case '98b3778d1e6045d2a3350eb7eb3b39fc':  // Genpei Touma Den
+    case '1e377977f7e8c067dd7181271a467959':  // Valkyrie no Bouken
+    case '002f464f224ccbed94427686815ab68b':  // Sanma no Mei Tantei
       mirror = MirrorMode.HORZ
       break
     default:

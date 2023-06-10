@@ -58,6 +58,16 @@ export class Mapper002 extends Mapper002Base {
   }
 }
 
+export class Mapper030 extends Mapper002Base {
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper030(options)
+  }
+
+  constructor(options: MapperOptions) {
+    super(0, options)
+  }
+}
+
 // INES Mapper 093: Sunsoft-2 IC
 // http://wiki.nesdev.com/w/index.php/INES_Mapper_093
 // This mapper is deprecated for new development. Homebrew projects other than mapper tests should
