@@ -37,15 +37,15 @@ export class Mapper005 extends Mapper {
     this.sram = new Uint8Array(0x2000)
 
     const BANK_BIT = 13  // 0x2000
-    this.maxPrg = (this.options.prgSize >> BANK_BIT) - 1
+    this.maxPrg = (this.options.cartridge!.prgRom.byteLength >> BANK_BIT) - 1
 
     this.sram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, (adr) => this.sram[adr & 0x1fff])
-    this.options.bus.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
+    this.options.setReadMemory(0x6000, 0x7fff, (adr) => this.sram[adr & 0x1fff])
+    this.options.setWriteMemory(0x6000, 0x7fff,
+                                (adr, value) => { this.sram[adr & 0x1fff] = value })
 
     // Select
-    this.options.bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
+    this.options.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
       if (adr >= 0x5c00 /*&& adr <= 0x5fff*/) {
         this.exram[adr - 0x5c00] = value
         return
@@ -63,7 +63,7 @@ export class Mapper005 extends Mapper {
         this.updateChrBanks(false)
         break
       case 0x5105:
-        this.options.ppu.setMirrorModeBit(value)
+        this.options.setMirrorModeBit(value)
         break
       case 0x5113:
         // RAM
@@ -71,7 +71,7 @@ export class Mapper005 extends Mapper {
       case 0x5114:
         switch (this.prgMode) {
         case 3:
-          this.options.prgBankCtrl.setPrgBank(0, value & this.maxPrg)
+          this.options.setPrgBank(0, value & this.maxPrg)
           break
         default:
           break
@@ -81,11 +81,11 @@ export class Mapper005 extends Mapper {
         switch (this.prgMode) {
         case 1:
         case 2:
-          this.options.prgBankCtrl.setPrgBank(0,  (value & -2)      & this.maxPrg)
-          this.options.prgBankCtrl.setPrgBank(1, ((value & -2) + 1) & this.maxPrg)
+          this.options.setPrgBank(0,  (value & -2)      & this.maxPrg)
+          this.options.setPrgBank(1, ((value & -2) + 1) & this.maxPrg)
           break
         case 3:
-          this.options.prgBankCtrl.setPrgBank(1, value & this.maxPrg)
+          this.options.setPrgBank(1, value & this.maxPrg)
           break
         default:
           break
@@ -95,7 +95,7 @@ export class Mapper005 extends Mapper {
         switch (this.prgMode) {
         case 2:
         case 3:
-          this.options.prgBankCtrl.setPrgBank(2, value & this.maxPrg)
+          this.options.setPrgBank(2, value & this.maxPrg)
           break
         default:
           break
@@ -104,18 +104,18 @@ export class Mapper005 extends Mapper {
       case 0x5117:
         switch (this.prgMode) {
         case 0:
-          this.options.prgBankCtrl.setPrgBank(0,  (value & -4)      & this.maxPrg)
-          this.options.prgBankCtrl.setPrgBank(1, ((value & -4) + 1) & this.maxPrg)
-          this.options.prgBankCtrl.setPrgBank(2, ((value & -4) + 2) & this.maxPrg)
-          this.options.prgBankCtrl.setPrgBank(3, ((value & -4) + 3) & this.maxPrg)
+          this.options.setPrgBank(0,  (value & -4)      & this.maxPrg)
+          this.options.setPrgBank(1, ((value & -4) + 1) & this.maxPrg)
+          this.options.setPrgBank(2, ((value & -4) + 2) & this.maxPrg)
+          this.options.setPrgBank(3, ((value & -4) + 3) & this.maxPrg)
           break
         case 1:
-          this.options.prgBankCtrl.setPrgBank(2,  (value & -2)      & this.maxPrg)
-          this.options.prgBankCtrl.setPrgBank(3, ((value & -2) + 1) & this.maxPrg)
+          this.options.setPrgBank(2,  (value & -2)      & this.maxPrg)
+          this.options.setPrgBank(3, ((value & -2) + 1) & this.maxPrg)
           break
         case 2:
         case 3:
-          this.options.prgBankCtrl.setPrgBank(3, value & this.maxPrg)
+          this.options.setPrgBank(3, value & this.maxPrg)
           break
         default:
           break
@@ -145,7 +145,7 @@ export class Mapper005 extends Mapper {
       }
     })
 
-    this.options.bus.setReadMemory(0x4000, 0x5fff, (adr) => {
+    this.options.setReadMemory(0x4000, 0x5fff, (adr) => {
       if (adr >= 0x5c00 /*&& adr <= 0x5fff*/) {
         return this.exram[adr - 0x5c00]
       }
@@ -155,7 +155,7 @@ export class Mapper005 extends Mapper {
         return this.options.readFromApu(adr)
 
       case 0x5204:
-        // this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
+        // this.options.clearIrqRequest(IrqType.EXTERNAL)
         return (this.ppuInFrame ? 0x40 : 0x00)
 
       case 0x5205: case 0x5206:  // Unsigned 8x8 to 16 Multiplier
@@ -170,10 +170,10 @@ export class Mapper005 extends Mapper {
     this.prgMode = 3
 
     for (let i = 0; i < 4; ++i)
-      this.options.prgBankCtrl.setPrgBank(i, this.maxPrg)
+      this.options.setPrgBank(i, this.maxPrg)
 
     for (let i = 0; i < 8; ++i)
-      this.options.ppu.setChrBankOffset(i, i)
+      this.options.setChrBankOffset(i, i)
   }
 
   public save(): object {
@@ -196,10 +196,10 @@ export class Mapper005 extends Mapper {
     // http://bobrost.com/nes/files/mmc3irqs.txt
     // Note: BGs OR sprites MUST be enabled in $2001 (bits 3 and 4)
     // in order for the countdown to occur.
-    const regs = this.options.ppu.getRegs()
+    const regs = this.options.getPpuRegs()
     this.ppuInFrame = hcount < VBlank.START && (regs[PpuReg.MASK] & (PpuMaskBit.SHOW_SPRITE | PpuMaskBit.SHOW_BG)) !== 0
     if (this.ppuInFrame && this.irqHlineEnable && this.irqHlineCompare === hcount && hcount !== 0) {
-      this.options.cpu.requestIrq(IrqType.EXTERNAL)
+      this.options.requestIrq(IrqType.EXTERNAL)
     }
   }
 
@@ -214,7 +214,7 @@ export class Mapper005 extends Mapper {
   }
 
   private updateChrBanks(forceUpdate: boolean) {
-    const largeSprites = (this.options.ppu.getRegs()[PpuReg.CTRL] & PpuCtrlBit.SPRITE_SIZE) !== 0
+    const largeSprites = (this.options.getPpuRegs()[PpuReg.CTRL] & PpuCtrlBit.SPRITE_SIZE) !== 0
 
     if (!largeSprites) {
       this.lastChrReg = -1
@@ -226,7 +226,7 @@ export class Mapper005 extends Mapper {
     this.prevChrA = chrA
 
     const table = kChrBankTable[chrA]
-    const ppu = this.options.ppu
+    const ppu = this.options
 
     switch (this.chrMode) {
     case 0:

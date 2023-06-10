@@ -4,8 +4,8 @@ import {Util} from '../util/util'
 
 const BLOCK_SIZE = 0x2000
 
-type Reader = (adr: Address) => Byte
-type Writer = (adr: Address, value: Byte) => void
+export type Reader = (adr: Address) => Byte
+export type Writer = (adr: Address, value: Byte) => void
 
 export class Bus implements IBus {
   private readerTable = new Array<Reader>(0x10000 / BLOCK_SIZE)

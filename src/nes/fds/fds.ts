@@ -1,10 +1,9 @@
 import {Mapper020} from './mapper020'
 import {Nes} from '../nes'
-import {PrgBankController} from '../mapper/mapper'
 import {Address, Byte} from '../types'
 
 // Famicom Disk System
-export class Fds implements PrgBankController {
+export class Fds {
   private mapper: Mapper020
 
   constructor(biosData: Uint8Array, private nes: Nes) {
@@ -12,11 +11,21 @@ export class Fds implements PrgBankController {
     const cpu = this.nes.getCpu()
     const ppu = this.nes.getPpu()
     this.mapper = new Mapper020(biosData, {
-      bus,
-      cpu,
-      ppu,
-      prgBankCtrl: this,
-      prgSize: biosData.length,
+      cartridge: null,
+      setReadMemory: bus.setReadMemory.bind(bus),
+      setWriteMemory: bus.setWriteMemory.bind(bus),
+      setPrgBank: (_bank: number, _page: number): void => {
+        // Dummy
+      },
+      requestIrq: cpu.requestIrq.bind(cpu),
+      clearIrqRequest: cpu.clearIrqRequest.bind(cpu),
+      setChrBank: ppu.setChrBank.bind(ppu),
+      setChrBankOffset: ppu.setChrBankOffset.bind(ppu),
+      setMirrorMode: ppu.setMirrorMode.bind(ppu),
+      setMirrorModeBit: ppu.setMirrorModeBit.bind(ppu),
+      getPpuRegs: ppu.getRegs.bind(ppu),
+      setChrData: ppu.setChrData.bind(ppu),
+      writePpuDirect: ppu.writePpuDirect.bind(ppu),
       writeToApu: (_adr: Address, _value: Byte) => {},  // Dummy
       readFromApu: (_adr: Address) => 0,  // Dummy
     })
@@ -41,9 +50,5 @@ export class Fds implements PrgBankController {
 
   public setSide(side: number): void {
     this.mapper.setSide(side)
-  }
-
-  public setPrgBank(_bank: number, _page: number): void {
-    // Dummy
   }
 }

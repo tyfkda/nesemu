@@ -30,10 +30,10 @@ export class Mapper001 extends Mapper {
     this.sram = new Uint8Array(0x2000)
 
     const BANK_BIT = 14  // 16KB
-    this.maxPrg = (options.prgSize >> BANK_BIT) - 1
+    this.maxPrg = (options.cartridge!.prgRom.byteLength >> BANK_BIT) - 1
 
     // Serial: 5bits.
-    this.options.bus.setWriteMemory(0x8000, 0xffff, (adr, value) => {
+    this.options.setWriteMemory(0x8000, 0xffff, (adr, value) => {
       if ((value & 0x80) !== 0) {  // Reset
         this.resetRegister()
         return
@@ -47,7 +47,7 @@ export class Mapper001 extends Mapper {
       switch (adr & 0xe000) {
       case 0x8000:  // Control
         {
-          this.options.ppu.setMirrorMode(kMirrorTable[this.register & 3])
+          this.options.setMirrorMode(kMirrorTable[this.register & 3])
 
           this.prgBankMode = (this.register >> 2) & 3
           this.setPrgBank(this.prgReg, this.chrBank[0])
@@ -86,9 +86,9 @@ export class Mapper001 extends Mapper {
 
     // PRG RAM
     this.sram.fill(0xbf)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
-    this.options.bus.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
+    this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
+    this.options.setWriteMemory(0x6000, 0x7fff,
+                                (adr, value) => { this.sram[adr & 0x1fff] = value })
 
     this.setPrgBank(0, 0xff)
   }
@@ -127,10 +127,10 @@ export class Mapper001 extends Mapper {
       const chr = hilo << 2
       const b = bank << 2
       for (let i = 0; i < 4; ++i)
-        this.options.ppu.setChrBankOffset(chr + i, b + i)
+        this.options.setChrBankOffset(chr + i, b + i)
     } else {
       if (hilo === 0)
-        this.options.ppu.setChrBank(bank >> 1)
+        this.options.setChrBank(bank >> 1)
     }
     this.chrBank[hilo] = bank
   }
@@ -156,9 +156,9 @@ export class Mapper001 extends Mapper {
     default:
       return
     }
-    this.options.prgBankCtrl.setPrgBank(0, p0 << 1)
-    this.options.prgBankCtrl.setPrgBank(1, (p0 << 1) + 1)
-    this.options.prgBankCtrl.setPrgBank(2, p1 << 1)
-    this.options.prgBankCtrl.setPrgBank(3, (p1 << 1) + 1)
+    this.options.setPrgBank(0, p0 << 1)
+    this.options.setPrgBank(1, (p0 << 1) + 1)
+    this.options.setPrgBank(2, p1 << 1)
+    this.options.setPrgBank(3, (p1 << 1) + 1)
   }
 }

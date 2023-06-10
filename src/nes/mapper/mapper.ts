@@ -1,21 +1,28 @@
-import {Bus} from '../bus'
+import {Reader, Writer} from '../bus'
 import {Channel, WaveType} from '../apu'
-import {Cpu} from '../cpu/cpu'
-import {Ppu} from '../ppu/ppu'
+import {IrqType} from '../cpu/cpu'
+import {MirrorMode} from '../ppu/types'
 import {Address, Byte} from '../types'
+import {Cartridge} from '../cartridge'
 import {Util} from '../../util/util'
 
-export interface PrgBankController {
-  setPrgBank(bank: number, page: number): void
-}
-
 export interface MapperOptions {
-  bus: Bus
-  cpu: Cpu
-  ppu: Ppu
-  prgBankCtrl: PrgBankController
-  prgSize: number
-  romHash?: string
+  cartridge: Cartridge|null,
+  // CPU
+  setReadMemory(start: Address, end: Address, reader: Reader): void
+  setWriteMemory(start: Address, end: Address, writer: Writer): void
+  setPrgBank(bank: number, page: number): void
+  requestIrq(type: IrqType): void
+  clearIrqRequest(type: IrqType): void
+  // PPU
+  setChrBank(value: number): void
+  setChrBankOffset(bank: number, value: number): void
+  setMirrorMode(mode: MirrorMode): void
+  setMirrorModeBit(bit: Byte): void
+  getPpuRegs(): Readonly<Uint8Array>
+  setChrData(chrData: Uint8Array): void
+  writePpuDirect(addr: Address, value: Byte): void
+  // APU
   writeToApu: (adr: Address, value: Byte) => void
   readFromApu: (adr: Address) => Byte
 }

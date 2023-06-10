@@ -11,13 +11,13 @@ export class Mapper184 extends Mapper {
     super()
 
     // CHR ROM bank
-    this.options.bus.setWriteMemory(0x6000, 0x7fff, (_adr, value) => {
+    this.options.setWriteMemory(0x6000, 0x7fff, (_adr, value) => {
       const hi = ((value >> (4 - 2)) & (7 << 2)) + (4 << 2)
       const lo = (value & 7) << 2
       for (let i = 0; i < 4; ++i)
-        this.options.ppu.setChrBankOffset(i + 4, hi + i)
+        this.options.setChrBankOffset(i + 4, hi + i)
       for (let i = 0; i < 4; ++i)
-        this.options.ppu.setChrBankOffset(i, lo + i)
+        this.options.setChrBankOffset(i, lo + i)
     })
   }
 }

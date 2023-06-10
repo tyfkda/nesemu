@@ -14,7 +14,7 @@ export class Mapper066 extends Mapper {
     super()
 
     // PRG ROM bank
-    this.options.bus.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
+    this.options.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
       this.setPrgBank((value >> 4) & 0x03)
       this.setChrBank(value & 0x03)
     })
@@ -25,7 +25,7 @@ export class Mapper066 extends Mapper {
   public reset(): void {
     // const BANK_BIT = 15
     // const BANK_SIZE = 1 << BANK_BIT
-    // const size = this.options.prgSize
+    // const size = this.options.cartridge!.prgRom.byteLength
     this.setPrgBank(0)
   }
 
@@ -44,14 +44,14 @@ export class Mapper066 extends Mapper {
   private setPrgBank(page: number): void {
     this.prgPage = page
     page <<= 2
-    this.options.prgBankCtrl.setPrgBank(0, page)
-    this.options.prgBankCtrl.setPrgBank(1, page + 1)
-    this.options.prgBankCtrl.setPrgBank(2, page + 2)
-    this.options.prgBankCtrl.setPrgBank(3, page + 3)
+    this.options.setPrgBank(0, page)
+    this.options.setPrgBank(1, page + 1)
+    this.options.setPrgBank(2, page + 2)
+    this.options.setPrgBank(3, page + 3)
   }
 
   private setChrBank(bank: number): void {
     this.chrBank = bank
-    this.options.ppu.setChrBank(bank)
+    this.options.setChrBank(bank)
   }
 }

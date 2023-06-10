@@ -24,17 +24,17 @@ export class Mapper004 extends Mapper {
     this.sram = new Uint8Array(0x2000)
 
     const BANK_BIT = 13  // 0x2000
-    this.maxPrg = (options.prgSize >> BANK_BIT) - 1
+    this.maxPrg = (options.cartridge!.prgRom.byteLength >> BANK_BIT) - 1
 
-    this.options.prgBankCtrl.setPrgBank(3, this.maxPrg)
+    this.options.setPrgBank(3, this.maxPrg)
 
     this.sram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
-    this.options.bus.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
+    this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
+    this.options.setWriteMemory(0x6000, 0x7fff,
+                                (adr, value) => { this.sram[adr & 0x1fff] = value })
 
     // Select
-    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if ((adr & 1) === 0) {
         this.bankSelect = value
         this.setPrgBank(this.bankSelect)
@@ -50,16 +50,16 @@ export class Mapper004 extends Mapper {
     })
 
     // Mirroring
-    this.options.bus.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if ((adr & 1) === 0) {
-        this.options.ppu.setMirrorMode((value & 1) === 0 ? MirrorMode.VERT : MirrorMode.HORZ)
+        this.options.setMirrorMode((value & 1) === 0 ? MirrorMode.VERT : MirrorMode.HORZ)
       } else {
         // PRG RAM protect, TODO: Implement.
       }
     })
 
     // IRQ
-    this.options.bus.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
+    this.options.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if ((adr & 1) === 0) {
         this.irqLatch = value
         this.setIrqHlineValue(this.irqLatch)
@@ -67,7 +67,7 @@ export class Mapper004 extends Mapper {
         this.setIrqHlineValue(this.irqLatch)
       }
     })
-    this.options.bus.setWriteMemory(0xe000, 0xffff, (adr, _value) => {
+    this.options.setWriteMemory(0xe000, 0xffff, (adr, _value) => {
       if ((adr & 1) === 0) {
         this.enableIrqHline(false)
         this.resetIrqHlineCounter()
@@ -84,7 +84,8 @@ export class Mapper004 extends Mapper {
     // > They ignore bit 0
     let mirror = MirrorMode.VERT
     // Dirty hack: detect mirror mode from ROM hash.
-    switch (this.options.romHash) {
+    const romHash = this.options.cartridge!.calcHashValue()
+    switch (romHash) {
     case '6c0cd447297e95e45db35a4373dbeae1':  // Babel no Tou
     case 'e791b12fc3419a2e2f8a5ed64b210d72':  // Dragon Spirit
     case '44c206c61ff37406815f21b922e105c7':  // Family Pinball
@@ -94,7 +95,7 @@ export class Mapper004 extends Mapper {
     default:
       break
     }
-    this.options.ppu.setMirrorMode(mirror)  // Default vertical mirroring?
+    this.options.setMirrorMode(mirror)  // Default vertical mirroring?
   }
 
   public reset(): void {
@@ -131,10 +132,10 @@ export class Mapper004 extends Mapper {
     // http://bobrost.com/nes/files/mmc3irqs.txt
     // Note: BGs OR sprites MUST be enabled in $2001 (bits 3 and 4)
     // in order for the countdown to occur.
-    const regs = this.options.ppu.getRegs()
+    const regs = this.options.getPpuRegs()
     if ((regs[PpuReg.MASK] & (PpuMaskBit.SHOW_SPRITE | PpuMaskBit.SHOW_BG)) !== 0) {
       if (--this.irqHlineCounter === 0 && this.irqHlineEnable) {
-        this.options.cpu.requestIrq(IrqType.EXTERNAL)
+        this.options.requestIrq(IrqType.EXTERNAL)
       }
     }
 
@@ -149,35 +150,35 @@ export class Mapper004 extends Mapper {
 
   protected setPrgBank(swap: number): void {
     if ((swap & 0x40) === 0) {
-      this.options.prgBankCtrl.setPrgBank(0, this.regs[6])
-      this.options.prgBankCtrl.setPrgBank(1, this.regs[7])
-      this.options.prgBankCtrl.setPrgBank(2, this.maxPrg - 1)
+      this.options.setPrgBank(0, this.regs[6])
+      this.options.setPrgBank(1, this.regs[7])
+      this.options.setPrgBank(2, this.maxPrg - 1)
     } else {
-      this.options.prgBankCtrl.setPrgBank(2, this.regs[6])
-      this.options.prgBankCtrl.setPrgBank(1, this.regs[7])
-      this.options.prgBankCtrl.setPrgBank(0, this.maxPrg - 1)
+      this.options.setPrgBank(2, this.regs[6])
+      this.options.setPrgBank(1, this.regs[7])
+      this.options.setPrgBank(0, this.maxPrg - 1)
     }
   }
 
   protected setChrBank(swap: number): void {
     if ((swap & 0x80) === 0) {
-      this.options.ppu.setChrBankOffset(0, this.regs[0] & 0xfe)
-      this.options.ppu.setChrBankOffset(1, this.regs[0] | 1)
-      this.options.ppu.setChrBankOffset(2, this.regs[1] & 0xfe)
-      this.options.ppu.setChrBankOffset(3, this.regs[1] | 1)
-      this.options.ppu.setChrBankOffset(4, this.regs[2])
-      this.options.ppu.setChrBankOffset(5, this.regs[3])
-      this.options.ppu.setChrBankOffset(6, this.regs[4])
-      this.options.ppu.setChrBankOffset(7, this.regs[5])
+      this.options.setChrBankOffset(0, this.regs[0] & 0xfe)
+      this.options.setChrBankOffset(1, this.regs[0] | 1)
+      this.options.setChrBankOffset(2, this.regs[1] & 0xfe)
+      this.options.setChrBankOffset(3, this.regs[1] | 1)
+      this.options.setChrBankOffset(4, this.regs[2])
+      this.options.setChrBankOffset(5, this.regs[3])
+      this.options.setChrBankOffset(6, this.regs[4])
+      this.options.setChrBankOffset(7, this.regs[5])
     } else {
-      this.options.ppu.setChrBankOffset(4, this.regs[0] & 0xfe)
-      this.options.ppu.setChrBankOffset(5, this.regs[0] | 1)
-      this.options.ppu.setChrBankOffset(6, this.regs[1] & 0xfe)
-      this.options.ppu.setChrBankOffset(7, this.regs[1] | 1)
-      this.options.ppu.setChrBankOffset(0, this.regs[2])
-      this.options.ppu.setChrBankOffset(1, this.regs[3])
-      this.options.ppu.setChrBankOffset(2, this.regs[4])
-      this.options.ppu.setChrBankOffset(3, this.regs[5])
+      this.options.setChrBankOffset(4, this.regs[0] & 0xfe)
+      this.options.setChrBankOffset(5, this.regs[0] | 1)
+      this.options.setChrBankOffset(6, this.regs[1] & 0xfe)
+      this.options.setChrBankOffset(7, this.regs[1] | 1)
+      this.options.setChrBankOffset(0, this.regs[2])
+      this.options.setChrBankOffset(1, this.regs[3])
+      this.options.setChrBankOffset(2, this.regs[4])
+      this.options.setChrBankOffset(3, this.regs[5])
     }
   }
 
@@ -204,7 +205,7 @@ export class Mapper088 extends Mapper004 {
     super(options)
 
     // Select
-    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if ((adr & 1) === 0) {
         this.bankSelect = value & 0x07
         this.setPrgBank(this.bankSelect)
@@ -240,7 +241,7 @@ export class Mapper095 extends Mapper004 {
     super(options)
 
     // Select
-    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if ((adr & 1) === 0) {
         this.bankSelect = value & 7
       } else {
@@ -252,7 +253,7 @@ export class Mapper095 extends Mapper004 {
           if (reg === 0 || reg === 1) {
             const n1 = (this.regs[0] >> 5) & 1
             const n2 = (this.regs[1] >> 4) & 2
-            this.options.ppu.setMirrorMode(kMirrorModeTable95[n2 | n1])
+            this.options.setMirrorMode(kMirrorModeTable95[n2 | n1])
           }
         } else {  // PRG
           this.regs[reg] = value & 0x1f
@@ -272,7 +273,7 @@ export class Mapper118 extends Mapper004 {
     super(options)
 
     // Select
-    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if ((adr & 1) === 0) {
         this.bankSelect = value
         this.setPrgBank(this.bankSelect)
@@ -289,7 +290,7 @@ export class Mapper118 extends Mapper004 {
         const chrA12 = this.regs[0] & 0x80
         const bank = this.regs[0] & 7
         if ((chrA12 === 0 && bank < 2) || (chrA12 !== 0 && bank >= 2 && bank < 6))
-          this.options.ppu.setMirrorMode(
+          this.options.setMirrorMode(
             (value & 0x80) === 0 ? MirrorMode.SINGLE0 : MirrorMode.SINGLE1)
       }
     })

@@ -114,11 +114,11 @@ export class Mapper020 extends Mapper {
   public constructor(private biosData: Uint8Array, private options: MapperOptions) {
     super()
 
-    this.options.ppu.setChrData(Uint8Array.from([]))
-    this.options.ppu.setMirrorMode(MirrorMode.HORZ)
+    this.options.setChrData(Uint8Array.from([]))
+    this.options.setMirrorMode(MirrorMode.HORZ)
 
     // BIOS ROM
-    this.options.bus.setReadMemory(0xe000, 0xffff, adr => {
+    this.options.setReadMemory(0xe000, 0xffff, adr => {
       adr = adr | 0
       return this.biosData[adr - 0xe000] | 0
     })
@@ -142,12 +142,12 @@ export class Mapper020 extends Mapper {
   public setUp(nes: Nes): void {
     this.nes = nes
 
-    this.options.bus.setReadMemory(0x4000, 0x5fff, adr => {  // APU
+    this.options.setReadMemory(0x4000, 0x5fff, adr => {  // APU
       if (0x4030 <= adr && adr <= 0x403f)
         return this.readDiskReg(adr)
       return this.nes.readFromApu(adr)
     })
-    this.options.bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
+    this.options.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
       if (0x4020 <= adr && adr <= 0x402f)
         return this.writeDiskReg(adr, value)
       this.nes.writeToApu(adr, value)
@@ -155,8 +155,8 @@ export class Mapper020 extends Mapper {
 
     // PRG RAM
     this.ram.fill(0xbf)
-    this.options.bus.setReadMemory(0x6000, 0xdfff, adr => this.ram[adr - 0x6000])
-    this.options.bus.setWriteMemory(0x6000, 0xdfff,
+    this.options.setReadMemory(0x6000, 0xdfff, adr => this.ram[adr - 0x6000])
+    this.options.setWriteMemory(0x6000, 0xdfff,
                                     (adr, value) => { this.ram[adr - 0x6000] = value })
   }
 
@@ -179,7 +179,7 @@ export class Mapper020 extends Mapper {
         (this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) !== 0) {
       this.irqCounter -= 185  // TODO: Calculate
       if (this.irqCounter <= 0) {
-        this.options.cpu.requestIrq(IrqType.EXTERNAL)
+        this.options.requestIrq(IrqType.EXTERNAL)
         this.timerIrqOccurred = true
 console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, nextCounter=${(this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]}`)
         if ((this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0) {
@@ -229,7 +229,7 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
         this.transferComplete = true
         this.readData = diskData
         if (needIrq) {
-          this.options.cpu.requestIrq(IrqType.FDS)
+          this.options.requestIrq(IrqType.FDS)
         }
       // }
 
@@ -339,7 +339,7 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
       this.transferComplete = false
       break
     case FDS_CTRL:
-      this.options.ppu.setMirrorMode(
+      this.options.setMirrorMode(
         (value & FDS_CTRL_MIRROR_HORZ) !== 0 ? MirrorMode.HORZ : MirrorMode.VERT)
       if ((value & FDS_CTRL_MOTOR_ON) === 0) {
         this.endOfHead = true

@@ -9,7 +9,7 @@ import {Address, Byte} from './types'
 import {Util} from '../util/util'
 import {CPU_HZ, VBlank} from './const'
 
-import {Mapper, PrgBankController} from './mapper/mapper'
+import {Mapper} from './mapper/mapper'
 import {kMapperTable} from './mapper/mapper_table'
 
 const RAM_SIZE = 0x0800
@@ -27,7 +27,7 @@ export const enum NesEvent {
   PrgBankChange,
 }
 
-export class Nes implements PrgBankController {
+export class Nes {
   protected ram = new Uint8Array(RAM_SIZE)
   protected bus: Bus
   protected cpu: Cpu
@@ -59,7 +59,7 @@ export class Nes implements PrgBankController {
     this.breakPointCallback = () => {}
 
     const mapperNo = 0
-    this.mapper = this.createMapper(mapperNo, -1)
+    this.mapper = this.createMapper(mapperNo, null)
     this.channelWaveTypes = this.apu.getWaveTypes()
     this.apuChannelCount = this.channelWaveTypes.length
     this.setMemoryMap()
@@ -87,8 +87,7 @@ export class Nes implements PrgBankController {
     this.cpu.deleteAllBreakPoints()
 
     this.setMemoryMap()
-    const romHash = cartridge.calcHashValue()
-    this.mapper = this.createMapper(cartridge.mapperNo, this.prgRom.length, romHash)
+    this.mapper = this.createMapper(cartridge.mapperNo, cartridge)
 
     let channels = this.apu.getWaveTypes()
     const extras = this.mapper.getExtraChannelWaveTypes()
@@ -176,20 +175,25 @@ export class Nes implements PrgBankController {
     this.ppu.render(pixels)
   }
 
-  public setPrgBank(bank: number, page: number): void {
-    this.prgBank[bank] = page << 13
-    this.eventCallback(NesEvent.PrgBankChange, (bank << 8) | page)
-  }
-
-  public createMapper(mapperNo: number, prgSize: number, romHash?: string): Mapper {
+  public createMapper(mapperNo: number, cartridge: Cartridge|null): Mapper {
     const mapperFunc = kMapperTable[mapperNo]
     return mapperFunc({
-      bus: this.bus,
-      cpu: this.cpu,
-      ppu: this.ppu,
-      prgBankCtrl: this,
-      prgSize,
-      romHash,
+      cartridge,
+      setReadMemory: this.bus.setReadMemory.bind(this.bus),
+      setWriteMemory: this.bus.setWriteMemory.bind(this.bus),
+      setPrgBank: (bank: number, page: number): void => {
+        this.prgBank[bank] = page << 13
+        this.eventCallback(NesEvent.PrgBankChange, (bank << 8) | page)
+      },
+      requestIrq: this.cpu.requestIrq.bind(this.cpu),
+      clearIrqRequest: this.cpu.clearIrqRequest.bind(this.cpu),
+      setChrBank: this.ppu.setChrBank.bind(this.ppu),
+      setChrBankOffset: this.ppu.setChrBankOffset.bind(this.ppu),
+      setMirrorMode: this.ppu.setMirrorMode.bind(this.ppu),
+      setMirrorModeBit: this.ppu.setMirrorModeBit.bind(this.ppu),
+      getPpuRegs: this.ppu.getRegs.bind(this.ppu),
+      setChrData: this.ppu.setChrData.bind(this.ppu),
+      writePpuDirect: this.ppu.writePpuDirect.bind(this.ppu),
       writeToApu: (adr: Address, value: Byte) => this.writeToApu(adr, value),
       readFromApu: (adr: Address) => this.readFromApu(adr),
     })

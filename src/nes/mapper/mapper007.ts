@@ -17,13 +17,13 @@ export class Mapper007 extends Mapper {
     // const count = prgSize >> BANK_BIT
 
     // PRG ROM bank
-    this.options.bus.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
+    this.options.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
       const bank = value << 2
       for (let i = 0; i < 4; ++i)
-        this.options.prgBankCtrl.setPrgBank(i, bank + i)
+        this.options.setPrgBank(i, bank + i)
 
       const namePage = (value >> 4) & 1
-      this.options.ppu.setMirrorMode(kMirrorTable[namePage])
+      this.options.setMirrorMode(kMirrorTable[namePage])
     })
   }
 }

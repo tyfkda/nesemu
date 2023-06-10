@@ -28,14 +28,14 @@ export class Mapper016 extends Mapper {
 
     const BANK_BIT = 14
     const BANK_SIZE = 1 << BANK_BIT
-    const size = options.prgSize
+    const size = options.cartridge!.prgRom.byteLength
     const count = size / BANK_SIZE
 
-    this.options.prgBankCtrl.setPrgBank(2, count * 2 - 2)
-    this.options.prgBankCtrl.setPrgBank(3, count * 2 - 1)
+    this.options.setPrgBank(2, count * 2 - 2)
+    this.options.setPrgBank(3, count * 2 - 1)
     this.setPrgBank(0)
 
-    this.options.bus.setWriteMemory(0x6000, 0xffff, (adr, value) => {
+    this.options.setWriteMemory(0x6000, 0xffff, (adr, value) => {
       const a = adr & 0x0f
       switch (a) {
         // CHR-ROM bank select.
@@ -48,7 +48,7 @@ export class Mapper016 extends Mapper {
         this.setPrgBank(this.prgBank)
         break
       case 9:  // Nametable mirroring type select.
-        this.options.ppu.setMirrorMode(kMirrorTable[value & 3])
+        this.options.setMirrorMode(kMirrorTable[value & 3])
         break
       case 0x0a:  // IRQ Control.
         this.irqEnable = (value & 1) !== 0
@@ -99,17 +99,17 @@ export class Mapper016 extends Mapper {
       this.irqCounter -= 115
       if (this.irqCounter <= 0) {
         this.irqCounter += this.irqValue
-        this.options.cpu.requestIrq(IrqType.EXTERNAL)
+        this.options.requestIrq(IrqType.EXTERNAL)
       }
     }
   }
 
   private setPrgBank(bank: number): void {
-    this.options.prgBankCtrl.setPrgBank(0, bank * 2)
-    this.options.prgBankCtrl.setPrgBank(1, bank * 2 + 1)
+    this.options.setPrgBank(0, bank * 2)
+    this.options.setPrgBank(1, bank * 2 + 1)
   }
 
   private setChrBank(bank: number, value: number): void {
-    this.options.ppu.setChrBankOffset(bank, value)
+    this.options.setChrBankOffset(bank, value)
   }
 }

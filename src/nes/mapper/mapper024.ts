@@ -123,13 +123,13 @@ class Mapper024Base extends Mapper {
     this.sram = new Uint8Array(0x2000)
 
     const BANK_BIT = 13
-    this.prgCount = options.prgSize >> BANK_BIT
-    this.options.prgBankCtrl.setPrgBank(0, 0)
-    this.options.prgBankCtrl.setPrgBank(1, 1)
+    this.prgCount = options.cartridge!.prgRom.byteLength >> BANK_BIT
+    this.options.setPrgBank(0, 0)
+    this.options.setPrgBank(1, 1)
     this.setPrgBank(this.prgCount - 2)
 
     // PRG ROM bank
-    this.options.bus.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+    this.options.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
       if (0x8000 <= adr && adr <= 0x8003) {
         this.setPrgBank((value & (this.prgCount / 2 - 1)) << 1)
       } else if (0x9000 <= adr && adr <= 0x9002) {
@@ -145,28 +145,28 @@ class Mapper024Base extends Mapper {
         }
       }
     })
-    this.options.bus.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
+    this.options.setWriteMemory(0xc000, 0xdfff, (adr, value) => {
       if (0xc000 <= adr && adr <= 0xc003) {
-        this.options.prgBankCtrl.setPrgBank(2, value)
+        this.options.setPrgBank(2, value)
       }
     })
 
     // CHR ROM bank
     const b003 = 0xb000 | mapping[3]
-    this.options.bus.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
+    this.options.setWriteMemory(0xa000, 0xbfff, (adr, value) => {
       if ((adr & 0xf0ff) === b003) {
         this.ppuBankMode = value & 3
         this.setChrBank()
 
         this.mirrorMode = (value >> 2) & 3
-        this.options.ppu.setMirrorMode(kMirrorTable[this.mirrorMode])
+        this.options.setMirrorMode(kMirrorTable[this.mirrorMode])
       } else if (0xa000 <= adr && adr <= 0xa002) {
         this.writeSound(1, adr & 3, value)
       } else if (0xb000 <= adr && adr <= 0xb002) {
         this.writeSound(2, adr & 3, value)
       }
     })
-    this.options.bus.setWriteMemory(0xd000, 0xffff, (adr, value) => {
+    this.options.setWriteMemory(0xd000, 0xffff, (adr, value) => {
       if (0xd000 <= adr && adr <= 0xefff) {
         const high = ((adr - 0xd000) >> 10) & 4
         const low = adr & 0x0f
@@ -186,7 +186,7 @@ class Mapper024Base extends Mapper {
           if ((this.irqControl & IRQ_ENABLE) !== 0) {
             this.irqCounter = this.irqLatch
           }
-          this.options.cpu.clearIrqRequest(IrqType.EXTERNAL)
+          this.options.clearIrqRequest(IrqType.EXTERNAL)
           break
         case 2:  // IRQ Acknowledge
           {
@@ -203,8 +203,8 @@ class Mapper024Base extends Mapper {
 
     // PRG RAM
     this.sram.fill(0xff)
-    this.options.bus.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
-    this.options.bus.setWriteMemory(0x6000, 0x7fff,
+    this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
+    this.options.setWriteMemory(0x6000, 0x7fff,
                                     (adr, value) => { this.sram[adr & 0x1fff] = value })
 
     this.setupAudio()
@@ -254,7 +254,7 @@ class Mapper024Base extends Mapper {
       }
       if (c >= 255) {
         c = this.irqLatch
-        this.options.cpu.requestIrq(IrqType.EXTERNAL)
+        this.options.requestIrq(IrqType.EXTERNAL)
       }
       this.irqCounter = c
     }
@@ -273,14 +273,14 @@ class Mapper024Base extends Mapper {
 
   private setPrgBank(prgBank: number): void {
     this.prgBank = prgBank
-    this.options.prgBankCtrl.setPrgBank(0, prgBank)
-    this.options.prgBankCtrl.setPrgBank(1, prgBank + 1)
+    this.options.setPrgBank(0, prgBank)
+    this.options.setPrgBank(1, prgBank + 1)
   }
 
   private setChrBank(): void {
     const table = kChrBankTable[this.ppuBankMode]
     for (let i = 0; i < 8; ++i)
-      this.options.ppu.setChrBankOffset(i, this.chrRegs[table[i]])
+      this.options.setChrBankOffset(i, this.chrRegs[table[i]])
   }
 
   private writeSound(ch: number, reg: number, value: number) {

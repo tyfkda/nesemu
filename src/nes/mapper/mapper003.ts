@@ -11,9 +11,9 @@ export class Mapper003 extends Mapper {
     super()
 
     // Chr ROM bank
-    this.options.bus.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
+    this.options.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
       this.chrBank = value
-      this.options.ppu.setChrBank(this.chrBank)
+      this.options.setChrBank(this.chrBank)
     })
   }
 
@@ -25,7 +25,7 @@ export class Mapper003 extends Mapper {
 
   public load(saveData: any): void {
     this.chrBank = saveData.chrBank
-    this.options.ppu.setChrBank(this.chrBank)
+    this.options.setChrBank(this.chrBank)
   }
 }
 
@@ -36,6 +36,6 @@ export class Mapper185 extends Mapper003 {
 
   constructor(options: MapperOptions) {
     super(options)
-    options.ppu.writePpuDirect(0x0000, 1)  // For "Mighty bomb jack(J)"
+    options.writePpuDirect(0x0000, 1)  // For "Mighty bomb jack(J)"
   }
 }

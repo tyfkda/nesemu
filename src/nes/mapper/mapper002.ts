@@ -9,14 +9,14 @@ class Mapper002Base extends Mapper {
     super()
 
     const BANK_BIT = 14
-    const count = options.prgSize >> BANK_BIT
-    this.options.prgBankCtrl.setPrgBank(0, 0)
-    this.options.prgBankCtrl.setPrgBank(1, 1)
-    this.options.prgBankCtrl.setPrgBank(2, count * 2 - 2)
-    this.options.prgBankCtrl.setPrgBank(3, count * 2 - 1)
+    const count = options.cartridge!.prgRom.byteLength >> BANK_BIT
+    this.options.setPrgBank(0, 0)
+    this.options.setPrgBank(1, 1)
+    this.options.setPrgBank(2, count * 2 - 2)
+    this.options.setPrgBank(3, count * 2 - 1)
 
     // PRG ROM bank
-    this.options.bus.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
+    this.options.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
       const bank = (value >> prgBankShift) << 1
       this.setBank(bank)
     })
@@ -34,8 +34,8 @@ class Mapper002Base extends Mapper {
 
   private setBank(bank: number): void {
     this.bank = bank
-    this.options.prgBankCtrl.setPrgBank(0, bank)
-    this.options.prgBankCtrl.setPrgBank(1, bank + 1)
+    this.options.setPrgBank(0, bank)
+    this.options.setPrgBank(1, bank + 1)
   }
 }
 
