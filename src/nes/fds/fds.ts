@@ -1,6 +1,5 @@
 import {Mapper020} from './mapper020'
 import {Nes} from '../nes'
-import {Address, Byte} from '../types'
 
 // Famicom Disk System
 export class Fds {
@@ -14,9 +13,7 @@ export class Fds {
       cartridge: null,
       setReadMemory: bus.setReadMemory.bind(bus),
       setWriteMemory: bus.setWriteMemory.bind(bus),
-      setPrgBank: (_bank: number, _page: number): void => {
-        // Dummy
-      },
+      setPrgBank: (_bank: number, _page: number): void => { /* Dummy */ },
       requestIrq: cpu.requestIrq.bind(cpu),
       clearIrqRequest: cpu.clearIrqRequest.bind(cpu),
       setChrBank: ppu.setChrBank.bind(ppu),
@@ -26,11 +23,9 @@ export class Fds {
       getPpuRegs: ppu.getRegs.bind(ppu),
       setChrData: ppu.setChrData.bind(ppu),
       writePpuDirect: ppu.writePpuDirect.bind(ppu),
-      writeToApu: (_adr: Address, _value: Byte) => {},  // Dummy
-      readFromApu: (_adr: Address) => 0,  // Dummy
+      writeToApu: this.nes.writeToApu.bind(this.nes),
+      readFromApu: this.nes.readFromApu.bind(this.nes),
     })
-
-    this.mapper.setUp(nes)
 
     this.nes.setMapper(this.mapper)
   }

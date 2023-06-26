@@ -5,45 +5,58 @@
 import {Address, Byte} from '../types'
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from '../mapper/mapper'
-import {Nes} from '../nes'
 import {MirrorMode} from '../ppu/types'
 
-// $402x: write-only registers
-const IRQ_RELOAD_L         = 0
-const IRQ_RELOAD_H         = 1
-const IRQ_CTRL             = 2
-const MASTER_IO_ENABLE     = 3
-const WRITE_DATA           = 4
-const FDS_CTRL             = 5
-const EXTERNAL_CONNECTOR_W = 6
+const Reg = {
+  // $402x: write-only registers
+  IRQ_RELOAD_L        : 0,
+  IRQ_RELOAD_H        : 1,
+  IRQ_CTRL            : 2,
+  MASTER_IO_ENABLE    : 3,
+  WRITE_DATA          : 4,
+  FDS_CTRL            : 5,
+  EXTERNAL_CONNECTOR_W: 6,
+} as const
 
-// $403x: read-only registers
-const DISK_STATUS          = 0
-const READ_DATA            = 1
-const DRIVE_STATUS         = 2
-const EXTERNAL_CONNECTOR_R = 3
+const Read = {
+  // $403x: read-only registers
+  DISK_STATUS         : 0,
+  READ_DATA           : 1,
+  DRIVE_STATUS        : 2,
+  EXTERNAL_CONNECTOR_R: 3,
+} as const
 
-const IRQ_CTRL_REPEAT  = 1 << 0
-const IRQ_CTRL_ENABLED = 1 << 1
+const enum IrqCtrl {
+  REPEAT  = 1 << 0,
+  ENABLED = 1 << 1,
+}
 
-const MASTER_IO_ENABLE_DISK  = 1 << 0
-// const MASTER_IO_ENABLE_SOUND = 1 << 1
+const enum MasterIoEnable {
+  DISK  = 1 << 0,
+  SOUND = 1 << 1,
+}
 
-const FDS_CTRL_MOTOR_ON                    = 1 << 0
-const FDS_CTRL_TRANSFER_RESET              = 1 << 1
-const FDS_CTRL_READ                        = 1 << 2
-const FDS_CTRL_MIRROR_HORZ                 = 1 << 3
-// const FDS_CTRL_CRC_CTRL                    = 1 << 4
-// const FDS_CTRL_READ_WRITE_START            = 1 << 6
-const FDS_CTRL_ENABLE_IRQ_WHEN_DRIVE_READY = 1 << 7
+const enum FdsCtrl {
+  MOTOR_ON                    = 1 << 0,
+  TRANSFER_RESET              = 1 << 1,
+  READ                        = 1 << 2,
+  MIRROR_HORZ                 = 1 << 3,
+  CRC_CTRL                    = 1 << 4,
+  READ_WRITE_START            = 1 << 6,
+  ENABLE_IRQ_WHEN_DRIVE_READY = 1 << 7,
+}
 
-const DISK_STATUS_TIMER_INTERRUPT     = 1 << 0
-const DISK_STATUS_BYTE_TRANSFER       = 1 << 1
-const DISK_STATUS_READ_WRITE_ENABLE   = 1 << 7
+const enum DiskStatus {
+  TIMER_INTERRUPT     = 1 << 0,
+  BYTE_TRANSFER       = 1 << 1,
+  READ_WRITE_ENABLE   = 1 << 7,
+}
 
-const DRIVE_STATUS_DISK_NOT_INSERTED = 1 << 0
-const DRIVE_STATUS_DISK_NOT_READY    = 1 << 1
-const DRIVE_STATUS_DISK_PROTECTED    = 1 << 2
+const enum DriveStatus {
+  DISK_NOT_INSERTED = 1 << 0,
+  DISK_NOT_READY    = 1 << 1,
+  DISK_PROTECTED    = 1 << 2,
+}
 
 // const EXTERNAL_CONNECTOR_R_BATTERY_GOOD = 1 << 7
 
@@ -97,7 +110,6 @@ function loadFdsImage(image: Uint8Array): Uint8Array[] {
 export class Mapper020 extends Mapper {
   private ram = new Uint8Array(0xe000 - 0x6000)
   private regs = new Uint8Array(16)
-  private nes: Nes
   private diskSideImages = new Array<Uint8Array>()
   private image?: Uint8Array
 
@@ -107,7 +119,7 @@ export class Mapper020 extends Mapper {
   private transferComplete = false
   private endOfHead = true
   private scanningDisk = false
-  // private gapEnded = false
+  private gapEnded = false
   private delay = 0
   private readData = 0
 
@@ -118,10 +130,24 @@ export class Mapper020 extends Mapper {
     this.options.setMirrorMode(MirrorMode.HORZ)
 
     // BIOS ROM
-    this.options.setReadMemory(0xe000, 0xffff, adr => {
-      adr = adr | 0
-      return this.biosData[adr - 0xe000] | 0
+    this.options.setReadMemory(0xe000, 0xffff, adr => this.biosData[adr - 0xe000])
+
+    this.options.setReadMemory(0x4000, 0x5fff, adr => {  // APU
+      if (0x4030 <= adr && adr <= 0x403f)
+        return this.readDiskReg(adr)
+      return this.options.readFromApu(adr)
     })
+    this.options.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
+      if (0x4020 <= adr && adr <= 0x402f)
+        return this.writeDiskReg(adr, value)
+      this.options.writeToApu(adr, value)
+    })
+
+    // PRG RAM
+    this.ram.fill(0xbf)
+    this.options.setReadMemory(0x6000, 0xdfff, adr => this.ram[adr - 0x6000])
+    this.options.setWriteMemory(0x6000, 0xdfff,
+                                (adr, value) => this.ram[adr - 0x6000] = value)
 
     this.reset()
   }
@@ -139,27 +165,6 @@ export class Mapper020 extends Mapper {
     this.delay = 0
   }
 
-  public setUp(nes: Nes): void {
-    this.nes = nes
-
-    this.options.setReadMemory(0x4000, 0x5fff, adr => {  // APU
-      if (0x4030 <= adr && adr <= 0x403f)
-        return this.readDiskReg(adr)
-      return this.nes.readFromApu(adr)
-    })
-    this.options.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
-      if (0x4020 <= adr && adr <= 0x402f)
-        return this.writeDiskReg(adr, value)
-      this.nes.writeToApu(adr, value)
-    })
-
-    // PRG RAM
-    this.ram.fill(0xbf)
-    this.options.setReadMemory(0x6000, 0xdfff, adr => this.ram[adr - 0x6000])
-    this.options.setWriteMemory(0x6000, 0xdfff,
-                                    (adr, value) => { this.ram[adr - 0x6000] = value })
-  }
-
   public setImage(image: Uint8Array): boolean {
     if (image[0] === 0x46 && image[1] === 0x44 && image[2] === 0x53 && image[3] === 0x1a) {
       // Skip FDS header.
@@ -175,29 +180,28 @@ export class Mapper020 extends Mapper {
   }
 
   public onHblank(_hcount: number): void {
-    if ((this.regs[IRQ_CTRL] & IRQ_CTRL_ENABLED) !== 0 &&
-        (this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) !== 0) {
-      this.irqCounter -= 185  // TODO: Calculate
+    if ((this.regs[Reg.IRQ_CTRL] & IrqCtrl.ENABLED) !== 0 &&
+        (this.regs[Reg.MASTER_IO_ENABLE] & MasterIoEnable.DISK) !== 0) {
+      this.irqCounter -= 111  // TODO: Calculate
       if (this.irqCounter <= 0) {
         this.options.requestIrq(IrqType.EXTERNAL)
         this.timerIrqOccurred = true
-console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, nextCounter=${(this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]}`)
-        if ((this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0) {
-          this.irqCounter = (this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]
+        if ((this.regs[Reg.IRQ_CTRL] & IrqCtrl.REPEAT) !== 0) {
+          this.irqCounter = (this.regs[Reg.IRQ_RELOAD_H] << 8) | this.regs[Reg.IRQ_RELOAD_L]
         } else {
           this.irqCounter = 0
-          this.regs[IRQ_CTRL] &= ~IRQ_CTRL_ENABLED
+          this.regs[Reg.IRQ_CTRL] &= ~IrqCtrl.ENABLED
         }
       }
     }
 
-    if (this.image == null || (this.regs[FDS_CTRL] & FDS_CTRL_MOTOR_ON) === 0) {
+    if (this.image == null || (this.regs[Reg.FDS_CTRL] & FdsCtrl.MOTOR_ON) === 0) {
       this.endOfHead = true
       this.scanningDisk = false
       return
     }
 
-    if ((this.regs[FDS_CTRL] & FDS_CTRL_TRANSFER_RESET) !== 0 && !this.scanningDisk) {
+    if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.TRANSFER_RESET) !== 0 && !this.scanningDisk) {
       return
     }
 
@@ -205,7 +209,7 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
       this.delay = 50000 / 10000  // ?
       this.endOfHead = false
       this.headPointer = 0
-      // this.gapEnded = false
+      this.gapEnded = false
       return
     }
 
@@ -214,28 +218,28 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
     } else {
       this.scanningDisk = true
 
-      const needIrq = (this.regs[FDS_CTRL] & FDS_CTRL_ENABLE_IRQ_WHEN_DRIVE_READY) !== 0
+      let needIrq = (this.regs[Reg.FDS_CTRL] & FdsCtrl.ENABLE_IRQ_WHEN_DRIVE_READY) !== 0
 
 // console.log(`  read from disk: ${Util.hex(this.headPointer, 4)}: ${Util.hex(this.image[this.headPointer])}`)
       const diskData = this.image[this.headPointer]
-      // if ((this.regs[FDS_CTRL] & FDS_CTRL_READ_WRITE_START) === 0) {
-      //   this.gapEnded = false
-      // } else if (diskData !== 0 && !this.gapEnded) {
-      //   this.gapEnded = true
-      //   needIrq = false
-      // }
+      if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.READ_WRITE_START) === 0) {
+        this.gapEnded = false
+      } else if (diskData !== 0 && !this.gapEnded) {
+        this.gapEnded = true
+        needIrq = false
+      }
 
-      // if (this.gapEnded) {
+      if (this.gapEnded) {
         this.transferComplete = true
         this.readData = diskData
         if (needIrq) {
           this.options.requestIrq(IrqType.FDS)
         }
-      // }
+      }
 
       // ++this.headPointer
       // if (this.headPointer >= this.image.length) {
-      //   this.regs[FDS_CTRL] &= ~FDS_CTRL_MOTOR_ON
+      //   this.regs[Reg.FDS_CTRL] &= ~FdsCtrl.MOTOR_ON
       // } else {
       //   this.delay = 150 //150  // ?
       // }
@@ -256,57 +260,57 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
     const reg = (adr - 0x4030) | 0
 // console.log(`read: ${Util.hex(adr, 4)}`)
     switch (reg) {
-    case DISK_STATUS:
+    case Read.DISK_STATUS:
       {
         let val = 0
         if (this.image) {
-          val = DISK_STATUS_READ_WRITE_ENABLE
+          val = DiskStatus.READ_WRITE_ENABLE
           if (this.timerIrqOccurred) {
-            val |= DISK_STATUS_TIMER_INTERRUPT
+            val |= DiskStatus.TIMER_INTERRUPT
             this.timerIrqOccurred = false
           }
           if (this.transferComplete) {
-            val |= DISK_STATUS_BYTE_TRANSFER
+            val |= DiskStatus.BYTE_TRANSFER
             this.transferComplete = false
           }
         }
+        this.options.clearIrqRequest(IrqType.EXTERNAL)
+        this.options.clearIrqRequest(IrqType.FDS)
         return val
       }
-    case READ_DATA:
-// console.log(`READ_DATA: ${Util.hex(this.readData, 2)}, pointer=${Util.hex(this.headPointer, 4)}, CRC=${(this.regs[FDS_CTRL] & FDS_CTRL_CRC_CTRL) !== 0}`)
+    case Read.READ_DATA:
+// console.log(`READ_DATA: ${Util.hex(this.readData, 2)}, pointer=${Util.hex(this.headPointer, 4)}, CRC=${(this.regs[Reg.FDS_CTRL] & FdsCtrl.CRC_CTRL) !== 0}`)
       {
-        let result = 0
-        if ((this.regs[FDS_CTRL] & FDS_CTRL_READ) !== 0) {
-          // if ((this.regs[FDS_CTRL] & FDS_CTRL_CRC_CTRL) === 0) {
-            result = this.readData
+        const result = this.readData
+        if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.READ) !== 0) {
+          // if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.CRC_CTRL) === 0) {
             ++this.headPointer
 
             if (this.headPointer >= (this.image as Uint8Array).length) {
-              this.regs[FDS_CTRL] &= ~FDS_CTRL_MOTOR_ON
+              this.regs[Reg.FDS_CTRL] &= ~FdsCtrl.MOTOR_ON
             }
           // } else {
           //   console.log('CRC')
           // }
-        } else {
-          console.log('READ_DATA with write')
         }
         this.transferComplete = false
+        this.options.clearIrqRequest(IrqType.FDS)
         return result
       }
-    case DRIVE_STATUS:
+    case Read.DRIVE_STATUS:
       {
-        let val = (DRIVE_STATUS_DISK_NOT_INSERTED | DRIVE_STATUS_DISK_NOT_READY |
-                   DRIVE_STATUS_DISK_PROTECTED)
+        let val = (DriveStatus.DISK_NOT_INSERTED | DriveStatus.DISK_NOT_READY |
+                   DriveStatus.DISK_PROTECTED)
         if (this.image != null) {
           val = 0
           if (!this.scanningDisk)
-            val |= DRIVE_STATUS_DISK_NOT_READY
+            val |= DriveStatus.DISK_NOT_READY
         }
         return val
       }
-    case EXTERNAL_CONNECTOR_R:
-      // return EXTERNAL_CONNECTOR_R_BATTERY_GOOD | (this.regs[EXTERNAL_CONNECTOR_W] & 0x7f)
-      return this.regs[EXTERNAL_CONNECTOR_W]
+    case Read.EXTERNAL_CONNECTOR_R:
+      // return EXTERNAL_CONNECTOR_R_BATTERY_GOOD | (this.regs[Reg.EXTERNAL_CONNECTOR_W] & 0x7f)
+      return this.regs[Reg.EXTERNAL_CONNECTOR_W]
     default:
       break
     }
@@ -319,32 +323,37 @@ console.log(`IRQ!, repeat=${(this.regs[IRQ_CTRL] & IRQ_CTRL_REPEAT) !== 0}, next
     this.regs[reg] = value
 
     switch (reg) {
-    case IRQ_CTRL:
-      // if ((this.regs[MASTER_IO_ENABLE] & MASTER_IO_ENABLE_DISK) !== 0) {
-        if ((value & IRQ_CTRL_ENABLED) !== 0) {
-          this.irqCounter = (this.regs[IRQ_RELOAD_H] << 8) | this.regs[IRQ_RELOAD_L]
+    case Reg.IRQ_CTRL:
+      // if ((this.regs[Reg.MASTER_IO_ENABLE] & MasterIoEnable.DISK) !== 0) {
+        if ((value & IrqCtrl.ENABLED) !== 0) {
+          this.irqCounter = (this.regs[Reg.IRQ_RELOAD_H] << 8) | this.regs[Reg.IRQ_RELOAD_L]
         } else {
           this.irqCounter = 0
           this.timerIrqOccurred = false
+          this.options.clearIrqRequest(IrqType.EXTERNAL)
         }
       // }
       break
-    case MASTER_IO_ENABLE:
-      if ((value & MASTER_IO_ENABLE_DISK) === 0) {
+    case Reg.MASTER_IO_ENABLE:
+      if ((value & MasterIoEnable.DISK) === 0) {
         this.irqCounter = 0
         this.timerIrqOccurred = false
+        this.options.clearIrqRequest(IrqType.EXTERNAL)
+        this.options.clearIrqRequest(IrqType.FDS)
       }
       break
-    case WRITE_DATA:
+    case Reg.WRITE_DATA:
       this.transferComplete = false
+      this.options.clearIrqRequest(IrqType.FDS)
       break
-    case FDS_CTRL:
+    case Reg.FDS_CTRL:
       this.options.setMirrorMode(
-        (value & FDS_CTRL_MIRROR_HORZ) !== 0 ? MirrorMode.HORZ : MirrorMode.VERT)
-      if ((value & FDS_CTRL_MOTOR_ON) === 0) {
+        (value & FdsCtrl.MIRROR_HORZ) !== 0 ? MirrorMode.HORZ : MirrorMode.VERT)
+      if ((value & FdsCtrl.MOTOR_ON) === 0) {
         this.endOfHead = true
         this.scanningDisk = false
       }
+      this.options.clearIrqRequest(IrqType.FDS)
       break
     default:
       break
