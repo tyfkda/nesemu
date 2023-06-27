@@ -42,6 +42,12 @@ interface Regs {
   pc: Address
 }
 
+const BreakType = {
+  NMI: 'nmi',
+  IRQ: 'irq',
+} as const
+type BreakType = typeof BreakType[keyof typeof BreakType]
+
 export class Cpu {
   private a: Byte  // A register
   private x: Byte  // X register
@@ -62,7 +68,7 @@ export class Cpu {
   private irqRequest = 0
 
   // For debug
-  private breakPoints = new Set<Address | string>()
+  private breakPoints = new Set<Address | BreakType>()
   private watchRead = new Set<Address>()
   private watchWrite = new Set<Address>()
   private paused = false
@@ -123,7 +129,7 @@ export class Cpu {
   // Non-maskable interrupt
   public nmi(): void {
     const vector = this.read16(VEC_NMI)
-    if (this.breakPoints.has('nmi')) {
+    if (this.breakPoints.has(BreakType.NMI)) {
       this.paused = true
       console.warn(`paused because NMI: ${Util.hex(this.pc, 4)}, ${Util.hex(vector, 4)}`)
     }
@@ -146,6 +152,8 @@ export class Cpu {
     if (this.irqRequest !== 0 && this.irqBlocked === 0) {
       this.irqRequest = 0
       this.handleIrq()
+      if (this.paused)
+        return 0
     }
 
     let pc = this.pc
@@ -754,9 +762,15 @@ export class Cpu {
   }
 
   private handleIrq(): void {
+    const vector = this.read16(VEC_IRQ)
+    if (this.breakPoints.has(BreakType.IRQ)) {
+      this.paused = true
+      console.warn(`paused because IRQ: ${Util.hex(this.pc, 4)}, ${Util.hex(vector, 4)}`)
+    }
+
     this.push16(this.pc)
     this.push(this.getStatusReg() & ~BREAK_FLAG)
-    this.pc = this.read16(VEC_IRQ)
+    this.pc = vector
     this.irqBlocked = 1
   }
 }
