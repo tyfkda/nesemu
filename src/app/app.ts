@@ -1,5 +1,6 @@
 import {Nes, NesEvent} from '../nes/nes'
 import {Cartridge} from '../nes/cartridge'
+import {Keyboard} from '../nes/peripheral/keyboard'
 
 import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
@@ -112,6 +113,17 @@ export class App {
 
     this.nes.reset()
     this.screenWnd.getContentHolder().focus()
+
+    // Set up keyboard.
+    const romHash = cartridge.calcHashValue()
+    switch (romHash) {
+    case '2ba1dbbb774118eb903465f8e66f92a2':  // Family BASIC v3
+    case 'b6fd590c5e833e3ab6b8462e40335842':  // Family BASIC v2.1a
+    case 'fc1668b428b5012e61e2de204164f24c':  // Family BASIC v2.0a
+      this.screenWnd.setKeyboard(new Keyboard())
+      break
+    default: break
+    }
 
     return null
   }

@@ -46,6 +46,8 @@ export class Nes {
   private channelWaveTypes: WaveType[]
   private gamePads = [new GamePad(), new GamePad()]
 
+  private peripheralMap = new Map<number, (adr: Address, value?: Byte) => any>()
+
   public static isMapperSupported(mapperNo: number): boolean {
     return mapperNo in kMapperTable
   }
@@ -94,6 +96,11 @@ export class Nes {
     if (extras != null)
       channels = channels.concat(extras)
     this.channelWaveTypes = channels
+  }
+
+  public setPeripheral(ioMap: Map<number, (adr: Address, value?: Byte) => any>): void {
+    for (const [key, value] of ioMap)
+      this.peripheralMap.set(key, value)
   }
 
   public setMapper(mapper: Mapper): void {
@@ -236,8 +243,18 @@ export class Nes {
       this.ppu.write(reg, value)
     })
 
-    bus.setReadMemory(0x4000, 0x5fff, adr => this.readFromApu(adr))  // APU
-    bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => this.writeToApu(adr, value))  // APU
+    bus.setReadMemory(0x4000, 0x5fff, adr => {
+      if (this.peripheralMap.has(adr))
+        return this.peripheralMap.get(adr)!(adr)
+      return this.readFromApu(adr)  // APU
+    })
+    bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
+      if (this.peripheralMap.has(adr)) {
+        this.peripheralMap.get(adr)!(adr, value)
+        return
+      }
+      this.writeToApu(adr, value)  // APU
+    })
 
     // PRG ROM
     const prgMask = (this.prgRom.length - 1) | 0
