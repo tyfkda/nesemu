@@ -3,11 +3,11 @@ import {IChannel, WaveType} from '../apu'
 import {IrqType} from '../cpu/cpu'
 import {MirrorMode} from '../ppu/types'
 import {Address, Byte} from '../types'
-import {Cartridge} from '../cartridge'
+import {ICartridge} from '../cartridge'
 import {Util} from '../../util/util'
 
 export interface MapperOptions {
-  cartridge: Cartridge|null,
+  cartridge: ICartridge|null,
   // CPU
   setReadMemory(start: Address, end: Address, reader: Reader): void
   setWriteMemory(start: Address, end: Address, writer: Writer): void

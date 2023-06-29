@@ -10,6 +10,8 @@ import {MirrorMode} from '../ppu/types'
 import {Util} from '../../util/util'
 import {IChannel, WaveType} from '../apu'
 
+export const RAM_SIZE = 0xe000 - 0x6000
+
 const Reg = {
   // $402x: write-only registers
   IRQ_RELOAD_L        : 0,
@@ -111,7 +113,7 @@ function loadFdsImage(image: Uint8Array): Uint8Array[] {
 }
 
 export class FdsMapper extends Mapper {
-  private ram = new Uint8Array(0xe000 - 0x6000)
+  private ram = new Uint8Array(RAM_SIZE)
   private regs = new Uint8Array(16)
   private diskSideImages = new Array<Uint8Array>()
   private image?: Uint8Array

@@ -26,7 +26,18 @@ function loadChrRom(romData: Uint8Array): Uint8Array {
   return new Uint8Array(romData.buffer, start, size)
 }
 
-export class Cartridge {
+export interface ICartridge {
+  get mapperNo(): number
+  get prgRom(): Uint8Array
+  get chrRom(): Uint8Array
+
+  get mirrorMode(): MirrorMode
+  get isBatteryOn(): boolean
+  calcHashValue(): string
+  ramSize(): number
+}
+
+export class Cartridge implements ICartridge {
   public readonly mapperNo: number
   public readonly prgRom: Uint8Array
   public readonly chrRom: Uint8Array
@@ -42,11 +53,11 @@ export class Cartridge {
     this.chrRom = loadChrRom(romData)
   }
 
-  public get mirrorMode() {
+  public get mirrorMode(): MirrorMode {
     return (this.romData[6] & 1) === 0 ? MirrorMode.HORZ : MirrorMode.VERT
   }
 
-  public get isBatteryOn() {
+  public get isBatteryOn(): boolean {
     return (this.romData[6] & 2) !== 0
   }
 

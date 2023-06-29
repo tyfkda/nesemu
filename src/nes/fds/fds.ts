@@ -1,20 +1,41 @@
 // Famicom Disk System
 
-import {FdsMapper} from './fds_mapper'
+import {FdsMapper, RAM_SIZE} from './fds_mapper'
 import {Nes} from '../nes'
+import {ICartridge} from '../cartridge'
 import {Address, Byte} from '../types'
 import {Peripheral} from '../peripheral/keyboard'
+import {MirrorMode} from '../ppu/types'
+
+const dummyU8a = new Uint8Array()
+
+class FdsDummyCartridge implements ICartridge {
+  public get mapperNo(): number { return 20 }
+  public get prgRom(): Uint8Array { return dummyU8a }
+  public get chrRom(): Uint8Array { return dummyU8a }
+
+  public get mirrorMode(): MirrorMode { return MirrorMode.HORZ }
+
+  public get isBatteryOn(): boolean { return true }
+
+  public calcHashValue(): string { return '' }
+
+  public ramSize(): number { return RAM_SIZE }
+}
 
 export class Fds implements Peripheral {
   private mapper: FdsMapper
   private ioMap = new Map<number, (adr: Address, value?: Byte) => any>()
+  private cartridge: FdsDummyCartridge
 
   constructor(biosData: Uint8Array, private nes: Nes) {
+    this.cartridge = new FdsDummyCartridge()
+
     const bus = this.nes.getBus()
     const cpu = this.nes.getCpu()
     const ppu = this.nes.getPpu()
     this.mapper = new FdsMapper(biosData, {
-      cartridge: null,
+      cartridge: this.cartridge,
       setReadMemory: bus.setReadMemory.bind(bus),
       setWriteMemory: bus.setWriteMemory.bind(bus),
       setPrgBank: (_bank: number, _page: number): void => { /* Dummy */ },
@@ -59,6 +80,8 @@ export class Fds implements Peripheral {
 
     this.nes.setPeripheral(this.getIoMap())
   }
+
+  public getCartridge(): ICartridge { return this.cartridge }
 
   public setImage(image: Uint8Array): boolean {
     this.mapper.setImage(image)

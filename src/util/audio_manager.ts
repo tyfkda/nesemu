@@ -2,7 +2,7 @@ import {WaveType} from '../nes/apu'
 import {SoundChannel, PulseChannel, TriangleChannel, SawtoothChannel} from './audio/sound_channel'
 import {createNoiseChannel, INoiseChannel} from './audio/noise_channel'
 import {createDmcChannel, IDmcChannel} from './audio/delta_modulation_channel'
-import {Cartridge} from '../nes/cartridge'
+import {ICartridge} from '../nes/cartridge'
 
 const GLOBAL_MASTER_VOLUME = 0.5
 
@@ -18,7 +18,7 @@ export class AudioManager {
 
   private channels = new Array<SoundChannel>()
   private dmcChannelIndex = -1
-  private cartridge: Cartridge
+  private cartridge: ICartridge
 
   public static setUp(audioContextClass: any): void {
     if (AudioManager.initialized)
@@ -103,7 +103,7 @@ export class AudioManager {
     }
   }
 
-  public setCartridge(cartridge: Cartridge): void {
+  public setCartridge(cartridge: ICartridge): void {
     this.cartridge = cartridge
   }
 

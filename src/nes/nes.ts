@@ -2,7 +2,7 @@
 
 import {Apu, IChannel, GamePad, WaveType} from './apu'
 import {Bus} from './bus'
-import {Cartridge} from './cartridge'
+import {ICartridge} from './cartridge'
 import {Cpu, IrqType} from './cpu/cpu'
 import {Ppu} from './ppu/ppu'
 import {Address, Byte} from './types'
@@ -35,7 +35,7 @@ export class Nes {
   protected apu: Apu
   protected cycleCount = 0
 
-  private cartridge: Cartridge
+  private cartridge: ICartridge
 
   protected mapper: Mapper
   private prgRom = new Uint8Array(0)
@@ -80,7 +80,7 @@ export class Nes {
     this.breakPointCallback = callback
   }
 
-  public setCartridge(cartridge: Cartridge): void {
+  public setCartridge(cartridge: ICartridge): void {
     this.cartridge = cartridge
 
     this.prgRom = cartridge.prgRom
@@ -187,7 +187,7 @@ export class Nes {
     this.ppu.render(pixels)
   }
 
-  public createMapper(mapperNo: number, cartridge: Cartridge|null): Mapper {
+  public createMapper(mapperNo: number, cartridge: ICartridge|null): Mapper {
     const mapperFunc = kMapperTable[mapperNo]
     return mapperFunc({
       cartridge,

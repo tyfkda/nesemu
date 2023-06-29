@@ -1,11 +1,11 @@
 import {SoundChannel} from './sound_channel'
-import {Cartridge} from '../../nes/cartridge'
+import {ICartridge} from '../../nes/cartridge'
 import {DeltaModulationSampler} from './delta_modulation_sampler'
 
 // ScriptProcessor DMC channel
 const SP_DMC_BUFFER_SIZE = 512
 export abstract class IDmcChannel extends SoundChannel {
-  public abstract setCartridge(cartridge: Cartridge): void
+  public abstract setCartridge(cartridge: ICartridge): void
   public abstract setDmcWrite(reg: number, value: number): void
   public abstract changePrgBank(bank: number, page: number): void
 }
@@ -22,7 +22,7 @@ class SpDmcChannel extends IDmcChannel {
     this.sampler = new DeltaModulationSampler(context.sampleRate)
   }
 
-  public setCartridge(cartridge: Cartridge): void {
+  public setCartridge(cartridge: ICartridge): void {
     this.sampler.setPrgRom(cartridge.prgRom)
   }
 
@@ -104,7 +104,7 @@ class AwDmcChannel extends IDmcChannel {
     }
   }
 
-  public setCartridge(cartridge: Cartridge): void {
+  public setCartridge(cartridge: ICartridge): void {
     const prgRom = new Uint8Array(cartridge.prgRom)  // Duplicate
     if (this.node != null)
       this.sendPrgRom(prgRom)

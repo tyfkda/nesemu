@@ -1,5 +1,5 @@
 import {Nes, NesEvent} from '../nes/nes'
-import {Cartridge} from '../nes/cartridge'
+import {ICartridge, Cartridge} from '../nes/cartridge'
 import {Keyboard} from '../nes/peripheral/keyboard'
 
 import {AppEvent} from './app_event'
@@ -32,7 +32,7 @@ export class Option {
 export class App {
   protected destroying = false
   protected isPaused = false
-  protected cartridge: Cartridge
+  protected cartridge: ICartridge
   protected nes: Nes
   protected audioManager: AudioManager
   protected channelVolumes: Float32Array
@@ -130,6 +130,7 @@ export class App {
 
   public bootDiskBios(biosData: Uint8Array): boolean {
     this.fds = new Fds(biosData, this.nes)
+    this.cartridge = this.fds.getCartridge()
 
     this.setupAudioManager()
 
