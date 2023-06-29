@@ -1,5 +1,4 @@
 import {DomUtil} from '../util/dom_util'
-import {KeyboardManager} from '../util/keyboard_manager'
 import {SubmenuItemInfo} from './types'
 import {StartMenu} from './start_menu'
 import {Wnd} from './wnd'
@@ -15,7 +14,6 @@ function setWindowZIndex(wnd: Wnd, i: number, n: number): void {
 
 export class WindowManager {
   private windows: Wnd[] = []
-  private keyboardManager = new KeyboardManager()
 
   private onKeyDown: (event: KeyboardEvent) => void
   private onKeyUp: (event: KeyboardEvent) => void
@@ -33,15 +31,14 @@ export class WindowManager {
         }
       }
 
-      if (event.ctrlKey || event.altKey || event.metaKey)
-        return
-
       event.preventDefault()
-      this.keyboardManager.onKeyDown(event)
+      if (this.windows.length > 0)
+        this.windows[0].onEvent(WndEvent.KEY_DOWN, event)
     }
     this.onKeyUp = (event: KeyboardEvent) => {
       event.preventDefault()
-      this.keyboardManager.onKeyUp(event)
+      if (this.windows.length > 0)
+        this.windows[0].onEvent(WndEvent.KEY_UP, event)
     }
     this.root.addEventListener('keydown', this.onKeyDown)
     this.root.addEventListener('keyup', this.onKeyUp)
@@ -61,10 +58,6 @@ export class WindowManager {
 
   public isBlur(): boolean {
     return this.blurred
-  }
-
-  public getKeyboardManager(): KeyboardManager {
-    return this.keyboardManager
   }
 
   public add(wnd: Wnd): void {
@@ -204,10 +197,13 @@ export class WindowManager {
   private setUpBlur(): void {
     window.addEventListener('focus', () => {
       this.blurred = false
+      if (this.windows.length > 0)
+        this.windows[0].onEvent(WndEvent.FOCUS, true)
     })
     window.addEventListener('blur', () => {
       this.blurred = true
-      this.keyboardManager.clear()
+      if (this.windows.length > 0)
+        this.windows[0].onEvent(WndEvent.FOCUS, false)
     })
   }
 

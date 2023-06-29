@@ -2,6 +2,7 @@ import {DomUtil} from '../util/dom_util'
 import {GamepadManager} from '../util/gamepad_manager'
 import {PadBit} from '../nes/apu'
 import {PadKeyHandler} from '../util/pad_key_handler'
+import {KeyboardManager} from '../util/keyboard_manager'
 import {WindowManager} from '../wnd/window_manager'
 import {Wnd} from '../wnd/wnd'
 import {WndEvent} from '../wnd/types'
@@ -260,27 +261,39 @@ const kKeyLabels: Record<string, string> = (() => {
 })()
 
 export class KeyConfigWnd extends GamepadBaseWnd {
+  private keyboardManager = new KeyboardManager()
+
   public constructor(wndMgr: WindowManager, onClose?: () => void) {
     super(wndMgr, 'Key Config', kGamepadLabels, onClose)
     this.updateLabels()
     wndMgr.add(this)
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      event.preventDefault()
+      this.keyboardManager.onKeyDown(event)
+    }
+    const onKeyUp = (event: KeyboardEvent) => {
+      event.preventDefault()
+      this.keyboardManager.onKeyUp(event)
+    }
+    const root = document.body  // TODO:
+    root.addEventListener('keydown', onKeyDown)
+    root.addEventListener('keyup', onKeyUp)
   }
 
   protected checkGamepad(): number {
     const padNo = 0
-    const keyboardManager = this.wndMgr.getKeyboardManager()
     const table = PadKeyHandler.getMapping(padNo)
     let state = 0
     for (let i = 0; i < table.length; ++i) {
-      if (keyboardManager.getKeyPressing(table[i].key))
+      if (this.keyboardManager.getKeyPressing(table[i].key))
         state |= table[i].bit
     }
     return state
   }
 
   protected modifyButton(buttonIndex: number): boolean {
-    const keyboardManager = this.wndMgr.getKeyboardManager()
-    const key = keyboardManager.getLastPressing()
+    const key = this.keyboardManager.getLastPressing()
     if (!key)
       return false
 

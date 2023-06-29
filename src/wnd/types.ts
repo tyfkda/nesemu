@@ -13,6 +13,8 @@ export const enum WndEvent {
   RESIZE_MOVE,
   RESIZE_END,
   FOCUS,  // param: true or false
+  KEY_DOWN,
+  KEY_UP,
 }
 
 export interface SubmenuItemInfo {

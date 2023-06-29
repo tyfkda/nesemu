@@ -13,6 +13,7 @@ import {GlobalSetting} from './global_setting'
 import {ScalerType} from './def'
 import {PadBit, PadValue} from '../nes/apu'
 import {PadKeyHandler} from '../util/pad_key_handler'
+import {KeyboardManager} from '../util/keyboard_manager'
 import {GamepadManager} from '../util/gamepad_manager'
 import {RegisterWnd, RamWnd, TraceWnd, ControlWnd} from './debug_wnd'
 import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd, AudioWnd} from './other_wnd'
@@ -96,6 +97,7 @@ export class ScreenWnd extends Wnd {
   private menuItems: Array<MenuItemInfo>
   private scalerType: ScalerType = ScalerType.NEAREST
   private padKeyHandler = new PadKeyHandler()
+  private keyboardManager = new KeyboardManager()
   private timeScale = 1
   private fullscreenResizeFunc: () => void
   private repeatBtnFrame = false
@@ -247,8 +249,26 @@ export class ScreenWnd extends Wnd {
       if (!param) {
         this.timeScale = TIME_SCALE_NORMAL
         this.padKeyHandler.clearAll()
+        this.keyboardManager.clear()
       }
       break
+
+    case WndEvent.KEY_DOWN:
+      {
+        const event = param as KeyboardEvent
+        if (!(event.ctrlKey || event.altKey || event.metaKey))
+          this.keyboardManager.onKeyDown(event)
+      }
+      break
+
+    case WndEvent.KEY_UP:
+      {
+        const event = param as KeyboardEvent
+        if (!(event.ctrlKey || event.altKey || event.metaKey))
+          this.keyboardManager.onKeyUp(event)
+      }
+      break
+
     default:
       break
     }
@@ -665,9 +685,8 @@ export class ScreenWnd extends Wnd {
   }
 
   private update(elapsedTime: number) {
-    this.padKeyHandler.update(this.wndMgr.getKeyboardManager())
-    const speedUp = (this.isTop() &&
-                     this.wndMgr.getKeyboardManager().getKeyPressing('ShiftLeft'))
+    this.padKeyHandler.update(this.keyboardManager)
+    const speedUp = this.keyboardManager.getKeyPressing('ShiftLeft')
     this.timeScale = speedUp ? TIME_SCALE_FAST : TIME_SCALE_NORMAL
 
     this.stream.triggerStartCalc()
