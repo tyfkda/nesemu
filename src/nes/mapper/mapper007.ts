@@ -10,8 +10,8 @@ export class Mapper007 extends Mapper {
     return new Mapper007(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
+  constructor(options: MapperOptions) {
+    super(options)
     // 32KB switchable PRG ROM bank
     // const BANK_BIT = 15
     // const count = prgSize >> BANK_BIT

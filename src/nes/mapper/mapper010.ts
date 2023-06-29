@@ -8,8 +8,8 @@ export class Mapper010 extends Mapper {
     return new Mapper010(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
+  constructor(options: MapperOptions) {
+    super(options, 0x2000)
 
     // const BANK_BIT = 14
     // const count = prgSize >> BANK_BIT
@@ -29,11 +29,5 @@ export class Mapper010 extends Mapper {
       if (adr >= 0xf000)
         this.options.setMirrorMode((value & 1) === 0 ? MirrorMode.VERT : MirrorMode.HORZ)
     })
-
-    // PRG RAM
-    this.sram = new Uint8Array(0x2000)
-    this.sram.fill(0xbf)
-    this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
-    this.options.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.sram[adr & 0x1fff] = value })
   }
 }

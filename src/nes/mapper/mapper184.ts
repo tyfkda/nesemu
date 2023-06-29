@@ -7,8 +7,8 @@ export class Mapper184 extends Mapper {
     return new Mapper184(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
+  constructor(options: MapperOptions) {
+    super(options)
 
     // CHR ROM bank
     this.options.setWriteMemory(0x6000, 0x7fff, (_adr, value) => {

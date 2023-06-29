@@ -10,8 +10,8 @@ export class Mapper032 extends Mapper {
     return new Mapper032(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
+  constructor(options: MapperOptions) {
+    super(options, 0x2000)
 
     const BANK_BIT = 13  // 0x2000
     const maxPrg = (options.cartridge!.prgRom.byteLength >> BANK_BIT) - 1
@@ -35,12 +35,6 @@ export class Mapper032 extends Mapper {
       this.options.setPrgBank(1, p1)
       this.options.setPrgBank(2, p2)
     }
-
-    // PRG RAM
-    this.sram = new Uint8Array(0x2000)
-    this.sram.fill(0xbf)
-    this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
-    this.options.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.sram[adr & 0x1fff] = value })
 
     // Select
     this.options.setWriteMemory(0x8000, 0x9fff, (adr, value) => {

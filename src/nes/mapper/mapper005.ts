@@ -3,7 +3,6 @@
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {PpuReg, PpuCtrlBit, PpuMaskBit} from '../ppu/types'
-import {Util} from '../../util/util'
 import {VBlank} from '../const'
 import {Address, Byte} from '../types'
 
@@ -31,18 +30,11 @@ export class Mapper005 extends Mapper {
     return new Mapper005(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
-
-    this.sram = new Uint8Array(0x2000)
+  constructor(options: MapperOptions) {
+    super(options, 0x2000)
 
     const BANK_BIT = 13  // 0x2000
     this.maxPrg = (this.options.cartridge!.prgRom.byteLength >> BANK_BIT) - 1
-
-    this.sram.fill(0xff)
-    this.options.setReadMemory(0x6000, 0x7fff, (adr) => this.sram[adr & 0x1fff])
-    this.options.setWriteMemory(0x6000, 0x7fff,
-                                (adr, value) => { this.sram[adr & 0x1fff] = value })
 
     // Select
     this.options.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
@@ -177,16 +169,15 @@ export class Mapper005 extends Mapper {
   }
 
   public save(): object {
-    return {
-      ram: Util.convertUint8ArrayToBase64String(this.sram),
+    return super.save({
       irqHlineEnable: this.irqHlineEnable,
       irqHlineCompare: this.irqHlineCompare,
       irqHlineCounter: this.irqHlineCounter,
-    }
+    })
   }
 
   public load(saveData: any): void {
-    this.sram = Util.convertBase64StringToUint8Array(saveData.ram)
+    super.load(saveData)
     this.irqHlineEnable = saveData.irqHlineEnable
     this.irqHlineCompare = saveData.irqHlineCompare
     this.irqHlineCounter = saveData.irqHlineCounter

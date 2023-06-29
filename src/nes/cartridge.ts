@@ -59,6 +59,6 @@ export class Cartridge {
       const pp = this.romData[10]
       return 64 << ((pp & 0x0f) + ((pp >> 4) & 0x0f))
     }
-    return 0
+    return this.isBatteryOn ? 0x2000 : 0
   }
 }

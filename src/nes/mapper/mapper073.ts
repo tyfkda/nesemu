@@ -3,7 +3,6 @@
 
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
-import {Util} from '../../util/util'
 
 export class Mapper073 extends Mapper {
   private prgBank = 0
@@ -15,10 +14,8 @@ export class Mapper073 extends Mapper {
     return new Mapper073(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
-
-    this.sram = new Uint8Array(0x2000)
+  constructor(options: MapperOptions) {
+    super(options, 0x2000)
 
     this.irqEnable = false
     this.irqValue = this.irqCounter = -1
@@ -58,12 +55,6 @@ export class Mapper073 extends Mapper {
         // IRQ Acknowledge
       }
     })
-
-    // PRG RAM
-    this.sram.fill(0xff)
-    this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
-    this.options.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
   }
 
   public reset(): void {
@@ -72,17 +63,16 @@ export class Mapper073 extends Mapper {
   }
 
   public save(): object {
-    return {
-      ram: Util.convertUint8ArrayToBase64String(this.sram),
+    return super.save({
       prgBank: this.prgBank,
       irqEnable: this.irqEnable,
       irqValue: this.irqValue,
       irqCounter: this.irqCounter,
-    }
+    })
   }
 
   public load(saveData: any): void {
-    this.sram = Util.convertBase64StringToUint8Array(saveData.ram)
+    super.load(saveData)
     // this.prgBank = saveData.prgBank
     this.irqEnable = saveData.irqEnable
     this.irqValue = saveData.irqValue

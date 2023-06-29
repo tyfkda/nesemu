@@ -10,8 +10,8 @@ export class Mapper066 extends Mapper {
     return new Mapper066(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
+  constructor(options: MapperOptions) {
+    super(options)
 
     // PRG ROM bank
     this.options.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
@@ -30,13 +30,14 @@ export class Mapper066 extends Mapper {
   }
 
   public save(): object {
-    return {
+    return super.save({
       prgPage: this.prgPage,
       chrBank: this.chrBank,
-    }
+    })
   }
 
   public load(saveData: any): void {
+    super.load(saveData)
     this.setPrgBank(saveData.prgPage)
     this.setChrBank(saveData.chrBank)
   }

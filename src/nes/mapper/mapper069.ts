@@ -12,8 +12,8 @@ export class Mapper069 extends Mapper {
     return new Mapper069(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
+  constructor(options: MapperOptions) {
+    super(options, 0x2000)
 
     // const BANK_BIT = 13
     // const count = prgSize >> BANK_BIT
@@ -41,11 +41,5 @@ export class Mapper069 extends Mapper {
         break
       }
     })
-
-    // PRG RAM
-    this.sram = new Uint8Array(0x2000)
-    this.sram.fill(0xbf)
-    this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
-    this.options.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.sram[adr & 0x1fff] = value })
   }
 }

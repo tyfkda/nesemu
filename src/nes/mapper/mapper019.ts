@@ -7,8 +7,8 @@ export class Mapper019 extends Mapper {
     return new Mapper019(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
+  constructor(options: MapperOptions) {
+    super(options)
 
     // const BANK_BIT = 13
     // const count = prgSize >> BANK_BIT

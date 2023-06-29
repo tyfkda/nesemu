@@ -6,6 +6,7 @@ import {Address, Byte} from '../types'
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from '../mapper/mapper'
 import {MirrorMode} from '../ppu/types'
+import {Util} from '../../util/util'
 
 const Reg = {
   // $402x: write-only registers
@@ -123,8 +124,8 @@ export class Mapper020 extends Mapper {
   private delay = 0
   private readData = 0
 
-  public constructor(private biosData: Uint8Array, private options: MapperOptions) {
-    super()
+  public constructor(private biosData: Uint8Array, options: MapperOptions) {
+    super(options)
 
     this.options.setChrData(Uint8Array.from([]))
     this.options.setMirrorMode(MirrorMode.HORZ)
@@ -254,6 +255,18 @@ export class Mapper020 extends Mapper {
   public setSide(side: number): void {
     this.image = this.diskSideImages[side % this.diskSideImages.length]
     // this.reset()
+  }
+
+  public save(): object {
+    return super.save({
+      ram: Util.convertUint8ArrayToBase64String(this.ram),
+    })
+  }
+
+  public load(saveData: any): void {
+    super.load(saveData)
+    const ram = Util.convertBase64StringToUint8Array(saveData.ram)
+    this.ram = ram
   }
 
   private readDiskReg(adr: Address): Byte {

@@ -4,7 +4,6 @@
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
-import {Util} from '../../util/util'
 
 const IRQ_ENABLE_AFTER = 1 << 0
 const IRQ_ENABLE = 1 << 1
@@ -20,10 +19,8 @@ class Mapper023Base extends Mapper {
   private irqLatch = 0
   private irqCounter = 0
 
-  constructor(private options: MapperOptions, mapping: Record<number, number>) {
-    super()
-
-    this.sram = new Uint8Array(0x2000)
+  constructor(options: MapperOptions, mapping: Record<number, number>) {
+    super(options, 0x2000)
 
     const BANK_BIT = 13
     const prgCount = options.cartridge!.prgRom.byteLength >> BANK_BIT
@@ -120,12 +117,6 @@ class Mapper023Base extends Mapper {
         }
       }
     })
-
-    // PRG RAM
-    this.sram.fill(0xff)
-    this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
-    this.options.setWriteMemory(0x6000, 0x7fff,
-                                    (adr, value) => { this.sram[adr & 0x1fff] = value })
   }
 
   public reset(): void {
@@ -134,19 +125,18 @@ class Mapper023Base extends Mapper {
   }
 
   public save(): object {
-    return {
-      ram: Util.convertUint8ArrayToBase64String(this.sram),
+    return super.save({
       prgBankMode: this.prgBankMode,
       prgBank: this.prgBank,
       chrBank: this.chrBank,
       irqControl: this.irqControl,
       irqLatch: this.irqLatch,
       irqCounter: this.irqCounter,
-    }
+    })
   }
 
   public load(saveData: any): void {
-    this.sram = Util.convertBase64StringToUint8Array(saveData.ram)
+    super.load(saveData)
     this.prgBankMode = saveData.prgBankMode
     // this.prgBank = saveData.prgBank
     // this.chrBank = saveData.chrBank

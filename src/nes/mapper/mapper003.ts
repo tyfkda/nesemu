@@ -7,8 +7,8 @@ export class Mapper003 extends Mapper {
     return new Mapper003(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
+  constructor(options: MapperOptions) {
+    super(options)
 
     // Chr ROM bank
     this.options.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
@@ -18,12 +18,13 @@ export class Mapper003 extends Mapper {
   }
 
   public save(): object {
-    return {
+    return super.save({
       chrBank: this.chrBank,
-    }
+    })
   }
 
   public load(saveData: any): void {
+    super.load(saveData)
     this.chrBank = saveData.chrBank
     this.options.setChrBank(this.chrBank)
   }

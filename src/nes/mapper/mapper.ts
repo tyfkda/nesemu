@@ -30,17 +30,38 @@ export interface MapperOptions {
 export class Mapper {
   protected sram: Uint8Array
 
+  constructor(protected options: MapperOptions, mapperRamSize?: number) {
+    let ramSize = mapperRamSize || 0
+    if (ramSize <= 0 && this.options.cartridge != null)
+      ramSize = options.cartridge!.ramSize()
+    if (ramSize > 0) {
+      // Battery backup is done only if cartridge has a flag.
+      this.sram = new Uint8Array(ramSize)
+      this.sram.fill(0xbf)
+      this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
+      this.options.setWriteMemory(0x6000, 0x7fff, (adr, value) => { this.sram[adr & 0x1fff] = value })
+    }
+  }
+
   public reset(): void {}
 
   public onHblank(_hcount: number): void {}
 
   public getSram(): Uint8Array|null { return this.sram }
 
-  public save(): object {
-    return {}
+  public save(result: any = {}): object {
+    if (this.sram != null) {
+      result.sram = Util.convertUint8ArrayToBase64String(this.sram)
+    }
+    return result
   }
 
-  public load(_saveData: any): void {}
+  public load(saveData: any): void {
+    if (saveData.sram != null) {
+      const sram = Util.convertBase64StringToUint8Array(saveData.sram)
+      this.sram = sram
+    }
+  }
 
   public saveSram(): object|null {
     if (this.sram == null)
@@ -49,8 +70,8 @@ export class Mapper {
   }
 
   public loadSram(saveData: any): void {
-    const sram = Util.convertBase64StringToUint8Array(saveData.sram)
-    this.sram = sram
+    const ram = Util.convertBase64StringToUint8Array(saveData.sram)
+    this.sram = ram
   }
 
   public getExtraChannelWaveTypes(): WaveType[]|null {

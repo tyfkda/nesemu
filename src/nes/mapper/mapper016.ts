@@ -23,8 +23,8 @@ export class Mapper016 extends Mapper {
     return new Mapper016(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
+  constructor(options: MapperOptions) {
+    super(options)
 
     const BANK_BIT = 14
     const BANK_SIZE = 1 << BANK_BIT
@@ -73,16 +73,17 @@ export class Mapper016 extends Mapper {
   }
 
   public save(): object {
-    return {
+    return super.save({
       prgBank: this.prgBank,
       chrBank: Util.convertUint8ArrayToBase64String(this.chrBank),
       irqEnable: this.irqEnable,
       irqValue: this.irqValue,
       irqCounter: this.irqCounter,
-    }
+    })
   }
 
   public load(saveData: any): void {
+    super.load(saveData)
     this.prgBank = saveData.prgBank
     this.chrBank = Util.convertBase64StringToUint8Array(saveData.chrBank)
     this.irqEnable = saveData.irqEnable

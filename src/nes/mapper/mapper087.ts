@@ -5,8 +5,8 @@ export class Mapper087 extends Mapper {
     return new Mapper087(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
+  constructor(options: MapperOptions) {
+    super(options)
 
     // PRG ROM bank
     this.options.setWriteMemory(0x6000, 0x7fff, (_adr, value) => {

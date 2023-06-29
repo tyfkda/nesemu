@@ -2,7 +2,6 @@
 
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
-import {Util} from '../../util/util'
 
 const kMirrorTable = [
   MirrorMode.SINGLE0,
@@ -24,10 +23,8 @@ export class Mapper001 extends Mapper {
     return new Mapper001(options)
   }
 
-  constructor(private options: MapperOptions) {
-    super()
-
-    this.sram = new Uint8Array(0x2000)
+  constructor(options: MapperOptions) {
+    super(options, 0x2000)
 
     const BANK_BIT = 14  // 16KB
     this.maxPrg = (options.cartridge!.prgRom.byteLength >> BANK_BIT) - 1
@@ -84,29 +81,22 @@ export class Mapper001 extends Mapper {
       this.resetRegister()
     })
 
-    // PRG RAM
-    this.sram.fill(0xbf)
-    this.options.setReadMemory(0x6000, 0x7fff, adr => this.sram[adr & 0x1fff])
-    this.options.setWriteMemory(0x6000, 0x7fff,
-                                (adr, value) => { this.sram[adr & 0x1fff] = value })
-
     this.setPrgBank(0, 0xff)
   }
 
   public save(): object {
-    return {
-      ram: Util.convertUint8ArrayToBase64String(this.sram),
+    return super.save({
       register: this.register,
       counter: this.counter,
       prgBankMode: this.prgBankMode,
       prgReg: this.prgReg,
       chrBank4k: this.chrBank4k,
       chrBank: this.chrBank,
-    }
+    })
   }
 
   public load(saveData: any): void {
-    this.sram = Util.convertBase64StringToUint8Array(saveData.ram)
+    super.load(saveData)
     this.register = saveData.register
     this.counter = saveData.counter
     this.prgBankMode = saveData.prgBankMode
