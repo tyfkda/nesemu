@@ -19,6 +19,7 @@ export class AudioManager {
   private channels = new Array<SoundChannel>()
   private dmcChannelIndex = -1
   private cartridge: ICartridge
+  private dmcScriptable = false
 
   public static setUp(audioContextClass: any): void {
     if (AudioManager.initialized)
@@ -107,6 +108,10 @@ export class AudioManager {
     this.cartridge = cartridge
   }
 
+  public forceDmcScriptable(value: boolean): void {
+    this.dmcScriptable = value
+  }
+
   public addChannel(type: WaveType): void {
     const context = AudioManager.context
     if (context == null)
@@ -132,7 +137,7 @@ export class AudioManager {
       {
         this.dmcChannelIndex = this.channels.length
 
-        const dmc = createDmcChannel(context, destination)
+        const dmc = createDmcChannel(context, destination, this.dmcScriptable)
         sc = dmc
 
         if (this.cartridge != null)

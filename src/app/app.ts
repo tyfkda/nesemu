@@ -269,6 +269,8 @@ export class App {
       this.audioManager.releaseAllChannels()
     }
     this.audioManager.setCartridge(this.cartridge)
+    if (this.fds != null)
+      this.audioManager.forceDmcScriptable(true)
 
     const waveTypes = this.nes.getChannelWaveTypes()
     for (const type of waveTypes) {

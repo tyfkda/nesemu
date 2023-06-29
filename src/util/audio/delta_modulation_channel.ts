@@ -143,7 +143,7 @@ class AwDmcChannel extends IDmcChannel {
   }
 }
 
-export function createDmcChannel(context: AudioContext, destination: AudioNode): IDmcChannel {
-  return AwDmcChannel.create(context, destination) ||
+export function createDmcChannel(context: AudioContext, destination: AudioNode, forceScriptable = false): IDmcChannel {
+  return (!forceScriptable && AwDmcChannel.create(context, destination)) ||
       new SpDmcChannel(context, destination)
 }
