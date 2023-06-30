@@ -34,6 +34,8 @@ export class Mapper {
 
   public onHblank(_hcount: number): void {}
 
+  public getSram(): Uint8Array|null { return this.sram }
+
   public save(): object {
     return {}
   }

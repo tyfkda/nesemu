@@ -209,6 +209,10 @@ export class Nes {
       if (0 <= value && value <= 0x1f) {  // RAM
         this.ppu.copyWithDma(this.ram, value << 8)
         // TODO: Consume CPU or GPU cycles.
+      } else if (0x60 <= value && value <= 0x7f) {
+        const sram = this.mapper.getSram()
+        if (sram != null)
+          this.ppu.copyWithDma(sram, (value - 0x60) << 8)
       } else {
         console.error(`OAMDMA not implemented except for RAM: ${Util.hex(value, 2)}`)
       }
