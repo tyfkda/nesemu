@@ -19,28 +19,31 @@ export const enum KeyType {
 }
 
 export class Keyboard implements Peripheral {
-  private ioMap: Map<number, (adr: Address, value?: Byte) => any>
+  private ioMap = new Map<number, (adr: Address, value?: Byte) => any>()
   private state = new Uint8Array(10 * 2)
   private rowcol = 0
 
   constructor() {
     this.state.fill(0x1e)
 
-    this.ioMap = new Map<number, (adr: Address, value?: Byte) => any>()
     this.ioMap.set(0x4016, (_adr: Address, value?: Byte) => {
-      const prevcol = this.rowcol & 1
-      const col = (value! >> 1) & 1
-      this.rowcol = (this.rowcol & ~1) | col
-      if (col === 0 && prevcol !== 0)  // High to low.
-        this.rowcol = (this.rowcol + 2) % (10 * 2)
-      if ((value! & 1) !== 0) {
-        this.rowcol = 0
+      if (value != null) {
+        const prevcol = this.rowcol & 1
+        const col = (value! >> 1) & 1
+        this.rowcol = (this.rowcol & ~1) | col
+        if (col === 0 && prevcol !== 0)  // High to low.
+          this.rowcol = (this.rowcol + 2) % (10 * 2)
+        if ((value! & 1) !== 0) {
+          this.rowcol = 0
+        }
       }
     })
-    this.ioMap.set(0x4017, (_adr: Address) => {
-      const result = this.state[this.rowcol]
-      this.rowcol += 1
-      return result
+    this.ioMap.set(0x4017, (_adr: Address, value?: Byte): any => {
+      if (value == null) {
+        const result = this.state[this.rowcol]
+        this.rowcol += 1
+        return result
+      }
     })
   }
 

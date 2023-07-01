@@ -12,6 +12,7 @@ const kChrBankTable: Array<Array<number>> = [
 ]
 
 export class Mapper005 extends Mapper {
+  private ioMap = new Map<number, (adr: Address, value?: Byte) => any>()
   private exram = new Uint8Array(0x0400)  // Expansion RAM
   private maxPrg = 0
   private prgMode = 3  // 0=One 32KB, 1=Two 16KB, 2=One 16KB + two 8KB, 3=Four 8KB
@@ -36,124 +37,35 @@ export class Mapper005 extends Mapper {
     const BANK_BIT = 13  // 0x2000
     this.maxPrg = (this.options.cartridge!.prgRom.byteLength >> BANK_BIT) - 1
 
-    // Select
-    this.options.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
-      if (adr >= 0x5c00 /*&& adr <= 0x5fff*/) {
-        this.exram[adr - 0x5c00] = value
-        return
-      }
-
-      switch (adr) {
-      default:
-        this.options.writeToApu(adr, value)
-        break
-      case 0x5100:
-        this.prgMode = value & 3
-        break
-      case 0x5101:
-        this.chrMode = value & 3
-        this.updateChrBanks(false)
-        break
-      case 0x5105:
-        this.options.setMirrorModeBit(value)
-        break
-      case 0x5113:
-        // RAM
-        break
-      case 0x5114:
-        switch (this.prgMode) {
-        case 3:
-          this.options.setPrgBank(0, value & this.maxPrg)
-          break
-        default:
-          break
-        }
-        break
-      case 0x5115:
-        switch (this.prgMode) {
+    // IO
+    for (const [start, end, flag] of [[0x5100, 0x5130, 1], [0x5200, 0x5206, 3]]) {
+      for (let adr = start; adr <= end; ++adr) {
+        switch (flag) {
         case 1:
-        case 2:
-          this.options.setPrgBank(0,  (value & -2)      & this.maxPrg)
-          this.options.setPrgBank(1, ((value & -2) + 1) & this.maxPrg)
+          this.ioMap.set(adr, (adr, value) => this.writeIo(adr, value as Byte))
           break
         case 3:
-          this.options.setPrgBank(1, value & this.maxPrg)
+          this.ioMap.set(adr, (adr, value): any => {
+            if (value == null)
+              return this.readIo(adr)
+            this.writeIo(adr, value as Byte)
+          })
           break
-        default:
-          break
+        default: console.assert(false); break
         }
-        break
-      case 0x5116:
-        switch (this.prgMode) {
-        case 2:
-        case 3:
-          this.options.setPrgBank(2, value & this.maxPrg)
-          break
-        default:
-          break
-        }
-        break
-      case 0x5117:
-        switch (this.prgMode) {
-        case 0:
-          this.options.setPrgBank(0,  (value & -4)      & this.maxPrg)
-          this.options.setPrgBank(1, ((value & -4) + 1) & this.maxPrg)
-          this.options.setPrgBank(2, ((value & -4) + 2) & this.maxPrg)
-          this.options.setPrgBank(3, ((value & -4) + 3) & this.maxPrg)
-          break
-        case 1:
-          this.options.setPrgBank(2,  (value & -2)      & this.maxPrg)
-          this.options.setPrgBank(3, ((value & -2) + 1) & this.maxPrg)
-          break
-        case 2:
-        case 3:
-          this.options.setPrgBank(3, value & this.maxPrg)
-          break
-        default:
-          break
-        }
-        break
-
-      case 0x5120: case 0x5121: case 0x5122: case 0x5123:
-      case 0x5124: case 0x5125: case 0x5126: case 0x5127:
-      case 0x5128: case 0x5129: case 0x512a: case 0x512b:
-        this.switchChrBank(adr, value)
-        break
-
-      case 0x5130:
-        this.upperChrBit = value & 3
-        break
-
-      case 0x5203:  // IRQ ScanlineCompare Value
-        this.irqHlineCompare = value
-        break
-      case 0x5204:  // Scanline IRQ Status
-        this.irqHlineEnable = (value & 0x80) !== 0
-        break
-
-      case 0x5205: case 0x5206:  // Unsigned 8x8 to 16 Multiplier
-        this.muls[adr - 0x5205] = value
-        break
       }
-    })
-
-    this.options.setReadMemory(0x4000, 0x5fff, (adr) => {
-      if (adr >= 0x5c00 /*&& adr <= 0x5fff*/) {
-        return this.exram[adr - 0x5c00]
-      }
-
-      switch (adr) {
-      default:
-        return this.options.readFromApu(adr)
-
-      case 0x5204:
-        // this.options.clearIrqRequest(IrqType.EXTERNAL)
-        return (this.ppuInFrame ? 0x40 : 0x00)
-
-      case 0x5205: case 0x5206:  // Unsigned 8x8 to 16 Multiplier
-        return ((this.muls[0] * this.muls[1]) >> ((adr - 0x5205) << 3)) & 0xff
-      }
-    })
+    }
+    // Expansion RAM
+    for (let adr = 0x5c00; adr <= 0x5fff; ++adr) {
+      this.ioMap.set(adr, (adr, value): any => {
+        const i = adr - 0x5c00
+        if (value == null)
+          return this.exram[i]
+        else
+          this.exram[i] = value
+      })
+    }
+    this.options.setPeripheral(this.ioMap)
   }
 
   public reset(): void {
@@ -192,6 +104,115 @@ export class Mapper005 extends Mapper {
     if (this.ppuInFrame && this.irqHlineEnable && this.irqHlineCompare === hcount && hcount !== 0) {
       this.options.requestIrq(IrqType.EXTERNAL)
     }
+  }
+
+  private writeIo(adr: Address, value: Byte): void {
+    switch (adr) {
+    default:
+      break
+    case 0x5100:
+      this.prgMode = value & 3
+      break
+    case 0x5101:
+      this.chrMode = value & 3
+      this.updateChrBanks(false)
+      break
+    case 0x5105:
+      this.options.setMirrorModeBit(value)
+      break
+    case 0x5113:
+      // RAM
+      break
+    case 0x5114:
+      switch (this.prgMode) {
+      case 3:
+        this.options.setPrgBank(0, value & this.maxPrg)
+        break
+      default:
+        break
+      }
+      break
+    case 0x5115:
+      switch (this.prgMode) {
+      case 1:
+      case 2:
+        this.options.setPrgBank(0,  (value & -2)      & this.maxPrg)
+        this.options.setPrgBank(1, ((value & -2) + 1) & this.maxPrg)
+        break
+      case 3:
+        this.options.setPrgBank(1, value & this.maxPrg)
+        break
+      default:
+        break
+      }
+      break
+    case 0x5116:
+      switch (this.prgMode) {
+      case 2:
+      case 3:
+        this.options.setPrgBank(2, value & this.maxPrg)
+        break
+      default:
+        break
+      }
+      break
+    case 0x5117:
+      switch (this.prgMode) {
+      case 0:
+        this.options.setPrgBank(0,  (value & -4)      & this.maxPrg)
+        this.options.setPrgBank(1, ((value & -4) + 1) & this.maxPrg)
+        this.options.setPrgBank(2, ((value & -4) + 2) & this.maxPrg)
+        this.options.setPrgBank(3, ((value & -4) + 3) & this.maxPrg)
+        break
+      case 1:
+        this.options.setPrgBank(2,  (value & -2)      & this.maxPrg)
+        this.options.setPrgBank(3, ((value & -2) + 1) & this.maxPrg)
+        break
+      case 2:
+      case 3:
+        this.options.setPrgBank(3, value & this.maxPrg)
+        break
+      default:
+        break
+      }
+      break
+
+    case 0x5120: case 0x5121: case 0x5122: case 0x5123:
+    case 0x5124: case 0x5125: case 0x5126: case 0x5127:
+    case 0x5128: case 0x5129: case 0x512a: case 0x512b:
+      this.switchChrBank(adr, value)
+      break
+
+    case 0x5130:
+      this.upperChrBit = value & 3
+      break
+
+    case 0x5203:  // IRQ ScanlineCompare Value
+      this.irqHlineCompare = value
+      break
+    case 0x5204:  // Scanline IRQ Status
+      this.irqHlineEnable = (value & 0x80) !== 0
+      break
+
+    case 0x5205: case 0x5206:  // Unsigned 8x8 to 16 Multiplier
+      this.muls[adr - 0x5205] = value
+      break
+    }
+  }
+
+  private readIo(adr: Address): Byte {
+    switch (adr) {
+    default:
+      break
+
+    case 0x5204:
+      // this.options.clearIrqRequest(IrqType.EXTERNAL)
+      return (this.ppuInFrame ? 0x40 : 0x00)
+
+    case 0x5205: case 0x5206:  // Unsigned 8x8 to 16 Multiplier
+      return ((this.muls[0] * this.muls[1]) >> ((adr - 0x5205) << 3)) & 0xff
+    }
+    return 0
   }
 
   private switchChrBank(adr: Address, value: Byte) {

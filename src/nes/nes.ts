@@ -99,8 +99,10 @@ export class Nes {
   }
 
   public setPeripheral(ioMap: Map<number, (adr: Address, value?: Byte) => any>): void {
-    for (const [key, value] of ioMap)
-      this.peripheralMap.set(key, value)
+    for (const [adr, value] of ioMap) {
+      console.assert(0x4000 <= adr && adr <= 0x5fff)
+      this.peripheralMap.set(adr, value)
+    }
   }
 
   public setMapper(mapper: Mapper): void {
@@ -201,16 +203,15 @@ export class Nes {
       getPpuRegs: this.ppu.getRegs.bind(this.ppu),
       setChrData: this.ppu.setChrData.bind(this.ppu),
       writePpuDirect: this.ppu.writePpuDirect.bind(this.ppu),
-      writeToApu: (adr: Address, value: Byte) => this.writeToApu(adr, value),
-      readFromApu: (adr: Address) => this.readFromApu(adr),
+      setPeripheral: this.setPeripheral.bind(this),
     })
   }
 
-  public readFromApu(adr: Address): Byte {
+  protected readFromApu(adr: Address): Byte {
     return this.apu.read(adr)
   }
 
-  public writeToApu(adr: Address, value: Byte): void {
+  protected writeToApu(adr: Address, value: Byte): void {
     switch (adr) {
     case OAMDMA:
       if (0 <= value && value <= 0x1f) {  // RAM

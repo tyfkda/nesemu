@@ -1,9 +1,12 @@
 import {Mapper020} from './mapper020'
 import {Nes} from '../nes'
+import {Address, Byte} from '../types'
+import {Peripheral} from '../peripheral/keyboard'
 
 // Famicom Disk System
-export class Fds {
+export class Fds implements Peripheral {
   private mapper: Mapper020
+  private ioMap = new Map<number, (adr: Address, value?: Byte) => any>()
 
   constructor(biosData: Uint8Array, private nes: Nes) {
     const bus = this.nes.getBus()
@@ -23,11 +26,24 @@ export class Fds {
       getPpuRegs: ppu.getRegs.bind(ppu),
       setChrData: ppu.setChrData.bind(ppu),
       writePpuDirect: ppu.writePpuDirect.bind(ppu),
-      writeToApu: this.nes.writeToApu.bind(this.nes),
-      readFromApu: this.nes.readFromApu.bind(this.nes),
+      setPeripheral: this.nes.setPeripheral.bind(this.nes),
     })
 
     this.nes.setMapper(this.mapper)
+
+    const readFn = (adr: number, value?: Byte): any => {
+      if (value == null)
+        return this.mapper.readDiskReg(adr)
+    }
+    const writeFn = (adr: number, value?: Byte): any => {
+      if (value != null)
+        return this.mapper.writeDiskReg(adr, value)
+    }
+    for (let adr = 0x4020; adr <= 0x402f; ++adr)
+      this.ioMap.set(adr, writeFn)
+    for (let adr = 0x4030; adr <= 0x403f; ++adr)
+      this.ioMap.set(adr, readFn)
+    this.nes.setPeripheral(this.getIoMap())
   }
 
   public setImage(image: Uint8Array): boolean {
@@ -46,4 +62,6 @@ export class Fds {
   public setSide(side: number): void {
     this.mapper.setSide(side)
   }
+
+  public getIoMap(): Map<number, (adr: number, value?: Byte) => any> { return this.ioMap }
 }

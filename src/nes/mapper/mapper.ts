@@ -22,9 +22,8 @@ export interface MapperOptions {
   getPpuRegs(): Readonly<Uint8Array>
   setChrData(chrData: Uint8Array): void
   writePpuDirect(addr: Address, value: Byte): void
-  // APU
-  writeToApu: (adr: Address, value: Byte) => void
-  readFromApu: (adr: Address) => Byte
+  // Peripheral
+  setPeripheral(ioMap: Map<number, (adr: Address, value?: Byte) => any>): void
 }
 
 export class Mapper {

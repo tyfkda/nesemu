@@ -133,17 +133,6 @@ export class Mapper020 extends Mapper {
     // BIOS ROM
     this.options.setReadMemory(0xe000, 0xffff, adr => this.biosData[adr - 0xe000])
 
-    this.options.setReadMemory(0x4000, 0x5fff, adr => {  // APU
-      if (0x4030 <= adr && adr <= 0x403f)
-        return this.readDiskReg(adr)
-      return this.options.readFromApu(adr)
-    })
-    this.options.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
-      if (0x4020 <= adr && adr <= 0x402f)
-        return this.writeDiskReg(adr, value)
-      this.options.writeToApu(adr, value)
-    })
-
     // PRG RAM
     this.ram.fill(0xbf)
     this.options.setReadMemory(0x6000, 0xdfff, adr => this.ram[adr - 0x6000])
@@ -269,7 +258,7 @@ export class Mapper020 extends Mapper {
     this.ram = ram
   }
 
-  private readDiskReg(adr: Address): Byte {
+  public readDiskReg(adr: Address): Byte {
     const reg = (adr - 0x4030) | 0
 // console.log(`read: ${Util.hex(adr, 4)}`)
     switch (reg) {
@@ -330,7 +319,7 @@ export class Mapper020 extends Mapper {
     return 0
   }
 
-  private writeDiskReg(adr: Address, value: Byte): void {
+  public writeDiskReg(adr: Address, value: Byte): void {
     const reg = (adr - 0x4020) | 0
 // console.log(`write: ${Util.hex(adr, 4)} = ${Util.hex(value)}`)
     this.regs[reg] = value
