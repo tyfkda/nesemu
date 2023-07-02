@@ -31,6 +31,13 @@ NES emulator written in TypeScript.
 
   * You can also use a gamepad
 
+Shortcut key:
+
+| Key      | Action     |
+|----------|------------|
+| F1       | Save state |
+| F3       | Load state |
+
 
 ## Development
 

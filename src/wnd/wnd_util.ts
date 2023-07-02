@@ -285,7 +285,14 @@ export class WndUtil {
           submenuRow.appendChild(checkedElem)
         }
 
-        subItemElem.innerText = submenuItem.label
+        subItemElem.appendChild(document.createTextNode(submenuItem.label))
+        if (submenuItem.shortcut != null) {
+          const sc = document.createElement('span')
+          sc.className = 'pull-right'
+          sc.innerText = submenuItem.shortcut
+          subItemElem.appendChild(sc)
+        }
+
         let disabled = submenuItem.disabled
         if (typeof submenuItem.disabled === 'function')
           disabled = submenuItem.disabled()

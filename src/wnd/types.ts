@@ -19,6 +19,7 @@ export const enum WndEvent {
 
 export interface SubmenuItemInfo {
   label: string
+  shortcut?: string
   click?: () => void
   checked?: boolean | (() => boolean)
   disabled?: boolean | (() => boolean)

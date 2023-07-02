@@ -208,17 +208,20 @@ export class App {
     return StorageUtil.hasKey(this.title)
   }
 
-  public loadData(): any {
+  public loadData(): boolean {
     const saveData = StorageUtil.getObject(this.title, null)
     if (saveData) {
       try {
         this.nes.load(saveData)
+        return true
       } catch (e) {
         console.error(e)
         this.wndMgr.showSnackbar('Error: Load data failed')
+        return false
       }
     } else {
       this.wndMgr.showSnackbar(`No save data for "${this.title}"`)
+      return false
     }
   }
 

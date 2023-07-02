@@ -164,6 +164,8 @@ export class ScreenWnd extends Wnd {
   protected subscription: Pubsub.Subscription
   private fullscreenBase: HTMLElement
   private canvasHolder: HTMLElement
+  private messageHolder: HTMLElement
+  private messageTimer: any
   private scaler: Scaler
   private overscan = true
   private contentWidth = 0  // Content size, except fullscreen
@@ -201,6 +203,20 @@ export class ScreenWnd extends Wnd {
     this.canvasHolder = document.createElement('div')
     this.canvasHolder.style.transitionDuration = TRANSITION_DURATION
     this.fullscreenBase.appendChild(this.canvasHolder)
+
+    this.messageHolder = document.createElement('div')
+    DomUtil.setStyles(this.messageHolder, {
+      position: 'absolute',
+      top: '2px',
+      left: '2px',
+      color: '#0f0',
+      textShadow: '1px 1px black',
+      fontWeight: 'bold',
+      textWrap: 'nowrap',
+      display: 'none',
+    })
+    this.messageHolder.innerText = 'State saved!'
+    this.contentHolder.appendChild(this.messageHolder)
 
     this.setScaler(GlobalSetting.scaler)
     this.addResizeBox()
@@ -331,8 +347,21 @@ export class ScreenWnd extends Wnd {
     case WndEvent.KEY_DOWN:
       {
         const event = param as KeyboardEvent
-        if (!(event.ctrlKey || event.altKey || event.metaKey))
+        if (!(event.ctrlKey || event.altKey || event.metaKey)) {
           this.domKeyboardManager.onKeyDown(event)
+          if (this.nesKeyboard == null) {
+            switch (event.code) {
+            case 'F1':  // Save state
+              this.saveData()
+              break
+            case 'F3':  // Load state
+              this.loadData()
+              break
+            default: break
+            }
+          }
+        }
+
         if (this.nesKeyboard != null && event.code in kKeyMapping)
           this.nesKeyboard.setKeyState(kKeyMapping[event.code], true)
       }
@@ -493,7 +522,8 @@ export class ScreenWnd extends Wnd {
           {label: '----'},
           {
             label: 'Save status',
-            click: () => this.app.saveData(),
+            shortcut: 'F1',
+            click: () => this.saveData(),
           },
           (window.showSaveFilePicker == null ? null : {
             label: window.showSaveFilePicker != null ? 'Save status to file' : 'Download status to file',
@@ -511,8 +541,9 @@ export class ScreenWnd extends Wnd {
           {label: '----'},
           {
             label: 'Load status',
+            shortcut: 'F3',
             disabled: () => !this.app.hasSaveData(),
-            click: () => this.app.loadData(),
+            click: () => this.loadData(),
           },
           {
             label: window.showOpenFilePicker != null ? 'Load status from file' : 'Restore status from file',
@@ -838,5 +869,31 @@ export class ScreenWnd extends Wnd {
     }
     DomUtil.removeAllChildren(this.canvasHolder)
     this.canvasHolder.appendChild(this.scaler.getCanvas())
+  }
+
+  private saveData(): void {
+    const message = this.app.saveData() ? 'State saved!' : 'Save failed.'
+    this.showMessage(message)
+  }
+
+  private loadData(): void {
+    if (this.app.loadData())  // Error is reported in the method.
+    this.showMessage('State loaded!')
+  }
+
+  protected showMessage(message: string): void {
+    if (this.messageTimer != null)
+      clearTimeout(this.messageTimer)
+
+    this.messageHolder.innerText = message
+    DomUtil.setStyles(this.messageHolder, {
+      display: 'block',
+    })
+    this.messageTimer = setTimeout(() => {
+      DomUtil.setStyles(this.messageHolder, {
+        display: 'none',
+      })
+      this.messageTimer = null
+    }, 2000)
   }
 }
