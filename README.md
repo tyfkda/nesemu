@@ -11,6 +11,8 @@ NES emulator written in TypeScript.
   * Gamepad support
   * Fullscreen
   * Multi-window
+  * Famicom Disk System
+  * Family BASIC
 
 
 ## How to play

@@ -151,7 +151,7 @@ export class Mapper020 extends Mapper {
     this.readData = 0
     this.endOfHead = true
     this.scanningDisk = false
-    // this.gapEnded = false
+    this.gapEnded = false
     this.delay = 0
   }
 
@@ -210,29 +210,43 @@ export class Mapper020 extends Mapper {
 
       let needIrq = (this.regs[Reg.FDS_CTRL] & FdsCtrl.ENABLE_IRQ_WHEN_DRIVE_READY) !== 0
 
-// console.log(`  read from disk: ${Util.hex(this.headPointer, 4)}: ${Util.hex(this.image[this.headPointer])}`)
-      const diskData = this.image[this.headPointer]
-      if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.READ_WRITE_START) === 0) {
-        this.gapEnded = false
-      } else if (diskData !== 0 && !this.gapEnded) {
-        this.gapEnded = true
-        needIrq = false
-      }
-
-      if (this.gapEnded) {
-        this.transferComplete = true
-        this.readData = diskData
-        if (needIrq) {
-          this.options.requestIrq(IrqType.FDS)
+      if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.READ) !== 0) {
+        const diskData = this.image[this.headPointer]
+        if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.READ_WRITE_START) === 0) {
+          this.gapEnded = false
+        } else if (diskData !== 0 && !this.gapEnded) {
+          this.gapEnded = true
+          needIrq = false
         }
-      }
 
-      // ++this.headPointer
-      // if (this.headPointer >= this.image.length) {
-      //   this.regs[Reg.FDS_CTRL] &= ~FdsCtrl.MOTOR_ON
-      // } else {
-      //   this.delay = 150 //150  // ?
-      // }
+        if (this.gapEnded) {
+          this.transferComplete = true
+          this.readData = diskData
+          if (needIrq) {
+            ++this.headPointer
+
+            if (this.headPointer >= this.image!.length) {
+              this.regs[Reg.FDS_CTRL] &= ~FdsCtrl.MOTOR_ON
+            }
+
+            this.options.requestIrq(IrqType.FDS)
+          }
+        }
+      } else {
+        if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.CRC_CTRL) === 0) {
+          this.transferComplete = true
+          if (needIrq) {
+            if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.READ_WRITE_START) !== 0) {
+              const diskData = this.regs[Reg.WRITE_DATA]
+              this.writeDataToDisk(diskData)
+            }
+
+            this.options.requestIrq(IrqType.FDS)
+          }
+        }
+
+        this.gapEnded = false
+      }
     }
   }
 
@@ -260,12 +274,11 @@ export class Mapper020 extends Mapper {
 
   public readDiskReg(adr: Address): Byte {
     const reg = (adr - 0x4030) | 0
-// console.log(`read: ${Util.hex(adr, 4)}`)
     switch (reg) {
     case Read.DISK_STATUS:
       {
         let val = 0
-        if (this.image) {
+        if (this.image != null) {
           val = DiskStatus.READ_WRITE_ENABLE
           if (this.timerIrqOccurred) {
             val |= DiskStatus.TIMER_INTERRUPT
@@ -281,20 +294,8 @@ export class Mapper020 extends Mapper {
         return val
       }
     case Read.READ_DATA:
-// console.log(`READ_DATA: ${Util.hex(this.readData, 2)}, pointer=${Util.hex(this.headPointer, 4)}, CRC=${(this.regs[Reg.FDS_CTRL] & FdsCtrl.CRC_CTRL) !== 0}`)
       {
         const result = this.readData
-        if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.READ) !== 0) {
-          // if ((this.regs[Reg.FDS_CTRL] & FdsCtrl.CRC_CTRL) === 0) {
-            ++this.headPointer
-
-            if (this.headPointer >= (this.image as Uint8Array).length) {
-              this.regs[Reg.FDS_CTRL] &= ~FdsCtrl.MOTOR_ON
-            }
-          // } else {
-          //   console.log('CRC')
-          // }
-        }
         this.transferComplete = false
         this.options.clearIrqRequest(IrqType.FDS)
         return result
@@ -311,7 +312,6 @@ export class Mapper020 extends Mapper {
         return val
       }
     case Read.EXTERNAL_CONNECTOR_R:
-      // return EXTERNAL_CONNECTOR_R_BATTERY_GOOD | (this.regs[Reg.EXTERNAL_CONNECTOR_W] & 0x7f)
       return this.regs[Reg.EXTERNAL_CONNECTOR_W]
     default:
       break
@@ -321,20 +321,17 @@ export class Mapper020 extends Mapper {
 
   public writeDiskReg(adr: Address, value: Byte): void {
     const reg = (adr - 0x4020) | 0
-// console.log(`write: ${Util.hex(adr, 4)} = ${Util.hex(value)}`)
     this.regs[reg] = value
 
     switch (reg) {
     case Reg.IRQ_CTRL:
-      // if ((this.regs[Reg.MASTER_IO_ENABLE] & MasterIoEnable.DISK) !== 0) {
-        if ((value & IrqCtrl.ENABLED) !== 0) {
-          this.irqCounter = (this.regs[Reg.IRQ_RELOAD_H] << 8) | this.regs[Reg.IRQ_RELOAD_L]
-        } else {
-          this.irqCounter = 0
-          this.timerIrqOccurred = false
-          this.options.clearIrqRequest(IrqType.EXTERNAL)
-        }
-      // }
+      if ((value & IrqCtrl.ENABLED) !== 0) {
+        this.irqCounter = (this.regs[Reg.IRQ_RELOAD_H] << 8) | this.regs[Reg.IRQ_RELOAD_L]
+      } else {
+        this.irqCounter = 0
+        this.timerIrqOccurred = false
+        this.options.clearIrqRequest(IrqType.EXTERNAL)
+      }
       break
     case Reg.MASTER_IO_ENABLE:
       if ((value & MasterIoEnable.DISK) === 0) {
@@ -359,6 +356,19 @@ export class Mapper020 extends Mapper {
       break
     default:
       break
+    }
+  }
+
+  private writeDataToDisk(data: Byte): void {
+    if (this.headPointer < 2 || this.headPointer >= this.image!.length) {
+      console.error(`Illegal disk write: out of head range: ${this.headPointer}`)
+    } else {
+      this.image![this.headPointer - 2] = data
+    }
+
+    ++this.headPointer
+    if (this.headPointer >= this.image!.length) {
+      this.regs[Reg.FDS_CTRL] &= ~FdsCtrl.MOTOR_ON
     }
   }
 }
