@@ -2,11 +2,13 @@
 // https://wiki.nesdev.com/w/index.php/Family_Computer_Disk_System
 // https://wiki.nesdev.com/w/index.php/FDS_BIOS
 
+import {FdsAudio} from './fds_audio'
 import {Address, Byte} from '../types'
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from '../mapper/mapper'
 import {MirrorMode} from '../ppu/types'
 import {Util} from '../../util/util'
+import {IChannel, WaveType} from '../apu'
 
 const Reg = {
   // $402x: write-only registers
@@ -123,6 +125,8 @@ export class FdsMapper extends Mapper {
   private gapEnded = false
   private delay = 0
   private readData = 0
+
+  private audio = new FdsAudio()
 
   public constructor(private biosData: Uint8Array, options: MapperOptions) {
     super(options)
@@ -357,6 +361,27 @@ export class FdsMapper extends Mapper {
     default:
       break
     }
+  }
+
+  public getExtraChannelWaveTypes(): WaveType[]|null {
+    return this.audio.getExtraChannelWaveTypes()
+  }
+
+  public getSoundChannel(ch: number): IChannel {
+    return this.audio.getSoundChannel(ch)
+  }
+
+  public readAudio(adr: Address): Byte {
+    return this.isSoundEnable() ? this.audio.read(adr) : 0x00
+  }
+
+  public writeAudio(adr: Address, value: Byte): void {
+    if (this.isSoundEnable())
+      this.audio.write(adr, value)
+  }
+
+  private isSoundEnable(): boolean {
+    return (this.regs[Reg.MASTER_IO_ENABLE] & MasterIoEnable.SOUND) !== 0
   }
 
   private writeDataToDisk(data: Byte): void {

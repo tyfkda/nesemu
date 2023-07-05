@@ -223,7 +223,7 @@ export interface IDeltaModulationChannel {
   getWriteBuf(): ReadonlyArray<number>
 }
 
-class PulseChannel extends ChannelBase implements IPulseChannel {
+export class PulseChannel extends ChannelBase implements IPulseChannel {
   private lengthCounter = 0
   private sweepCounter = 0
   private envelope = new Envelope()

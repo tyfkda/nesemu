@@ -91,8 +91,11 @@ export class Nes {
     this.setMemoryMap()
     this.mapper = this.createMapper(cartridge.mapperNo, cartridge)
 
+    this.addExtraSoundChannels(this.mapper.getExtraChannelWaveTypes())
+  }
+
+  public addExtraSoundChannels(extras: WaveType[]|null): void {
     let channels = this.apu.getWaveTypes()
-    const extras = this.mapper.getExtraChannelWaveTypes()
     if (extras != null)
       channels = channels.concat(extras)
     this.channelWaveTypes = channels

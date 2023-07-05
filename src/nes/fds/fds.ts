@@ -29,21 +29,34 @@ export class Fds implements Peripheral {
       writePpuDirect: ppu.writePpuDirect.bind(ppu),
       setPeripheral: this.nes.setPeripheral.bind(this.nes),
     })
-
     this.nes.setMapper(this.mapper)
 
-    const readFn = (adr: number, value?: Byte): any => {
-      if (value == null)
-        return this.mapper.readDiskReg(adr)
+    {
+      const readFn = (adr: number, value?: Byte): any => {
+        if (value == null)
+          return this.mapper.readDiskReg(adr)
+      }
+      const writeFn = (adr: number, value?: Byte): any => {
+        if (value != null)
+          return this.mapper.writeDiskReg(adr, value)
+      }
+      for (let adr = 0x4020; adr <= 0x402f; ++adr)
+        this.ioMap.set(adr, writeFn)
+      for (let adr = 0x4030; adr <= 0x403f; ++adr)
+        this.ioMap.set(adr, readFn)
+
+      const audioFn = (adr: number, value?: Byte): any => {
+        if (value != null)
+          this.mapper.writeAudio(adr, value)
+        else
+          return this.mapper.readAudio(adr)
+      }
+      for (let adr = 0x4040; adr <= 0x4097; ++adr)
+        this.ioMap.set(adr, audioFn)
     }
-    const writeFn = (adr: number, value?: Byte): any => {
-      if (value != null)
-        return this.mapper.writeDiskReg(adr, value)
-    }
-    for (let adr = 0x4020; adr <= 0x402f; ++adr)
-      this.ioMap.set(adr, writeFn)
-    for (let adr = 0x4030; adr <= 0x403f; ++adr)
-      this.ioMap.set(adr, readFn)
+
+    this.nes.addExtraSoundChannels(this.mapper.getExtraChannelWaveTypes())
+
     this.nes.setPeripheral(this.getIoMap())
   }
 
