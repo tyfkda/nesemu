@@ -108,7 +108,7 @@ function loadFdsImage(image: Uint8Array): Uint8Array[] {
   return diskSideImages
 }
 
-export class Mapper020 extends Mapper {
+export class FdsMapper extends Mapper {
   private ram = new Uint8Array(0xe000 - 0x6000)
   private regs = new Uint8Array(16)
   private diskSideImages = new Array<Uint8Array>()

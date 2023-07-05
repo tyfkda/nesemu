@@ -1,18 +1,19 @@
-import {Mapper020} from './mapper020'
+// Famicom Disk System
+
+import {FdsMapper} from './fds_mapper'
 import {Nes} from '../nes'
 import {Address, Byte} from '../types'
 import {Peripheral} from '../peripheral/keyboard'
 
-// Famicom Disk System
 export class Fds implements Peripheral {
-  private mapper: Mapper020
+  private mapper: FdsMapper
   private ioMap = new Map<number, (adr: Address, value?: Byte) => any>()
 
   constructor(biosData: Uint8Array, private nes: Nes) {
     const bus = this.nes.getBus()
     const cpu = this.nes.getCpu()
     const ppu = this.nes.getPpu()
-    this.mapper = new Mapper020(biosData, {
+    this.mapper = new FdsMapper(biosData, {
       cartridge: null,
       setReadMemory: bus.setReadMemory.bind(bus),
       setWriteMemory: bus.setWriteMemory.bind(bus),
