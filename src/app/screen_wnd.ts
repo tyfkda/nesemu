@@ -348,6 +348,7 @@ export class ScreenWnd extends Wnd {
       {
         const event = param as KeyboardEvent
         if (!(event.ctrlKey || event.altKey || event.metaKey)) {
+          event.preventDefault()
           this.domKeyboardManager.onKeyDown(event)
           if (this.nesKeyboard == null) {
             switch (event.code) {
@@ -362,8 +363,10 @@ export class ScreenWnd extends Wnd {
           }
         }
 
-        if (this.nesKeyboard != null && event.code in kKeyMapping)
+        if (this.nesKeyboard != null && event.code in kKeyMapping) {
           this.nesKeyboard.setKeyState(kKeyMapping[event.code], true)
+          event.preventDefault()
+        }
       }
       break
 

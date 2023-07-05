@@ -31,7 +31,6 @@ export class WindowManager {
         }
       }
 
-      event.preventDefault()
       if (this.windows.length > 0)
         this.windows[0].onEvent(WndEvent.KEY_DOWN, event)
     }
