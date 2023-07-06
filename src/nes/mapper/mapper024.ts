@@ -1,7 +1,7 @@
 // VRC6
 // http://wiki.nesdev.com/w/index.php/VRC6
 
-import {Channel, IPulseChannel, WaveType} from '../../nes/apu'
+import {ChannelBase, IChannel, IPulseChannel, WaveType} from '../../nes/apu'
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
@@ -33,7 +33,7 @@ const kWaveTypes: WaveType[] = [
   WaveType.SAWTOOTH,
 ]
 
-abstract class VrcChannel extends Channel {
+abstract class VrcChannel extends ChannelBase {
   halt = false
   frequencyScaling = 0
 }
@@ -258,7 +258,7 @@ class Mapper024Base extends Mapper {
     return kWaveTypes
   }
 
-  public getSoundChannel(ch: number): Channel {
+  public getSoundChannel(ch: number): IChannel {
     return this.channels[ch]
   }
 

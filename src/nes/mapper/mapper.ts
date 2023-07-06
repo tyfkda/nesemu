@@ -1,5 +1,5 @@
 import {Reader, Writer} from '../bus'
-import {Channel, WaveType} from '../apu'
+import {IChannel, WaveType} from '../apu'
 import {IrqType} from '../cpu/cpu'
 import {MirrorMode} from '../ppu/types'
 import {Address, Byte} from '../types'
@@ -77,7 +77,7 @@ export class Mapper {
     return null
   }
 
-  public getSoundChannel(_ch: number): Channel {
+  public getSoundChannel(_ch: number): IChannel {
     throw new Error('Invalid call')
   }
 }

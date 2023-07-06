@@ -171,7 +171,14 @@ class Envelope {
 
 // ================================================================
 // Sound channel
-export abstract class Channel {
+export interface IChannel {
+  getVolume(): number
+  getFrequency(): number
+  setEnable(value: boolean): void
+  isEnabled(): boolean
+}
+
+export abstract class ChannelBase implements IChannel {
   protected regs = new Uint8Array(4)
   protected enabled = false
   protected stopped = true
@@ -216,7 +223,7 @@ export interface IDeltaModulationChannel {
   getWriteBuf(): ReadonlyArray<number>
 }
 
-class PulseChannel extends Channel implements IPulseChannel {
+class PulseChannel extends ChannelBase implements IPulseChannel {
   private lengthCounter = 0
   private sweepCounter = 0
   private envelope = new Envelope()
@@ -326,7 +333,7 @@ class PulseChannel extends Channel implements IPulseChannel {
   }
 }
 
-class TriangleChannel extends Channel {
+class TriangleChannel extends ChannelBase {
   private lengthCounter = 0
   private linearCounter = 0
   private linearReload = false
@@ -391,7 +398,7 @@ class TriangleChannel extends Channel {
   }
 }
 
-class NoiseChannel extends Channel implements INoiseChannel {
+class NoiseChannel extends ChannelBase implements INoiseChannel {
   private lengthCounter = 0
   private envelope = new Envelope()
   private noisePeriod = [0, 0]
@@ -468,7 +475,7 @@ class NoiseChannel extends Channel implements INoiseChannel {
 }
 
 // DMC
-class DeltaModulationChannel extends Channel implements IDeltaModulationChannel {
+class DeltaModulationChannel extends ChannelBase implements IDeltaModulationChannel {
   private regsLengthCounter = 1
   private dmaLengthCounter = 0
 
@@ -558,12 +565,12 @@ class DeltaModulationChannel extends Channel implements IDeltaModulationChannel 
 // Apu
 export class Apu {
   private regs = new Uint8Array(0x20)
-  private channels: Array<Channel>
+  private channels: Array<ChannelBase>
   private frameInterrupt = 0  // 0=not occurred, 0x40=occurred
   private dmcInterrupt = 0x80  // 0=not occurred, 0x80=occurred
 
   constructor(private gamePads: GamePad[], private triggerIrq: () => void) {
-    this.channels = kWaveTypes.map((t: WaveType): Channel => {
+    this.channels = kWaveTypes.map((t: WaveType): ChannelBase => {
       switch (t) {
       case WaveType.PULSE:
         return new PulseChannel()
@@ -583,7 +590,7 @@ export class Apu {
     return kWaveTypes
   }
 
-  public getChannel(ch: number): Channel {
+  public getChannel(ch: number): ChannelBase {
     return this.channels[ch]
   }
 

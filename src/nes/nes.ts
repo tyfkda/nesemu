@@ -1,6 +1,6 @@
 // NES: Nintendo Entertainment System
 
-import {Apu, Channel, GamePad, WaveType} from './apu'
+import {Apu, IChannel, GamePad, WaveType} from './apu'
 import {Bus} from './bus'
 import {Cartridge} from './cartridge'
 import {Cpu, IrqType} from './cpu/cpu'
@@ -174,7 +174,7 @@ export class Nes {
     return this.channelWaveTypes
   }
 
-  public getSoundChannel(ch: number): Channel {
+  public getSoundChannel(ch: number): IChannel {
     if (ch < this.apuChannelCount)
       return this.apu.getChannel(ch)
     return this.mapper.getSoundChannel(ch - this.apuChannelCount)
