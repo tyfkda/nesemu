@@ -48,18 +48,29 @@ export class FdsCtrlWnd extends Wnd {
   }
 
   private createOptions(select: HTMLSelectElement, sideCount: number): void {
+    {
+      const option = document.createElement('option')
+      option.innerText = 'Eject'
+      select.appendChild(option)
+    }
+
     const side = ['A', 'B']
     for (let i = 0; i < sideCount; ++i) {
       const option = document.createElement('option')
       option.innerText = `${((i / 2) | 0) + 1}-${side[i & 1]}`
       select.appendChild(option)
     }
+    if (sideCount > 0)
+      select.value = '1-A'
 
-    select.addEventListener('change', _ => {
+    select.addEventListener('change', () => {
+      const index = select.selectedIndex
       this.fds.eject()
-      setTimeout(() => {
-        this.fds.setSide(select.selectedIndex)
-      }, 100)
+      if (index > 0) {
+        setTimeout(() => {
+          this.fds.setSide(index - 1)
+        }, 1200)
+      }
     })
   }
 }
