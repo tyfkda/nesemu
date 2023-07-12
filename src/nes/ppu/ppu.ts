@@ -143,10 +143,6 @@ export class Ppu {
     const vramBuffer = new ArrayBuffer(VRAM_SIZE)
     this.vram = new Uint8Array(vramBuffer)
 
-    this.reset()
-  }
-
-  public reset(): void {
     this.regs.fill(0)
     this.vram.fill(0)
     this.oam.fill(0)
@@ -154,6 +150,11 @@ export class Ppu {
     this.ppuAddr = 0
     this.latch = 0
     this.bufferedValue = 0
+
+    this.reset()
+  }
+
+  public reset(): void {
     this.hevents.clear()
     this.hstatusMgr.reset()
     this.offscreen.fill(0)

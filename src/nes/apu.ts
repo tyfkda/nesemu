@@ -570,6 +570,9 @@ export class Apu {
   private dmcInterrupt = 0x80  // 0=not occurred, 0x80=occurred
 
   constructor(private gamePads: GamePad[], private triggerIrq: () => void) {
+    this.regs.fill(0)
+    this.regs[FRAME_COUNTER] = IRQ_INHIBIT
+
     this.channels = kWaveTypes.map((t: WaveType): ChannelBase => {
       switch (t) {
       case WaveType.PULSE:
@@ -595,8 +598,6 @@ export class Apu {
   }
 
   public reset(): void {
-    this.regs.fill(0)
-    this.regs[FRAME_COUNTER] = IRQ_INHIBIT
     this.frameInterrupt = 0
     this.dmcInterrupt = 0x80  // TODO: Implement
     this.channels.forEach(channel => { channel.reset() })
