@@ -26,8 +26,8 @@ export class Mapper033 extends Mapper {
 	
 	
 		// Chr ROM bank
-		this.options.setWriteMemory(0x8000, 0xffff, (_adr, value) => {
-			switch (_adr & 0xa003) {
+		this.options.setWriteMemory(0x8000, 0xffff, (adr, value) => {
+			switch (adr & 0xa003) {
 				case 0x8000:
 					this.options.setPrgBank(0, value & 0x3f)
 					this.options.setMirrorMode((value & 0x40) === 0x40 ? MirrorMode.HORZ : MirrorMode.VERT)
@@ -44,7 +44,7 @@ export class Mapper033 extends Mapper {
 					this.options.setChrBankOffset(3, value*2+1)
 					break
 				case 0xa000: case 0xa001: case 0xa002: case 0xa003:
-					this.options.setChrBankOffset(4 + (_adr & 0x03), value)
+					this.options.setChrBankOffset(4 + (adr & 0x03), value)
 					break
 			}
 		})
