@@ -1,12 +1,6 @@
 import {Mapper, MapperOptions} from './mapper'
 import {MirrorMode} from '../ppu/types'
 
-const kMirrorTable = [
-  MirrorMode.VERT,
-  MirrorMode.HORZ,
-]
-
-
 export class Mapper033 extends Mapper {
 	public static create(options: MapperOptions): Mapper {
 		return new Mapper033(options)
