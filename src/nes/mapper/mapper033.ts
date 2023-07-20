@@ -13,7 +13,7 @@ export class Mapper033 extends Mapper {
 	}
 	
 	constructor(options: MapperOptions) {
-		super(options, 2000)
+		super(options)
 		
 		const BANK_BIT = 13  // 0x2000
 		const maxPrg = (options.cartridge!.prgRom.byteLength >> BANK_BIT) - 1
