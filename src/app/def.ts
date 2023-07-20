@@ -1,6 +1,7 @@
 export const ScalerType = {
   NEAREST: 'nearest',
   SCANLINE: 'scanline',
+  CRT: 'crt',
   EPX: 'epx',
 } as const
 

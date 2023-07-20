@@ -111,6 +111,60 @@ export class ScanlineScaler extends Scaler {
   }
 }
 
+export class CrtScaler extends Scaler {
+  private context: CanvasRenderingContext2D
+  private orgImageData: ImageData
+  private imageData: ImageData
+
+  public constructor() {
+    super()
+
+    this.canvas = createCanvas(WIDTH * 3, HEIGHT)
+    this.context = DomUtil.getCanvasContext2d(this.canvas)
+    this.imageData = this.context.getImageData(0, 0, this.canvas.width, this.canvas.height)
+    clearCanvasImage(this.imageData)
+
+    this.orgImageData = new ImageData(WIDTH, HEIGHT)
+    clearCanvasImage(this.orgImageData)
+  }
+
+  public render(nes: Nes): void {
+    nes.render(this.orgImageData.data)
+
+    // Copy per scanline
+    const src = this.orgImageData.data
+    const dst = this.imageData.data
+    for (let y = 0; y < HEIGHT; ++y) {
+      let si = y * (WIDTH * 4)
+      let di = y * (WIDTH * 3 * 4)
+      let pb2 = 0
+      for (let x = 0; x < WIDTH; ++x) {
+        const r = src[si + 0] + (src[si + 0] >> 2)
+        const g = src[si + 1] + (src[si + 1] >> 2)
+        const b = src[si + 2] + (src[si + 2] >> 2)
+        const r2 = r >> 1
+        const g2 = g >> 1
+        const b2 = b >> 1
+        const nr2 = x < WIDTH - 1 ? (src[si + 4]) >> 1 : 0
+        dst[di +  0] = Math.min(r, 255)
+        dst[di +  1] = g2
+        dst[di +  2] = pb2
+        dst[di +  4] = r2
+        dst[di +  5] = Math.min(g, 255)
+        dst[di +  6] = b2
+        dst[di +  8] = nr2
+        dst[di +  9] = g2
+        dst[di + 10] = Math.min(b, 255)
+        pb2 = b2
+        si += 4
+        di += 4 * 3
+      }
+    }
+
+    this.context.putImageData(this.imageData, 0, 0)
+  }
+}
+
 // EPX: https://en.wikipedia.org/wiki/Pixel-art_scaling_algorithms#EPX/Scale2%C3%97/AdvMAME2%C3%97
 export class EpxScaler extends Scaler {
   private context: CanvasRenderingContext2D

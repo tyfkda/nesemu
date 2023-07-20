@@ -5,7 +5,7 @@ import {MenuItemInfo, SubmenuItemInfo, WndEvent} from '../wnd/types'
 import {DomUtil} from '../util/dom_util'
 import {Nes} from '../nes/nes'
 import {MirrorMode} from '../nes/ppu/types'
-import {Scaler, NearestNeighborScaler, ScanlineScaler, EpxScaler} from '../util/scaler'
+import {Scaler, NearestNeighborScaler, ScanlineScaler, CrtScaler, EpxScaler} from '../util/scaler'
 
 import {App} from './app'
 import {AppEvent} from './app_event'
@@ -622,23 +622,22 @@ export class ScreenWnd extends Wnd {
           {
             label: 'Nearest',
             checked: () => this.scalerType === ScalerType.NEAREST,
-            click: () => {
-              this.updateScaler(ScalerType.NEAREST)
-            },
+            click: () => this.updateScaler(ScalerType.NEAREST),
           },
           {
             label: 'Scanline',
             checked: () => this.scalerType === ScalerType.SCANLINE,
-            click: () => {
-              this.updateScaler(ScalerType.SCANLINE)
-            },
+            click: () => this.updateScaler(ScalerType.SCANLINE),
+          },
+          {
+            label: 'Crt',
+            checked: () => this.scalerType === ScalerType.CRT,
+            click: () => this.updateScaler(ScalerType.CRT),
           },
           {
             label: 'Epx',
             checked: () => this.scalerType === ScalerType.EPX,
-            click: () => {
-              this.updateScaler(ScalerType.EPX)
-            },
+            click: () => this.updateScaler(ScalerType.EPX),
           },
         ],
       },
@@ -865,6 +864,9 @@ export class ScreenWnd extends Wnd {
       break
     case ScalerType.SCANLINE:
       this.scaler = new ScanlineScaler()
+      break
+    case ScalerType.CRT:
+      this.scaler = new CrtScaler()
       break
     case ScalerType.EPX:
       this.scaler = new EpxScaler()
