@@ -2,30 +2,26 @@
 
 import {IrqType} from '../cpu/cpu'
 import {Mapper, MapperOptions} from './mapper'
-import {PpuReg, PpuCtrlBit, PpuMaskBit} from '../ppu/types'
+import {PpuReg, PpuMaskBit} from '../ppu/types'
 import {VBlank} from '../const'
 import {Address, Byte} from '../types'
-
-const kChrBankTable: Array<Array<number>> = [
-  [0, 1,  2,  3, 4, 5,  6,  7],
-  [8, 9, 10, 11, 8, 9, 10, 11],
-]
+import {Util} from '../../util/util'
 
 export class Mapper005 extends Mapper {
   private ioMap = new Map<number, (adr: Address, value?: Byte) => any>()
   private exram = new Uint8Array(0x0400)  // Expansion RAM
   private maxPrg = 0
   private prgMode = 3  // 0=One 32KB, 1=Two 16KB, 2=One 16KB + two 8KB, 3=Four 8KB
+  private prgBanks: Uint8Array
   private chrMode = 0  // 0=8KB pages, 1=4KB pages, 2=2KB pages, 3=1KB pages
+  private chrBanks = new Uint16Array(12)  // 0x5120~0x512b
   private upperChrBit = 0
+  private abMode = 0
   private irqHlineEnable = false
   private irqHlineCompare = -1
   private irqHlineCounter = -1
   private ppuInFrame = false
   private muls = new Uint8Array([0xff, 0xff])
-  private chrBanks = new Uint16Array(12)  // 0x5120~0x512b
-  private lastChrReg = -1
-  private prevChrA = 1
 
   public static create(options: MapperOptions): Mapper {
     return new Mapper005(options)
@@ -36,6 +32,7 @@ export class Mapper005 extends Mapper {
 
     const BANK_BIT = 13  // 0x2000
     this.maxPrg = (this.options.cartridge!.prgRom.byteLength >> BANK_BIT) - 1
+    this.prgBanks = new Uint8Array([0, 1, this.maxPrg - 1, this.maxPrg])
 
     // IO
     for (const [start, end, flag] of [[0x5100, 0x5130, 1], [0x5200, 0x5206, 3]]) {
@@ -82,17 +79,44 @@ export class Mapper005 extends Mapper {
 
   public save(): object {
     return super.save({
+      prgMode: this.prgMode,
+      prgBanks: Array.from(this.prgBanks),
+      chrMode: this.chrMode,
+      chrBanks: Array.from(this.chrBanks),
+      abMode: this.abMode,
+      upperChrBit: this.upperChrBit,
       irqHlineEnable: this.irqHlineEnable,
       irqHlineCompare: this.irqHlineCompare,
       irqHlineCounter: this.irqHlineCounter,
+      exram: Util.convertUint8ArrayToBase64String(this.exram),
+      muls: Array.from(this.muls),
     })
   }
 
   public load(saveData: any): void {
     super.load(saveData)
+    if (saveData.prgMode != null)
+      this.prgMode = saveData.prgMode
+    if (saveData.prgBanks != null)
+      this.prgBanks = new Uint8Array(saveData.prgBanks)
+    if (saveData.chrMode != null)
+      this.chrMode = saveData.chrMode
+    if (saveData.chrBanks != null)
+      this.chrBanks = new Uint16Array(saveData.chrBanks)
+    if (saveData.upperChrBit != null)
+      this.upperChrBit = saveData.upperChrBit
+    if (saveData.abMode != null)
+      this.abMode = saveData.abMode
+    if (saveData.exram != null)
+      this.exram = Util.convertBase64StringToUint8Array(saveData.exram)
+    if (saveData.muls != null)
+      this.muls = new Uint8Array(saveData.muls)
     this.irqHlineEnable = saveData.irqHlineEnable
     this.irqHlineCompare = saveData.irqHlineCompare
     this.irqHlineCounter = saveData.irqHlineCounter
+
+    this.updatePrgBanks()
+    this.updateChrBanks()
   }
 
   public onHblank(hcount: number): void {
@@ -115,7 +139,7 @@ export class Mapper005 extends Mapper {
       break
     case 0x5101:
       this.chrMode = value & 3
-      this.updateChrBanks(false)
+      this.updateChrBanks()
       break
     case 0x5105:
       this.options.setMirrorModeBit(value)
@@ -123,64 +147,17 @@ export class Mapper005 extends Mapper {
     case 0x5113:
       // RAM
       break
-    case 0x5114:
-      switch (this.prgMode) {
-      case 3:
-        this.options.setPrgBank(0, value & this.maxPrg)
-        break
-      default:
-        break
-      }
-      break
-    case 0x5115:
-      switch (this.prgMode) {
-      case 1:
-      case 2:
-        this.options.setPrgBank(0,  (value & -2)      & this.maxPrg)
-        this.options.setPrgBank(1, ((value & -2) + 1) & this.maxPrg)
-        break
-      case 3:
-        this.options.setPrgBank(1, value & this.maxPrg)
-        break
-      default:
-        break
-      }
-      break
-    case 0x5116:
-      switch (this.prgMode) {
-      case 2:
-      case 3:
-        this.options.setPrgBank(2, value & this.maxPrg)
-        break
-      default:
-        break
-      }
-      break
-    case 0x5117:
-      switch (this.prgMode) {
-      case 0:
-        this.options.setPrgBank(0,  (value & -4)      & this.maxPrg)
-        this.options.setPrgBank(1, ((value & -4) + 1) & this.maxPrg)
-        this.options.setPrgBank(2, ((value & -4) + 2) & this.maxPrg)
-        this.options.setPrgBank(3, ((value & -4) + 3) & this.maxPrg)
-        break
-      case 1:
-        this.options.setPrgBank(2,  (value & -2)      & this.maxPrg)
-        this.options.setPrgBank(3, ((value & -2) + 1) & this.maxPrg)
-        break
-      case 2:
-      case 3:
-        this.options.setPrgBank(3, value & this.maxPrg)
-        break
-      default:
-        break
-      }
+    case 0x5114: case 0x5115: case 0x5116: case 0x5117:
+      this.prgBanks[adr - 0x5114] = value
+      this.updatePrgBanks()
       break
 
     case 0x5120: case 0x5121: case 0x5122: case 0x5123:
     case 0x5124: case 0x5125: case 0x5126: case 0x5127:
+      this.switchChrBank(adr, value, 0)
+      break
     case 0x5128: case 0x5129: case 0x512a: case 0x512b:
-      this.switchChrBank(adr, value)
+      this.switchChrBank(adr, value, 1)
       break
 
     case 0x5130:
@@ -215,56 +192,132 @@ export class Mapper005 extends Mapper {
     return 0
   }
 
-  private switchChrBank(adr: Address, value: Byte) {
+  private switchChrBank(adr: Address, value: Byte, abMode: number) {
+    this.abMode = abMode
     const newValue = value | (this.upperChrBit << 8)
     const reg = adr - 0x5120
-    if (newValue !== this.chrBanks[reg] || this.lastChrReg !== reg) {
+    if (newValue !== this.chrBanks[reg]) {
       this.chrBanks[reg] = newValue
-      this.lastChrReg = reg
-      this.updateChrBanks(true)
+      this.updateChrBanks()
     }
   }
 
-  private updateChrBanks(forceUpdate: boolean) {
-    const largeSprites = (this.options.getPpuRegs()[PpuReg.CTRL] & PpuCtrlBit.SPRITE_SIZE) !== 0
+  private updateChrBanks() {
+    const opt = this.options
 
-    if (!largeSprites) {
-      this.lastChrReg = -1
-    }
-
-    const chrA = (!largeSprites || (!this.ppuInFrame && this.lastChrReg <= 7)) ? 0 : 1
-    if (!forceUpdate && chrA === this.prevChrA)
-      return
-    this.prevChrA = chrA
-
-    const table = kChrBankTable[chrA]
-    const ppu = this.options
-
-    switch (this.chrMode) {
-    case 0:
-      {
-        const v = this.chrBanks[table[7]] << 3
-        for (let i = 0; i < 8; ++i)
-          ppu.setChrBankOffset(i, v + i)
+    if (this.abMode === 0) {
+      switch (this.chrMode) {
+      case 0:
+        {
+          const vb = this.chrBanks[11] << 3
+          for (let i = 0; i < 4; ++i)
+            opt.setChrBankOffset(i, vb + i)
+          const va = this.chrBanks[7] << 3
+          for (let i = 0; i < 4; ++i)
+            opt.setChrBankOffset(i + 4, va + i)
+        }
+        break
+      case 1:
+        {
+          const vb = this.chrBanks[11] << 2
+          for (let j = 0; j < 4; ++j)
+            opt.setChrBankOffset(j, vb + j)
+          const va = this.chrBanks[7] << 2
+          for (let j = 0; j < 4; ++j)
+            opt.setChrBankOffset(j + 4, va + j)
+        }
+        break
+      case 2:
+        for (let i = 0; i < 8; i += 4) {
+          const vb = this.chrBanks[9] << 1
+          for (let j = 0; j < 2; ++j)
+            opt.setChrBankOffset(i + j, vb + j)
+          const va = this.chrBanks[5] << 1
+          for (let j = 0; j < 2; ++j)
+            opt.setChrBankOffset(i + 4 + j, va + j)
+        }
+        break
+      case 3:
+        for (let i = 0; i < 4; ++i)
+          opt.setChrBankOffset(i, this.chrBanks[i + 8])
+        for (let i = 0; i < 4; ++i)
+          opt.setChrBankOffset(i + 4, this.chrBanks[i + 4])
+        break
       }
+    } else {
+      switch (this.chrMode) {
+      case 0:
+        {
+          const va = this.chrBanks[3] << 3
+          for (let i = 0; i < 4; ++i)
+            opt.setChrBankOffset(i, va + i)
+          const vb = this.chrBanks[11] << 3
+          for (let i = 0; i < 4; ++i)
+            opt.setChrBankOffset(i + 4, vb + i)
+        }
+        break
+      case 1:
+        {
+          const va = this.chrBanks[3] << 2
+          for (let j = 0; j < 4; ++j)
+            opt.setChrBankOffset(j, va + j)
+          const vb = this.chrBanks[11] << 2
+          for (let j = 0; j < 4; ++j)
+            opt.setChrBankOffset(j + 4, vb + j)
+        }
+        break
+      case 2:
+        for (let i = 0; i < 8; i += 4) {
+          const va = this.chrBanks[1] << 1
+          for (let j = 0; j < 2; ++j)
+            opt.setChrBankOffset(i + j, va + j)
+          const vb = this.chrBanks[9] << 1
+          for (let j = 0; j < 2; ++j)
+            opt.setChrBankOffset(i + 4 + j, vb + j)
+        }
+        break
+      case 3:
+        for (let i = 0; i < 4; ++i)
+          opt.setChrBankOffset(i, this.chrBanks[i])
+        for (let i = 0; i < 4; ++i)
+          opt.setChrBankOffset(i + 4, this.chrBanks[i + 8])
+        break
+      }
+    }
+  }
+
+  private updatePrgBanks(): void {
+    let value: number
+    switch (this.prgMode) {
+    case 0:
+      value = (this.prgBanks[3] & -4) & this.maxPrg
+      this.options.setPrgBank(0, value)
+      this.options.setPrgBank(1, value + 1)
+      this.options.setPrgBank(2, value + 2)
+      this.options.setPrgBank(3, value + 3)
       break
     case 1:
-      for (let i = 0; i < 8; i += 4) {
-        const v = this.chrBanks[table[i + 3]] << 2
-        for (let j = 0; j < 4; ++j)
-          ppu.setChrBankOffset(i + j, v + j)
-      }
+      value = (this.prgBanks[1] & -2) & this.maxPrg
+      this.options.setPrgBank(0, value)
+      this.options.setPrgBank(1, value + 1)
+      value = (this.prgBanks[3] & -2) & this.maxPrg
+      this.options.setPrgBank(2, value)
+      this.options.setPrgBank(3, value + 1)
       break
     case 2:
-      for (let i = 0; i < 8; i += 2) {
-        const v = this.chrBanks[table[i + 1]] << 1
-        for (let j = 0; j < 2; ++j)
-          ppu.setChrBankOffset(i + j, v + j)
-      }
+      value = (this.prgBanks[1] & -2) & this.maxPrg
+      this.options.setPrgBank(0, value)
+      this.options.setPrgBank(1, value + 1)
+      this.options.setPrgBank(2, this.prgBanks[2] & this.maxPrg)
+      this.options.setPrgBank(3, this.prgBanks[3] & this.maxPrg)
       break
     case 3:
-      for (let i = 0; i < 8; ++i)
-        ppu.setChrBankOffset(i, this.chrBanks[table[i]])
+      this.options.setPrgBank(0, this.prgBanks[0] & this.maxPrg)
+      this.options.setPrgBank(1, this.prgBanks[1] & this.maxPrg)
+      this.options.setPrgBank(2, this.prgBanks[2] & this.maxPrg)
+      this.options.setPrgBank(3, this.prgBanks[3] & this.maxPrg)
+      break
+    default:
       break
     }
   }
