@@ -30,7 +30,7 @@ export const kMapperTable: Record<number, (options: MapperOptions) => Mapper> =
   5: Mapper005.create,
   7: Mapper007.create,
   10: Mapper010.create,
-  12, Mapper012.create,
+  12: Mapper012.create,
   16: Mapper016.create,
   19: Mapper019.create,
   23: Mapper023.create,

@@ -13,7 +13,7 @@ export class Mapper004 extends Mapper {
 	protected irqHlineEnable = false
 	
 	protected reg = new Uint8Array(4)
-	protected regs = [0,0,0,0,0,0,0,0]
+	protected regs = new Uint8Array(8)
 	protected maxPrg = 0
 	
 	protected irqReloadValue = -1;
@@ -66,7 +66,7 @@ export class Mapper004 extends Mapper {
 		//// iNes header, flags 6
 		//// > Some mappers, such as MMC1, MMC3, and AxROM, can control nametable mirroring.
 		//// > They ignore bit 0
-		let mirror = MirrorMode.VERT
+		const mirror = MirrorMode.VERT
 		//// Dirty hack: detect mirror mode from ROM hash.
 		//const romHash = this.options.cartridge!.calcHashValue()
 		//switch (romHash) {
@@ -223,6 +223,31 @@ export class Mapper004 extends Mapper {
 		this.irqEnabled = false
 	}
 	
+	public save(): object {
+		return super.save({
+			regs: Util.convertUint8ArrayToBase64String(this.regs),
+			bankSelect: this.currentRegister,
+			irqHlineEnable: this.irqHlineEnable,
+			irqHlineValue: this.irqHlineValue,
+			irqHlineCounter: this.irqHlineCounter,
+			irqLatch: this.irqLatch,
+		})
+	}
+
+	public load(saveData: any): void {
+		super.load(saveData)
+		this.regs = Util.convertBase64StringToUint8Array(saveData.regs)
+		this.currentRegister = saveData.currentRegister
+		this.irqHlineEnable = saveData.irqHlineEnable
+		this.irqHlineValue = saveData.irqHlineValue
+		this.irqHlineCounter = saveData.irqHlineCounter
+		this.irqLatch = saveData.irqLatch
+		
+		this.UpdatePrgMapping()
+		this.UpdateChrMapping()
+	}
+  
+  
 	protected UpdatePrgMapping(): void {
 		if (this.prgMode  == 0) {
 			this.SelectPRGPage(0, this.regs[6])
@@ -422,6 +447,7 @@ export class Mapper115 extends Mapper004 {
 
 export class Mapper245 extends Mapper004 {
 	prgReg = 0;
+	lastPageInBlock: number
 	
 	public static create(options: MapperOptions): Mapper {
 		return new Mapper245(options)
@@ -448,22 +474,22 @@ export class Mapper245 extends Mapper004 {
 	}
 	
 	protected UpdatePrgMapping(): void {
-		var orValue = this.regs[0] & 0x02 ? 0x40 : 0x00;
+		const orValue = this.regs[0] & 0x02 ? 0x40 : 0x00;
 		this.regs[6] = (this.regs[6] & 0x3F) | orValue;
 		this.regs[7] = (this.regs[7] & 0x3F) | orValue;
 
-		var lastPageInBlock = (-2 + 2 >= 0x40 ? (0x3F | orValue) : -1);
+		this.lastPageInBlock = -1
 		
 		if(this.prgMode == 0) {
 			this.options.setPrgBank(0, this.regs[6]);
 			this.options.setPrgBank(1, this.regs[7]);
-			this.options.setPrgBank(2, lastPageInBlock - 1);
-			this.options.setPrgBank(3, lastPageInBlock);
+			this.options.setPrgBank(2, this.lastPageInBlock - 1);
+			this.options.setPrgBank(3, this.lastPageInBlock);
 		} else if(this.prgMode == 1) {
-			this.options.setPrgBank(0, lastPageInBlock-1);
+			this.options.setPrgBank(0, this.lastPageInBlock-1);
 			this.options.setPrgBank(1, this.regs[7]);
 			this.options.setPrgBank(2, this.regs[6]);
-			this.options.setPrgBank(3, lastPageInBlock);
+			this.options.setPrgBank(3, this.lastPageInBlock);
 		}
 	}
 }
@@ -475,7 +501,8 @@ export class Mapper250 extends Mapper004 {
 	
 	constructor(protected options: MapperOptions) {
 		super(options)
-		this.options.setWriteMemory(0x6000, 0xffff, (addr, value) => {
+		this.options.setWriteMemory(0x6000, 0xffff, (addr) => {
+			
 			//console.log("adr: " + addr.toString(16) + "," + "value: " + value.toString(16))
 			this.mmc3((addr & 0xE000) | ((addr & 0x0400) >> 10), addr & 0xFF)
 		})
@@ -580,7 +607,14 @@ export class Mapper045 extends Mapper004 {
 	
 	public reset(): void{
 		this.regIndex = 0;
-		this.regs = [0,0,0,0,0,0,0,0]
+		this.regs[0] = 0
+		this.regs[1] = 0
+		this.regs[2] = 0
+		this.regs[3] = 0
+		this.regs[4] = 0
+		this.regs[5] = 0
+		this.regs[6] = 0
+		this.regs[7] = 0
 		this.reg[2] = 0x0f
 		this.UpdateState()
 	}
@@ -690,9 +724,9 @@ export class Mapper019 extends Mapper004 {
 	}
 	
 	public UpdatePrgMapping(): void{
-		var bank = this.exReg & 0x0F;
-		var mode = (this.exReg & 0x08) >> 3;
-		var mask = ~mode;
+		const bank = this.exReg & 0x0F;
+		const mode = (this.exReg & 0x08) >> 3;
+		const mask = ~mode;
 		this.SelectPrgPage2x(0, (bank & mask) << 1);
 		this.SelectPrgPage2x(1, ((bank & mask) | mode) << 1);
 	}
@@ -733,6 +767,7 @@ export class Mapper012 extends Mapper004 {
 }
 
 export class Mapper182 extends Mapper004 {
+	data: number
 	public static create(options: MapperOptions): Mapper {
 		return new Mapper182(options)
 	}
@@ -747,18 +782,18 @@ export class Mapper182 extends Mapper004 {
 					this.mmc3(0xA000, value)
 					break;
 				case 0xA000:
-					var data = (value & 0xF8);
+					this.data = (value & 0xF8);
 					switch(value & 0x07) {
-						case 0: data |= 0; break;
-						case 1: data |= 3; break;
-						case 2: data |= 1; break;
-						case 3: data |= 5; break;
-						case 4: data |= 6; break;
-						case 5: data |= 7; break;
-						case 6: data |= 2; break;
-						case 7: data |= 4; break;
+						case 0: this.data |= 0; break;
+						case 1: this.data |= 3; break;
+						case 2: this.data |= 1; break;
+						case 3: this.data |= 5; break;
+						case 4: this.data |= 6; break;
+						case 5: this.data |= 7; break;
+						case 6: this.data |= 2; break;
+						case 7: this.data |= 4; break;
 					}
-					this.mmc3(0x8000, data)
+					this.mmc3(0x8000, this.data)
 					break
 				case 0xC000:
 					this.mmc3(0x8001, value)
