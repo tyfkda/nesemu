@@ -35,6 +35,8 @@ export class Bus implements IBus {
   }
 
   public setReadMemory(start: Address, end: Address, reader: Reader): void {
+    start |= 0
+    end |= 0
     const startBlock = (start / BLOCK_SIZE) | 0
     const endBlock = (end / BLOCK_SIZE) | 0
     for (let i = startBlock; i <= endBlock; ++i)
@@ -42,6 +44,8 @@ export class Bus implements IBus {
   }
 
   public setWriteMemory(start: Address, end: Address, writer: Writer): void {
+    start |= 0
+    end |= 0
     const startBlock = (start / BLOCK_SIZE) | 0
     const endBlock = (end / BLOCK_SIZE) | 0
     for (let i = startBlock; i <= endBlock; ++i)
@@ -49,12 +53,14 @@ export class Bus implements IBus {
   }
 
   public read8(adr: Address): Byte {
+    adr |= 0
     const block = (adr / BLOCK_SIZE) | 0
     const reader = this.readerTable[block]
     return reader(adr)
   }
 
   public write8(adr: Address, value: Byte): void {
+    adr |= 0
     const block = (adr / BLOCK_SIZE) | 0
     const writer = this.writerTable[block]
     return writer(adr, value)
