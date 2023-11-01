@@ -72,9 +72,9 @@ export const enum Reg {
   TIMER_H = 3,
 
   // DMC
-  DIRECT_LOAD = 1,
-  SAMPLE_ADDRESS = 2,
-  SAMPLE_LENGTH = 3,
+  DIRECT_LOAD = 1,     // eslint-disable-line @typescript-eslint/no-duplicate-enum-values
+  SAMPLE_ADDRESS = 2,  // eslint-disable-line @typescript-eslint/no-duplicate-enum-values
+  SAMPLE_LENGTH = 3,   // eslint-disable-line @typescript-eslint/no-duplicate-enum-values
 }
 
 export const kWaveTypes: WaveType[] = [
