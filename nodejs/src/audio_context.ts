@@ -8,20 +8,30 @@ class AudioParam {
 }
 
 abstract class AudioNode {
-  protected connectedNodes = new Array<AudioNode>()
+  protected inNodes = new Array<AudioNode>()
+  protected outNodes = new Array<AudioNode>()
 
   public constructor(protected context: AudioContext) {
   }
 
   public connect(destNode: AudioNode): void {
-    destNode.connectedNodes.push(this)
+    destNode.inNodes.push(this)
+    this.outNodes.push(destNode)
   }
 
   public disconnect(): void {
-    // TODO:
+    for (const node of this.outNodes) {
+      const index = node.inNodes.indexOf(this)
+      if (index >= 0)
+        node.inNodes.splice(index, 1)
+    }
+    this.outNodes.length = 0
   }
 
   public start(): void {
+  }
+
+  public stop(): void {
   }
 
   public abstract sample(counter: number, sampleRate: number): number
@@ -95,7 +105,7 @@ export class GainNode extends AudioNode {
       return 0
 
     let value = 0
-    const nodes = this.connectedNodes
+    const nodes = this.inNodes
     for (let i = 0; i < nodes.length; ++i)
       value += nodes[i].sample(counter, sampleRate)
     return value * gain
@@ -107,7 +117,7 @@ export class DelayNode extends AudioNode {
 
   public sample(counter: number, sampleRate: number): number {
     let value = 0
-    const nodes = this.connectedNodes
+    const nodes = this.inNodes
     const c = counter - ((this.delayTime.value * sampleRate) | 0)
     for (let i = 0; i < nodes.length; ++i)
       value += nodes[i].sample(c, sampleRate)
@@ -177,7 +187,7 @@ class AudioDestinationNode extends AudioNode {
 
   public fillBuffer(array: Float32Array) {
     const len = array.length
-    const nodes = this.connectedNodes
+    const nodes = this.inNodes
     const sampleRate = this.context.sampleRate | 0
     let counter = Math.round(this.time * sampleRate) | 0
     for (let i = 0; i < len; ++i) {

@@ -92,6 +92,7 @@ export class AudioManager {
 
   public release(): void {
     this.releaseAllChannels()
+    // this.cartridge = null
   }
 
   public releaseAllChannels(): void {
