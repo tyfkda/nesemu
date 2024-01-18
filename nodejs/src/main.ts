@@ -36,6 +36,8 @@ const kScanCode2PadValue: Record<number, number> = {
 
 const WIDTH = 256
 const HEIGHT = 240
+const HEDGE = 4 | 0
+const VEDGE = 8 | 0
 
 const TITLE = 'Nesemu'
 
@@ -73,7 +75,13 @@ class MyApp {
     this.buffer = Buffer.alloc(0)  // Dummy
     this.u8buffer = new Uint8Array(this.buffer.buffer)
 
-    this.win = sdl.video.createWindow({ width: WIDTH * 3, height: HEIGHT * 3, title: TITLE, resizable: true, vsync: true })
+    this.win = sdl.video.createWindow({
+      width: (WIDTH - HEDGE * 2) * 3,
+      height: (HEIGHT - VEDGE * 2) * 3,
+      title: TITLE,
+      resizable: true,
+      vsync: true,
+    })
     this.win.on('close', () => {
       clearInterval(this.timer)
     })
@@ -175,12 +183,12 @@ class MyApp {
     const {width, height} = this.win
     const u8buf = this.u8buffer
     const SHIFT = 12
-    const stepX = ((WIDTH << SHIFT) / width) | 0
-    const stepY = ((HEIGHT << SHIFT) / height) | 0
+    const stepX = (((WIDTH - HEDGE * 2) << SHIFT) / width) | 0
+    const stepY = (((HEIGHT - VEDGE * 2) << SHIFT) / height) | 0
     let dst = 0
-    let sy = 0
+    let sy = VEDGE << SHIFT
     for (let i = 0; i < height; ++i, sy += stepY) {
-      let sx = 0
+      let sx = HEDGE << SHIFT
       for (let j = 0; j < width; ++j, sx += stepX) {
         const src = ((sy >> SHIFT) * WIDTH + (sx >> SHIFT)) * 4
         u8buf[dst++] = this.pixels[src]
