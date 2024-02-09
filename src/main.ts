@@ -113,6 +113,8 @@ class Main {
     if (!dropDesc)
       return
 
+    dropDesc.innerText = 'Drop .nes file here'
+
     // Handle file drop.
     if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
       dropDesc.style.display = 'none'
