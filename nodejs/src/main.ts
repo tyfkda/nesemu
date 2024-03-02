@@ -1,6 +1,6 @@
 const fs = __non_webpack_require__('fs').promises
 
-import JSZip from 'jszip'
+import {unzip, AsyncUnzipOptions, Unzipped} from 'fflate'
 import {Nes, NesEvent} from '../../src/nes/nes'
 import {Cartridge} from '../../src/nes/cartridge'
 import {IDeltaModulationChannel, INoiseChannel, IPulseChannel, PadValue, WaveType} from '../../src/nes/apu'
@@ -8,6 +8,7 @@ import {Util} from '../../src/util/util'
 import {AudioManager} from '../../src/util/audio_manager'
 
 import {AudioContext} from './audio_context'
+import util from 'util'
 
 const sdl = __non_webpack_require__('@kmamal/sdl')
 
@@ -277,12 +278,16 @@ async function loadNesRomData(fileName: string): Promise<Uint8Array> {
 
   case 'zip':
     {
-      const data = await fs.readFile(fileName)
-      const zip = new JSZip()
-      const loadedZip = await zip.loadAsync(data)
-      for (let fn of Object.keys(loadedZip.files)) {
-        if (Util.getExt(fn).toLowerCase() === 'nes')
-          return loadedZip.files[fn].async('uint8array')
+      const buffer = await fs.readFile(fileName)
+      const options = {
+        filter(file: any) {
+          return Util.getExt(file.name).toLowerCase() === 'nes'
+        }
+      }
+      const loadedZip = await util.promisify<Uint8Array, AsyncUnzipOptions, Unzipped>(unzip)(buffer, options)
+      for (let fn of Object.keys(loadedZip)) {
+        // if (Util.getExt(fn).toLowerCase() === 'nes')
+        return loadedZip[fn]
       }
       return Promise.reject(`No .nes file included in ${fileName}`)
     }

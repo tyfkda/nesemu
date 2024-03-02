@@ -88,8 +88,8 @@
   "dependencies": {
     "core-js": "~3.30.1",
     "escape-html": "~1.0.3",
+    "fflate": "~0.8.2",
     "fscreen": "~1.2.0",
-    "jszip": "~3.10.1",
     "md5": "~2.3.0",
     "stats-js": "~1.0.1",
     "stream": "~0.0.2"

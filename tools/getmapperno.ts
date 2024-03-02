@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'path'
-import JSZip from 'jszip'
+import {unzip, AsyncUnzipOptions, Unzipped} from 'fflate'
+import util from 'util'
 
 import {Cartridge} from '../src/nes/cartridge'
 
@@ -22,14 +23,16 @@ async function dumpMapper(fn: string): Promise<void> {
   case '.zip':
     {
       const buffer = await fs.readFile(fn)
-      const zip = new JSZip()
-      const loadedZip = await zip.loadAsync(buffer)
-      for (let fileName of Object.keys(loadedZip.files)) {
-        if (path.extname(fileName).toLowerCase() === '.nes') {
-          const unzipped = await loadedZip.files[fileName].async('uint8array')
-          console.log(`"${path.basename(fn)}"\tmapper=${getMapperNo(unzipped)}`)
-          return
+      const options = {
+        filter(file: any) {
+          return path.extname(file.name).toLowerCase() === '.nes'
         }
+      }
+      const loadedZip = await util.promisify<Uint8Array, AsyncUnzipOptions, Unzipped>(unzip)(buffer, options)
+      for (let fileName of Object.keys(loadedZip)) {
+        const unzipped = loadedZip[fileName]
+        console.log(`"${path.basename(fn)}"\tmapper=${getMapperNo(unzipped)}`)
+        return
       }
     }
     console.error(`${fn}: .nes not included`)

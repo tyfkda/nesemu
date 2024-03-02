@@ -23,6 +23,6 @@
   },
   "dependencies": {
     "@kmamal/sdl": "~0.9.5",
-    "jszip": "~3.10.1"
+    "fflate": "~0.8.2"
   }
 }

@@ -13,7 +13,7 @@ import {Util} from './util/util'
 import {WindowManager} from './wnd/window_manager'
 import {Nes} from './nes/nes'
 import './util/polyfill'
-import JSZip from 'jszip'
+import {unzip, Unzipped} from 'fflate'
 
 import audioOnImg from './res/audio_on.png'
 import audioOffImg from './res/audio_off.png'
@@ -152,16 +152,33 @@ class Main {
         return false
       })
       .map(async ({file, ext}) => {
+        function promisify(f: Function) {
+          return (...args: any[]) =>  {
+            return new Promise<Unzipped>((resolve, reject) => {
+              f(...args, (err: any, result: any) => {
+                if (err != null)
+                  reject(err)
+                else
+                  resolve(result)
+              })
+            })
+          }
+        }
+
         if (ext === 'zip') {
           const binary = await DomUtil.loadFile(file)
-          const zip = new JSZip()
-          const loadedZip = await zip.loadAsync(binary)
-          for (const fileName2 of Object.keys(loadedZip.files)) {
-            const ext2 = Util.getExt(fileName2).toLowerCase()
-            if (kTargetExts.has(ext2)) {
-              const unzipped = await loadedZip.files[fileName2].async('uint8array')
-              return {type: ext2, binary: unzipped, fileName: fileName2}
+          const options = {
+            filter(file: any) {
+              const ext2 = Util.getExt(file.name).toLowerCase()
+              return kTargetExts.has(ext2)
             }
+          }
+          const loadedZip = await promisify(unzip)(binary, options)
+          for (const fileName2 of Object.keys(loadedZip)) {
+            const ext2 = Util.getExt(fileName2).toLowerCase()
+            console.assert(kTargetExts.has(ext2))  // Already filtered.
+            const unzipped = loadedZip[fileName2]
+            return {type: ext2, binary: unzipped, fileName: fileName2}
           }
           return Promise.reject(`No .nes file included: ${file.name}`)
         } else if (kTargetExts.has(ext)) {
