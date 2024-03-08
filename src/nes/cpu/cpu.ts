@@ -66,6 +66,7 @@ export class Cpu {
 
   private pc: Address  // Program counter
   private irqRequest = 0
+  private stallCycles = 0
 
   // For debug
   private breakPoints = new Set<Address | BreakType>()
@@ -148,12 +149,22 @@ export class Cpu {
     this.irqRequest &= ~(1 << type)
   }
 
+  public stall(cycles: number): void {
+    this.stallCycles += cycles
+  }
+
   public step(): number {
     if (this.irqRequest !== 0 && this.irqBlocked === 0) {
       this.irqRequest = 0
       this.handleIrq()
       if (this.paused)
         return 0
+    }
+
+    if (this.stallCycles > 0) {
+      const cycles = this.stallCycles
+      this.stallCycles = 0
+      return cycles
     }
 
     let pc = this.pc

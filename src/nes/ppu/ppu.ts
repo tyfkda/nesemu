@@ -343,7 +343,6 @@ export class Ppu {
       dst[j] = array[start + i]
       j = (j + 1) & 255
     }
-    // TODO: Block CPU.
   }
 
   protected setVBlank(): void {
