@@ -224,11 +224,13 @@ export class Nes {
     case OAMDMA:
       if (0 <= value && value <= 0x1f) {  // RAM
         this.ppu.copyWithDma(this.ram, value << 8)
-        // TODO: Consume CPU or GPU cycles.
+        this.cpu.stall(513)
       } else if (0x60 <= value && value <= 0x7f) {
         const sram = this.mapper.getSram()
-        if (sram != null)
+        if (sram != null) {
           this.ppu.copyWithDma(sram, (value - 0x60) << 8)
+          this.cpu.stall(513)
+        }
       } else {
         console.error(`OAMDMA not implemented except for RAM: ${Util.hex(value, 2)}`)
       }
@@ -297,11 +299,10 @@ export class Nes {
 
       this.ppu.setHcount(hcount)
       this.apu.onHblank(hcount)
+      this.mapper.onHblank(hcount)
 
       if (hcount === VBlank.START)
         this.eventCallback(NesEvent.VBlank, (leftCycles / VCYCLE) | 0)
-
-      this.mapper.onHblank(hcount)
     }
     this.cycleCount = nextCycleCount
   }
