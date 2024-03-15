@@ -301,7 +301,7 @@ export class Nes {
       this.apu.onHblank(hcount)
       this.mapper.onHblank(hcount)
 
-      if (hcount === VBlank.START)
+      if (hcount === VBlank.NMI)
         this.eventCallback(NesEvent.VBlank, (leftCycles / VCYCLE) | 0)
     }
     this.cycleCount = nextCycleCount
