@@ -60,7 +60,7 @@ export class Nes {
   constructor(opt?: NesOption) {
     this.bus = new Bus()
     this.cpu = new Cpu(this.bus)
-    this.ppu = new Ppu(opt?.nmiFn || this.cpu.nmi.bind(this.cpu))
+    this.ppu = new Ppu(opt?.nmiFn || this.cpu.requestNmi.bind(this.cpu))
     this.apu = new Apu(this.gamePads, opt?.apuIrqFn || (() => this.cpu.requestIrq(IrqType.APU)))
     this.eventCallback = (_e, _p) => {}
     this.breakPointCallback = () => {}
