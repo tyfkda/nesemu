@@ -158,7 +158,7 @@ export class JsApp extends App {
         this.jsNes.update()
         this.updateAudio()
 
-        for (let i = VBlank.START; i <= VBlank.END; ++i) {
+        for (let i = VBlank.NMI; i <= VBlank.END; ++i) {
           this.jsNes.setHcount(i)
         }
       }

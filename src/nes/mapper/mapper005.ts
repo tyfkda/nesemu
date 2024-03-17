@@ -124,7 +124,7 @@ export class Mapper005 extends Mapper {
     // Note: BGs OR sprites MUST be enabled in $2001 (bits 3 and 4)
     // in order for the countdown to occur.
     const regs = this.options.getPpuRegs()
-    this.ppuInFrame = hcount < VBlank.START && (regs[PpuReg.MASK] & (PpuMaskBit.SHOW_SPRITE | PpuMaskBit.SHOW_BG)) !== 0
+    this.ppuInFrame = hcount < VBlank.NMI && (regs[PpuReg.MASK] & (PpuMaskBit.SHOW_SPRITE | PpuMaskBit.SHOW_BG)) !== 0
     if (this.ppuInFrame && this.irqHlineEnable && this.irqHlineCompare === hcount && hcount !== 0) {
       this.options.requestIrq(IrqType.EXTERNAL)
     }

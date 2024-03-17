@@ -65,6 +65,7 @@ export class Cpu {
   private carry: Bit = 0
 
   private pc: Address  // Program counter
+  private nmiRequest = -1
   private irqRequest = 0
   private stallCycles = 0
 
@@ -128,17 +129,8 @@ export class Cpu {
   }
 
   // Non-maskable interrupt
-  public nmi(): void {
-    const vector = this.read16(VEC_NMI)
-    if (this.breakPoints.has(BreakType.NMI)) {
-      this.paused = true
-      console.warn(`paused because NMI: ${Util.hex(this.pc, 4)}, ${Util.hex(vector, 4)}`)
-    }
-
-    this.push16(this.pc)
-    this.push(this.getStatusReg() & ~BREAK_FLAG)
-    this.pc = vector
-    this.irqBlocked = 1
+  public requestNmi(): void {
+    this.nmiRequest = 2  // TODO: confirm.
   }
 
   public requestIrq(type: IrqType): void {
@@ -154,6 +146,21 @@ export class Cpu {
   }
 
   public step(): number {
+    if (this.nmiRequest >= 0) {
+      if (--this.nmiRequest < 0) {
+        const vector = this.read16(VEC_NMI)
+        this.push16(this.pc)
+        this.push(this.getStatusReg() & ~BREAK_FLAG)
+        this.pc = vector
+        this.irqBlocked = 1
+
+        if (this.breakPoints.has(BreakType.NMI)) {
+          this.paused = true
+          console.warn(`paused because NMI: ${Util.hex(this.pc, 4)}, ${Util.hex(vector, 4)}`)
+          return 0
+        }
+      }
+    }
     if (this.irqRequest !== 0 && this.irqBlocked === 0) {
       this.irqRequest = 0
       this.handleIrq()
