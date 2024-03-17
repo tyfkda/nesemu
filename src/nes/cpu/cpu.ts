@@ -1,6 +1,6 @@
 // CPU: MOS 6502
 
-import {Addressing, OpType, kInstTable} from './inst'
+import {Addressing, Instruction, OpType, kInstTable} from './inst'
 import {IBus} from './ibus'
 import {Util} from '../../util/util'
 import {Address, Byte, Word} from '../types'
@@ -167,8 +167,7 @@ export class Cpu {
       return cycles
     }
 
-    let pc = this.pc
-    const op = this.read8(pc++)
+    const op = this.read8(this.pc++)
     const inst = kInstTable[op]
     if (inst.opType === OpType.UNKNOWN) {
       console.error(`Unknonwn OPCODE, ${Util.hex(this.pc - 1, 4)}: ${Util.hex(op, 2)}`)
@@ -176,73 +175,77 @@ export class Cpu {
       return 0
     }
 
-    this.pc += inst.bytes
+    return this.execInst(inst)
+  }
+
+  private execInst(inst: Instruction): number {
+    const pc = this.pc
+    this.pc += inst.bytes - 1
     let cycle = inst.cycle
     let adr: Address  // = this.getAdr(pc, inst.addressing)
-    {
-      switch (inst.addressing) {
-      case Addressing.IMMEDIATE:
-      case Addressing.RELATIVE:
-        adr = pc
-        break
-      case Addressing.ZEROPAGE:
-        adr = this.read8(pc)
-        break
-      case Addressing.ZEROPAGE_X:
-        adr = (this.read8(pc) + this.x) & 0xff
-        break
-      case Addressing.ZEROPAGE_Y:
-        adr = (this.read8(pc) + this.y) & 0xff
-        break
-      case Addressing.ABSOLUTE:
-        adr = this.read16(pc)
-        break
-      case Addressing.ABSOLUTE_X:
-        {
-          const base = this.read16(pc)
-          adr = (base + this.x) & 0xffff
-          if (!inst.write)
-            cycle += (((adr ^ base) >> 8) & 1)  // 1 if page crossed or 0
-        }
-        break
-      case Addressing.ABSOLUTE_Y:
-        {
-          const base = this.read16(pc)
-          adr = (base + this.y) & 0xffff
-          if (!inst.write)
-            cycle += (((adr ^ base) >> 8) & 1)  // 1 if page crossed or 0
-        }
-        break
-      case Addressing.INDIRECT_X:
-        {
-          const zeroPageAdr = this.read8(pc)
-          adr = this.read16Indirect((zeroPageAdr + this.x) & 0xff)
-        }
-        break
-      case Addressing.INDIRECT_Y:
-        {
-          const zeroPageAdr = this.read8(pc)
-          const base = this.read16Indirect(zeroPageAdr)
-          adr = (base + this.y) & 0xffff
-          if (!inst.write)
-            cycle += (((adr ^ base) >> 8) & 1)  // 1 if page crossed or 0
-        }
-        break
-      case Addressing.INDIRECT:
-        {
-          const indirect = this.read16(pc)
-          adr = this.read16Indirect(indirect)
-        }
-        break
-      default:
-        console.error(`Illegal addressing: ${inst.addressing}, pc=${Util.hex(pc, 4)}`)
-        this.paused = true
-        // Fallthrough
-      case Addressing.ACCUMULATOR:
-      case Addressing.IMPLIED:
-        adr = 0  // Dummy.
-        break
+
+    switch (inst.addressing) {
+    case Addressing.IMMEDIATE:
+    case Addressing.RELATIVE:
+      adr = pc
+      break
+    case Addressing.ZEROPAGE:
+      adr = this.read8(pc)
+      break
+    case Addressing.ZEROPAGE_X:
+      adr = (this.read8(pc) + this.x) & 0xff
+      break
+    case Addressing.ZEROPAGE_Y:
+      adr = (this.read8(pc) + this.y) & 0xff
+      break
+    case Addressing.ABSOLUTE:
+      adr = this.read16(pc)
+      break
+    case Addressing.ABSOLUTE_X:
+      {
+        const base = this.read16(pc)
+        adr = (base + this.x) & 0xffff
+        if (!inst.write)
+          cycle += (((adr ^ base) >> 8) & 1)  // 1 if page crossed or 0
       }
+      break
+    case Addressing.ABSOLUTE_Y:
+      {
+        const base = this.read16(pc)
+        adr = (base + this.y) & 0xffff
+        if (!inst.write)
+          cycle += (((adr ^ base) >> 8) & 1)  // 1 if page crossed or 0
+      }
+      break
+    case Addressing.INDIRECT_X:
+      {
+        const zeroPageAdr = this.read8(pc)
+        adr = this.read16Indirect((zeroPageAdr + this.x) & 0xff)
+      }
+      break
+    case Addressing.INDIRECT_Y:
+      {
+        const zeroPageAdr = this.read8(pc)
+        const base = this.read16Indirect(zeroPageAdr)
+        adr = (base + this.y) & 0xffff
+        if (!inst.write)
+          cycle += (((adr ^ base) >> 8) & 1)  // 1 if page crossed or 0
+      }
+      break
+    case Addressing.INDIRECT:
+      {
+        const indirect = this.read16(pc)
+        adr = this.read16Indirect(indirect)
+      }
+      break
+    default:
+      console.error(`Illegal addressing: ${inst.addressing}, pc=${Util.hex(pc, 4)}`)
+      this.paused = true
+      // Fallthrough
+    case Addressing.ACCUMULATOR:
+    case Addressing.IMPLIED:
+      adr = 0  // Dummy.
+      break
     }
 
     // ========================================================
