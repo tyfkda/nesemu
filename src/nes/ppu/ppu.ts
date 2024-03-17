@@ -285,6 +285,7 @@ export class Ppu {
       value &= ~(PpuStatusBit.VBLANK | PpuStatusBit.SPRITE0HIT | PpuStatusBit.SPRITE_OVERFLOW)
     }
 
+    const before = this.regs[reg]
     this.regs[reg] = value
 
     switch (reg as PpuReg) {
@@ -295,6 +296,11 @@ export class Ppu {
         this.ppuAddr = ((this.ppuAddr & ~0x0c00) |
                         ((value & PpuCtrlBit.BASE_NAMETABLE_ADDRESS) << 10))
         this.updateCoarseX()
+
+        if ((value  & PpuCtrlBit.VINT_ENABLE) !== 0 &&
+            (before & PpuCtrlBit.VINT_ENABLE) === 0 &&
+            (this.regs[PpuReg.STATUS] & PpuStatusBit.VBLANK))
+          this.triggerNmi()
       }
       break
     case PpuReg.MASK:
@@ -385,7 +391,8 @@ export class Ppu {
       // > 241, where the VBlank NMI also occurs. The PPU makes no memory accesses
       // > during these scanlines, so PPU memory can be freely accessed by the program.
       this.setVBlank()
-      if ((this.regs[PpuReg.CTRL] & PpuCtrlBit.VINT_ENABLE) !== 0)
+      if ((this.regs[PpuReg.CTRL] & PpuCtrlBit.VINT_ENABLE) !== 0 &&
+          (this.regs[PpuReg.STATUS] & PpuStatusBit.VBLANK) !== 0)
         this.triggerNmi()
       break
     case VBlank.END:
