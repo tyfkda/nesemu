@@ -36,9 +36,13 @@ function isBranch(opType: OpType): boolean {
 }
 
 class Block {
-  public start = 0
-  public end = 0
+  public constructor(public start: number, public end: number, public isJumpTable: boolean) {}
+}
+
+class Label {
   public isJumpTable = false
+
+  public constructor(public label: string, public isCode: boolean) {}
 }
 
 class Analyzer {
@@ -47,7 +51,8 @@ class Analyzer {
   private endAdr = 0
   private entryPoints = new Array<number>()
   private stopPoints = new Set<number>()
-  private labels = new Map<number, any>()
+  private stopAnalyze = new Set<number>()
+  private labels = new Map<number, Label>()
   private blocks = new Array<Block>()
   private labelNameTable: Record<number, string> = {}
 
@@ -77,12 +82,20 @@ class Analyzer {
     this.stopPoints.add(adr)
   }
 
+  public addStopAnalyze(adr: number): void {
+    this.stopAnalyze.add(adr)
+  }
+
   public addJumpTable(adr: number, count: number): void {
-    const block = this.createBlock(adr)
-    block.end = adr + count * 2
-    block.isJumpTable = true
-    for (let i = 0; i < count; ++i)
-      this.addEntryPoint(this.read16(adr + i * 2))
+    this.createBlock(adr, adr + count * 2, true)
+    const label2 = this.addLabel(adr, false)
+    label2.isJumpTable = true
+
+    for (let i = 0; i < count; ++i) {
+      const target = this.read16(adr + i * 2)
+      this.addEntryPoint(target)
+      this.addLabel(target, true)
+    }
   }
 
   public setLabelNameTable(labelNameTable: Record<number, string>): void {
@@ -100,7 +113,7 @@ class Analyzer {
   public analyze(): void {
     while (this.entryPoints.length > 0) {
       const adr = this.entryPoints.pop()
-      if (adr == null || this.isInBlock(adr))
+      if (adr == null || this.isInBlock(adr) || adr < this.startAdr)
         continue
       this.analyzeEntry(adr)
     }
@@ -111,8 +124,8 @@ class Analyzer {
   public output(): void {
     // Labels
     for (let adr of Array.from(this.labels.keys()).sort((a, b) => a - b)) {
-      const label = this.labels.get(adr)
-      if (label.isCode)
+      const label = this.labels.get(adr)!
+      if (label.isCode || label.isJumpTable)
         continue
       console.log(`${label.label} = $${Util.hex(adr, 4)}`)
     }
@@ -125,41 +138,54 @@ class Analyzer {
         if (label)
           console.log(`${label.label}:`)
 
+        const size = block.start - prevAdr
         console.log(`\
-; Unanalyzed: ${Util.hex(prevAdr, 4)} - ${Util.hex(block.start, 4)} (${block.start - prevAdr} bytes)
-`)
+    ; Unanalyzed: ${Util.hex(prevAdr, 4)} - ${Util.hex(block.start - 1, 4)} (${size} bytes)`)
+        for (let i = 0; i < size; i += 16) {
+          const s = [...Array(Math.min(16, size - i))]
+              .map((_, j) => `$${Util.hex(this.memory[prevAdr + i + j])}`)
+              .join(', ')
+          console.log(`    .db ${s}`)
+        }
       }
       prevAdr = block.end
 
-      if (block.isJumpTable) {
-        // TODO
+      if (block.isJumpTable)
         this.outputJumpTable(block)
-        continue
-      }
-
-      for (let adr = block.start; adr < block.end; ) {
-        const label = this.labels.get(adr)
-        if (label)
-          console.log(`${label.label}:`)
-        this.step(this.memory, adr)
-
-        const op = this.read8(adr)
-        const inst = kInstTable[op]
-        adr += inst.bytes
-      }
-      console.log('')
+      else
+        this.outputCodeBlock(block)
     }
     if (prevAdr < this.endAdr) {
       console.log(`\n; Unanalyzed: ${Util.hex(prevAdr, 4)} - ${Util.hex(this.endAdr, 4)}`)
     }
   }
 
+  private outputCodeBlock(block: Block): void {
+    for (let adr = block.start; adr < block.end; ) {
+      const label = this.labels.get(adr)
+      if (label)
+        console.log(`${label.label}:`)
+      this.step(this.memory, adr)
+
+      const op = this.read8(adr)
+      const inst = kInstTable[op]
+      adr += inst.bytes
+    }
+    console.log('')
+  }
+
   private outputJumpTable(block: Block): void {
+    const label = this.labels.get(block.start)
+    if (label)
+      console.log(`${label.label}:`)
+    else
+      console.log(`;; ${Util.hex(block.start, 4)}:`)
+
     const n = (block.end - block.start) / 2 | 0
     for (let i = 0; i < n; ++i) {
       const adr = block.start + i * 2
       const x = this.read16(adr)
-      console.log(`\t.dw ${this.getLabelName(x)}`)
+      console.log(`\t.dw ${this.getLabelName(x)}    ; ${Util.hex(adr, 4)}: $${Util.hex(x, 4)}`)
     }
     console.log('')
   }
@@ -168,6 +194,9 @@ class Analyzer {
     this.addLabel(adr, true)
     const block = this.createBlock(adr)
     while (adr <= 0xffff) {
+      if (this.stopAnalyze.has(adr))
+        break
+
       const op = this.read8(adr)
       const inst = kInstTable[op]
       if (inst == null) {
@@ -190,7 +219,9 @@ class Analyzer {
                  inst.addressing === Addressing.ABSOLUTE_X ||
                  inst.addressing === Addressing.ABSOLUTE_Y) {
         const target = this.read16(adr + 1)
-        this.addLabel(target, false)
+        const label = this.labels.get(target - 1)
+        if (label == null || !label.isJumpTable)
+          this.addLabel(target, false)
       }
 
       if (inst.opType === OpType.JMP ||
@@ -211,8 +242,7 @@ class Analyzer {
       const block = this.blocks[i]
       for (let j = i; ++j < this.blocks.length; ++j) {
         const block2 = this.blocks[j]
-        if (block2.isJumpTable) {
-          block.end = block2.start
+        if (block2.isJumpTable && block.end === block2.start) {
           continue
         }
 
@@ -231,15 +261,21 @@ class Analyzer {
     const inst = kInstTable[op]
 
     const bins = new Array<string>()
-    for (let i = 0; i < inst.bytes; ++i) {
-      const m = mem[pc + i]
-      bins.push(Util.hex(m, 2))
+    let asmStr = ''
+    if (inst.opType === OpType.UNKNOWN) {
+      asmStr = `.db $${Util.hex(op)}`
+      bins.push(Util.hex(op, 2))
+    } else {
+      for (let i = 0; i < inst.bytes; ++i) {
+        const m = mem[pc + i]
+        bins.push(Util.hex(m, 2))
+      }
+      asmStr = this.disassemble(inst, mem, pc + 1, pc)
     }
 
-    const asmStr = this.disassemble(inst, mem, pc + 1, pc)
     const binStr = bins.join(' ')
-    const pad = ''.padStart((32 - asmStr.length + 7) / 8 | 0, '\t')
-    console.log(`\t${asmStr}${pad}; ${Util.hex(pc, 4)}: ${binStr}`)
+    const pad = ' '.repeat(32 - asmStr.length)
+    console.log(`    ${asmStr}${pad}; ${Util.hex(pc, 4)}: ${binStr}`)
     return pc + inst.bytes
   }
 
@@ -265,13 +301,20 @@ class Analyzer {
       operand = ` $${Util.hex(mem[start], 2)}, Y`
       break
     case Addressing.ABSOLUTE:
-      operand = ` ${this.getLabelName(mem[start] | (mem[start + 1] << 8))}`
-      break
     case Addressing.ABSOLUTE_X:
-      operand = ` ${this.getLabelName(mem[start] | (mem[start + 1] << 8))}, X`
-      break
     case Addressing.ABSOLUTE_Y:
-      operand = ` ${this.getLabelName(mem[start] | (mem[start + 1] << 8))}, Y`
+      {
+        const adr = mem[start] | (mem[start + 1] << 8)
+        const highLabel = this.labels.get(adr - 1)
+        const s = (highLabel == null || !highLabel.isJumpTable) ? this.getLabelName(adr) : `${highLabel.label}+1`
+        let post = ''
+        switch (inst.addressing) {
+        case Addressing.ABSOLUTE_X:  post = ', X';  break
+        case Addressing.ABSOLUTE_Y:  post = ', Y';  break
+        default:  break;
+        }
+        operand = ` ${s}${post}`
+      }
       break
     case Addressing.INDIRECT:
       operand = ` (\$${Util.hex(mem[start] | (mem[start + 1] << 8), 4)})`
@@ -290,30 +333,31 @@ class Analyzer {
       }
       break
     default:
-      console.error(`Unhandled addressing: ${inst.addressing}`)
+      console.error(`Unhandled addressing: ${inst.addressing} at ${Util.hex(pc, 4)}, op=${Util.hex(mem[pc])}`)
       break
     }
+    if (kOpcode[inst.opType] == null)
+      throw `kOpcode[${inst.opType}] is null`
     return `${kOpcode[inst.opType]}${operand}`
   }
 
-  private createBlock(adr: number): Block {
-    const block = new Block()
-    block.start = adr
+  private createBlock(adr: number, end: number = 0, isJumpTable = false): Block {
+    if (end === 0)
+      end = adr
+    const block = new Block(adr, end, isJumpTable)
     insert(this.blocks, block, (b: Block) => adr < b.start)
     return block
   }
 
-  private addLabel(adr: number, isCode: boolean): void {
+  private addLabel(adr: number, isCode: boolean): Label {
     let label = this.labels.get(adr)
-    if (!label) {
-      label = {
-        label: this.getLabelName(adr),
-        isCode,
-      }
+    if (label == null) {
+      label = new Label(this.getLabelName(adr), isCode)
       this.labels.set(adr, label)
     } else {
-      label.isCode = label.isCode || isCode
+      label.isCode ||= isCode
     }
+    return label
   }
 
   private getLabelName(adr: number): string {
@@ -339,8 +383,8 @@ async function main(): Promise<void> {
 
   const data = await fs.readFile(targets[0])
   const analyzer = new Analyzer()
-  analyzer.loadProgram(loadPrgRom(data), 0x8000)
-  analyzer.addJumpTable(0xfffa, 3)
+  const prgRom = loadPrgRom(data)
+  analyzer.loadProgram(prgRom, 0x10000 - Math.min(prgRom.byteLength, 0x8000))
 
   if (options.config) {
     const data = await fs.readFile(options.config)
@@ -351,15 +395,21 @@ async function main(): Promise<void> {
         analyzer.addStopPoint(adr)
       }
     }
-    if (json.jumpTable) {
-      for (let jt of json.jumpTable) {
-        analyzer.addJumpTable(jt.address, jt.count)
+    if (json.stopAnalyze) {
+      for (let adr of json.stopAnalyze) {
+        analyzer.addStopAnalyze(adr)
       }
     }
     if (json.labels) {
       analyzer.setLabelNameTable(json.labels)
     }
+    if (json.jumpTable) {
+      for (let jt of json.jumpTable) {
+        analyzer.addJumpTable(jt.address, jt.count)
+      }
+    }
   }
+  analyzer.addJumpTable(0xfffa, 3)
 
   analyzer.analyze()
   analyzer.output()

@@ -69,6 +69,15 @@ export const kOpcode: Record<number, string> = {
 
   [OpType.BRK]: 'BRK',
   [OpType.NOP]: 'NOP',
+
+  [OpType.LAX]: 'LAX',
+  [OpType.SAX]: 'SAX',
+  [OpType.ISB]: 'ISB',
+  [OpType.DCP]: 'DCP',
+  [OpType.RLA]: 'RLA',
+  [OpType.RRA]: 'RRA',
+  [OpType.SLO]: 'SLO',
+  [OpType.SRE]: 'SRE',
 }
 
 export function disassemble(
