@@ -1,6 +1,9 @@
-const fs = __non_webpack_require__('fs').promises
+const fs = __non_webpack_require__('fs')
+const fsPromises = fs.promises
 
 import {unzip, AsyncUnzipOptions, Unzipped} from 'fflate'
+import {PNG} from 'pngjs'
+
 import {Nes, NesEvent} from '../../src/nes/nes'
 import {Cartridge} from '../../src/nes/cartridge'
 import {IDeltaModulationChannel, INoiseChannel, IPulseChannel, PadValue, WaveType} from '../../src/nes/apu'
@@ -25,6 +28,7 @@ const ARROW_UP = 82
 const RETURN = 40
 const ESCAPE = 41
 const SPACE = 44
+const F12 = 69
 
 const kScanCode2PadValue: Record<number, number> = {
   [ARROW_RIGHT]: PadValue.R,
@@ -59,6 +63,8 @@ class MyApp {
   private additionalPad = 0
   private timer: NodeJS.Timer | undefined
   private controller: any
+  private takeScreenshot = false
+  private screenshotIndex = 0
 
   private audioManager = new AudioManager()
 
@@ -102,12 +108,21 @@ class MyApp {
       clearInterval(this.timer)
     })
     this.win.on('keyDown', (key) => {
-      if (key.scancode === ESCAPE)
+      switch (key.scancode) {
+      case ESCAPE:
         process.exit(0)
-
-      const v = kScanCode2PadValue[key.scancode]
-      if (v)
-        this.pad |= v
+        break
+      case F12:
+        this.takeScreenshot = true
+        break
+      default:
+        {
+          const v = kScanCode2PadValue[key.scancode]
+          if (v)
+            this.pad |= v
+        }
+        break
+      }
     })
     this.win.on('keyUp', (key) => {
       const v = kScanCode2PadValue[key.scancode]
@@ -218,6 +233,34 @@ class MyApp {
       }
     }
     this.win.render(width, height, width * 4, 'rgba32', this.buffer)
+
+    if (this.takeScreenshot) {
+      this.takeScreenshot = false
+      const fn = `ss${this.screenshotIndex++}.png`
+      this.saveScreenshot(fn, width, height, u8buf)
+        .then(() => {
+          console.log(`Screenshot saved as ${fn}`)
+        })
+    }
+  }
+
+  private async saveScreenshot(fn: string, width: number, height: number, pixels: Uint8Array): Promise<void> {
+    const png = new PNG({
+        width,
+        height,
+    })
+
+    for (let i = 0; i < height; ++i) {
+        for (let j = 0; j < width; ++j) {
+            const idx = (png.width * i + j) << 2
+            png.data[idx + 0] = pixels[idx + 0]
+            png.data[idx + 1] = pixels[idx + 1]
+            png.data[idx + 2] = pixels[idx + 2]
+            png.data[idx + 3] = pixels[idx + 3]
+        }
+    }
+
+    await png.pack().pipe(fs.createWriteStream(fn))
   }
 
   private setupAudioManager(): void {
@@ -293,11 +336,11 @@ class MyApp {
 async function loadNesRomData(fileName: string): Promise<Uint8Array> {
   switch (Util.getExt(fileName).toLowerCase()) {
   case 'nes':
-    return await fs.readFile(fileName)
+    return await fsPromises.readFile(fileName)
 
   case 'zip':
     {
-      const buffer = await fs.readFile(fileName)
+      const buffer = await fsPromises.readFile(fileName)
       const options = {
         filter(file: any) {
           return Util.getExt(file.name).toLowerCase() === 'nes'

@@ -24,6 +24,7 @@
   "dependencies": {
     "@kmamal/sdl": "~0.9.5",
     "commander": "~12.0.0",
-    "fflate": "~0.8.2"
+    "fflate": "~0.8.2",
+    "pngjs": "~7.0.0"
   }
 }
