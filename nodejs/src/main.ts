@@ -10,6 +10,8 @@ import {AudioManager} from '../../src/util/audio_manager'
 import {AudioContext} from './audio_context'
 import util from 'util'
 
+import {program} from 'commander'
+
 const sdl = __non_webpack_require__('@kmamal/sdl')
 
 const DEFAULT_MASTER_VOLUME = 0.25
@@ -297,10 +299,22 @@ async function loadNesRomData(fileName: string): Promise<Uint8Array> {
   }
 }
 
-AudioManager.setUp(AudioContext)
-AudioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
-AudioManager.enableAudio()
+async function main(argv: string[]) {
+  program
+    .option('-s, --silent', 'No audio')
+    .parse(argv)
+  const opts = program.opts()
+  const args = program.args
 
-const myApp = new MyApp()
-if (process.argv.length > 2)
-  MyApp.loadRom(myApp, process.argv[2])
+  AudioManager.setUp(AudioContext)
+  if (!opts.silent) {
+    AudioManager.setMasterVolume(DEFAULT_MASTER_VOLUME)
+    AudioManager.enableAudio()
+  }
+
+  const myApp = new MyApp()
+  if (args.length > 0)
+    await MyApp.loadRom(myApp, args[0])
+}
+
+main(process.argv)
