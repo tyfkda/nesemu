@@ -56,7 +56,9 @@ class MyApp {
   protected cartridge: Cartridge
   private nes: Nes
   private pad = 0
+  private additionalPad = 0
   private timer: NodeJS.Timer | undefined
+  private controller: any
 
   private audioManager = new AudioManager()
 
@@ -68,6 +70,17 @@ class MyApp {
       const romData = await loadNesRomData(fileName)
       if (romData != null)
         app.run(romData)
+    } catch (error) {
+      console.error(error)
+      process.exit(1)
+    }
+  }
+
+  async loadController(filename: string) {
+    try {
+      const jsCode = await fs.readFile(filename, 'utf8')
+      const jsCodeFn = `'use strict'; return (() => { ${jsCode} })()`
+      this.controller = Function('app', jsCodeFn)(this)
     } catch (error) {
       console.error(error)
       process.exit(1)
@@ -162,7 +175,7 @@ class MyApp {
   }
 
   private loop(elapsedTime: number): void {
-    this.nes.setPadStatus(0, this.pad)
+    this.nes.setPadStatus(0, this.pad | this.additionalPad)
 
     let et = Math.min(elapsedTime, MAX_ELAPSED_TIME)
     this.nes.runMilliseconds(et)
@@ -178,6 +191,10 @@ class MyApp {
       this.prgBanks = this.prgBanksLast
       this.prgBanksLast = tmp
     }
+
+    this.additionalPad = 0
+    if (this.controller != null && this.controller.onVblank != null)
+      this.controller.onVblank()
   }
 
   private render(): void {
@@ -302,6 +319,7 @@ async function loadNesRomData(fileName: string): Promise<Uint8Array> {
 async function main(argv: string[]) {
   program
     .option('-s, --silent', 'No audio')
+    .option('--controller <file>', 'Controller script file')
     .parse(argv)
   const opts = program.opts()
   const args = program.args
@@ -313,6 +331,8 @@ async function main(argv: string[]) {
   }
 
   const myApp = new MyApp()
+  if (opts.controller != null)
+    myApp.loadController(opts.controller)
   if (args.length > 0)
     await MyApp.loadRom(myApp, args[0])
 }
