@@ -2,7 +2,7 @@ import {WindowManager} from '../wnd/window_manager'
 import {Wnd} from '../wnd/wnd'
 
 import {AudioManager} from '../util/audio_manager'
-import {WaveType} from '../nes/apu'
+import {WaveType, INoiseChannel} from '../nes/apu'
 import {DomUtil} from '../util/dom_util'
 import {GlobalSetting} from './global_setting'
 import {Nes} from '../nes/nes'
@@ -21,6 +21,8 @@ import aboutHtmlContent from '../res/about.html'
 
 import pluseImg from '../res/pulse.png'
 import triangleImg from '../res/triangle.png'
+import noiseImg from '../res/noise.png'
+import dmcImg from '../res/dmc.png'
 import sawtoothImg from '../res/sawtooth.png'
 
 export class FpsWnd extends Wnd {
@@ -402,8 +404,8 @@ const kToneTable: number[] = [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12]  // F F# G 
 const kWaveTypeImages: string[] = [
   pluseImg,
   triangleImg,
-  '',
-  '',
+  noiseImg,
+  dmcImg,
   sawtoothImg,
 ]
 
@@ -422,6 +424,7 @@ export class AudioWnd extends Wnd {
   private nes: Nes
   private stream: AppEvent.Stream
   private subscription: Pubsub.Subscription
+  private waveTypes: Array<WaveType>
   private channelIndices: Array<number>
   private dots: Array<HTMLElement>
   private keys: Array<Array<HTMLElement>>
@@ -430,12 +433,13 @@ export class AudioWnd extends Wnd {
   public constructor(wndMgr: WindowManager, nes: Nes, stream: AppEvent.Stream) {
     const waveTypes = nes.getChannelWaveTypes()
     const channelIndices = [...Array(waveTypes.length).keys()]
-        .filter(ch => waveTypes[ch] !== WaveType.DMC && waveTypes[ch] !== WaveType.NOISE)
     const channelCount = channelIndices.length
 
-    super(wndMgr, AudioWnd.W * AudioWnd.OCTAVE * 7, AudioWnd.H * channelCount, 'Audio')
+    // Assumed noise and DMC channels exist and they are half height.
+    super(wndMgr, AudioWnd.W * AudioWnd.OCTAVE * 7, AudioWnd.H * (channelCount - 1), 'Audio')
     this.nes = nes
     this.stream = stream
+    this.waveTypes = waveTypes
     this.channelIndices = channelIndices
 
     const {root, dots, keys} = this.createDom(channelCount, waveTypes)
@@ -474,15 +478,66 @@ export class AudioWnd extends Wnd {
     const DOT_W = 12
     for (let ich = 0; ich < this.channelIndices.length; ++ich) {
       const channel = this.nes.getSoundChannel(this.channelIndices[ich])
+      const waveType = this.waveTypes[ich]
+      let x = 0
+      let y = 0
+      let vol = 0
+
+      switch (waveType) {
+      case WaveType.NOISE:
+        {
+          vol = channel.isEnabled() ? channel.getVolume() : 0
+          const [period, _mode] = (channel as unknown as INoiseChannel).getNoisePeriod()
+          const APU_NOISE_HZ = 894887
+          const freq = (APU_NOISE_HZ / 32) / (period + 1)  // ???
+          const toneIndex = Math.log(freq) * logScale - AudioWnd.kBaseTone + 0.5
+          if ((toneIndex >= 0 && toneIndex <= AudioWnd.OCTAVE * ALL_NOTE) && vol > 0) {
+            const offset = kToneTable[(toneIndex | 0) % ALL_NOTE] | 0
+            x = Math.round(((offset * 0.5) + (Math.floor(toneIndex / ALL_NOTE) | 0) * WHITE_NOTE + (toneIndex % 1)) * xScale) | 0
+            y = AudioWnd.H * 0.25
+          } else {
+            vol = 0
+          }
+        }
+        break
+      case WaveType.DMC:
+        {
+          vol = channel.isEnabled() ? channel.getVolume() : 0
+          x = (AudioWnd.W * AudioWnd.OCTAVE * 7) * 0.5;
+          y = AudioWnd.H * 0.25
+        }
+        break
+      default:
+        {
+          vol = channel.isEnabled() ? channel.getVolume() : 0
+          const freq = channel.getFrequency()
+          const toneIndex = Math.log(freq) * logScale - AudioWnd.kBaseTone + 0.5
+          let keyIndex = -1
+          if ((toneIndex >= 0 && toneIndex <= AudioWnd.OCTAVE * ALL_NOTE) && vol > 0) {
+            const offset = kToneTable[(toneIndex | 0) % ALL_NOTE] | 0
+            x = Math.round(((offset * 0.5) + (Math.floor(toneIndex / ALL_NOTE) | 0) * WHITE_NOTE + (toneIndex % 1)) * xScale) | 0
+            y = (offset & 1) === 0 ? yWhite : yBlack
+            keyIndex = Math.floor(toneIndex) | 0
+          }
+
+          const lastKeyIndex = this.lastKeyIndices[ich]
+          if (keyIndex !== lastKeyIndex) {
+            if (lastKeyIndex >= 0) {
+              const key = this.keys[ich][lastKeyIndex]
+              key.style.removeProperty('background-color')
+            }
+            if (keyIndex >= 0) {
+              const key = this.keys[ich][keyIndex]
+              key.style.setProperty('background-color', KEY_FLASH_COLOR)
+            }
+            this.lastKeyIndices[ich] = keyIndex
+          }
+        }
+        break
+      }
+
       const dot = this.dots[ich]
-      const vol = channel.isEnabled() ? channel.getVolume() : 0
-      const freq = channel.getFrequency()
-      const toneIndex = Math.log(freq) * logScale - AudioWnd.kBaseTone + 0.5
-      let keyIndex = -1
-      if ((toneIndex >= 0 && toneIndex <= AudioWnd.OCTAVE * ALL_NOTE) && vol > 0) {
-        const offset = kToneTable[(toneIndex | 0) % ALL_NOTE] | 0
-        const x = Math.round(((offset * 0.5) + (Math.floor(toneIndex / ALL_NOTE) | 0) * WHITE_NOTE + (toneIndex % 1)) * xScale) | 0
-        const y = (offset & 1) === 0 ? yWhite : yBlack
+      if (vol > 0) {
         const v = Math.pow(vol, 1 / 3)
         const w = Math.round(DOT_W * v) | 0
         const r = (w * 0.5) | 0
@@ -494,25 +549,10 @@ export class AudioWnd extends Wnd {
           height: `${w}px`,
           borderRadius: `${w}px`,
         })
-
-        keyIndex = Math.floor(toneIndex) | 0
       } else {
         DomUtil.setStyles(dot, {
           visibility: 'hidden',
         })
-      }
-
-      const lastKeyIndex = this.lastKeyIndices[ich]
-      if (keyIndex !== lastKeyIndex) {
-        if (lastKeyIndex >= 0) {
-          const key = this.keys[ich][lastKeyIndex]
-          key.style.removeProperty('background-color')
-        }
-        if (keyIndex >= 0) {
-          const key = this.keys[ich][keyIndex]
-          key.style.setProperty('background-color', KEY_FLASH_COLOR)
-        }
-        this.lastKeyIndices[ich] = keyIndex
       }
     }
   }
@@ -536,54 +576,62 @@ export class AudioWnd extends Wnd {
 
     for (let ch = 0; ch < channelCount; ++ch) {
       const line = document.createElement('div')
+      const waveType = waveTypes[this.channelIndices[ch]]
+      const percussion = waveType === WaveType.NOISE || waveType === WaveType.DMC
+      const h = percussion ? H / 2 : H
       line.className = 'keyboard'
       DomUtil.setStyles(line, {
-        height: `${H - 1}px`,
+        height: `${h - 1}px`,
       })
 
-      const whiteKeys = new Array<HTMLElement>()
-      const blackKeys = new Array<HTMLElement>()
-      const chKeys = new Array<HTMLElement>()
-      for (let octave = 0; octave < AudioWnd.OCTAVE; ++octave) {
-        for (let i = 0; i < kToneTable.length; ++i) {
-          const offset = kToneTable[i] | 0
-          const note = octave * WHITE_NOTE + (offset >> 1)
-          let key: HTMLElement
-          if ((offset & 1) === 0) {
-            key = document.createElement('div')
-            key.className = 'white-key'
-            DomUtil.setStyles(key, {
-              left: `${note * W}px`,
-              width: `${W - 1}px`,
-            })
-            whiteKeys.push(key)
-          } else {
-            key = document.createElement('div')
-            key.className = 'black-key'
-            DomUtil.setStyles(key, {
-              left: `${note * W + W / 2 + 1}px`,
-              width: `${W - 2}px`,
-              height: `${H / 2}px`,
-            })
-            blackKeys.push(key)
+      let whiteKeys: Array<HTMLElement>
+      let blackKeys: Array<HTMLElement>
+      let chKeys: Array<HTMLElement> = []
+      if (!percussion) {
+        whiteKeys = new Array<HTMLElement>()
+        blackKeys = new Array<HTMLElement>()
+        chKeys = new Array<HTMLElement>()
+        for (let octave = 0; octave < AudioWnd.OCTAVE; ++octave) {
+          for (let i = 0; i < kToneTable.length; ++i) {
+            const offset = kToneTable[i] | 0
+            const note = octave * WHITE_NOTE + (offset >> 1)
+            let key: HTMLElement
+            if ((offset & 1) === 0) {
+              key = document.createElement('div')
+              key.className = 'white-key'
+              DomUtil.setStyles(key, {
+                left: `${note * W}px`,
+                width: `${W - 1}px`,
+              })
+              whiteKeys.push(key)
+            } else {
+              key = document.createElement('div')
+              key.className = 'black-key'
+              DomUtil.setStyles(key, {
+                left: `${note * W + W / 2 + 1}px`,
+                width: `${W - 2}px`,
+                height: `${H / 2}px`,
+              })
+              blackKeys.push(key)
+            }
+            chKeys.push(key)
           }
-          chKeys.push(key)
         }
+
+        for (const whiteKey of whiteKeys)
+          line.appendChild(whiteKey)
+        for (const blackKey of blackKeys)
+          line.appendChild(blackKey)
       }
 
-      for (const whiteKey of whiteKeys)
-        line.appendChild(whiteKey)
-      for (const blackKey of blackKeys)
-        line.appendChild(blackKey)
-
       const icon = document.createElement('img')
+      icon.className = 'pixelated'
       DomUtil.setStyles(icon, {
         position: 'absolute',
         left: 0,
         top: 0,
         display: 'block',
       })
-      const waveType = waveTypes[this.channelIndices[ch]]
       icon.src = kWaveTypeImages[waveType]
       line.appendChild(icon)
 
