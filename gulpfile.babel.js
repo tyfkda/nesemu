@@ -25,7 +25,6 @@ const jest = require('gulp-jest').default
 import fs from 'fs'
 
 const ROOT_DIR = `${__dirname}`
-const RES_DIR = `${ROOT_DIR}/res`
 const DEST_DIR = `${ROOT_DIR}/public`
 const ASSETS_DIR = `${DEST_DIR}/assets`
 const SRC_TS_DIR = `${ROOT_DIR}/src`
@@ -119,12 +118,6 @@ export function watchLint() {
   return gulp.watch(LINT_GLOBS, lint)
 }
 
-export function copyRes() {
-  return gulp.src([`${RES_DIR}/**/*`],
-                  {base: RES_DIR})
-    .pipe(gulp.dest(DEST_DIR))
-}
-
 export function server() {
   browserSync.init({
     server: {
@@ -171,11 +164,11 @@ export const watch = gulp.parallel(watchHtml, watchTs, watchSass,
                                    watchLint, watchTest,
                                    watchReload)
 
-export const build = gulp.parallel(html, ts, sass, copyRes, lint)
+export const build = gulp.parallel(html, ts, sass, lint)
 
 exports.default = gulp.parallel(build, server, watch)
 
-export const releaseBuild = gulp.series(gulp.parallel(sass, copyRes), () => {
+export const releaseBuild = gulp.series(sass, () => {
   // Copy resources.
   return gulp.src([`${DEST_DIR}/**/*.*`,
                    `!${DEST_DIR}/index.html`,
