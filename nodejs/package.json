@@ -12,18 +12,18 @@
   "author": "tyfkda",
   "license": "Unlicense",
   "devDependencies": {
-    "@babel/core": "~7.21.8",
-    "@babel/preset-env": "~7.21.5",
-    "@babel/register": "~7.21.0",
-    "@types/node": "~18.16.3",
-    "ts-loader": "~9.4.2",
-    "typescript": "~5.0.4",
-    "webpack": "~5.82.0",
-    "webpack-cli": "~5.0.2"
+    "@babel/core": "~7.25.2",
+    "@babel/preset-env": "~7.25.4",
+    "@babel/register": "~7.24.6",
+    "@types/node": "~22.5.2",
+    "ts-loader": "~9.5.1",
+    "typescript": "~5.5.4",
+    "webpack": "~5.94.0",
+    "webpack-cli": "~5.1.4"
   },
   "dependencies": {
-    "@kmamal/sdl": "~0.9.5",
-    "commander": "~12.0.0",
+    "@kmamal/sdl": "~0.10.7",
+    "commander": "~12.1.0",
     "fflate": "~0.8.2",
     "pngjs": "~7.0.0"
   }

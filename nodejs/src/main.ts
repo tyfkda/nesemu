@@ -61,7 +61,7 @@ class MyApp {
   private nes: Nes
   private pad = 0
   private additionalPad = 0
-  private timer: NodeJS.Timer | undefined
+  private timer: NodeJS.Timeout | undefined
   private controller: any
   private takeScreenshot = false
   private screenshotIndex = 0
