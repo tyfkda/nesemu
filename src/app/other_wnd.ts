@@ -14,8 +14,7 @@ import {AppEvent} from './app_event'
 import {Util} from '../util/util'
 
 import * as Pubsub from '../util/pubsub'
-// import * as Stats from 'stats-js'
-const Stats = require('stats-js')  // eslint-disable-line @typescript-eslint/no-var-requires
+import {default as Stats} from 'stats-js'
 
 import aboutHtmlContent from '../res/about.html'
 

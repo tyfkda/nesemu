@@ -53,6 +53,7 @@
     "@babel/core": "~7.23.2",
     "@babel/preset-env": "~7.23.2",
     "@babel/register": "~7.22.15",
+    "@types/escape-html": "~1.0.4",
     "@types/fscreen": "~1.0.3",
     "@types/jest": "~29.5.1",
     "@types/md5": "~2.3.4",
