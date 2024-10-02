@@ -3,10 +3,9 @@ import {SoundChannel, PulseChannel, TriangleChannel, SawtoothChannel} from './au
 import {createNoiseChannel, INoiseChannel} from './audio/noise_channel'
 import {createDmcChannel, IDmcChannel} from './audio/delta_modulation_channel'
 import {ICartridge} from '../nes/cartridge'
+import DcRemoveWorkletURL from '../dc_remove_worker.ts?worker&url'
 
 const GLOBAL_MASTER_VOLUME = 0.5
-
-const DC_REMOVE_WORKER_PASS = 'assets/dc_remove_worker.js'
 
 export class AudioManager {
   private static initialized = false
@@ -76,7 +75,7 @@ export class AudioManager {
   private static async createDcRemoveFilter(context: AudioContext): Promise<AudioWorkletNode> {
     if (typeof(AudioWorkletNode) === 'undefined')
       return Promise.reject()
-    await context.audioWorklet.addModule(DC_REMOVE_WORKER_PASS)
+    await context.audioWorklet.addModule(DcRemoveWorkletURL)
     return new AudioWorkletNode(context, 'dc_remove_worklet')
   }
 
