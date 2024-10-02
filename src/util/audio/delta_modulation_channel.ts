@@ -1,6 +1,7 @@
 import {SoundChannel} from './sound_channel'
 import {ICartridge} from '../../nes/cartridge'
 import {DeltaModulationSampler} from './delta_modulation_sampler'
+import DmcWorkletURL from '../../dmc_channel_worker.ts?worker&url'
 
 // ScriptProcessor DMC channel
 const SP_DMC_BUFFER_SIZE = 512
@@ -69,7 +70,6 @@ class SpDmcChannel extends IDmcChannel {
 }
 
 // Audio-worklet DMC channel
-const DMC_WORKER_PASS = 'assets/dmc_channel_worker.js'
 class AwDmcChannel extends IDmcChannel {
   private node?: AudioWorkletNode
   private prgRom: Uint8Array | null = null
@@ -83,7 +83,7 @@ class AwDmcChannel extends IDmcChannel {
   private constructor(context: AudioContext, destination: AudioNode) {
     super()
 
-    context.audioWorklet.addModule(DMC_WORKER_PASS)
+    context.audioWorklet.addModule(DmcWorkletURL)
       .then(() => {
         this.node = new AudioWorkletNode(context, 'dmc_worklet')
         this.node.connect(destination)
