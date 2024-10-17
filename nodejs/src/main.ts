@@ -1,4 +1,4 @@
-const fs = __non_webpack_require__('fs')
+import fs from 'fs'
 const fsPromises = fs.promises
 
 import {unzip, AsyncUnzipOptions, Unzipped} from 'fflate'
@@ -16,7 +16,7 @@ import util from 'util'
 
 import {program} from 'commander'
 
-const sdl = __non_webpack_require__('@kmamal/sdl')
+import sdl from '@kmamal/sdl'
 
 const DEFAULT_MASTER_VOLUME = 0.25
 
