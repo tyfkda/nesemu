@@ -15,6 +15,7 @@ typings
 /public
 /release
 
+/nodejs/release
 /nodejs/nesemu.js
 /nodejs/package-lock.json
 *.LICENSE.txt
