@@ -40,6 +40,11 @@ export default defineConfig({
   build: {
     outDir: resolve(__dirname, 'release'),
     rollupOptions: {
+      input: {
+        index: resolve(__dirname, 'src/index.html'),
+        noise_channel_worker: resolve(__dirname, 'src/noise_channel_worker.ts'),
+        dmc_channel_worker: resolve(__dirname, 'src/dmc_channel_worker.ts'),
+      },
       output: {
         entryFileNames: 'assets/[name].js',
         assetFileNames: 'assets/[name].[ext]',

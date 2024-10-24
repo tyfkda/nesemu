@@ -1,6 +1,6 @@
 import {NoiseSampler} from './noise_sampler'
 import {SoundChannel} from './sound_channel'
-import NoiseWorkletURL from '../../noise_channel_worker.ts?worker&url'
+// import NoiseWorkletURL from '../../noise_channel_worker.ts?worker&url'
 
 export abstract class INoiseChannel extends SoundChannel {
   public abstract setNoisePeriod(period: number, mode: number): void
@@ -49,6 +49,7 @@ class SpNoiseChannel extends INoiseChannel {
 }
 
 // Audio-worklet Noise channel
+const NOISE_WORKER_PASS = 'assets/noise_channel_worker.js'
 class AwNoiseChannel extends INoiseChannel {
   private node?: AudioWorkletNode
 
@@ -61,7 +62,7 @@ class AwNoiseChannel extends INoiseChannel {
   private constructor(context: AudioContext, destination: AudioNode) {
     super()
 
-    context.audioWorklet.addModule(NoiseWorkletURL)
+    context.audioWorklet.addModule(NOISE_WORKER_PASS)
       .then(() => {
         this.node = new AudioWorkletNode(context, 'noise_worklet')
         this.node.connect(destination)
