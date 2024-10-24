@@ -3,7 +3,7 @@ import {ICartridge, Cartridge} from '../nes/cartridge'
 import {Keyboard} from '../nes/peripheral/keyboard'
 
 import {AppEvent} from './app_event'
-import {AudioManager} from '../util/audio_manager'
+import {AudioManagerForBrowser} from './audio_manager_for_browser'
 import {IDeltaModulationChannel, INoiseChannel, IPulseChannel, WaveType} from '../nes/apu'
 import {DomUtil} from '../util/dom_util'
 import {Fds} from '../nes/fds/fds'
@@ -33,7 +33,7 @@ export class App {
   protected destroying = false
   protected isPaused = false
   protected cartridge: ICartridge
-  protected audioManager: AudioManager
+  protected audioManager: AudioManagerForBrowser
   protected channelVolumes: Float32Array
   protected stream = new AppEvent.Stream()
   protected subscription: Pubsub.Subscription
@@ -262,7 +262,7 @@ export class App {
 
   public setupAudioManager(): void {
     if (this.audioManager == null) {
-      this.audioManager = new AudioManager()
+      this.audioManager = new AudioManagerForBrowser()
     } else {
       this.audioManager.releaseAllChannels()
     }

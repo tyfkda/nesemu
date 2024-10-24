@@ -1,23 +1,20 @@
 import {WaveType} from '../nes/apu'
 import {SoundChannel, PulseChannel, TriangleChannel, SawtoothChannel} from './audio/sound_channel'
-import {createNoiseChannel, INoiseChannel} from './audio/noise_channel'
-import {createDmcChannel, IDmcChannel} from './audio/delta_modulation_channel'
+import {IDmcChannel, INoiseChannel} from './audio/sound_channel'
 import {ICartridge} from '../nes/cartridge'
-import DcRemoveWorkletURL from '../dc_remove_worker.ts?worker&url'
 
 const GLOBAL_MASTER_VOLUME = 0.5
 
-export class AudioManager {
-  private static initialized = false
-  private static audioContextClass?: AudioContext
-  private static context?: AudioContext
-  private static masterGainNode: GainNode
-  private static analyserNode?: AnalyserNode
-  private static masterVolume = 1.0
+export abstract class AudioManager {
+  protected static initialized = false
+  protected static audioContextClass?: AudioContext
+  protected static context?: AudioContext
+  protected static masterGainNode: GainNode
+  protected static masterVolume = 1.0
 
-  private channels = new Array<SoundChannel>()
-  private dmcChannelIndex = -1
-  private cartridge: ICartridge
+  protected channels = new Array<SoundChannel>()
+  protected dmcChannelIndex = -1
+  protected cartridge: ICartridge
 
   public static setUp(audioContextClass: any): void {
     if (AudioManager.initialized)
@@ -54,36 +51,14 @@ export class AudioManager {
       AudioManager.masterGainNode.gain.setValueAtTime(volume * GLOBAL_MASTER_VOLUME, context.currentTime)
   }
 
-  public static createAnalyser(): AnalyserNode | null {
-    const context = AudioManager.context
-    if (context == null)
-      return null
-    if (AudioManager.analyserNode == null) {
-      AudioManager.analyserNode = context.createAnalyser()
-      AudioManager.createDcRemoveFilter(context)
-          .then((node) => {
-            AudioManager.masterGainNode.connect(node)
-            node.connect(AudioManager.analyserNode!)
-          })
-          .catch(() => {
-            AudioManager.masterGainNode.connect(AudioManager.analyserNode!)
-          })
-    }
-    return AudioManager.analyserNode
-  }
-
-  private static async createDcRemoveFilter(context: AudioContext): Promise<AudioWorkletNode> {
-    if (typeof(AudioWorkletNode) === 'undefined')
-      return Promise.reject()
-    await context.audioWorklet.addModule(DcRemoveWorkletURL)
-    return new AudioWorkletNode(context, 'dc_remove_worklet')
-  }
-
   private static checkSetUpCalled(): void {
     if (!AudioManager.initialized) {
       console.error('Audio.setUp must be called!')
     }
   }
+
+  abstract createNoiseChannel(context: AudioContext, destination: AudioNode): INoiseChannel
+  abstract createDmcChannel(context: AudioContext, destination: AudioNode): IDmcChannel
 
   constructor() {
     AudioManager.checkSetUpCalled()
@@ -123,7 +98,7 @@ export class AudioManager {
       sc = new TriangleChannel(context, destination)
       break
     case WaveType.NOISE:
-      sc = createNoiseChannel(context, destination)
+      sc = this.createNoiseChannel(context, destination)
       break
     case WaveType.SAWTOOTH:
       sc = new SawtoothChannel(context, destination)
@@ -132,7 +107,7 @@ export class AudioManager {
       {
         this.dmcChannelIndex = this.channels.length
 
-        const dmc = createDmcChannel(context, destination)
+        const dmc = this.createDmcChannel(context, destination)
         sc = dmc
 
         if (this.cartridge != null)

@@ -9,6 +9,7 @@ import {Cartridge} from '../../src/nes/cartridge'
 import {IDeltaModulationChannel, INoiseChannel, IPulseChannel, PadValue, WaveType} from '../../src/nes/apu'
 import {Util} from '../../src/util/util'
 import {AudioManager} from '../../src/util/audio_manager'
+import {AudioManagerForNode} from './audio_manager_for_node'
 
 import {AudioContext} from './audio_context'
 import util from 'util'
@@ -66,7 +67,7 @@ class MyApp {
   private takeScreenshot = false
   private screenshotIndex = 0
 
-  private audioManager = new AudioManager()
+  private audioManager = new AudioManagerForNode()
 
   protected prgBanks = new Int32Array([0, 1, -2, -1])
   protected prgBanksLast = new Int32Array([0, 1, -2, -1])

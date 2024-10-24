@@ -55,7 +55,6 @@ interface AudioContext {
   createOscillator(): OscillatorNode
   createPeriodicWave(real: Float32Array, imag: Float32Array): PeriodicWave
   createDelay(): DelayNode
-  createAnalyser(): AnalyserNode
   createScriptProcessor(size: number, a: number, b: number): ScriptProcessorNode
 
   // Additional method:

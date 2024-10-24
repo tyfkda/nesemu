@@ -1,3 +1,5 @@
+import {ICartridge} from '../../nes/cartridge'
+
 // Base class.
 export abstract class SoundChannel {
   public abstract destroy(): void
@@ -180,4 +182,14 @@ export class PulseChannel extends OscillatorChannel {
     const dutyRatio = this.dutyRatio <= 0.5 ? this.dutyRatio : 1 - this.dutyRatio
     this.delay.delayTime.setValueAtTime(dutyRatio / this.frequency, now)
   }
+}
+
+export abstract class INoiseChannel extends SoundChannel {
+  public abstract setNoisePeriod(period: number, mode: number): void
+}
+
+export abstract class IDmcChannel extends SoundChannel {
+  public abstract setCartridge(cartridge: ICartridge): void
+  public abstract setDmcWrite(reg: number, value: number): void
+  public abstract changePrgBank(bank: number, page: number): void
 }
