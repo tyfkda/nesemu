@@ -472,8 +472,7 @@ $BUTTON_HEIGHT: 6px;
   font-size: 12px;
   background-color: black;
   color: white;
-  overflow-x: hidden;
-  overflow-y: auto;
+  overflow: hidden;
 
   div::selection, span::selection {
     background-color: #0c0;

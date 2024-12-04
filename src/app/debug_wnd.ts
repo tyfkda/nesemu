@@ -244,6 +244,7 @@ export class RamWnd extends Wnd {
       right: 0,
       overflowY: 'scroll',
       userSelect: 'all',
+      scrollbarColor: 'white gray',
     })
 
     const scroll = document.createElement('div')
