@@ -84,7 +84,7 @@ class MyApp {
 
   async loadController(filename: string) {
     try {
-      const jsCode = await fs.readFile(filename, 'utf8')
+      const jsCode = await fsPromises.readFile(filename, 'utf8')
       const jsCodeFn = `'use strict'; return (() => { ${jsCode} })()`
       this.controller = Function('app', jsCodeFn)(this)
     } catch (error) {
@@ -260,7 +260,7 @@ class MyApp {
         }
     }
 
-    await png.pack().pipe(fs.createWriteStream(fn))
+    await png.pack().pipe(fsPromises.createWriteStream(fn))
   }
 
   private setupAudioManager(): void {
@@ -374,10 +374,10 @@ async function main(argv: string[]) {
   }
 
   const myApp = new MyApp()
-  if (opts.controller != null)
-    myApp.loadController(opts.controller)
   if (args.length > 0)
     await MyApp.loadRom(myApp, args[0])
+  if (opts.controller != null)
+    myApp.loadController(opts.controller)
 }
 
 main(process.argv)

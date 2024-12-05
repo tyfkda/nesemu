@@ -50,8 +50,8 @@ class Analyzer {
   private startAdr = 0
   private endAdr = 0
   private entryPoints = new Array<number>()
-  private stopPoints = new Set<number>()
-  private stopAnalyze = new Set<number>()
+  private jumpRoutines = new Set<number>()
+  private stopAnalyzeAdrs = new Set<number>()
   private labels = new Map<number, Label>()
   private blocks = new Array<Block>()
   private labelNameTable: Record<number, string> = {}
@@ -78,12 +78,12 @@ class Analyzer {
     insert(this.entryPoints, adr, (e: number) => adr < e)
   }
 
-  public addStopPoint(adr: number): void {
-    this.stopPoints.add(adr)
+  public addJumpRoutine(adr: number): void {
+    this.jumpRoutines.add(adr)
   }
 
   public addStopAnalyze(adr: number): void {
-    this.stopAnalyze.add(adr)
+    this.stopAnalyzeAdrs.add(adr)
   }
 
   public addJumpTable(adr: number, count: number): void {
@@ -194,7 +194,7 @@ class Analyzer {
     this.addLabel(adr, true)
     const block = this.createBlock(adr)
     while (adr <= 0xffff) {
-      if (this.stopAnalyze.has(adr))
+      if (this.stopAnalyzeAdrs.has(adr))
         break
 
       const op = this.read8(adr)
@@ -227,7 +227,7 @@ class Analyzer {
       if (inst.opType === OpType.JMP ||
           inst.opType === OpType.RTS ||
           inst.opType === OpType.RTI ||
-          (inst.opType === OpType.JSR && this.stopPoints.has(this.read16(adr + 1)))) {
+          (inst.opType === OpType.JSR && this.jumpRoutines.has(this.read16(adr + 1)))) {
         adr += inst.bytes
         break
       }
@@ -390,9 +390,9 @@ async function main(): Promise<void> {
     const data = await fs.readFile(options.config)
     const str = String.fromCharCode.apply('', data as any)
     const json = eval(`(${str})`)
-    if (json.stopPoints) {
-      for (let adr of json.stopPoints) {
-        analyzer.addStopPoint(adr)
+    if (json.jumpRoutines) {
+      for (let adr of json.jumpRoutines) {
+        analyzer.addJumpRoutine(adr)
       }
     }
     if (json.stopAnalyze) {
