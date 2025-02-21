@@ -66,6 +66,7 @@ class MyApp {
   private controller: any
   private takeScreenshot = false
   private screenshotIndex = 0
+  private skipFrame = false
 
   private audioManager = new AudioManagerForNode()
 
@@ -141,6 +142,10 @@ class MyApp {
     }))
   }
 
+  public setSkipFrame(skipFrame: boolean): void {
+    this.skipFrame = skipFrame
+  }
+
   public run(romData: Uint8Array): void {
     this.nes = new Nes()
 
@@ -179,6 +184,10 @@ class MyApp {
       const elapsedTime = now - this.prevTime
       this.loop(elapsedTime)
       this.prevTime = now
+
+      while (this.skipFrame) {
+        this.loop(1.0 / 60)
+      }
     }, 1000 / 100)
   }
 
@@ -198,7 +207,7 @@ class MyApp {
   }
 
   private onVblank(leftV: number): void {
-    if (leftV < 1)
+    if (leftV < 1 && !this.skipFrame)
       this.render()
     this.updateAudio()
 
@@ -215,6 +224,9 @@ class MyApp {
 
   private render(): void {
     this.nes.render(this.pixels)
+
+    if (this.controller != null && this.controller.onRender != null)
+      this.controller.onRender(this.pixels)
 
     const {width, height} = this.win
     const u8buf = this.u8buffer
@@ -278,6 +290,9 @@ class MyApp {
   }
 
   private updateAudio(): void {
+    if (this.skipFrame)
+      return
+
     const audioManager = this.audioManager
 
     this.sendPrgBankChanges()
