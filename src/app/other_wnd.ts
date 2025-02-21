@@ -16,7 +16,8 @@ import {Util} from '../util/util'
 import * as Pubsub from '../util/pubsub'
 import {default as Stats} from 'stats-js'
 
-import aboutHtmlContent from '../res/about.html'
+import aboutHtmlContent from '../res/about.html?inline'
+import githubLogoSvg from '../res/github-logo.svg?raw'
 
 import pluseImg from '../res/pulse.png'
 import triangleImg from '../res/triangle.png'
@@ -679,6 +680,11 @@ export class AboutWnd extends Wnd {
     })
 
     root.innerHTML = aboutHtmlContent
+
+    const img = root.querySelector('img#github-logo')
+    if (img != null) {
+      img.setAttribute('src', `data:image/svg+xml;base64,${btoa(githubLogoSvg)}`)
+    }
 
     this.setContent(root)
 

@@ -2,7 +2,7 @@ import {WindowManager} from '../wnd/window_manager'
 import {Wnd} from '../wnd/wnd'
 import {WndEvent} from '../wnd/types'
 
-import {AudioManager} from '../util/audio_manager'
+import {AudioManagerForBrowser} from './audio_manager_for_browser'
 import {DomUtil} from '../util/dom_util'
 
 const WIDTH = 360
@@ -95,7 +95,7 @@ export class SpectrumWnd extends Wnd {
     if (this.analyserNode != null)
       return false
 
-    const analyserNode = AudioManager.createAnalyser()
+    const analyserNode = AudioManagerForBrowser.createAnalyser()
     if (analyserNode == null)
       return false
 
