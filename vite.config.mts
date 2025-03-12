@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
+import htmlMinifier from 'vite-plugin-html-minifier'
 import { minify } from 'html-minifier'
 
 const htmlComponentFile = /\.html\?inline$/ // can have a prefix to html file names such as /\.component\.html\?inline$/
@@ -56,6 +57,9 @@ export default defineConfig({
     },
   },
   plugins: [
-    htmlMinify(),
+    htmlMinifier({
+      minify: true,
+    }),
+    htmlMinify(),  // Used for importing 'about.html?inline'
   ],
 })
