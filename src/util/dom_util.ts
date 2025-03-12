@@ -69,10 +69,6 @@ export class DomUtil {
     return context
   }
 
-  public static timeout(millisec: number): Promise<void> {
-    return new Promise<void>(resolve => setTimeout(resolve, millisec))
-  }
-
   public static async downloadOrSaveToFile(data: any, filename: string, description: string, mimeType: string, extension: string): Promise<FileSystemFileHandle|null> {
     if (window.showSaveFilePicker != null) {
       const accept: Record<string, any> = {}
@@ -133,69 +129,5 @@ export class DomUtil {
         input.click()
       })
     }
-  }
-
-  // Register mouse drag event listener.
-  public static setMouseDragListener(mouseMove: any, mouseUp?: any, useCapture?: boolean): void {
-    let mouseLeave: ((event: MouseEvent) => boolean) | null = null
-    let mouseLeaveTarget: HTMLElement | null = null
-    if (typeof mouseMove === 'object') {
-      const option = mouseMove
-      mouseMove = option.move
-      mouseUp = option.up
-      mouseLeave = option.leave
-      useCapture = option.useCapture
-
-      mouseLeaveTarget = mouseLeave == null ? null : option.leaveTarget || document
-    }
-
-    const unlisten = () => {
-      document.removeEventListener('mousemove', mouseMove, useCapture)
-      document.removeEventListener('mouseup', mouseUpDelegate, useCapture)
-      document.removeEventListener('touchmove', mouseMove, useCapture)
-      document.removeEventListener('touchend', mouseUpDelegate, useCapture)
-      if (mouseLeaveDelegate != null && mouseLeaveTarget) {
-        mouseLeaveTarget.removeEventListener('mouseleave', mouseLeaveDelegate, useCapture)
-      }
-    }
-
-    const mouseUpDelegate = ($event: MouseEvent|TouchEvent) => {
-      if (mouseUp)
-        mouseUp($event)
-      unlisten()
-    }
-
-    const mouseLeaveDelegate = (mouseLeave == null ? null : ($event: MouseEvent) => {
-      if (mouseLeave && mouseLeave($event))
-        unlisten()
-    })
-
-    document.addEventListener('mousemove', mouseMove, useCapture)
-    document.addEventListener('mouseup', mouseUpDelegate, useCapture)
-    document.addEventListener('touchmove', mouseMove, useCapture)
-    document.addEventListener('touchend', mouseUpDelegate, useCapture)
-    if (mouseLeaveDelegate != null && mouseLeaveTarget) {
-      mouseLeaveTarget.addEventListener('mouseleave', mouseLeaveDelegate, useCapture)
-    }
-  }
-
-  public static getMousePosIn(event: MouseEvent|TouchEvent, elem: HTMLElement): [number, number] {
-    let pageX: number
-    let pageY: number
-    if ((event as TouchEvent).changedTouches != null) {
-      const touch = (event as TouchEvent).changedTouches[0]
-      pageX = touch.pageX
-      pageY = touch.pageY
-    } else {
-      const me = event as MouseEvent
-      pageX = me.pageX
-      pageY = me.pageY
-    }
-
-    const rect = elem.getBoundingClientRect()
-    const scrollLeft = document.body.scrollLeft
-    const scrollTop = document.body.scrollTop
-    return [pageX - rect.left - scrollLeft,
-            pageY - rect.top - scrollTop]
   }
 }

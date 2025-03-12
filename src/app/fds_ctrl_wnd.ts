@@ -1,7 +1,6 @@
 import {DomUtil} from '../util/dom_util'
 import {Fds} from '../nes/fds/fds'
-import {WindowManager} from '../wnd/window_manager'
-import {Wnd} from '../wnd/wnd'
+import {WindowManager, Wnd} from 'wndui'
 
 export class FdsCtrlWnd extends Wnd {
   private sideCount = 0

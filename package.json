@@ -71,6 +71,7 @@
     "fscreen": "~1.2.0",
     "md5": "~2.3.0",
     "stats-js": "~1.0.1",
-    "stream": "~0.0.3"
+    "stream": "~0.0.3",
+    "wndui": "file:../wndui"
   }
 }

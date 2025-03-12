@@ -1,6 +1,4 @@
-import {WindowManager} from '../wnd/window_manager'
-import {Wnd} from '../wnd/wnd'
-import {MenuItemInfo, SubmenuItemInfo, WndEvent} from '../wnd/types'
+import {WindowManager, Wnd, MenuItemInfo, SubmenuItemInfo, WndEvent} from 'wndui'
 
 import {DomUtil} from '../util/dom_util'
 import {Nes} from '../nes/nes'

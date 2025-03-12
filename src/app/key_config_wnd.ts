@@ -3,9 +3,7 @@ import {GamepadManager} from '../util/gamepad_manager'
 import {PadBit} from '../nes/apu'
 import {PadKeyHandler} from '../util/pad_key_handler'
 import {KeyboardManager} from '../util/keyboard_manager'
-import {WindowManager} from '../wnd/window_manager'
-import {Wnd} from '../wnd/wnd'
-import {WndEvent} from '../wnd/types'
+import {WindowManager, Wnd, WndEvent} from 'wndui'
 
 import {default as escape} from 'escape-html'
 

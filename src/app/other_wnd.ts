@@ -1,5 +1,4 @@
-import {WindowManager} from '../wnd/window_manager'
-import {Wnd} from '../wnd/wnd'
+import {WindowManager, Wnd} from 'wndui'
 
 import {AudioManager} from '../util/audio_manager'
 import {WaveType, INoiseChannel} from '../nes/apu'

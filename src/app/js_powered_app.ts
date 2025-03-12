@@ -6,7 +6,7 @@ import {AppEvent} from './app_event'
 import {AudioManager} from '../util/audio_manager'
 import {DomUtil} from '../util/dom_util'
 import {Nes} from '../nes/nes'
-import {WindowManager} from '../wnd/window_manager'
+import {WindowManager} from 'wndui/window_manager'
 import {VBlank} from '../nes/const'
 import {Address, Byte} from '../nes/types'
 

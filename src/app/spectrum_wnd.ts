@@ -1,6 +1,4 @@
-import {WindowManager} from '../wnd/window_manager'
-import {Wnd} from '../wnd/wnd'
-import {WndEvent} from '../wnd/types'
+import {WindowManager, Wnd, WndEvent} from 'wndui'
 
 import {AudioManagerForBrowser} from './audio_manager_for_browser'
 import {DomUtil} from '../util/dom_util'

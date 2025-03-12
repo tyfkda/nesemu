@@ -11,8 +11,8 @@ import {GlobalSetting} from './global_setting'
 import {ScreenWnd} from './screen_wnd'
 import {StorageUtil} from '../util/storage_util'
 import {Util} from '../util/util'
-import {WindowManager} from '../wnd/window_manager'
-import {Wnd} from '../wnd/wnd'
+import {WindowManager} from 'wndui/window_manager'
+import {Wnd} from 'wndui/wnd'
 
 import * as Pubsub from '../util/pubsub'
 
