@@ -171,7 +171,7 @@ class Main {
             filter(file: any) {
               const ext2 = Util.getExt(file.name).toLowerCase()
               return kTargetExts.has(ext2)
-            }
+            },
           }
           const loadedZip = await promisify(unzip)(binary, options)
           for (const fileName2 of Object.keys(loadedZip)) {
@@ -235,7 +235,7 @@ class Main {
         const file = typeMap.sav[0]
         const app = this.findActiveApp()
         if (app == null) {
-          throw('Load save data failed: No active app')
+          throw 'Load save data failed: No active app'
         } else {
           app.loadDataFromBinary(file.binary)
         }
@@ -264,7 +264,7 @@ class Main {
         this.removeApp(app2)
       },
     }
-    const nes = new Nes();
+    const nes = new Nes()
     const app = new App(this.wndMgr, option, nes)
     const result = app.loadRom(romData)
     if (result != null) {

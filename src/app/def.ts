@@ -5,4 +5,4 @@ export const ScalerType = {
   EPX: 'epx',
 } as const
 
-export type ScalerType = typeof ScalerType[keyof typeof ScalerType]
+export type ScalerType = (typeof ScalerType)[keyof typeof ScalerType]

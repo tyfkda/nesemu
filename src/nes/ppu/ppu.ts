@@ -80,7 +80,7 @@ function getPpuAddr(adr: Address, mirrorModeBit: Byte): Address {
 }
 
 function incPpuAddr(ppuAddr: Address, ppuCtrl: Byte): Address {
-  const add = ((ppuCtrl & PpuCtrlBit.INCREMENT_MODE) !== 0) ? 32 : 1
+  const add = (ppuCtrl & PpuCtrlBit.INCREMENT_MODE) !== 0 ? 32 : 1
   return (ppuAddr + add) & (VRAM_SIZE - 1)
 }
 

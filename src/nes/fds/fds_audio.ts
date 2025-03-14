@@ -13,7 +13,7 @@ export const Reg = {
   MOD_ENVELOPE     : 0x04,
   ENVELOPE_SPEED   : 0x0a,
 } as const
-type Reg = typeof Reg[keyof typeof Reg];
+type Reg = (typeof Reg)[keyof typeof Reg]
 
 export class FdsChannel implements IChannel, IPulseChannel {
   protected regs = new Uint8Array(0x40)

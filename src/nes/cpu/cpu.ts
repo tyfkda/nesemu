@@ -46,7 +46,7 @@ const BreakType = {
   NMI: 'nmi',
   IRQ: 'irq',
 } as const
-type BreakType = typeof BreakType[keyof typeof BreakType]
+type BreakType = (typeof BreakType)[keyof typeof BreakType]
 
 export class Cpu {
   private a: Byte  // A register
