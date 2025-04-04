@@ -1,8 +1,9 @@
-import fs from 'node:fs/promises'
+import fsPromises from 'node:fs/promises'
 
 import {Addressing, Instruction, OpType, kInstTable} from '../src/nes/cpu/inst'
 import {kOpcode} from '../src/nes/cpu/disasm'
 import {Util} from '../src/util/util'
+import {program} from 'commander'
 
 function loadPrgRom(romData: Uint8Array): Uint8Array {
   const start = 16, size = romData[4] * (16 * 1024)
@@ -185,7 +186,7 @@ class Analyzer {
     for (let i = 0; i < n; ++i) {
       const adr = block.start + i * 2
       const x = this.read16(adr)
-      console.log(`\t.dw ${this.getLabelName(x)}    ; ${Util.hex(adr, 4)}: $${Util.hex(x, 4)}`)
+      console.log(`    .dw ${this.getLabelName(x)}    ; ${Util.hex(adr, 4)}: $${Util.hex(x, 4)}`)
     }
     console.log('')
   }
@@ -365,30 +366,25 @@ class Analyzer {
   }
 }
 
-async function main(): Promise<void> {
-  // import * as argv from 'argv'
-  const argv = require('argv')  // eslint-disable-line @typescript-eslint/no-var-requires
-
-  argv.option({
-    name: 'config',
-    short: 'c',
-    type: 'path',
-  })
-  const {targets, options} = argv.run()
+async function main(argv: string[]): Promise<void> {
+  program
+    .option('-c, --config <path>', 'Config file')
+    .parse(argv)
+  const options = program.opts()
+  const targets = program.args
 
   if (targets.length <= 0) {
     console.error('arg: [.nes file]')
     process.exit(1)
   }
 
-  const data = await fs.readFile(targets[0])
+  const data = await fsPromises.readFile(targets[0])
   const analyzer = new Analyzer()
   const prgRom = loadPrgRom(data)
   analyzer.loadProgram(prgRom, 0x10000 - Math.min(prgRom.byteLength, 0x8000))
 
   if (options.config) {
-    const data = await fs.readFile(options.config)
-    const str = String.fromCharCode.apply('', data as any)
+    const str = await fsPromises.readFile(options.config, 'utf8')
     const json = eval(`(${str})`)
     if (json.jumpRoutines) {
       for (let adr of json.jumpRoutines) {
@@ -415,4 +411,4 @@ async function main(): Promise<void> {
   analyzer.output()
 }
 
-main()
+main(process.argv)
