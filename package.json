@@ -47,29 +47,29 @@
   ],
   "devDependencies": {
     "@types/escape-html": "~1.0.4",
-    "@types/fscreen": "~1.0.3",
-    "@types/html-minifier": "^4.0.5",
-    "@types/md5": "~2.3.4",
+    "@types/fscreen": "~1.0.4",
+    "@types/html-minifier": "~4.0.5",
+    "@types/md5": "~2.3.5",
     "@types/node": "~20.8.10",
-    "@types/node-wav": "~0.0.1",
+    "@types/node-wav": "~0.0.4",
     "@typescript-eslint/eslint-plugin": "~6.9.1",
     "@typescript-eslint/parser": "~6.9.1",
     "eslint": "~8.39.0",
-    "html-minifier": "^4.0.0",
+    "html-minifier": "~4.0.0",
     "node-wav": "~0.0.2",
-    "sass": "~1.62.1",
+    "sass": "~1.86.3",
     "svg-inline-loader": "0.8.2",
-    "ts-node": "~10.9.1",
-    "vite": "~6.2.1",
-    "vite-plugin-html-minifier": "^1.0.5"
+    "ts-node": "~10.9.2",
+    "vite": "~6.2.5",
+    "vite-plugin-html-minifier": "~1.0.5"
   },
   "dependencies": {
-    "core-js": "~3.30.1",
+    "core-js": "~3.41.0",
     "escape-html": "~1.0.3",
     "fflate": "~0.8.2",
     "fscreen": "~1.2.0",
     "md5": "~2.3.0",
     "stats-js": "~1.0.1",
-    "stream": "~0.0.2"
+    "stream": "~0.0.3"
   }
 }

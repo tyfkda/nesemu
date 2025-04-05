@@ -364,6 +364,7 @@ async function main(argv: string[]) {
   program
     .option('-s, --silent', 'No audio')
     .option('--controller <file>', 'Controller script file')
+    .allowExcessArguments()
     .parse(argv)
   const opts = program.opts()
   const args = program.args

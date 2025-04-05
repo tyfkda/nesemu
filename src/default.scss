@@ -282,13 +282,13 @@ hr {
   }
 
   .menu-subitem-holder {
+    font-size: 10px;
     @supports (backdrop-filter: none) {
       background-color: rgba(204,204,204,0.8);
     }
     @supports not (backdrop-filter: none) {
       background-color: rgb(204,204,204);
     }
-    font-size: 10px;
   }
 }
 .wnd.top {

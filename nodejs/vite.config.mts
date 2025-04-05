@@ -7,6 +7,7 @@ export default defineConfig({
   build: {
     minify: true,
     outDir: __dirname,
+    emptyOutDir: false,
     rollupOptions: {
       output: {
         entryFileNames: 'nesemu.js',

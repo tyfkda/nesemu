@@ -40,6 +40,7 @@ export default defineConfig({
   root: 'src',
   build: {
     outDir: resolve(__dirname, 'release'),
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         entryFileNames: 'assets/[name].js',
