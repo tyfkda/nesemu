@@ -1,5 +1,5 @@
-import {Address, Byte} from "../types";
-import {IChannel, IPulseChannel, WaveType} from "../apu";
+import {Address, Byte} from "../types"
+import {IChannel, IPulseChannel, WaveType} from "../apu"
 
 const kWaveTypes: WaveType[] = [
   WaveType.PULSE,  // 仮

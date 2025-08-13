@@ -369,6 +369,7 @@ class Analyzer {
 async function main(argv: string[]): Promise<void> {
   program
     .option('-c, --config <path>', 'Config file')
+    .allowExcessArguments()
     .parse(argv)
   const options = program.opts()
   const targets = program.args

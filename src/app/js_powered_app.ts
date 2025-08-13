@@ -16,8 +16,8 @@ interface Accessor {
   getRam(): Uint8Array  // Size=0x0800
   read8(adr: Address): Byte
   write8(adr: Address, value: Byte): void
-  setReadMemory(start: Address, end: Address, reader: Function): void
-  setWriteMemory(start: Address, end: Address, writer: Function): void
+  setReadMemory(start: Address, end: Address, reader: (addr: number) => number): void
+  setWriteMemory(start: Address, end: Address, writer: (addr: number, value: number) => void): void
   waitHline(hcount: number): void
 }
 

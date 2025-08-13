@@ -103,8 +103,8 @@ export class SpectrumWnd extends Wnd {
     const sampleRate = analyserNode.context.sampleRate
 
     this.analyserNode.fftSize = 2048
-    this.analyserNode.maxDecibels = -30;
-    this.analyserNode.minDecibels = -70;
+    this.analyserNode.maxDecibels = -30
+    this.analyserNode.minDecibels = -70
     this.analyserNode.smoothingTimeConstant = 0.0
     const bufferLength = this.analyserNode.frequencyBinCount
     this.dataArray = new Uint8Array(bufferLength)

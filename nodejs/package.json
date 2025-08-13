@@ -12,14 +12,14 @@
   "author": "tyfkda",
   "license": "Unlicense",
   "devDependencies": {
-    "@types/node": "~22.14.0",
+    "@types/node": "~24.2.1",
     "ts-loader": "~9.5.2",
-    "typescript": "~5.8.3",
-    "vite-plugin-node": "~4.0.0"
+    "typescript": "~5.9.2",
+    "vite-plugin-node": "~7.0.0"
   },
   "dependencies": {
-    "@kmamal/sdl": "~0.11.7",
-    "commander": "~13.1.0",
+    "@kmamal/sdl": "~0.11.12",
+    "commander": "~14.0.0",
     "fflate": "~0.8.2",
     "md5": "~2.3.0",
     "pngjs": "~7.0.0"

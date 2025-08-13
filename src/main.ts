@@ -152,7 +152,7 @@ class Main {
         return false
       })
       .map(async ({file, ext}) => {
-        function promisify(f: Function) {
+        function promisify(f: (...args: any[]) => Promise<any>) {
           return (...args: any[]) =>  {
             return new Promise<Unzipped>((resolve, reject) => {
               f(...args, (err: any, result: any) => {

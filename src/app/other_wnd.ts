@@ -503,7 +503,7 @@ export class AudioWnd extends Wnd {
       case WaveType.DMC:
         {
           vol = channel.isEnabled() ? channel.getVolume() : 0
-          x = (AudioWnd.W * AudioWnd.OCTAVE * 7) * 0.5;
+          x = (AudioWnd.W * AudioWnd.OCTAVE * 7) * 0.5
           y = AudioWnd.H * 0.25
         }
         break

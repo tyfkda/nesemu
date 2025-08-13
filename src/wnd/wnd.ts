@@ -81,9 +81,9 @@ export class Wnd {
     const left = Util.clamp(rect.left, 0, Math.floor(rootRect.width - width - WIN_BORDER * 2))
     const top = Util.clamp(rect.top, 0, Math.floor(rootRect.height - height - WIN_BORDER * 2))
     if (left !== rect.left)
-      styles['left'] = `${left}px`;
+      styles['left'] = `${left}px`
     if (top !== rect.top)
-      styles['top'] = `${top}px`;
+      styles['top'] = `${top}px`
 
     DomUtil.setStyles(this.root, styles)
   }
@@ -108,9 +108,9 @@ export class Wnd {
     if (left !== rect.left || top !== rect.top) {
       const styles: Record<string, unknown> = {}
       if (left !== rect.left)
-        styles['left'] = `${left}px`;
+        styles['left'] = `${left}px`
       if (top !== rect.top)
-        styles['top'] = `${top}px`;
+        styles['top'] = `${top}px`
       DomUtil.setStyles(this.root, styles)
     }
   }

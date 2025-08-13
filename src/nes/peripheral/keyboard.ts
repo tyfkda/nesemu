@@ -1,6 +1,6 @@
 // Family BASIC Keyboard
 
-import {Address, Byte} from "../types";
+import {Address, Byte} from "../types"
 
 export interface Peripheral {
   getIoMap(): Map<number, (adr: Address, value?: Byte) => any>

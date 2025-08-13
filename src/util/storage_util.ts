@@ -10,7 +10,7 @@ if (storage == null) {
     if ('localStorage' in window && window.localStorage != null) {
       storage = window.localStorage
     }
-  } catch (e) {
+  } catch (_e) {
     // If we cannot use local storage, then use memory storage.
   }
   if (storage == null)
