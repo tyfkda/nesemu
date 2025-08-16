@@ -239,7 +239,6 @@ export class PulseChannel extends ChannelBase implements IPulseChannel {
 
     switch (reg) {
     case Reg.STATUS:
-      this.stopped = false
       this.envelope.write(value)
       break
     case Reg.SWEEP:
@@ -413,7 +412,6 @@ class NoiseChannel extends ChannelBase implements INoiseChannel {
 
     switch (reg) {
     case Reg.STATUS:
-      this.stopped = false
       this.envelope.write(value)
       break
     case Reg.TIMER_L:
