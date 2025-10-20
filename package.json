@@ -61,7 +61,7 @@
     "sass": "~1.90.0",
     "svg-inline-loader": "0.8.2",
     "ts-node": "~10.9.2",
-    "vite": "~7.1.2",
+    "vite": "~7.1.11",
     "vite-plugin-html-minifier": "~1.0.5"
   },
   "dependencies": {
