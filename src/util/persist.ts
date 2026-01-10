@@ -1,6 +1,7 @@
 import {App, Option} from '../app/app'
 import {Nes} from '../nes/nes'
 import {StorageUtil as SU} from './storage_util'
+import {Util} from './util'
 import {WindowManager} from '../wnd/window_manager'
 
 const KEY_PERSIST_ROMS = 'persist-roms'
@@ -31,7 +32,7 @@ export class Persistor {
 
     const romRec = {
       title: title,
-      rom: (romData as any).toBase64(),
+      rom: Util.convertUint8ArrayToBase64String(romData),
     }
     romsP[newTok] = romRec
     coordsP[newTok] = {x: x, y: y}
@@ -105,7 +106,7 @@ export class Persistor {
 
       const nes = new Nes()
       const app = new App(wndMgr, opt, nes)
-      const romData = (Uint8Array as any).fromBase64(romsP[tok].rom)
+      const romData = Util.convertBase64StringToUint8Array(romsP[tok].rom)
       const result = app.loadRom(romData)
       if (result != null) {
         wndMgr.showSnackbar(`${name}: ${result}`)
