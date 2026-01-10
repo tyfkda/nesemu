@@ -48,7 +48,6 @@
   "devDependencies": {
     "@types/escape-html": "~1.0.4",
     "@types/fscreen": "~1.0.4",
-    "@types/html-minifier": "~4.0.5",
     "@types/md5": "~2.3.5",
     "@types/node": "~24.2.1",
     "@types/node-wav": "~0.0.4",
@@ -56,7 +55,7 @@
     "@typescript-eslint/parser": "~8.39.1",
     "commander": "~14.0.0",
     "eslint": "~9.33.0",
-    "html-minifier": "~4.0.0",
+    "html-minifier-next": "^4.17.0",
     "node-wav": "~0.0.2",
     "sass": "~1.90.0",
     "svg-inline-loader": "0.8.2",
