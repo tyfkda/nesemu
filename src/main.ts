@@ -370,6 +370,9 @@ class Main {
     if (this.settingWnd == null) {
       this.settingWnd = new SettingWnd(this.wndMgr, () => {
         this.settingWnd = null
+      }, () => {
+        this.root.style.backgroundImage = ''
+        StorageUtil.put('background', '')
       })
     } else {
       this.wndMgr.moveToTop(this.settingWnd)

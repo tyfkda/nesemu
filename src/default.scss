@@ -314,6 +314,12 @@ $RESIZABLE_RADIUS: 4px;
   }
 }
 
+.wnd .settings-window button {
+  width: 100%;
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
+}
+
 .base-clickable {
   color: gray;
   cursor: pointer;

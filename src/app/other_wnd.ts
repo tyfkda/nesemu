@@ -701,7 +701,7 @@ export class AboutWnd extends Wnd {
 export class SettingWnd extends Wnd {
   protected valueElems = new Array<HTMLInputElement>()
 
-  public constructor(wndMgr: WindowManager, private onClose: () => void) {
+  public constructor(wndMgr: WindowManager, private onClose: () => void, private removeWallpaper: () => void) {
     super(wndMgr, 256, 160, 'Setting')
 
     const content = this.createContent()
@@ -724,6 +724,7 @@ export class SettingWnd extends Wnd {
     const enum Type {
       CHECKBOX,
       RANGE,
+      BUTTON,
     }
 
     const table = [
@@ -774,6 +775,11 @@ export class SettingWnd extends Wnd {
           GlobalSetting.emulationSpeed = speedIndex * 0.25 + 0.5
         },
       },
+      {
+        type: Type.BUTTON,
+        message: 'Remove Wallpaper',
+        onclick: this.removeWallpaper,
+      },
     ]
 
     function getMessage(message: string | (() => string)): string {
@@ -786,6 +792,15 @@ export class SettingWnd extends Wnd {
     for (const elem of table) {
       const row = document.createElement('div')
       switch (elem.type) {
+      case Type.BUTTON:
+        {
+          const message = getMessage(elem.message)
+          const input = document.createElement('button')
+          input.innerText = message
+          input.addEventListener('click', elem.onclick)
+          row.appendChild(input)
+        }
+        break
       case Type.CHECKBOX:
         {
           const message = getMessage(elem.message)
@@ -833,7 +848,7 @@ export class SettingWnd extends Wnd {
     }
 
     const root = document.createElement('div')
-    root.className = 'full-size'
+    root.className = 'full-size settings-window'
     DomUtil.setStyles(root, {
       backgroundColor: 'white',
     })
