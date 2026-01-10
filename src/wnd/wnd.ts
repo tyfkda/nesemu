@@ -65,6 +65,13 @@ export class Wnd {
     })
   }
 
+  public getPos(): {x: number, y: number} {
+    const element = this.root
+    const x = parseInt(element.style.left || '-1', 10)
+    const y = parseInt(element.style.top || '-1', 10)
+    return { x: x, y: y }
+  }
+
   public setTitle(title: string): void {
     this.titleElem.innerText = title
   }

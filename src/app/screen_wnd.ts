@@ -20,6 +20,7 @@ import {RegisterWnd, RamWnd, TraceWnd, ControlWnd} from './debug_wnd'
 import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd, AudioWnd} from './other_wnd'
 import {Fds} from '../nes/fds/fds'
 import {FdsCtrlWnd} from './fds_ctrl_wnd'
+import {Persistor, PersistToken} from '../util/persist'
 
 import * as Pubsub from '../util/pubsub'
 
@@ -180,6 +181,7 @@ export class ScreenWnd extends Wnd {
   private fullscreenResizeFunc: () => void
   private repeatBtnFrame = false
   private fileHandle: FileSystemFileHandle | null = null
+  private persistTok?: PersistToken
 
   protected wndMap = new Array<Wnd | null>()
 
@@ -305,6 +307,10 @@ export class ScreenWnd extends Wnd {
     case WndEvent.DRAG_END:
       if (GlobalSetting.pauseOnMenu)
         this.stream.triggerResumeApp()
+      if (GlobalSetting.persistCarts && this.persistTok) {
+        const { x, y } = this.getPos()
+        Persistor.updatePersistCoords(this.persistTok, x, y)
+      }
       break
     case WndEvent.RESIZE_BEGIN:
       this.canvasHolder.style.transitionDuration = '0s'
@@ -902,5 +908,9 @@ export class ScreenWnd extends Wnd {
       })
       this.messageTimer = null
     }, 2000)
+  }
+
+  public setPersistTok(tok: PersistToken): void {
+    this.persistTok = tok
   }
 }

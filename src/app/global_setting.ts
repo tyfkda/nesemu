@@ -5,6 +5,7 @@ import {Util} from '../util/util'
 const KEY_SETTING = 'setting'
 
 type SettingData = {
+  persistCarts: boolean
   pauseOnMenu: boolean
   muteOnInactive: boolean
   volume: number
@@ -31,6 +32,7 @@ function modified(s1: SettingData, s2: SettingData): boolean {
 }
 
 export const GlobalSetting = {
+  persistCarts: true,
   pauseOnMenu: false,
   muteOnInactive: true,
   volume: 0.5,
@@ -56,6 +58,7 @@ export const GlobalSetting = {
   _loadFromStorage() {
     const setting = StorageUtil.getObject(KEY_SETTING, null)
     if (setting != null) {
+      this.persistCarts = setting.persistCarts === true
       this.pauseOnMenu = setting.pauseOnMenu === true
       this.muteOnInactive = setting.muteOnInactive === true
       this.volume = typeof(setting.volume) === 'number' ? Util.clamp(setting.volume, 0.0, 1.0) : this.volume
@@ -80,6 +83,7 @@ export const GlobalSetting = {
 
   _setting(): SettingData {
     return {
+      persistCarts: this.persistCarts,
       pauseOnMenu: this.pauseOnMenu,
       muteOnInactive: this.muteOnInactive,
       volume: this.volume,

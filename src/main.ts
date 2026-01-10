@@ -14,6 +14,7 @@ import {WindowManager} from './wnd/window_manager'
 import {Nes} from './nes/nes'
 import './util/polyfill'
 import {AsyncTerminable, unzip, Unzipped} from 'fflate'
+import {Persistor} from './util/persist'
 
 import audioOnImg from './res/audio_on.png'
 import audioOffImg from './res/audio_off.png'
@@ -49,6 +50,11 @@ class Main {
     this.setUpBlur()
 
     window.addEventListener('resize', (_: any) => this.wndMgr.onResizeWindow())
+
+    if (GlobalSetting.persistCarts) {
+      const apps = Persistor.launchPersists(this.wndMgr, (app: App) => this.removeApp(app))
+      this.apps.concat(apps)
+    }
   }
 
   public shutDown(): void {

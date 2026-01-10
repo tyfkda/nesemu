@@ -8,6 +8,7 @@ import {IDeltaModulationChannel, INoiseChannel, IPulseChannel, WaveType} from '.
 import {DomUtil} from '../util/dom_util'
 import {Fds} from '../nes/fds/fds'
 import {GlobalSetting} from './global_setting'
+import {Persistor, PersistToken} from '../util/persist'
 import {ScreenWnd} from './screen_wnd'
 import {StorageUtil} from '../util/storage_util'
 import {Util} from '../util/util'
@@ -37,6 +38,7 @@ export class App {
   protected channelVolumes: Float32Array
   protected stream = new AppEvent.Stream()
   protected subscription: Pubsub.Subscription
+  protected persistTok?: PersistToken
 
   protected prgBanks = new Int32Array([0, 1, -2, -1])
   protected prgBanksLast = new Int32Array([0, 1, -2, -1])
@@ -121,6 +123,24 @@ export class App {
       this.screenWnd.setKeyboard(new Keyboard())
       break
     default: break
+    }
+
+    if (GlobalSetting.persistCarts) {
+      if (this.persistTok) {
+        // This app already registered on another ROM. Deregister.
+        Persistor.removePersist(this.persistTok)
+      }
+
+      const { x, y } = this.screenWnd.getPos()
+      this.persistTok = Persistor.addPersist(
+        {
+          title: this.title,
+          rom: romData
+        },
+        x,
+        y
+      )
+      this.screenWnd.setPersistTok(this.persistTok)
     }
 
     return null
@@ -309,6 +329,10 @@ export class App {
       this.audioManager.release()
 
     this.subscription.unsubscribe()
+
+    if (this.persistTok) {
+      Persistor.removePersist(this.persistTok)
+    }
   }
 
   protected handleAppEvent(type: AppEvent.Type, param?: any): void {
