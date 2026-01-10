@@ -79,8 +79,10 @@ export class App {
     }
     this.screenWnd.setPos(x, y)
 
-    if ('persistTok' in option)
+    if (option.persistTok !== undefined) {
       this.persistTok = option.persistTok
+      this.screenWnd.setPersistTok(this.persistTok)
+    }
 
     if (noDefault)
       return
