@@ -50,7 +50,7 @@ class Main {
 
     window.addEventListener('resize', (_: any) => this.wndMgr.onResizeWindow())
 
-    const url = StorageUtil.get('background', undefined)
+    const url = StorageUtil.get('background', '')
     if (url) {
       this.root.style.backgroundImage = url
     }
@@ -69,7 +69,7 @@ class Main {
         click: () => {
           const input = document.createElement('input')
           input.type = 'file'
-          input.accept = '.nes,.png,.sav,.zip, application/zip, image/png'
+          input.accept = '.nes,.png,.sav,.zip, application/zip, image/*'
           input.onchange = _event => {
             if (!input.value)
               return
@@ -186,11 +186,11 @@ class Main {
             return {type: ext2, binary: unzipped, fileName: fileName2}
           }
           return Promise.reject(`No .nes file included: ${file.name}`)
-        } else if (file.type == 'image/png' || kTargetExts.has(ext)) {
+        } else if (file.type.startsWith('image/') || kTargetExts.has(ext)) {
           const binary = await DomUtil.loadFile(file)
           let ext2 = ext
-          if (file.type == 'image/png')
-              ext2 = 'png'
+          if (file.type.startsWith('image/'))
+            ext2 = file.type
           return {type: ext2, binary, fileName: file.name}
         } else {
           return Promise.reject(`Unsupported file: ${file.name}`)
@@ -248,13 +248,15 @@ class Main {
           app.loadDataFromBinary(file.binary)
         }
       }
-      // Load .png, set as backdrop
-      if (typeMap.png) {
-          const file = typeMap.png[0]
-          let url = Util.makeDataUrl(file.binary, 'image/png')
-          url = `url(${url})`
-          this.root.style.backgroundImage = url
-          StorageUtil.put('background', url)
+      // Load image, set as backdrop
+      const imgKeys = Object.keys(typeMap).filter(s => typeof s == 'string' && s.startsWith('image/'))
+      if (imgKeys) {
+        const type = imgKeys[0]
+        const file = typeMap[type][0]
+        let url = Util.makeDataUrl(file.binary, type)
+        url = `url(${url})`
+        this.root.style.backgroundImage = url
+        StorageUtil.put('background', url)
       }
     } catch (e: any) {
       this.wndMgr.showSnackbar(e.toString())
