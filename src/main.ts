@@ -53,7 +53,7 @@ class Main {
 
     if (GlobalSetting.persistCarts) {
       const apps = Persistor.launchPersists(this.wndMgr, (app: App) => this.removeApp(app))
-      this.apps.concat(apps)
+      this.apps = this.apps.concat(apps)
     }
   }
 
