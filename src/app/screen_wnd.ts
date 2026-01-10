@@ -307,10 +307,7 @@ export class ScreenWnd extends Wnd {
     case WndEvent.DRAG_END:
       if (GlobalSetting.pauseOnMenu)
         this.stream.triggerResumeApp()
-      if (GlobalSetting.persistCarts && this.persistTok) {
-        const { x, y } = this.getPos()
-        Persistor.updatePersistCoords(this.persistTok, x, y)
-      }
+      this.saveDimens()
       break
     case WndEvent.RESIZE_BEGIN:
       this.canvasHolder.style.transitionDuration = '0s'
@@ -319,6 +316,7 @@ export class ScreenWnd extends Wnd {
       break
     case WndEvent.RESIZE_END:
       this.saveClientSize(this.getClientSize())
+      this.saveDimens()
       this.canvasHolder.style.transitionDuration = TRANSITION_DURATION
       if (GlobalSetting.pauseOnMenu)
         this.stream.triggerResumeApp()
@@ -843,6 +841,15 @@ export class ScreenWnd extends Wnd {
     GlobalSetting.clientWidth = size.width
     GlobalSetting.clientHeight = size.height
     GlobalSetting.maximize = false
+  }
+
+  protected saveDimens(): void {
+    if (!GlobalSetting.persistCarts || !this.persistTok)
+      return
+
+    const { x, y } = this.getPos()
+    const { width, height } = this.getClientSize()
+    Persistor.updatePersistCoords(this.persistTok, x, y, width, height)
   }
 
   private toggleOverscan(): void {

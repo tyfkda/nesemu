@@ -29,6 +29,8 @@ export class Option {
   public centerY?: number
   public x?: number
   public y?: number
+  public width?: number
+  public height?: number
   public onClosed?: (app: App) => void
   public persistTok?: PersistToken
 }
@@ -107,6 +109,8 @@ export class App {
 
     if (GlobalSetting.maximize) {
       this.screenWnd.maximize()
+    } else if (option.width !== undefined && option.height !== undefined) {
+      this.screenWnd.setClientSize(option.width, option.height)
     } else if (GlobalSetting.clientWidth > 256 && GlobalSetting.clientHeight > 240) {
       this.screenWnd.setClientSize(GlobalSetting.clientWidth, GlobalSetting.clientHeight)
     }
@@ -143,11 +147,14 @@ export class App {
 
     if (!this.persistTok && GlobalSetting.persistCarts) {
       const { x, y } = this.screenWnd.getPos()
+      const { width, height } = this.screenWnd.getClientSize()
       this.persistTok = Persistor.addPersist(
         this.title,
         romData,
         x,
-        y
+        y,
+        width,
+        height,
       )
       this.screenWnd.setPersistTok(this.persistTok)
     }

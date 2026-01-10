@@ -10,7 +10,7 @@ const KEY_PERSIST_COORDS = 'persist-coords'
 export type PersistToken = string;
 
 type RomsP = Record<string, {title: string, rom: string}>
-type CoordsP = Record<string, {x: number, y: number}>
+type CoordsP = Record<string, {x: number, y: number, width?: number, height?: number}>
 
 export class Persistor {
   private static isLocked: boolean = false
@@ -20,7 +20,7 @@ export class Persistor {
     SU.putObject(KEY_PERSIST_COORDS, {})
   }
 
-  public static addPersist(title: string, romData: Uint8Array, x: number, y: number): PersistToken {
+  public static addPersist(title: string, romData: Uint8Array, x: number, y: number, width?: number, height?: number): PersistToken {
     const romsP: RomsP = SU.getObject(KEY_PERSIST_ROMS, {})
     const coordsP: CoordsP = SU.getObject(KEY_PERSIST_COORDS, {})
 
@@ -36,6 +36,10 @@ export class Persistor {
     }
     romsP[newTok] = romRec
     coordsP[newTok] = {x: x, y: y}
+    if (width !== undefined && height !== undefined) {
+      coordsP[newTok].width = width
+      coordsP[newTok].height = height
+    }
 
     try {
       SU.putObject(KEY_PERSIST_ROMS, romsP)
@@ -68,10 +72,10 @@ export class Persistor {
     }
   }
 
-  public static updatePersistCoords(tok: PersistToken, x: number, y: number): void {
+  public static updatePersistCoords(tok: PersistToken, x: number, y: number, width: number, height: number): void {
     const coordsP: CoordsP = SU.getObject(KEY_PERSIST_COORDS, {})
 
-    coordsP[tok] = {x: x, y: y}
+    coordsP[tok] = {x: x, y: y, width: width, height: height}
 
     try {
       SU.putObject(KEY_PERSIST_COORDS, coordsP)
@@ -92,8 +96,9 @@ export class Persistor {
     const apps: App[] = []
 
     for (const tok in romsP) {
-      x = coordsP[tok].x || x
-      y = coordsP[tok].y || y
+      const coords = coordsP[tok]
+      x = coords.x || x
+      y = coords.y || y
 
       const opt: Option = {
         title: romsP[tok].title,
@@ -102,7 +107,11 @@ export class Persistor {
         onClosed: onClosed,
         persistTok: tok,
       }
-      // Fallback, won't be used:
+
+      if (coords.width !== undefined && coords.height !== undefined) {
+        opt.width = coords.width
+        opt.height = coords.height
+      }
 
       const nes = new Nes()
       const app = new App(wndMgr, opt, nes)
@@ -114,6 +123,7 @@ export class Persistor {
       }
 
       apps.push(app)
+      // Fallback, won't be used:
       x += 16
       y += 16
     }

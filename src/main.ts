@@ -55,7 +55,9 @@ class Main {
       const apps = Persistor.launchPersists(this.wndMgr, (app: App) => this.removeApp(app))
       this.apps = this.apps.concat(apps)
       if (this.apps.length != 0) {
-        document.getElementById('drop-desc').style.display = 'none'
+        const element = document.getElementById('drop-desc')
+        if (element)
+          element.style.display = 'none'
       }
     }
   }
