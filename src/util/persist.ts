@@ -8,16 +8,18 @@ const KEY_PERSIST_COORDS = 'persist-coords'
 
 export type PersistToken = string;
 
-type RomsP = Record<string, {title: string, rom: Uint8Array}>
+type RomsP = Record<string, {title: string, rom: string}>
 type CoordsP = Record<string, {x: number, y: number}>
 
 export class Persistor {
+  private static isLocked: boolean = false
+
   public static clearAllPersists(): void {
     SU.putObject(KEY_PERSIST_ROMS, {})
     SU.putObject(KEY_PERSIST_COORDS, {})
   }
 
-  public static addPersist(rom: {title: string, rom: Uint8Array}, x: number, y: number): PersistToken {
+  public static addPersist(title: string, romData: Uint8Array, x: number, y: number): PersistToken {
     const romsP: RomsP = SU.getObject(KEY_PERSIST_ROMS, {})
     const coordsP: CoordsP = SU.getObject(KEY_PERSIST_COORDS, {})
 
@@ -27,7 +29,11 @@ export class Persistor {
       newTok += String(Math.random())
     }
 
-    romsP[newTok] = rom
+    const romRec = {
+      title: title,
+      rom: (romData as any).toBase64(),
+    }
+    romsP[newTok] = romRec
     coordsP[newTok] = {x: x, y: y}
 
     try {
@@ -45,6 +51,8 @@ export class Persistor {
   public static removePersist(tok: PersistToken): void {
     const romsP: RomsP = SU.getObject(KEY_PERSIST_ROMS, {})
     const coordsP: CoordsP = SU.getObject(KEY_PERSIST_COORDS, {})
+
+    if (this.isLocked) return
 
     try {
       delete romsP[tok]
@@ -88,23 +96,33 @@ export class Persistor {
 
       const opt: Option = {
         title: romsP[tok].title,
-        centerX: x,
-        centerY: y,
-        onClosed: onClosed
+        x: x,
+        y: y,
+        onClosed: onClosed,
+        persistTok: tok,
       }
       // Fallback, won't be used:
-      x += 16
-      y += 16
 
       const nes = new Nes()
       const app = new App(wndMgr, opt, nes)
-      const result = app.loadRom(romsP[tok].rom)
+      const romData = (Uint8Array as any).fromBase64(romsP[tok].rom)
+      const result = app.loadRom(romData)
       if (result != null) {
         wndMgr.showSnackbar(`${name}: ${result}`)
         app.close()
       }
+
+      apps.push(app)
+      x += 16
+      y += 16
     }
 
     return apps
+  }
+
+  public static lock(): void {
+    // Permanently prevents destruction of persisted ROMS by apps.
+    // Should only ever be called during shutdown/page unload.
+    this.isLocked = true
   }
 }

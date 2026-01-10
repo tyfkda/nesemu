@@ -27,7 +27,10 @@ export class Option {
   public title?: string
   public centerX?: number
   public centerY?: number
+  public x?: number
+  public y?: number
   public onClosed?: (app: App) => void
+  public persistTok?: PersistToken
 }
 
 export class App {
@@ -62,11 +65,22 @@ export class App {
       .subscribe(this.handleAppEvent.bind(this))
 
     const size = this.screenWnd.getWindowSize()
-    const x = Util.clamp((option.centerX || 0) - size.width / 2,
-                         0, window.innerWidth - size.width - 1)
-    const y = Util.clamp((option.centerY || 0) - size.height / 2,
-                         0, window.innerHeight - size.height - 1)
+    let x: number = -1
+    let y: number = -1
+
+    if (option.x !== undefined && option.y !== undefined) {
+      x = option.x
+      y = option.y
+    } else {
+      x = Util.clamp((option.centerX || 0) - size.width / 2,
+                     0, window.innerWidth - size.width - 1)
+      y = Util.clamp((option.centerY || 0) - size.height / 2,
+                     0, window.innerHeight - size.height - 1)
+    }
     this.screenWnd.setPos(x, y)
+
+    if ('persistTok' in option)
+      this.persistTok = option.persistTok
 
     if (noDefault)
       return
@@ -125,18 +139,11 @@ export class App {
     default: break
     }
 
-    if (GlobalSetting.persistCarts) {
-      if (this.persistTok) {
-        // This app already registered on another ROM. Deregister.
-        Persistor.removePersist(this.persistTok)
-      }
-
+    if (!this.persistTok && GlobalSetting.persistCarts) {
       const { x, y } = this.screenWnd.getPos()
       this.persistTok = Persistor.addPersist(
-        {
-          title: this.title,
-          rom: romData
-        },
+        this.title,
+        romData,
         x,
         y
       )

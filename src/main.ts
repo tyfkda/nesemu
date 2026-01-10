@@ -58,6 +58,7 @@ class Main {
   }
 
   public shutDown(): void {
+    Persistor.lock()
     for (const app of this.apps)
       app.destroy()
     GlobalSetting.destroy()
