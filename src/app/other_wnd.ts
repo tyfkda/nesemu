@@ -797,7 +797,8 @@ export class SettingWnd extends Wnd {
           const message = getMessage(elem.message)
           const input = document.createElement('button')
           input.innerText = message
-          input.addEventListener('click', elem.onclick)
+          if (elem.onclick)
+            input.addEventListener('click', elem.onclick)
           row.appendChild(input)
         }
         break
@@ -807,7 +808,8 @@ export class SettingWnd extends Wnd {
           const input = document.createElement('input')
           input.type = 'checkbox'
           input.id = message
-          input.checked = elem.getValue() as boolean
+          if (elem.getValue)
+            input.checked = elem.getValue() as boolean
           input.onchange = elem.onchange!
           row.appendChild(input)
 
@@ -839,7 +841,8 @@ export class SettingWnd extends Wnd {
           input.ontouchend = elem.onfinish!
           if (elem.max)
             input.max = elem.max.toString()
-          input.value = elem.getValue() as string
+          if (elem.getValue)
+            input.value = elem.getValue() as string
           row.appendChild(input)
         }
         break
