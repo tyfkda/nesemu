@@ -43,4 +43,13 @@ export class Util {
       u8array[i] = decoded.charCodeAt(i)
     return u8array
   }
+
+  public static makeDataUrl(data: Uint8Array, type?: string): string {
+    let type2 = type || ''
+    if (type2.match(/[ ()<>@,;:\\"/[\]?=\p{gc=Control}]/u)) {
+      type2 = ''
+    }
+
+    return `data:${type2};base64,${Util.convertUint8ArrayToBase64String(data)}`
+  }
 }

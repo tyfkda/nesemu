@@ -49,6 +49,11 @@ class Main {
     this.setUpBlur()
 
     window.addEventListener('resize', (_: any) => this.wndMgr.onResizeWindow())
+
+    const url = StorageUtil.get('background', undefined)
+    if (url) {
+      this.root.style.backgroundImage = url
+    }
   }
 
   public shutDown(): void {
@@ -64,7 +69,7 @@ class Main {
         click: () => {
           const input = document.createElement('input')
           input.type = 'file'
-          input.accept = '.nes,.sav,.zip, application/zip'
+          input.accept = '.nes,.png,.sav,.zip, application/zip, image/png'
           input.onchange = _event => {
             if (!input.value)
               return
@@ -181,9 +186,12 @@ class Main {
             return {type: ext2, binary: unzipped, fileName: fileName2}
           }
           return Promise.reject(`No .nes file included: ${file.name}`)
-        } else if (kTargetExts.has(ext)) {
+        } else if (file.type == 'image/png' || kTargetExts.has(ext)) {
           const binary = await DomUtil.loadFile(file)
-          return {type: ext, binary, fileName: file.name}
+          let ext2 = ext
+          if (file.type == 'image/png')
+              ext2 = 'png'
+          return {type: ext2, binary, fileName: file.name}
         } else {
           return Promise.reject(`Unsupported file: ${file.name}`)
         }
@@ -239,6 +247,14 @@ class Main {
         } else {
           app.loadDataFromBinary(file.binary)
         }
+      }
+      // Load .png, set as backdrop
+      if (typeMap.png) {
+          const file = typeMap.png[0]
+          let url = Util.makeDataUrl(file.binary, 'image/png')
+          url = `url(${url})`
+          this.root.style.backgroundImage = url
+          StorageUtil.put('background', url)
       }
     } catch (e: any) {
       this.wndMgr.showSnackbar(e.toString())
