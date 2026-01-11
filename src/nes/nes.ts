@@ -43,7 +43,7 @@ export class Nes {
   private cartridge: ICartridge
 
   protected mapper: Mapper
-  private prgRom = new Uint8Array(0)
+  private prgRom: Uint8Array
   private eventCallback: (event: NesEvent, param?: any) => void
   private breakPointCallback: () => void
   private prgBank: number[] = []
@@ -64,6 +64,7 @@ export class Nes {
     this.apu = new Apu(this.gamePads, opt?.apuIrqFn || (() => this.cpu.requestIrq(IrqType.APU)))
     this.eventCallback = (_e, _p) => {}
     this.breakPointCallback = () => {}
+    this.prgRom = new Uint8Array(0)
 
     const mapperNo = 0
     this.mapper = this.createMapper(mapperNo, null)

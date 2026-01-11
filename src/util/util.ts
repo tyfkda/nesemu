@@ -36,7 +36,7 @@ export class Util {
     return _btoa(s)
   }
 
-  public static convertBase64StringToUint8Array(src: string): Uint8Array {
+  public static convertBase64StringToUint8Array(src: string): Uint8Array<ArrayBuffer> {
     const decoded = _atob(src)
     const u8array = new Uint8Array(decoded.length)
     for (let i = 0; i < decoded.length; ++i)

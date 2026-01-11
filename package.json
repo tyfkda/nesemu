@@ -67,7 +67,7 @@
     "simple-git-hooks": "^2.13.1",
     "svg-inline-loader": "0.8.2",
     "ts-node": "~10.9.2",
-    "typescript": ">=5.2.2 <5.9.0",
+    "typescript": "^5.9.3",
     "vite": "~7.1.2",
     "vite-plugin-html-minifier": "~1.0.5"
   },

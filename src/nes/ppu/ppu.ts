@@ -133,7 +133,7 @@ function clearBg(hline0: number, hline1: number, x: number,
 export class Ppu {
   public spriteFlicker = false
 
-  private chrData = new Uint8Array(0)
+  private chrData: Uint8Array
   private regs = new Uint8Array(REGISTER_COUNT)
   private vram: Uint8Array
   private oam = new Uint8Array(OAM_SIZE)  // Object Attribute Memory
@@ -151,6 +151,7 @@ export class Ppu {
     // `palet` is part of `vram`, and shares its content using ArrayBuffer.
     const vramBuffer = new ArrayBuffer(VRAM_SIZE)
     this.vram = new Uint8Array(vramBuffer)
+    this.chrData = new Uint8Array(0)
 
     this.regs.fill(0)
     this.vram.fill(0)

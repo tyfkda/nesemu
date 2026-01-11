@@ -30,7 +30,7 @@ const enum Mode {
 
 export class SpectrumWnd extends Wnd {
   private analyserNode: AnalyserNode
-  private dataArray: Uint8Array
+  private dataArray: Uint8Array<ArrayBuffer>
 
   private canvas: HTMLCanvasElement
   private context: CanvasRenderingContext2D
