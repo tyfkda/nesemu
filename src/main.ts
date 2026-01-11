@@ -13,7 +13,7 @@ import {Util} from './util/util'
 import {WindowManager} from './wnd/window_manager'
 import {Nes} from './nes/nes'
 import './util/polyfill'
-import {unzip, Unzipped} from 'fflate'
+import {AsyncTerminable, unzip, Unzipped} from 'fflate'
 
 import audioOnImg from './res/audio_on.png'
 import audioOffImg from './res/audio_off.png'
@@ -48,7 +48,7 @@ class Main {
     this.setUpFileDrop()
     this.setUpBlur()
 
-    window.addEventListener('resize', _ => this.wndMgr.onResizeWindow())
+    window.addEventListener('resize', (_: any) => this.wndMgr.onResizeWindow())
   }
 
   public shutDown(): void {
@@ -152,7 +152,7 @@ class Main {
         return false
       })
       .map(async ({file, ext}) => {
-        function promisify(f: (...args: any[]) => Promise<any>) {
+        function promisify(f: (...args: any[]) => AsyncTerminable) {
           return (...args: any[]) =>  {
             return new Promise<Unzipped>((resolve, reject) => {
               f(...args, (err: any, result: any) => {

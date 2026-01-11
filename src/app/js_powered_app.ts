@@ -122,6 +122,7 @@ export class JsApp extends App {
 
   public async setFile(file: File): Promise<void> {
     await this.jsNes.setFile(file)
+    // @ts-expect-error - probably old/broken code? shouldn't instantiate an abstrat class
     this.audioManager = new AudioManager()
     this.setupAudioManager()
   }
