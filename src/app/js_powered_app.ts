@@ -3,7 +3,7 @@
 
 import {App, Option} from './app'
 import {AppEvent} from './app_event'
-import {AudioManager} from '../util/audio_manager'
+import {AudioManagerForBrowser} from './audio_manager_for_browser'
 import {DomUtil} from '../util/dom_util'
 import {Nes} from '../nes/nes'
 import {WindowManager} from '../wnd/window_manager'
@@ -126,8 +126,7 @@ export class JsApp extends App {
 
   public async setFile(file: File): Promise<void> {
     await this.jsNes.setFile(file)
-    // @ts-expect-error - probably old/broken code? shouldn't instantiate an abstrat class
-    this.audioManager = new AudioManager()
+    this.audioManager = new AudioManagerForBrowser()
     this.setupAudioManager()
   }
 
