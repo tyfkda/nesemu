@@ -1,5 +1,5 @@
 import {App, Option} from './app/app'
-import {AboutWnd, GlobalPaletWnd, SettingWnd} from './app/other_wnd'
+import {AboutWnd, GlobalPaletWnd, SettingWnd, SettingWndFns} from './app/other_wnd'
 import {SpectrumWnd} from './app/spectrum_wnd'
 import {AudioManager} from './util/audio_manager'
 import {DomUtil} from './util/dom_util'
@@ -368,12 +368,16 @@ class Main {
 
   private openSettingWnd(): void {
     if (this.settingWnd == null) {
-      this.settingWnd = new SettingWnd(this.wndMgr, () => {
-        this.settingWnd = null
-      }, () => {
-        this.root.style.backgroundImage = ''
-        StorageUtil.put('background', '')
-      })
+      const fns : SettingWndFns = {
+        onClose: () => {
+          this.settingWnd = null
+        },
+        removeWallpaper: () => {
+          this.root.style.backgroundImage = ''
+          StorageUtil.put('background', '')
+        }
+      }
+      this.settingWnd = new SettingWnd(this.wndMgr, fns)
     } else {
       this.wndMgr.moveToTop(this.settingWnd)
     }

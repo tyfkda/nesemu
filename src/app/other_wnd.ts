@@ -698,11 +698,19 @@ export class AboutWnd extends Wnd {
   }
 }
 
+export type SettingWndFns = {
+  onClose: () => void
+  removeWallpaper: () => void
+}
 export class SettingWnd extends Wnd {
   protected valueElems = new Array<HTMLInputElement>()
+  private onClose: () => void
+  private removeWallpaper: () => void
 
-  public constructor(wndMgr: WindowManager, private onClose: () => void, private removeWallpaper: () => void) {
+  public constructor(wndMgr: WindowManager, fns : SettingWndFns) {
     super(wndMgr, 256, 160, 'Setting')
+    this.onClose = fns.onClose
+    this.removeWallpaper = fns.removeWallpaper
 
     const content = this.createContent()
     this.setContent(content)
