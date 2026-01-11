@@ -250,7 +250,7 @@ class Main {
       }
       // Load image, set as backdrop
       const imgKeys = Object.keys(typeMap).filter(s => typeof s == 'string' && s.startsWith('image/'))
-      if (imgKeys) {
+      if (imgKeys.length != 0) {
         const type = imgKeys[0]
         const file = typeMap[type][0]
         let url = Util.makeDataUrl(file.binary, type)
