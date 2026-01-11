@@ -60,6 +60,10 @@ class Main {
           element.style.display = 'none'
       }
     }
+
+    const bios = StorageUtil.get('fds-bios', '')
+    if (bios)
+      this.diskBios = Util.convertBase64StringToUint8Array(bios)
   }
 
   public shutDown(): void {
@@ -211,6 +215,7 @@ class Main {
       // .bin: Disk BIOS
       if (typeMap.bin) {
         this.diskBios = typeMap.bin[0].binary
+        StorageUtil.put('fds-bios', Util.convertUint8ArrayToBase64String(this.diskBios))
         if (!typeMap.fds) {  // Boot disk system without inserting disk.
           this.uninsertedApp = this.bootDiskImage(this.diskBios, null, 'DISK System', x, y)
         }
