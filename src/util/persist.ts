@@ -1,4 +1,4 @@
-import {App, Option} from '../app/app'
+import {App, Option, RomType} from '../app/app'
 import {Nes} from '../nes/nes'
 import {StorageUtil as SU} from './storage_util'
 import {Util} from './util'
@@ -8,8 +8,12 @@ const KEY_PERSIST_ROMS = 'persist-roms'
 const KEY_PERSIST_COORDS = 'persist-coords'
 
 export type PersistToken = string;
+export type LaunchResult = {
+  apps: App[]
+  uninsertedApp?: App
+}
 
-type RomsP = Record<string, {title: string, rom: string}>
+type RomsP = Record<string, {title: string, rom: string, type?: string}>
 type CoordsP = Record<string, {x: number, y: number, width?: number, height?: number}>
 
 export class Persistor {
@@ -20,7 +24,7 @@ export class Persistor {
     SU.putObject(KEY_PERSIST_COORDS, {})
   }
 
-  public static addPersist(title: string, romData: Uint8Array, x: number, y: number, width?: number, height?: number): PersistToken {
+  public static addPersist(type: RomType, title: string, romData: Uint8Array, x: number, y: number, width?: number, height?: number): PersistToken {
     const romsP: RomsP = SU.getObject(KEY_PERSIST_ROMS, {})
     const coordsP: CoordsP = SU.getObject(KEY_PERSIST_COORDS, {})
 
@@ -32,6 +36,7 @@ export class Persistor {
 
     const romRec = {
       title: title,
+      type: type,
       rom: Util.convertUint8ArrayToBase64String(romData),
     }
     romsP[newTok] = romRec
@@ -68,7 +73,7 @@ export class Persistor {
     }
     catch (error: any) {
       // Don't want to bother user with a snackbar
-      console.log(`Couldn't update persist for ${tok}: ${error}`)
+      console.log(`Couldn't remove persist for ${tok}: ${error}`)
     }
   }
 
@@ -86,14 +91,31 @@ export class Persistor {
     }
   }
 
-  public static launchPersists(wndMgr: WindowManager, onClosed: (app: App) => void): App[] {
+  public static updatePersistRom(tok: PersistToken, type: RomType, rom: Uint8Array) {
+    const romsP: RomsP = SU.getObject(KEY_PERSIST_ROMS, {})
+
+    try {
+      romsP[tok].rom = Util.convertUint8ArrayToBase64String(rom)
+      romsP[tok].type = type
+
+      SU.putObject(KEY_PERSIST_ROMS, romsP)
+    }
+    catch (error: any) {
+      // Don't want to bother user with a snackbar
+      console.log(`Couldn't update persist rom ${tok}: ${error}`)
+    }
+  }
+
+  public static launchPersists(wndMgr: WindowManager,
+                               onClosed: (app: App) => void,
+                               biosData: Uint8Array | null): LaunchResult {
     const romsP: RomsP = SU.getObject(KEY_PERSIST_ROMS, {})
     const coordsP: CoordsP = SU.getObject(KEY_PERSIST_COORDS, {})
 
     // Emergency fallback. Should get overridden by coordsP.
     let x = 50
     let y = 50
-    const apps: App[] = []
+    const result : LaunchResult  = { apps: [] }
 
     for (const tok in romsP) {
       const coords = coordsP[tok]
@@ -114,21 +136,46 @@ export class Persistor {
       }
 
       const nes = new Nes()
-      const app = new App(wndMgr, opt, nes)
-      const romData = Util.convertBase64StringToUint8Array(romsP[tok].rom)
-      const result = app.loadRom(romData)
-      if (result != null) {
-        wndMgr.showSnackbar(`${name}: ${result}`)
-        app.close()
+      const rom = romsP[tok].rom
+      const type = romsP[tok].type
+      let app: App | null = new App(wndMgr, opt, nes)
+
+      if (type == RomType.DISK) {
+        // Disk ROM
+        if (biosData == null) {
+          // This should never happen, since this persist data
+          // was saved when the bios was present, so that should also
+          // have persisted!
+          //
+          // Silently skip disks launch in the event that the bios
+          // isn't available.
+          continue
+        }
+        const romData = rom? Util.convertBase64StringToUint8Array(rom) : null
+        app.bootDiskBios(biosData)
+        if (romData != null)
+          app.setDiskImage(romData)
+        else
+          result.uninsertedApp = app
+      } else {
+        // Cartridge ROM
+        const romData = Util.convertBase64StringToUint8Array(rom)
+        const result = app.loadRom(romData)
+        if (result != null) {
+          wndMgr.showSnackbar(`${name}: ${result}`)
+          app.close()
+          app = null
+        }
       }
 
-      apps.push(app)
+      if (app)
+        result.apps.push(app)
       // Fallback, won't be used:
       x += 16
       y += 16
     }
 
-    return apps
+    return result
   }
 
   public static lock(): void {

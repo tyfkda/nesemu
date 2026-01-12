@@ -35,6 +35,11 @@ export class Option {
   public persistTok?: PersistToken
 }
 
+export const enum RomType {
+  CARTRIDGE = 'CARTRIDGE',
+  DISK = 'DISK',
+}
+
 export class App {
   protected destroying = false
   protected isPaused = false
@@ -116,6 +121,29 @@ export class App {
     }
   }
 
+  protected persist(type: RomType, data: Uint8Array): void {
+    if (!GlobalSetting.persistCarts)
+      return
+
+    if (this.persistTok) {
+      if (data.length != 0)
+        Persistor.updatePersistRom(this.persistTok, type, data)
+    } else {
+      const { x, y } = this.screenWnd.getPos()
+      const { width, height } = this.screenWnd.getClientSize()
+      this.persistTok = Persistor.addPersist(
+        type,
+        this.title,
+        data,
+        x,
+        y,
+        width,
+        height,
+      )
+      this.screenWnd.setPersistTok(this.persistTok)
+    }
+  }
+
   public loadRom(romData: Uint8Array): string|null {
     if (!Cartridge.isRomValid(romData))
       return 'Invalid format'
@@ -145,19 +173,7 @@ export class App {
     default: break
     }
 
-    if (!this.persistTok && GlobalSetting.persistCarts) {
-      const { x, y } = this.screenWnd.getPos()
-      const { width, height } = this.screenWnd.getClientSize()
-      this.persistTok = Persistor.addPersist(
-        this.title,
-        romData,
-        x,
-        y,
-        width,
-        height,
-      )
-      this.screenWnd.setPersistTok(this.persistTok)
-    }
+    this.persist(RomType.CARTRIDGE, romData)
 
     return null
   }
@@ -172,6 +188,8 @@ export class App {
     this.nes.getCpu().pause(false)
     this.screenWnd.getContentHolder().focus()
 
+    this.persist(RomType.DISK, new Uint8Array())
+
     return true
   }
 
@@ -182,6 +200,7 @@ export class App {
     if (result) {
       this.screenWnd.createFdsCtrlWnd(this.fds)
       this.wndMgr.moveToTop(this.screenWnd)
+      this.persist(RomType.DISK, diskData)
     }
     return result
   }
