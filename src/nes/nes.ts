@@ -255,14 +255,15 @@ export class Nes {
     })
 
     bus.setReadMemory(0x4000, 0x5fff, adr => {
+      let val = 0
       if (this.peripheralMap.has(adr))
-        return this.peripheralMap.get(adr)!(adr)
-      return this.readFromApu(adr)  // APU
+        val = this.peripheralMap.get(adr)!(adr)
+      val |= this.readFromApu(adr)  // APU
+      return val
     })
     bus.setWriteMemory(0x4000, 0x5fff, (adr, value) => {
       if (this.peripheralMap.has(adr)) {
         this.peripheralMap.get(adr)!(adr, value)
-        return
       }
       this.writeToApu(adr, value)  // APU
     })
