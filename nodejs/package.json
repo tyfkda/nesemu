@@ -12,7 +12,8 @@
   "author": "tyfkda",
   "license": "Unlicense",
   "devDependencies": {
-    "@types/node": "~24.2.1",
+    "@types/node": "~25.0.6",
+    "@types/pngjs": "^6.0.5",
     "ts-loader": "~9.5.2",
     "typescript": "~5.9.2",
     "vite-plugin-node": "~7.0.0"

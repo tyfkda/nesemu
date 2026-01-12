@@ -135,7 +135,7 @@ class OutputBuffer<T> {
 
 export class ScriptProcessorNode extends AudioNode {
   private index = 0
-  private onaudioprocess: any = (_) => {}
+  private onaudioprocess: any = (_: any) => {}
   private outputBuffer: OutputBuffer<Float32Array>
   private ev: {outputBuffer: OutputBuffer<Float32Array>}
 

@@ -109,7 +109,7 @@ class MyApp {
     this.win.on('close', () => {
       clearInterval(this.timer)
     })
-    this.win.on('keyDown', (key) => {
+    this.win.on('keyDown', (key: any) => {
       switch (key.scancode) {
       case ESCAPE:
         process.exit(0)
@@ -126,16 +126,16 @@ class MyApp {
         break
       }
     })
-    this.win.on('keyUp', (key) => {
+    this.win.on('keyUp', (key: any) => {
       const v = kScanCode2PadValue[key.scancode]
       if (v)
         this.pad &= ~v
     })
-    this.win.on('resize', ({width, height}) => {
+    this.win.on('resize', ({width, height}: any) => {
       this.buffer = Buffer.alloc(width * 4 * height)
       this.u8buffer = new Uint8Array(this.buffer.buffer)
     })
-    this.win.on('dropFile', (({file}) => {
+    this.win.on('dropFile', (({file}: any) => {
       this.release()
 
       MyApp.loadRom(this, file)
@@ -273,7 +273,7 @@ class MyApp {
         }
     }
 
-    await png.pack().pipe(fsPromises.createWriteStream(fn))
+    await png.pack().pipe(fs.createWriteStream(fn))
   }
 
   private setupAudioManager(): void {

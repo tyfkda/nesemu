@@ -41,8 +41,9 @@
   },
   "exclude": [
     "node_modules",
-    "nodejs",
     "dist",
+    "public",
+    "release"
   ],
   "compileOnSave": false,
   "buildOnSave": false,
