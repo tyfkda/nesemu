@@ -92,6 +92,7 @@ const kKeyMapping: {[key: string]: KeyType} = {
   BracketRight: KeyType.RBRACKET,
   Escape: KeyType.ESC,
   Semicolon: KeyType.SEMICOLON,
+  Quote: KeyType.COLON,
   Minus: KeyType.MINUS,
   Equal: KeyType.HAT,
   Backslash: KeyType.YEN,
@@ -341,6 +342,7 @@ export class ScreenWnd extends Wnd {
         this.timeScale = TIME_SCALE_NORMAL
         this.padKeyHandler.clearAll()
         this.domKeyboardManager.clear()
+        this.nesKeyboard?.clearAll()
       }
       break
 

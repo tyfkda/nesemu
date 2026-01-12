@@ -24,7 +24,7 @@ export class Keyboard implements Peripheral {
   private rowcol = 0
 
   constructor() {
-    this.state.fill(0x1e)
+    this.clearAll()
 
     this.ioMap.set(0x4016, (_adr: Address, value?: Byte) => {
       if (value != null) {
@@ -56,5 +56,9 @@ export class Keyboard implements Peripheral {
     const b = 2 << (type & 3)
     const s = this.state[i]
     this.state[i] = pressed ? (s & ~b) : (s | b)  // Pressed=>clear, not pressed=>set
+  }
+
+  public clearAll(): void {
+    this.state.fill(0x1e)
   }
 }
