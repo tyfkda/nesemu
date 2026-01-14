@@ -16,7 +16,7 @@ import {Util} from '../util/util'
 import * as Pubsub from '../util/pubsub'
 import {default as Stats} from 'stats-js'
 
-import aboutHtmlContent from '../res/about.html?inline&raw'
+import aboutHtmlContent from '../res/about.html?inline'
 import githubLogoSvg from '../res/github-logo.svg?raw'
 
 import pluseImg from '../res/pulse.png'

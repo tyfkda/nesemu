@@ -24,10 +24,10 @@ const minifyHTMLConfig = {
 function htmlMinify() {
   return {
     name: 'html-minify',
-    transform(src: string, id: string): any {
+    async transform(src: string, id: string): Promise<any> {
       if (htmlComponentFile.test(id)) {
         return {
-          code: `export default \`${minify(src, minifyHTMLConfig)}\``,
+          code: `export default \`${await minify(src, minifyHTMLConfig)}\``,
           map: null,
         }
       }
