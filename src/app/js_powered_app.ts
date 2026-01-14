@@ -116,7 +116,11 @@ export class JsNes extends Nes {
 export class JsApp extends App {
   private leftTime = 0
 
-  constructor(wndMgr: WindowManager, option: Option, private jsNes: JsNes) {
+  public static create(wndMgr: WindowManager, option: Option, jsNes: JsNes) {
+    return new JsApp(wndMgr, option, jsNes)
+  }
+
+  protected constructor(wndMgr: WindowManager, option: Option, private jsNes: JsNes) {
     super(wndMgr, option, jsNes, true)
   }
 

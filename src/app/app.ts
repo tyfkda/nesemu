@@ -50,7 +50,7 @@ export class App {
     return new App(wndMgr, option, nes)
   }
 
-  constructor(protected wndMgr: WindowManager, protected option: Option, protected nes: Nes, noDefault?: boolean) {
+  protected constructor(protected wndMgr: WindowManager, protected option: Option, protected nes: Nes, noDefault?: boolean) {
     const screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
     this.screenWnd = screenWnd
     this.title = option.title || 'NES'

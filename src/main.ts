@@ -141,7 +141,7 @@ class Main {
 
         // Create .js app
         const jsNes = new JsNes()
-        const jsApp = new JsApp(this.wndMgr, {
+        const jsApp = JsApp.create(this.wndMgr, {
           title: file.name,
           centerX: x,
           centerY: y,
@@ -265,7 +265,7 @@ class Main {
       },
     }
     const nes = new Nes()
-    const app = new App(this.wndMgr, option, nes)
+    const app = App.create(this.wndMgr, option, nes)
     const result = app.loadRom(romData)
     if (result != null) {
       this.wndMgr.showSnackbar(`${name}: ${result}`)
