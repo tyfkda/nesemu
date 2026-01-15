@@ -253,10 +253,11 @@ class Main {
     return null
   }
 
-  private createAppFromRom(romData: Uint8Array, name: string, x: number, y: number): void {
-    const m = name.match(/^(.*?)(\s*\(.*\))?\.\w+$/)
-    const title = m ? m[1] : name
+  private createAppFromRom(romData: Uint8Array, fileName: string, x: number, y: number): void {
+    const m = fileName.match(/^(.*?)(\s*\(.*\))?\.\w+$/)
+    const title = m ? m[1] : fileName
     const option: Option = {
+      fileName,
       title,
       centerX: x,
       centerY: y,
@@ -268,19 +269,20 @@ class Main {
     const app = App.create(this.wndMgr, option, nes)
     const result = app.loadRom(romData)
     if (result != null) {
-      this.wndMgr.showSnackbar(`${name}: ${result}`)
+      this.wndMgr.showSnackbar(`${fileName}: ${result}`)
       app.close()
       return
     }
     this.apps.push(app)
   }
 
-  private bootDiskImage(biosData: Uint8Array, diskImage: Uint8Array|null, name: string,
+  private bootDiskImage(biosData: Uint8Array, diskImage: Uint8Array|null, fileName: string,
                         x: number, y: number): App
   {
-    const m = name.match(/^(.*?)\s*\(.*\)\.\w*$/)
-    const title = m ? m[1] : name
+    const m = fileName.match(/^(.*?)\s*\(.*\)\.\w*$/)
+    const title = m ? m[1] : fileName
     const option: Option = {
+      fileName,
       title,
       centerX: x,
       centerY: y,

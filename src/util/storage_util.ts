@@ -33,6 +33,11 @@ export class StorageUtil {
     return storage.getItem(k) != null
   }
 
+  public static removeKey(key: string): void {
+    const k = getKey(key)
+    storage.removeItem(k)
+  }
+
   // Get string value.
   public static get(key: string, defaultValue: string): string {
     const k = getKey(key)
@@ -75,7 +80,7 @@ export class StorageUtil {
   }
 
   // Get object value.
-  public static getObject(key: string, defaultValue: any): any {
+  public static getObject(key: string, defaultValue?: any): any {
     const k = getKey(key)
     const value = storage.getItem(k)
     try {

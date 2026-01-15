@@ -18,11 +18,12 @@ import * as Pubsub from '../util/pubsub'
 
 const MAX_ELAPSED_TIME = 1000 / 15
 
-function sramKey(title: string): string {
-  return `sram/${title}`
+function sramKey(fileName: string): string {
+  return `sram/${fileName}`
 }
 
 export class Option {
+  public fileName?: string
   public title?: string
   public centerX?: number
   public centerY?: number
@@ -41,6 +42,7 @@ export class App {
   protected prgBanks = new Int32Array([0, 1, -2, -1])
   protected prgBanksLast = new Int32Array([0, 1, -2, -1])
 
+  protected fileName: string
   protected title: string
   protected screenWnd: ScreenWnd
 
@@ -53,6 +55,7 @@ export class App {
   protected constructor(protected wndMgr: WindowManager, protected option: Option, protected nes: Nes, noDefault?: boolean) {
     const screenWnd = new ScreenWnd(this.wndMgr, this, this.nes, this.stream)
     this.screenWnd = screenWnd
+    this.fileName = option.fileName || 'NES'
     this.title = option.title || 'NES'
     this.screenWnd.setTitle(this.title)
 
@@ -156,7 +159,10 @@ export class App {
 
   public saveData(): boolean {
     const saveData = this.nes.save()
-    return StorageUtil.putObject(this.title, saveData)
+    const result = StorageUtil.putObject(this.fileName, saveData)
+    if (result && StorageUtil.hasKey(this.title))  // Migrate old key.
+      StorageUtil.removeKey(this.title)
+    return result
   }
 
   public async saveDataAs(): Promise<FileSystemFileHandle|null> {
@@ -204,12 +210,22 @@ export class App {
   }
 
   public hasSaveData(): boolean {
-    return StorageUtil.hasKey(this.title)
+    return (StorageUtil.hasKey(this.fileName) ||
+            StorageUtil.hasKey(this.title))  // Old key.
   }
 
   public loadData(): boolean {
-    const saveData = StorageUtil.getObject(this.title, null)
-    if (saveData) {
+    const key = this.fileName
+    let saveData = StorageUtil.getObject(key)
+    if (saveData == null) {
+      const oldKey = this.title
+      saveData = StorageUtil.getObject(oldKey)  // Load from old key.
+      if (saveData != null) {
+        StorageUtil.putObject(key, saveData)
+        StorageUtil.removeKey(oldKey)
+      }
+    }
+    if (saveData != null) {
       try {
         this.nes.load(saveData)
         return true
@@ -291,16 +307,29 @@ export class App {
   }
 
   protected loadSram(): void {
-    const sram = StorageUtil.getObject(sramKey(this.title), '')
-    if (sram !== '')
-      this.nes.loadSram(sram)
+    const key = sramKey(this.fileName)
+    let sram = StorageUtil.getObject(key)
+    if (sram == null) {
+      const oldKey = sramKey(this.title)
+      sram = StorageUtil.getObject(oldKey)  // Load from old key.
+      if (sram == null)
+        return
+      // Sram is auto saved on destroy, so do nothing here.
+    }
+    this.nes.loadSram(sram)
   }
 
   protected saveSram(): void {
     const sram = this.nes.saveSram()
     if (sram == null)
       return
-    StorageUtil.putObject(sramKey(this.title), sram)
+    const key = sramKey(this.fileName)
+    const result = StorageUtil.putObject(key, sram)
+    if (result) {
+      const oldKey = sramKey(this.title)
+      if (StorageUtil.hasKey(oldKey))  // Migrate old key.
+        StorageUtil.removeKey(oldKey)
+    }
   }
 
   protected cleanUp(): void {
