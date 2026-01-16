@@ -4,8 +4,10 @@
   "description": "NES Emulator",
   "main": "./src/main.ts",
   "scripts": {
+    "prepare": "simple-git-hooks",
     "start": "npm run default",
     "default": "npx vite --port=3000",
+    "test": "npm run lint",
     "lint": "npx tsc && eslint --ext .ts src/",
     "lint:fix": "eslint --fix src/**/*.ts",
     "release": "npx vite build",
@@ -45,6 +47,9 @@
     "./src/noise_channel_worker.ts",
     "./src/util/polyfill.ts"
   ],
+  "simple-git-hooks": {
+    "pre-push": "npm test"
+  },
   "devDependencies": {
     "@types/escape-html": "~1.0.4",
     "@types/fscreen": "~1.0.4",
@@ -59,6 +64,7 @@
     "html-minifier-next": "^4.17.0",
     "node-wav": "~0.0.2",
     "sass": "~1.90.0",
+    "simple-git-hooks": "^2.13.1",
     "svg-inline-loader": "0.8.2",
     "ts-node": "~10.9.2",
     "typescript": ">=5.2.2 <5.9.0",
