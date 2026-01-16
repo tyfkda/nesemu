@@ -138,9 +138,8 @@ export class Persistor {
       }
 
       const nes = new Nes()
-      const rom = romsP[tok].rom
-      const type = romsP[tok].type
-      let app: App | null = new App(wndMgr, opt, nes)
+      const { rom, type, title } = romsP[tok]
+      let app: App | null = App.create(wndMgr, opt, nes)
 
       if (type == RomType.DISK) {
         // Disk ROM
@@ -164,7 +163,7 @@ export class Persistor {
         const romData = Util.convertBase64StringToUint8Array(rom)
         const result = app.loadRom(romData)
         if (result != null) {
-          wndMgr.showSnackbar(`${name}: ${result}`)
+          wndMgr.showSnackbar(`${title}: ${result}`)
           app.close()
           app = null
         }
