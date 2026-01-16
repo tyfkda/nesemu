@@ -28,10 +28,12 @@ export class Persistor {
     const romsP: RomsP = SU.getObject(KEY_PERSIST_ROMS, {})
     const coordsP: CoordsP = SU.getObject(KEY_PERSIST_COORDS, {})
 
-    let newTok: PersistToken = String(Math.random())
+    let newTok: PersistToken = title
+    let tokSfx = 0
 
     while (newTok in romsP || newTok in coordsP) {
-      newTok += String(Math.random())
+      ++tokSfx
+      newTok = `${title}_${tokSfx}`
     }
 
     const romRec = {
