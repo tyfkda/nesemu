@@ -96,8 +96,8 @@ export class Wnd {
   public getClientSize(): {width: number, height: number} {
     const rect = this.root.getBoundingClientRect()
     return {
-      width: rect.width - this.clientMarginWidth,
-      height: rect.height - this.clientMarginHeight,
+      width: Math.round(rect.width - this.clientMarginWidth),
+      height: Math.round(rect.height - this.clientMarginHeight),
     }
   }
 
