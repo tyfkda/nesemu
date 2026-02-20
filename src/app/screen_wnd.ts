@@ -20,6 +20,7 @@ import {RegisterWnd, RamWnd, TraceWnd, ControlWnd} from './debug_wnd'
 import {FpsWnd, PaletWnd, NameTableWnd, PatternTableWnd, AudioWnd} from './other_wnd'
 import {Fds} from '../nes/fds/fds'
 import {FdsCtrlWnd} from './fds_ctrl_wnd'
+import {Persistor, PersistToken} from '../util/persist'
 
 import * as Pubsub from '../util/pubsub'
 
@@ -180,6 +181,7 @@ export class ScreenWnd extends Wnd {
   private fullscreenResizeFunc: () => void
   private repeatBtnFrame = false
   private fileHandle: FileSystemFileHandle | null = null
+  private persistTok?: PersistToken
 
   protected wndMap = new Array<Wnd | null>()
 
@@ -305,6 +307,7 @@ export class ScreenWnd extends Wnd {
     case WndEvent.DRAG_END:
       if (GlobalSetting.pauseOnMenu)
         this.stream.triggerResumeApp()
+      this.saveDimens()
       break
     case WndEvent.RESIZE_BEGIN:
       this.canvasHolder.style.transitionDuration = '0s'
@@ -313,6 +316,7 @@ export class ScreenWnd extends Wnd {
       break
     case WndEvent.RESIZE_END:
       this.saveClientSize(this.getClientSize())
+      this.saveDimens()
       this.canvasHolder.style.transitionDuration = TRANSITION_DURATION
       if (GlobalSetting.pauseOnMenu)
         this.stream.triggerResumeApp()
@@ -839,6 +843,15 @@ export class ScreenWnd extends Wnd {
     GlobalSetting.maximize = false
   }
 
+  protected saveDimens(): void {
+    if (!GlobalSetting.persistCarts || !this.persistTok)
+      return
+
+    const { x, y } = this.getPos()
+    const { width, height } = this.getClientSize()
+    Persistor.updatePersistCoords(this.persistTok, x, y, width, height)
+  }
+
   private toggleOverscan(): void {
     this.overscan = !this.overscan
     this.updateContentSize(this.contentHolder.offsetWidth, this.contentHolder.offsetHeight)
@@ -902,5 +915,9 @@ export class ScreenWnd extends Wnd {
       })
       this.messageTimer = null
     }, 2000)
+  }
+
+  public setPersistTok(tok: PersistToken): void {
+    this.persistTok = tok
   }
 }

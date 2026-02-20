@@ -9,6 +9,7 @@ import {Nes} from '../nes/nes'
 import {Ppu} from '../nes/ppu/ppu'
 import {PpuDebug} from './ppu_debug'
 import {kPaletColors} from '../nes/ppu/const'
+import {Persistor} from '../util/persist'
 
 import {AppEvent} from './app_event'
 import {Util} from '../util/util'
@@ -727,6 +728,18 @@ export class SettingWnd extends Wnd {
     }
 
     const table = [
+      {
+        type: Type.CHECKBOX,
+        message: 'Persist cartridges',
+        getValue: () => GlobalSetting.persistCarts,
+        onchange(_event: Event) {
+          GlobalSetting.persistCarts = !!(this as any).checked
+
+          // Regardless of setting or unsetting,
+          // we want a clean slate when we're changed.
+          Persistor.clearAllPersists()
+        },
+      },
       {
         type: Type.CHECKBOX,
         message: 'Pause on menu',

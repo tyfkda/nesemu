@@ -8,6 +8,7 @@ import {IDeltaModulationChannel, INoiseChannel, IPulseChannel, WaveType} from '.
 import {DomUtil} from '../util/dom_util'
 import {Fds} from '../nes/fds/fds'
 import {GlobalSetting} from './global_setting'
+import {Persistor, PersistToken} from '../util/persist'
 import {ScreenWnd} from './screen_wnd'
 import {StorageUtil} from '../util/storage_util'
 import {Util} from '../util/util'
@@ -27,7 +28,17 @@ export class Option {
   public title?: string
   public centerX?: number
   public centerY?: number
+  public x?: number
+  public y?: number
+  public width?: number
+  public height?: number
   public onClosed?: (app: App) => void
+  public persistTok?: PersistToken
+}
+
+export const enum RomType {
+  CARTRIDGE = 'CARTRIDGE',
+  DISK = 'DISK',
 }
 
 export class App {
@@ -38,6 +49,7 @@ export class App {
   protected channelVolumes: Float32Array
   protected stream = new AppEvent.Stream()
   protected subscription: Pubsub.Subscription
+  protected persistTok?: PersistToken
 
   protected prgBanks = new Int32Array([0, 1, -2, -1])
   protected prgBanksLast = new Int32Array([0, 1, -2, -1])
@@ -63,11 +75,24 @@ export class App {
       .subscribe(this.handleAppEvent.bind(this))
 
     const size = this.screenWnd.getWindowSize()
-    const x = Util.clamp((option.centerX || 0) - size.width / 2,
-                         0, window.innerWidth - size.width - 1)
-    const y = Util.clamp((option.centerY || 0) - size.height / 2,
-                         0, window.innerHeight - size.height - 1)
+    let x: number = -1
+    let y: number = -1
+
+    if (option.x !== undefined && option.y !== undefined) {
+      x = option.x
+      y = option.y
+    } else {
+      x = Util.clamp((option.centerX || 0) - size.width / 2,
+                     0, window.innerWidth - size.width - 1)
+      y = Util.clamp((option.centerY || 0) - size.height / 2,
+                     0, window.innerHeight - size.height - 1)
+    }
     this.screenWnd.setPos(x, y)
+
+    if (option.persistTok !== undefined) {
+      this.persistTok = option.persistTok
+      this.screenWnd.setPersistTok(this.persistTok)
+    }
 
     if (noDefault)
       return
@@ -92,8 +117,33 @@ export class App {
 
     if (GlobalSetting.maximize) {
       this.screenWnd.maximize()
+    } else if (option.width !== undefined && option.height !== undefined) {
+      this.screenWnd.setClientSize(option.width, option.height)
     } else if (GlobalSetting.clientWidth > 256 && GlobalSetting.clientHeight > 240) {
       this.screenWnd.setClientSize(GlobalSetting.clientWidth, GlobalSetting.clientHeight)
+    }
+  }
+
+  protected persist(type: RomType, data: Uint8Array): void {
+    if (!GlobalSetting.persistCarts)
+      return
+
+    if (this.persistTok) {
+      if (data.length != 0)
+        Persistor.updatePersistRom(this.persistTok, type, data)
+    } else {
+      const { x, y } = this.screenWnd.getPos()
+      const { width, height } = this.screenWnd.getClientSize()
+      this.persistTok = Persistor.addPersist(
+        type,
+        this.title,
+        data,
+        x,
+        y,
+        width,
+        height,
+      )
+      this.screenWnd.setPersistTok(this.persistTok)
     }
   }
 
@@ -126,6 +176,8 @@ export class App {
     default: break
     }
 
+    this.persist(RomType.CARTRIDGE, romData)
+
     return null
   }
 
@@ -139,6 +191,8 @@ export class App {
     this.nes.getCpu().pause(false)
     this.screenWnd.getContentHolder().focus()
 
+    this.persist(RomType.DISK, new Uint8Array())
+
     return true
   }
 
@@ -149,6 +203,7 @@ export class App {
     if (result) {
       this.screenWnd.createFdsCtrlWnd(this.fds)
       this.wndMgr.moveToTop(this.screenWnd)
+      this.persist(RomType.DISK, diskData)
     }
     return result
   }
@@ -338,6 +393,10 @@ export class App {
       this.audioManager.release()
 
     this.subscription.unsubscribe()
+
+    if (this.persistTok) {
+      Persistor.removePersist(this.persistTok)
+    }
   }
 
   protected handleAppEvent(type: AppEvent.Type, param?: any): void {
