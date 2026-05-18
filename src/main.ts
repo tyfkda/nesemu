@@ -61,21 +61,10 @@ class Main {
     const submenuItems = [
       {
         label: 'Open',
-        click: () => {
-          const input = document.createElement('input')
-          input.type = 'file'
-          input.accept = '.nes,.sav,.zip, application/zip'
-          input.onchange = _event => {
-            if (!input.value)
-              return
-            const fileList = input.files
-            if (fileList)
-              this.createAppFromFiles(fileList, 0, 0)
-
-            // Clear.
-            input.value = ''
-          }
-          input.click()
+        click: async () => {
+          const fileList = await DomUtil.openFile('.nes,.sav,.zip', 'application/zip')
+          if (fileList)
+            this.createAppFromFiles(fileList, 0, 0)
         },
       },
       {

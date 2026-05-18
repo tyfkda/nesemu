@@ -245,16 +245,26 @@ export class App {
     if (!paused)
       this.stream.triggerPause()
     try {
-      const opened = await DomUtil.pickOpenFile('.sav', 'Game data', 'application/binary')
-      if (opened != null) {
-        const binary = await opened.file.arrayBuffer()
-        this.loadDataFromBinary(new Uint8Array(binary))
-        return opened.fileHandle || null
+      const accept = {'application/binary': '.sav'}
+      const fileHandle = await DomUtil.pickOpenFile(accept, 'Game data')
+      let file: File|null = null
+      if (fileHandle) {
+        file = await fileHandle.getFile()
+      } else {
+        // No file picker: Try open file.
+        const fileList = await DomUtil.openFile('.sav', 'application/binary')
+        if (fileList && fileList.length > 0)
+          file = fileList[0]
       }
+      if (file != null) {
+        const binary = await file.arrayBuffer()
+        this.loadDataFromBinary(new Uint8Array(binary))
+      }
+      return fileHandle
     } catch (e: any) {
-      if (e.name !== 'AbortError') {
+      if (e?.name !== 'AbortError') {
         console.error(e)
-        this.wndMgr.showSnackbar(`Failed: ${e.ToString()}`)
+        this.wndMgr.showSnackbar(`Failed: ${e?.ToString()}`)
       }
     } finally {
       if (!paused)

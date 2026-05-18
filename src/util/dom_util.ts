@@ -100,39 +100,39 @@ export class DomUtil {
     }
   }
 
-  public static async pickOpenFile(extension: string, description: string, mimeType: string): Promise<{file: File; fileHandle?: FileSystemFileHandle} | null> {
-    if (window.showOpenFilePicker != null || false) {
-      const accept: Record<string, string> = {}
-      accept[mimeType] = extension
-      const option = {
-        types: [{
-          description,
-          accept,
-        }],
-      }
-      const [fileHandle] = await window.showOpenFilePicker(option)
-      const file = await fileHandle.getFile()
-      return {file, fileHandle}
-    } else {
-      return new Promise((resolve, reject) => {
-        const input = document.createElement('input')
-        input.type = 'file'
-        input.accept = `${extension}, ${mimeType}`
-        input.onchange = async (_event) => {
-          if (!input.value)
-            return
-          const fileList = input.files
-          if (fileList) {
-            const file = fileList[0]
-            resolve({file})
-          } else {
-            reject(null)
-          }
-          input.value = ''
-        }
-        input.click()
-      })
+  public static async pickOpenFile(
+    accept: Record<string, string>, description: string
+  ): Promise<FileSystemFileHandle | null> {
+    if (window.showOpenFilePicker == null)
+      return null
+    const option = {
+      types: [{
+        description,
+        accept,
+      }],
     }
+    const [fileHandle] = await window.showOpenFilePicker(option)
+    return fileHandle
+  }
+
+  public static async openFile(extension: string, mimeType: string): Promise<FileList | null> {
+    return new Promise((resolve, reject) => {
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = `${extension}, ${mimeType}`
+      input.onchange = async (_event) => {
+        if (!input.value)
+          return
+        const fileList = input.files
+        if (fileList) {
+          resolve(fileList)
+        } else {
+          reject(null)
+        }
+      }
+      input.oncancel = (_event) => reject(null)
+      input.click()
+    })
   }
 
   // Register mouse drag event listener.
