@@ -481,7 +481,7 @@ export class AudioWnd extends Wnd {
       const waveType = this.waveTypes[ich]
       let x = 0
       let y = 0
-      let vol = 0
+      let vol: number
 
       switch (waveType) {
       case WaveType.NOISE:

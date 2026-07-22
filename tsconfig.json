@@ -39,6 +39,9 @@
     // "preserveSymlinks": true,              /* Do not resolve the real path of symlinks. */
     // "allowUmdGlobalAccess": true,          /* Allow accessing UMD globals from modules. */
   },
+  "include": [
+    "src"
+  ],
   "exclude": [
     "node_modules",
     "dist",

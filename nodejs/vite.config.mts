@@ -6,7 +6,7 @@ export default defineConfig({
   root: './',
   build: {
     minify: true,
-    outDir: __dirname,
+    outDir: import.meta.dirname,
     emptyOutDir: false,
     rollupOptions: {
       output: {

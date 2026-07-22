@@ -15,10 +15,7 @@ const minifyHTMLConfig = {
   removeEmptyAttributes: true,
   removeOptionalTags: true,
   removeRedundantAttributes: true,
-  removeScriptTypeAttributes: true,
-  removeStyleLinkTypeAttributes: true,
   sortAttributes: true,
-  sortClassName: true,
 }
 
 function htmlMinify() {
@@ -39,7 +36,7 @@ export default defineConfig({
   base: './',
   root: 'src',
   build: {
-    outDir: resolve(__dirname, 'release'),
+    outDir: resolve(import.meta.dirname, 'release'),
     emptyOutDir: true,
     rollupOptions: {
       output: {
