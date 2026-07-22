@@ -39,7 +39,7 @@ export default defineConfig({
   base: './',
   root: 'src',
   build: {
-    outDir: resolve(__dirname, 'release'),
+    outDir: resolve(import.meta.dirname, 'release'),
     emptyOutDir: true,
     rollupOptions: {
       output: {

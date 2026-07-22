@@ -78,7 +78,7 @@ class Mapper023Base extends Mapper {
     this.options.setWriteMemory(0xc000, 0xffff, (adr, value) => {
       if (0xc000 <= adr && adr <= 0xefff) {  // CHR Select 2...7
         const reg = mapping[adr & 0xff]
-        let ofs = 0, hi = false
+        let ofs: number, hi = false
         switch (reg) {
         case 0:
           ofs = 0
