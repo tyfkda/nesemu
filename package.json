@@ -74,7 +74,7 @@
   "dependencies": {
     "core-js": "^3.48.0",
     "escape-html": "^1.0.3",
-    "fflate": "^0.8.2",
+    "fflate": "^0.8.3",
     "fscreen": "^1.2.0",
     "md5": "^2.3.0",
     "stats-js": "^1.0.1",
