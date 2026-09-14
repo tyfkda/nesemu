@@ -271,6 +271,27 @@ export class WndUtil {
       event.stopPropagation()
     })
 
+    let closed = false
+    const close = () => {
+      if (closed)
+        return
+      closed = true
+      if (subItemHolder.parentNode != null)
+        subItemHolder.parentNode.removeChild(subItemHolder)
+      document.removeEventListener('click', onClickOther)
+    }
+
+    const selectItem = (submenuItem: SubmenuItemInfo) => {
+      if (closed)
+        return
+      if (submenuItem.click)
+        submenuItem.click()
+
+      close()
+      if (option.onClose != null)
+        option.onClose()
+    }
+
     submenu.forEach(submenuItem => {
       const submenuRow = document.createElement('div')
       submenuRow.className = 'submenu-row clearfix'
@@ -300,14 +321,14 @@ export class WndUtil {
           subItemElem.className = 'menu-item disabled'
         } else {
           subItemElem.className = 'menu-item'
-          submenuRow.addEventListener('click', _event => {
-            if (submenuItem.click)
-              submenuItem.click()
-
-            close()
-            if (option.onClose != null)
-              option.onClose()
-          })
+          const trigger = (event: MouseEvent) => {
+            if (event.button !== 0)
+              return
+            event.stopPropagation()
+            selectItem(submenuItem)
+          }
+          submenuRow.addEventListener('click', trigger)
+          submenuRow.addEventListener('mouseup', trigger)
         }
       } else {
         const hr = document.createElement('hr')
@@ -321,12 +342,6 @@ export class WndUtil {
     parent.appendChild(subItemHolder)
 
     DomUtil.setStyles(subItemHolder, pos)
-
-    const close = () => {
-      if (subItemHolder.parentNode != null)
-        subItemHolder.parentNode.removeChild(subItemHolder)
-      document.removeEventListener('click', onClickOther)
-    }
 
     // To handle earlier than menu open, pass useCapture=true
     const onClickOther = (_event: MouseEvent) => {

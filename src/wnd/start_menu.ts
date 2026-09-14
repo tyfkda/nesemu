@@ -5,6 +5,7 @@ export class StartMenu {
   private submenuItems: Array<SubmenuItemInfo>
   private itemElem: HTMLElement
   private closeSubmenu: (() => void) | null = null
+  private openedByMouseDown = false
 
   public constructor(private root: HTMLElement, private bar: HTMLElement) {
   }
@@ -13,12 +14,25 @@ export class StartMenu {
     this.submenuItems = submenuItems
 
     this.closeSubmenu = null
+    this.openedByMouseDown = false
 
     const itemElem = document.createElement('div')
     itemElem.className = 'start-menu-item pull-left'
     itemElem.innerText = label
+    itemElem.addEventListener('mousedown', event => {
+      if (event.button !== 0)
+        return
+      if (this.closeSubmenu == null) {
+        this.showSubmenu()
+        this.openedByMouseDown = true
+      }
+    })
     itemElem.addEventListener('click', event => {
       event.stopPropagation()
+      if (this.openedByMouseDown) {
+        this.openedByMouseDown = false
+        return
+      }
       if (this.closeSubmenu != null) {
         this.closeSubmenu()
         this.onClose()
@@ -39,6 +53,7 @@ export class StartMenu {
       this.itemElem.classList.remove('opened')
       this.closeSubmenu = null
     }
+    this.openedByMouseDown = false
     this.bar.classList.remove('selected')
   }
 
