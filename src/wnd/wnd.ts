@@ -147,6 +147,7 @@ export class Wnd {
     const itemElems: HTMLElement[] = []
     let activeSubmenuIndex = -1
     let closeSubmenu: (() => void) | null
+    let openedByMouseDown = false
 
     const onClose = () => {
       if (activeSubmenuIndex >= 0) {
@@ -156,6 +157,7 @@ export class Wnd {
         this.onEvent(WndEvent.CLOSE_MENU)
       }
       closeSubmenu = null
+      openedByMouseDown = false
     }
 
     const showSubmenu = (index: number) => {
@@ -187,17 +189,25 @@ export class Wnd {
       itemElem.classList.add('opened')
     }
 
-    const onClickMenu = (menuItem: MenuItemInfo, index: number) => {
+    const openMenu = (index: number) => {
+      const menuItem = menu[index]
       if ('submenu' in menuItem) {
-        if (activeSubmenuIndex < 0) {
-          this.onEvent(WndEvent.OPEN_MENU)
-          showSubmenu(index)
-        } else {
-          if (closeSubmenu)
-            closeSubmenu()
-          onClose()
-        }
+        this.onEvent(WndEvent.OPEN_MENU)
+        showSubmenu(index)
       }
+    }
+
+    const closeActiveSubmenu = () => {
+      if (closeSubmenu)
+        closeSubmenu()
+      onClose()
+    }
+
+    const onClickMenu = (index: number) => {
+      if (activeSubmenuIndex < 0)
+        openMenu(index)
+      else
+        closeActiveSubmenu()
     }
 
     menu.forEach((menuItem: MenuItemInfo, index: number) => {
@@ -205,12 +215,24 @@ export class Wnd {
       itemElem.className = 'menu-item pull-left'
       itemElem.innerText = menuItem.label
       itemElem.style.height = '100%'
+      itemElem.addEventListener('mousedown', event => {
+        if (event.button !== 0)
+          return
+        if (activeSubmenuIndex < 0) {
+          openMenu(index)
+          openedByMouseDown = true
+        }
+      })
       itemElem.addEventListener('click', event => {
         event.stopPropagation()
-        onClickMenu(menuItem, index)
+        if (openedByMouseDown) {
+          openedByMouseDown = false
+          return
+        }
+        onClickMenu(index)
       })
       itemElem.addEventListener('mouseenter', _event => {
-        if (activeSubmenuIndex >= 0 && activeSubmenuIndex !== index && 'submenu' in menuItem) {
+        if (activeSubmenuIndex >= 0 && activeSubmenuIndex !== index) {
           showSubmenu(index)
         }
       })
@@ -226,7 +248,7 @@ export class Wnd {
           const rect = itemElem.getBoundingClientRect()
           if (x >= 0 && y >= 0 && x < rect.width && y < rect.height) {
             if (activeSubmenuIndex < 0 || activeSubmenuIndex === index)
-              onClickMenu(menuItem, index)
+              onClickMenu(index)
             else
               showSubmenu(index)
           } else {
