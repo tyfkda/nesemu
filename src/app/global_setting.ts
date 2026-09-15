@@ -33,7 +33,7 @@ function modified(s1: SettingData, s2: SettingData): boolean {
 export const GlobalSetting = {
   pauseOnMenu: false,
   muteOnInactive: true,
-  volume: 0.5,
+  volume: 1.0,
   scaler: ScalerType.NEAREST as ScalerType,
   overscan: true,
   spriteFlicker: false,

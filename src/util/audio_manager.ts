@@ -3,13 +3,14 @@ import {SoundChannel, PulseChannel, TriangleChannel, SawtoothChannel} from './au
 import {IDmcChannel, INoiseChannel} from './audio/sound_channel'
 import {ICartridge} from '../nes/cartridge'
 
-const GLOBAL_MASTER_VOLUME = 0.5
+const GLOBAL_MASTER_VOLUME = 0.2
 
 export abstract class AudioManager {
   protected static initialized = false
   protected static audioContextClass?: AudioContext
   protected static context?: AudioContext
   protected static masterGainNode: GainNode
+  protected static limiterNode: DynamicsCompressorNode
   protected static masterVolume = 1.0
 
   protected channels = new Array<SoundChannel>()
@@ -36,7 +37,17 @@ export abstract class AudioManager {
       AudioManager.masterGainNode = context.createGain()
       AudioManager.masterGainNode.gain.setValueAtTime(
         AudioManager.masterVolume * GLOBAL_MASTER_VOLUME, context.currentTime)
-      AudioManager.masterGainNode.connect(context.destination)
+
+      const limiter = context.createDynamicsCompressor()
+      limiter.threshold.setValueAtTime(-1.0, context.currentTime)
+      limiter.knee.setValueAtTime(0, context.currentTime)
+      limiter.ratio.setValueAtTime(20, context.currentTime)
+      limiter.attack.setValueAtTime(0.002, context.currentTime)
+      limiter.release.setValueAtTime(0.05, context.currentTime)
+      AudioManager.limiterNode = limiter
+
+      AudioManager.masterGainNode.connect(limiter)
+      limiter.connect(context.destination)
     }
   }
 
