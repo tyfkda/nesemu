@@ -87,7 +87,6 @@ const kTable = [
   [0x8d, OpType.STA, Addressing.ABSOLUTE, 3, 4, OpAccess.WT],
   [0x9d, OpType.STA, Addressing.ABSOLUTE_X, 3, 5, OpAccess.WT],
   [0x99, OpType.STA, Addressing.ABSOLUTE_Y, 3, 5, OpAccess.WT],
-  [0x95, OpType.STA, Addressing.ZEROPAGE_X, 2, 4, OpAccess.WT],
   [0x81, OpType.STA, Addressing.INDIRECT_X, 2, 6, OpAccess.WT],
   [0x91, OpType.STA, Addressing.INDIRECT_Y, 2, 6, OpAccess.WT],
   // LDX
@@ -303,10 +302,10 @@ const kTable = [
   [0xaf, OpType.LAX, Addressing.ABSOLUTE, 3, 4],
   [0xbf, OpType.LAX, Addressing.ABSOLUTE_Y, 3, 4],
 
-  [0x87, OpType.SAX, Addressing.ZEROPAGE, 2, 6],
-  [0x97, OpType.SAX, Addressing.ZEROPAGE_Y, 2, 3],
+  [0x87, OpType.SAX, Addressing.ZEROPAGE, 2, 3],
+  [0x97, OpType.SAX, Addressing.ZEROPAGE_Y, 2, 4],
   [0x8f, OpType.SAX, Addressing.ABSOLUTE, 3, 4],
-  [0x83, OpType.SAX, Addressing.INDIRECT_X, 3, 4],
+  [0x83, OpType.SAX, Addressing.INDIRECT_X, 2, 6],
 
   [0xe7, OpType.ISB, Addressing.ZEROPAGE, 2, 5],
   [0xf7, OpType.ISB, Addressing.ZEROPAGE_X, 2, 6],
