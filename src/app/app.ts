@@ -201,7 +201,7 @@ export class App {
     } catch (e: any) {
       if (e.name !== 'AbortError') {
         console.error(e)
-        this.wndMgr.showSnackbar(`Failed: ${e.ToString()}`)
+        this.wndMgr.showSnackbar(`Failed: ${e.toString()}`)
       }
     } finally {
       if (!paused)
@@ -264,7 +264,7 @@ export class App {
     } catch (e: any) {
       if (e?.name !== 'AbortError') {
         console.error(e)
-        this.wndMgr.showSnackbar(`Failed: ${e?.ToString()}`)
+        this.wndMgr.showSnackbar(`Failed: ${e?.toString()}`)
       }
     } finally {
       if (!paused)
