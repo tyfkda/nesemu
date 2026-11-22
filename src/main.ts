@@ -52,7 +52,8 @@ class Main {
   }
 
   public shutDown(): void {
-    for (const app of this.apps)
+    // Iterate over a copy: app.destroy() removes the app from this.apps via onClosed.
+    for (const app of [...this.apps])
       app.destroy()
     GlobalSetting.destroy()
   }
