@@ -403,11 +403,7 @@ export class App {
       this.render()
     this.updateAudio()
 
-    {  // Swap
-      const tmp = this.prgBanks
-      this.prgBanks = this.prgBanksLast
-      this.prgBanksLast = tmp
-    }
+    this.prgBanksLast.set(this.prgBanks)
   }
 
   protected onBreakPoint(): void {
