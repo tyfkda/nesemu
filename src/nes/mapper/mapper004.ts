@@ -190,6 +190,46 @@ export class Mapper004 extends Mapper {
   }
 }
 
+// NAMCOT-3446: Namcot 108 rewired for 128KB CHR, with four 2KB CHR banks.
+// https://www.nesdev.org/wiki/INES_Mapper_076
+export class Mapper076 extends Mapper004 {
+  public static create(options: MapperOptions): Mapper {
+    return new Mapper076(options)
+  }
+
+  constructor(protected options: MapperOptions) {
+    super(options)
+
+    // Select
+    this.options.setWriteMemory(0x8000, 0x9fff, (adr, value) => {
+      if ((adr & 1) === 0) {
+        this.bankSelect = value & 0x07
+      } else {
+        const reg = this.bankSelect
+        this.regs[reg] = value & 0x3f
+        if (reg >= 6)  // PRG
+          this.setPrgBank(this.bankSelect)
+        else if (reg >= 2)  // CHR
+          this.setChrBank(this.bankSelect)
+      }
+    })
+
+    // No mirroring control or IRQ.
+    this.options.setWriteMemory(0xa000, 0xffff, (_adr, _value) => {})
+
+    // Mirroring is hardwired.
+    this.options.setMirrorMode(this.options.cartridge!.mirrorMode)
+  }
+
+  protected setChrBank(_swap: number): void {
+    for (let i = 0; i < 4; ++i) {
+      const bank = this.regs[i + 2] << 1
+      this.options.setChrBankOffset(i * 2, bank)
+      this.options.setChrBankOffset(i * 2 + 1, bank | 1)
+    }
+  }
+}
+
 export class Mapper088 extends Mapper004 {
   public static create(options: MapperOptions): Mapper {
     return new Mapper088(options)
